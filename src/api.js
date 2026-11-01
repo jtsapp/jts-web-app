@@ -2174,6 +2174,41 @@ async function readAssess(res) {
   return body
 }
 
+// Короткие тренировки Writing на сервере (контракт IELTS Writing §5): прогресс дриллов, очередь «Повторить ошибки» по
+// id раундов и черновики заданий. testId у упражнений разбора — id попытки (source 'attempt').
+export function getIeltsDrillProgress(token) {
+  return authGet('/mobile/ielts/drills/progress', token)
+}
+
+export function postIeltsDrillRun(token, testId, { pct, wrong = [], right = [], source } = {}) {
+  return authPost(`/mobile/ielts/drills/${encodeURIComponent(testId)}/runs`, token, { pct, wrong, right, ...(source ? { source } : {}) })
+}
+
+export function importIeltsDrillProgress(token, items) {
+  return authPost('/mobile/ielts/drills/progress/import', token, { items })
+}
+
+export function getIeltsReview(token) {
+  return authGet('/mobile/ielts/review', token)
+}
+
+export function resolveIeltsReview(token, items) {
+  return authPost('/mobile/ielts/review/resolve', token, { items })
+}
+
+// черновик задания: null — черновика нет (204)
+export function getIeltsWritingDraft(token, testId) {
+  return authGet(`/mobile/ielts/writing/drafts/${encodeURIComponent(testId)}`, token)
+}
+
+export function putIeltsWritingDraft(token, testId, text, opts) {
+  return authPut(`/mobile/ielts/writing/drafts/${encodeURIComponent(testId)}`, token, { text }, opts)
+}
+
+export function deleteIeltsWritingDraft(token, testId) {
+  return authDelete(`/mobile/ielts/writing/drafts/${encodeURIComponent(testId)}`, token)
+}
+
 export function getIeltsWritingWorks(token) {
   return authGet('/mobile/ielts/writing/works', token)
 }

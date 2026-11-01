@@ -1,6 +1,7 @@
 // Writing: чистые функции задания и работы. Порт кусков 30-writing.html прототипа:
 // describeChart / promptText — задание текстом для ИИ (§14.3: «[Visual]» с данными графика), countWords — слова как на
 // экзамене. Модуль общий для экрана и серверного роута оценки — поэтому без React и без window на импорте.
+import { normalizeChart } from './chartData.js'
 
 export const CRITERIA = ['taskResponse', 'coherenceCohesion', 'lexicalResource', 'grammaticalRange']
 
@@ -22,12 +23,45 @@ export function countWords(text) {
     .filter((t) => /[\p{L}\p{N}]/u.test(t)).length
 }
 
+// ---------------------------------------------------------------- скопировано из задания
+
+// Слова для сверки с заданием: нижний регистр, всё кроме a-z, 0-9 и апострофа — пробел. Один алгоритм с бэкендом
+// (IeltsDocument.copiedWords): общие тестовые примеры держат их одинаковыми (контракт §1).
+const copyTokens = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9'\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+
+/** Текст задания для поиска копирования: вопрос и пункты письма через пробел (без [Visual] и служебных строк). */
+export function copyTaskText(task) {
+  return [task?.question, ...(Array.isArray(task?.bullets) ? task.bullets : [])].filter(Boolean).join(' ')
+}
+
+/**
+ * Сколько слов работы скопировано из задания: слово считается скопированным, если входит в 4-словие, которое
+ * дословно есть в задании. Экзаменатор такие слова не засчитывает — редактор показывает их сразу, бэкенд вычитает
+ * их из объёма (effectiveWords) при оценке.
+ */
+export function copiedWords(essay, taskText) {
+  const T = copyTokens(taskText)
+  const E = copyTokens(essay)
+  const grams = new Set()
+  for (let i = 0; i + 3 < T.length; i++) grams.add(T.slice(i, i + 4).join(' '))
+  const mark = new Array(E.length).fill(false)
+  for (let i = 0; i + 3 < E.length; i++) if (grams.has(E.slice(i, i + 4).join(' '))) mark.fill(true, i, i + 4)
+  return mark.filter(Boolean).length
+}
+
 function val(v, unit) {
   return unit === '%' ? `${v}%` : unit ? `${v} ${unit}` : String(v)
 }
 
 /** Данные графика текстом — для модели (у неё нет картинки) и для подписи SVG скринридеру. */
-export function describeChart(c) {
+export function describeChart(chart) {
+  // pie одной серией и table серией по x (оба формата банка) — к slices / columns; unit «undefined» — без единицы
+  const c = normalizeChart(chart)
   if (!c) return ''
   const unit = c.unit || ''
   if (c.type === 'multi') return (c.alt ? [`Charts: ${c.alt}`] : []).concat((c.charts || []).map(describeChart).filter(Boolean)).join('\n')

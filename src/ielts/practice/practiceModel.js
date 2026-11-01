@@ -34,6 +34,8 @@ export const SKILL_TABS = {
     { key: 'mock', view: 'writing-mocks' },
     // короткие тренировки одного приёма (overview, связки, позиция, регистр) — writing/drills/, правка владельца 30.10.2026
     { key: 'drills', view: 'writing-drills' },
+    // «Как писать» — вкладка страницы Writing (ТЗ §3.2); глава — ?ieltsSection=, строк у вкладки нет
+    { key: 'guide', view: 'writing-guide' },
   ],
   speaking: [
     { key: 'part1', view: 'speaking-part1' },
@@ -116,6 +118,7 @@ export function skillRows(skill, tab, lists, track) {
   }
   if (skill === 'writing') {
     if (tab === 'drills') return writingDrillRows(lists, track)
+    if (tab === 'guide') return []
     if (tab === 'mock') return writingMockRows(lists, track)
     return forTrack(L, track).filter((t) => t.kind === tab).map((t) => testRow(t, skill, `writing-${tab}`, 'ai'))
   }
@@ -249,4 +252,174 @@ export function searchRows(q, lists, track, t) {
 /** Сколько опубликовано у навыка — пустой навык показывает «пока без материалов», а не кнопку в пустоту. */
 export function skillCount(skill, lists, track) {
   return SKILL_TABS[skill].reduce((s, tab) => s + skillRows(skill, tab.key, lists, track).length, 0)
+}
+
+// ---------------------------------------------------------------- Writing: каталог по типам, тренировки типа, «по разбору»
+// ТЗ §3.2–3.4, §5.4: задания и тренировки Writing делятся по типу задания (category каталога) — графику Task 1 AC,
+// регистру письма GT и жанру эссе Task 2. Часть: T1 (Task 1 Academic), GT (письмо), T2 (эссе) — как в банке тренировок.
+
+/** Типы части в порядке гида и прототипа — порядок чипов. */
+export const WRITING_TYPES = {
+  T1: ['line', 'bar', 'pie', 'table', 'process', 'map', 'multi'],
+  GT: ['formal', 'semi_formal', 'informal'],
+  T2: ['opinion', 'discussion', 'adv_disadv', 'problem_solution', 'two_part'],
+}
+
+/** Часть задания или дрилла каталога: Task 2 — T2, письмо General Training — GT, иначе T1. */
+export function writingPartOf(t) {
+  if (t?.part && WRITING_TYPES[t.part]) return t.part
+  if (t?.kind === 'task2' || t?.category === 'task2' || t?.category === 'both') return 'T2'
+  return t?.module === 'general' ? 'GT' : 'T1'
+}
+
+/** Части трека: у Academic — Task 1 графиками, у General Training — письмом; Task 2 общий. */
+export const writingParts = (track) => (track === 'general' ? ['GT', 'T2'] : ['T1', 'T2'])
+
+/** Глава гида «Как писать» (WR-GUIDE parts[].key + вид): «t1ac.line», «t2.problem_solution»; без типа — часть. */
+export function guideSection(part, ty) {
+  const p = { T1: 't1ac', GT: 't1gt', T2: 't2' }[part] || 't2'
+  return ty && ty !== 'all' && ty !== 'common' ? `${p}.${ty}` : p
+}
+
+// Новые задания пакета (контракт §7): W1-AC-2xx, W1-GT-2xx, W2-2xx — бейдж «новое · проще»
+export const isNewWritingTask = (id) => /^(W1-AC-2|W1-GT-2|W2-2)\d\d$/.test(String(id || ''))
+
+const bandKey = (t) => (typeof t?.bandMin === 'number' ? t.bandMin : typeof t?.difficulty === 'number' ? t.difficulty : 99)
+
+/** Задания Task 1 / Task 2 трека — от лёгких к сложным (bandMin, затем bandMax и id). */
+export function writingTaskList(items, kind, track) {
+  return forTrack(items, track)
+    .filter((t) => t.kind === kind)
+    .slice()
+    .sort((a, b) => bandKey(a) - bandKey(b) || (a.bandMax ?? 99) - (b.bandMax ?? 99) || String(a.id).localeCompare(String(b.id)))
+}
+
+/** Чипы «Все · [типы]» со счётчиками: только типы, у которых есть задания, в порядке части. */
+export function writingTypeChips(list, part) {
+  const n = {}
+  for (const t of list || []) n[t.category] = (n[t.category] || 0) + 1
+  return [{ key: 'all', n: (list || []).length }, ...(WRITING_TYPES[part] || []).filter((k) => n[k]).map((k) => ({ key: k, n: n[k] }))]
+}
+
+export const byWritingType = (list, ty) => (!ty || ty === 'all' ? list || [] : (list || []).filter((t) => t.category === ty))
+
+// Тренировки банка (drills-bank.json пакета): часть, типы и типы, у которых в общей тренировке ≥ 4 своих вопросов
+// (§5.4 — с ними «Шаблоны» из Line graph показывают шаблоны линейных графиков). Каталог бэкенда (CatalogItem) этих
+// полей пока не отдаёт — без таблицы чипы и «тренировки этого типа» были бы пусты. Поля строки каталога важнее.
+const T1A = WRITING_TYPES.T1
+const T2A = WRITING_TYPES.T2
+const GTA = WRITING_TYPES.GT
+const DRILL_META = {
+  'T1-TPL': ['T1', 'all', T1A], 'T1-INTRO': ['T1', 'all', T1A], 'T1-OVERVIEW': ['T1', 'all', T1A], 'T1-ORDER': ['T1', 'all', ['line']],
+  'T1-MISTAKES': ['T1', 'all', T1A], 'T1-ERRORS': ['T1', 'all', []],
+  'T1-TREND': ['T1', ['line', 'bar', 'table', 'multi']], 'T1-NOUN': ['T1', ['line', 'bar', 'table', 'multi']],
+  'T1-APPROX': ['T1', ['pie', 'table', 'bar', 'line', 'multi']], 'T1-PREP': ['T1', ['line', 'bar', 'table', 'pie', 'multi']],
+  'T1-FEATURES': ['T1', ['line', 'bar', 'table', 'multi']], 'T1-PROPORTION': ['T1', ['pie', 'table', 'multi']],
+  'T1-COMPARE': ['T1', ['bar', 'table', 'multi', 'line']], 'T1-FUTURE': ['T1', ['line', 'bar', 'table']],
+  'T1-PROCESS': ['T1', ['process']], 'T1-PROCESS-SEQ': ['T1', ['process']], 'T1-MAP': ['T1', ['map']], 'T1-MAP-LOC': ['T1', ['map']],
+  'GT-TPL': ['GT', 'all', GTA], 'GT-PURPOSE': ['GT', 'all', GTA], 'GT-LETTER': ['GT', 'all', GTA],
+  'T2-TYPE': ['T2', 'all', T2A], 'T2-PLAN': ['T2', 'all', T2A], 'T2-TPL': ['T2', 'all', []], 'T2-INTRO': ['T2', 'all', T2A],
+  'T2-PARA': ['T2', 'all', []], 'T2-CONCL': ['T2', 'all', T2A], 'T2-MISTAKES': ['T2', 'all', ['adv_disadv']],
+  'T2-LINK': ['T2', 'all', []], 'T2-PARAPHRASE': ['T2', 'all', T2A], 'T2-RELEVANT': ['T2', 'all', T2A],
+  'T2-BOTHSIDES': ['T2', ['discussion', 'adv_disadv']], 'T2-CAUSESOL': ['T2', ['problem_solution']],
+  'T2-COMPLEX': ['T2', 'all', []], 'T2-ACADEMIC': ['T2', 'all', []], 'T2-MINI': ['T2', 'all', T2A],
+}
+
+/** Строка дрилла каталога + часть (part), типы (types: 'all' | [..]) и типы с ≥ 4 вопросами (tys), ключ drillKey. */
+export function writingDrillInfo(x) {
+  const key = x?.drillKey || String(x?.id || '').replace(/^WD-/, '')
+  const meta = DRILL_META[key]
+  return {
+    ...x,
+    drillKey: key,
+    part: x?.part && WRITING_TYPES[x.part] ? x.part : meta?.[0] || writingPartOf(x),
+    types: x?.types ?? meta?.[1] ?? 'all',
+    tys: Array.isArray(x?.tys) ? x.tys : meta?.[2] || [],
+  }
+}
+
+/** Тренировки Writing трека с частью и типами: каталог с прогрессом (IeltsPage) или банк, пока его нет — пробные. */
+export function writingDrillList(lists, track) {
+  const all = lists?.writingDrills || drillCatalog(lists?.writing, SAMPLE_DRILLS)
+  const parts = writingParts(track)
+  return forTrack(all, track).map(writingDrillInfo).filter((d) => parts.includes(d.part))
+}
+
+const typed = (d) => Array.isArray(d.types)
+const hasType = (d, ty) => (typed(d) ? d.types.includes(ty) : d.tys.includes(ty))
+
+/** 3–4 тренировки типа (§3.2, §3.4): сначала тренировки только этого типа, затем общие, где у типа ≥ 4 вопросов. */
+export function writingDrillsForType(drills, part, ty, n = 4) {
+  const mine = (drills || []).filter((d) => d.part === part)
+  const special = mine.filter((d) => typed(d) && d.types.includes(ty))
+  const general = mine.filter((d) => !typed(d) && d.tys.includes(ty))
+  return special.concat(general).slice(0, n)
+}
+
+/** Чипы вкладки тренировок: Все · Общие · [типы] со счётчиками (типы — где есть тренировки только этого типа). */
+export function writingDrillChips(drills, part) {
+  const mine = (drills || []).filter((d) => d.part === part)
+  const common = mine.filter((d) => !typed(d))
+  const types = (WRITING_TYPES[part] || []).filter((k) => mine.some((d) => typed(d) && d.types.includes(k)))
+  const chips = [{ key: 'all', n: mine.length }]
+  if (common.length && types.length) chips.push({ key: 'common', n: common.length })
+  return chips.concat(types.map((k) => ({ key: k, n: mine.filter((d) => typed(d) && d.types.includes(k)).length })))
+}
+
+/**
+ * Группы списка тренировок по чипу: «Все» — «Общие — для любого типа» и «По типам заданий»; «Общие» — только первая;
+ * тип — тренировки этого типа, затем общие, где у типа есть вопросы (с ними тренировка запускается с ty).
+ */
+export function writingDrillGroups(drills, part, filter = 'all') {
+  const mine = (drills || []).filter((d) => d.part === part)
+  const common = mine.filter((d) => !typed(d))
+  if (!filter || filter === 'all') return [{ key: 'common', list: common }, { key: 'typed', list: mine.filter(typed) }].filter((g) => g.list.length)
+  if (filter === 'common') return common.length ? [{ key: 'common', list: common }] : []
+  const list = mine.filter((d) => typed(d) && d.types.includes(filter)).concat(common.filter((d) => hasType(d, filter)))
+  return list.length ? [{ key: 'type', ty: filter, list }] : []
+}
+
+/** Слабые критерии разбора → тренировки (прототип CRIT2DRILLS). id тренировки — «WD-» + ключ. */
+export const CRIT2DRILLS = {
+  TA: ['T1-OVERVIEW', 'T1-FEATURES', 'T2-PLAN', 'T2-RELEVANT', 'T2-TYPE', 'GT-PURPOSE', 'GT-LETTER'],
+  CC: ['T1-TPL', 'T2-TPL', 'T2-PARA', 'T2-LINK', 'T1-ORDER', 'GT-TPL'],
+  LR: ['T1-TREND', 'T1-NOUN', 'T1-APPROX', 'T2-ACADEMIC', 'T2-PARAPHRASE'],
+  GRA: ['T1-ERRORS', 'T1-FUTURE', 'T1-PROCESS', 'T2-COMPLEX'],
+}
+export const CRIT_SHORT = { taskResponse: 'TA', coherenceCohesion: 'CC', lexicalResource: 'LR', grammaticalRange: 'GRA' }
+
+/**
+ * «Рекомендуем по вашему разбору» (§3.1): до max тренировок под критерии ниже 6.5 последней оценённой работы, слабейший
+ * первым. review — { criteria: { taskResponse: 5.5, … }, category, part }. Тренировка подходит, если её часть — часть
+ * работы, а тип — общий или тип работы (как fits прототипа). Итог — [{ drill, crit }] (crit — ключ бэкенда).
+ */
+export function recommendWritingDrills(review, drills, max = 4) {
+  if (!review?.criteria) return []
+  const weak = Object.entries(review.criteria)
+    .filter(([k, v]) => CRIT_SHORT[k] && Number.isFinite(Number(v)) && Number(v) < 6.5)
+    .sort((a, b) => Number(a[1]) - Number(b[1]))
+  const byKey = new Map((drills || []).map((d) => [d.drillKey, d]))
+  const out = []
+  const seen = new Set()
+  for (const [crit] of weak) {
+    for (const key of CRIT2DRILLS[CRIT_SHORT[crit]]) {
+      const d = byKey.get(key)
+      if (!d || seen.has(key)) continue
+      if (review.part && d.part !== review.part) continue
+      if (review.category && typed(d) && !d.types.includes(review.category)) continue
+      seen.add(key)
+      out.push({ drill: d, crit })
+      if (out.length >= max) return out
+    }
+  }
+  return out
+}
+
+/** Счётчики вкладок Writing: Task 1 и Task 2 трека, тренировки трека. */
+export function writingTabCounts(lists, track) {
+  return {
+    task1: writingTaskList(lists?.writing, 'task1', track).length,
+    task2: writingTaskList(lists?.writing, 'task2', track).length,
+    drills: writingDrillList(lists, track).length,
+  }
 }

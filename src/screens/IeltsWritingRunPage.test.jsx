@@ -34,6 +34,17 @@ describe('IeltsWritingRunPage — mock по типу', () => {
     expect(screen.getByText(/Remote work/)).toBeTruthy()
   })
 
+  it('скопированное из задания видно сразу и не засчитывается: подтверждение по засчитанным словам', async () => {
+    renderRun({ testId: 'W2-001', mode: 'exam' })
+    const box = await screen.findByRole('textbox')
+    fireEvent.change(box, { target: { value: 'Remote work suits me.' } })
+    expect(screen.queryByText(/скопировано/)).toBeNull()
+    fireEvent.change(box, { target: { value: 'Some people think remote work is better. I agree.' } })
+    expect(screen.getByText('· из задания скопировано ~7 слов — они не засчитываются')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить на ИИ-проверку' }))
+    expect(await screen.findByText(/Засчитанных слов: 2 — меньше минимума 250.*Всё равно отправить\?/)).toBeTruthy()
+  })
+
   it('mock по типу: без подсказок, тип в шапке, свой черновик, сдача в режиме exam', async () => {
     // черновик тренировки того же задания — mock его не подхватывает
     localStorage.setItem('jts_ielts_wr_draft_W2-001', JSON.stringify({ text: 'practice draft', mode: 'practice' }))

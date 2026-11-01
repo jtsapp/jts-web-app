@@ -2,7 +2,7 @@
 //
 // 1. квота IELTS (Writing — платная секция) — ДО платного вызова;
 // 2. claim на бэкенде (токен ученика + служебный ключ): работа своя и ждёт оценки, текст и задание — оттуда;
-// 3. Sonnet → критерии и, параллельно, «наставник» (улучшение по предложениям, советы по развитию, эссе целиком —
+// 3. Sonnet → критерии и флаги ограничений и, параллельно, «закрепление» (упражнения по ошибкам) и «наставник» (улучшение по предложениям, советы по развитию, эссе целиком —
 //    coachWriting; не ответил — разбор без этих блоков); 4. результат на бэкенд, общий band считает он. Модель
 //    оценки не ответила — fail, работа снова ждёт.
 //
@@ -12,7 +12,7 @@ import { hasAnthropicKey, IELTS_REVIEW_MODEL, structured } from '@/lib/anthropic
 import { BACKEND_URL, bearerFromRequest } from '@/lib/auth-server.js'
 import { checkIeltsQuota } from '@/lib/ielts/quota.js'
 import { isDbConfigured, recordIeltsWriting } from '@/lib/db/ielts.js'
-import { WRITING_SCHEMA, buildSystemPrompt, coachWriting, normalizeAssessment, userMessage } from '@/lib/ielts/writingGrader.js'
+import { WRITING_SCHEMA, buildSystemPrompt, coachWriting, exercisesWriting, normalizeAssessment, userMessage } from '@/lib/ielts/writingGrader.js'
 
 export const runtime = 'nodejs'
 // оценка эссе Sonnet'ом — 20–40 с; запас под медленный ответ
@@ -71,6 +71,8 @@ export async function POST(request) {
 
   // «наставник» идёт параллельно оценке и не бросает: ждать его дольше оценки незачем, а его сбой оценку не роняет
   const coachP = coachWriting({ run: structured, model: IELTS_REVIEW_MODEL, job, uiLang, timeoutMs: MODEL_TIMEOUT_MS })
+  // «закрепление» (упражнения по ошибкам) — третий параллельный вызов с тем же потолком: короткий JSON, не тормозит
+  const exercisesP = exercisesWriting({ run: structured, model: IELTS_REVIEW_MODEL, job, uiLang, timeoutMs: MODEL_TIMEOUT_MS })
   let assessment
   try {
     const raw = await structured({ systemPrompt: buildSystemPrompt(job, uiLang), userMessage: userMessage(job), schema: WRITING_SCHEMA, model: IELTS_REVIEW_MODEL, effort: 'medium', timeoutMs: MODEL_TIMEOUT_MS, maxRetries: 0 })
@@ -81,8 +83,11 @@ export async function POST(request) {
     return Response.json({ error: 'model_failed' }, { status: 502 })
   }
 
-  const coach = await withDeadline(coachP, Math.max(0, startedAt + COACH_WAIT_UNTIL_MS - Date.now()), null)
+  const waitLeft = () => Math.max(0, startedAt + COACH_WAIT_UNTIL_MS - Date.now())
+  const [coach, exercises] = await Promise.all([withDeadline(coachP, waitLeft(), null), withDeadline(exercisesP, waitLeft(), [])])
   if (coach) assessment.details = { ...assessment.details, ...coach }
+  // контракт §2/§4: упражнения — верхним полем оценки, бэкенд хранит их в result.exercises
+  if (exercises.length) assessment.exercises = exercises
 
   const saved = await backend(`/mobile/ielts/attempts/${attemptId}/grading`, token, {
     method: 'PUT',

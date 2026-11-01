@@ -3055,7 +3055,7 @@
    каждый, что встречается в банке: без значения fill не вычисляется и наследуется чёрный по умолчанию (схема
    «Разобранного примера» в «Как писать» была чёрным прямоугольником). Сторож — src/ielts/figureTokens.test.js. */
 .ih-qfigure,
-.ih-wchart__figure {
+.ih-tv {
   --jts-ink: #181818;
   --jts-muted: #8a8a8a;
   --jts-line: #dadae3;
@@ -4321,84 +4321,236 @@
   padding-left: 16px;
 }
 
-/* графики */
-.ih-wchart {
-  margin: 8px 0 0;
+/* Визуал Task 1 — TaskVisual (ТЗ §4): режимы full | thumb | drill | pick. Цвета — только токены корня .ih-tv: серии
+   --tv-s1…s6, сетка, оси, подложка, состояния проверки pick. Тёмные значения даёт scripts/gen-dark-theme.js из этих
+   же объявлений — hex в разметке компонента не перекрасился бы. Токены --jts-* схем банка корень задаёт тоже (блок
+   выше), поэтому схема читается в любом месте: карточка, вопрос тренировки, гид. */
+.ih-tv {
+  --tv-s1: #9047ff;
+  --tv-s2: #0aafff;
+  --tv-s3: #f08a24;
+  --tv-s4: #1f9d55;
+  --tv-s5: #d4a017;
+  --tv-s6: #e5484d;
+  --tv-surface: #ffffff;
+  --tv-panel-bg: #f7f7fb;
+  --tv-grid-line: #ededf2;
+  --tv-axis-line: #c9c9d3;
+  --tv-tick-ink: #6b6b78;
+  --tv-title-ink: #181818;
+  --tv-border-line: #e6e6ee;
+  --tv-pick-fill: #9047ff;
+  --tv-ok-fill: #1f9d55;
+  --tv-bad-fill: #e5484d;
+  --tv-miss-fill: #f08a24;
+  margin: 0;
+  max-width: 560px;
+  min-width: 0;
+  color: var(--tv-title-ink);
+}
+.ih-tv--full {
   padding: 12px;
-  border: 1px solid var(--ih-line);
+  border: 1px solid var(--tv-border-line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--tv-surface);
 }
-.ih-wchart figcaption {
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 6px;
+.ih-tv--drill,
+.ih-tv--pick {
+  max-width: 460px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--tv-panel-bg);
 }
-.ih-wchart svg {
+/* превью карточки: низкое, без подписей и легенды, снизу растворяется в карточке, мимо мыши */
+.ih-tv--thumb {
+  height: 118px;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent);
+  mask-image: linear-gradient(to bottom, #000 62%, transparent);
+}
+.ih-tv--thumb .ih-tv__svg {
+  height: 118px;
+  width: 100%;
+}
+.ih-tv__svg {
   display: block;
-  max-width: 100%;
+  width: 100%;
   height: auto;
+  overflow: visible;
 }
-.ih-wchart__grid {
-  stroke: #ededf2;
+.ih-tv__title {
+  margin: 0 0 6px;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: var(--tv-title-ink);
 }
-.ih-wchart__axis {
-  stroke: #c9c9d3;
+.ih-tv__title.is-sub {
+  font-size: 13px;
 }
-.ih-wchart__tick {
-  fill: #6b6b78;
-  font-size: 12px;
+.ih-tv__grid {
+  stroke: var(--tv-grid-line);
 }
-.ih-wchart__legend {
+.ih-tv__axis {
+  stroke: var(--tv-axis-line);
+}
+.ih-tv__tick {
+  fill: var(--tv-tick-ink);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.ih-tv__hit {
+  fill: transparent;
+}
+.ih-tv__slice {
+  stroke: var(--tv-surface);
+  stroke-width: 2;
+}
+.ih-tv__legend {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 16px;
-  margin-top: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
   font-size: 13px;
+  line-height: 18px;
 }
-.ih-wchart__legend span {
+.ih-tv__legend li {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-.ih-wchart__pie {
+.ih-tv__legend b {
+  font-variant-numeric: tabular-nums;
+}
+.ih-tv__swatch {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+/* круг и легенда со значениями: рядом, на узком экране — легенда под кругом */
+.ih-tv__pie {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
+  gap: 12px 20px;
 }
-.ih-wchart__pie svg {
-  max-width: 260px;
+.ih-tv__piesvg {
+  width: 180px;
+  max-width: 100%;
 }
-.ih-wchart__multi {
+.ih-tv__pie .ih-tv__legend {
+  flex: 1 1 200px;
+  flex-direction: column;
+  margin: 0;
+}
+.ih-tv__pie .ih-tv__legend b {
+  margin-left: auto;
+  padding-left: 12px;
+}
+.ih-tv--thumb .ih-tv__pie {
+  height: 118px;
+}
+.ih-tv--thumb .ih-tv__piesvg {
+  width: auto;
+  height: 112px;
+}
+.ih-tv__multi {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
-.ih-wchart__figure {
+.ih-tv__figure {
   display: flex;
   justify-content: center;
 }
-.ih-wchart__figure svg {
+.ih-tv__figure svg {
   width: 100%;
   max-width: 460px;
+  height: auto;
 }
-.ih-wchart__tablewrap {
+.ih-tv--thumb .ih-tv__figure svg {
+  max-width: none;
+}
+.ih-tv__tablewrap {
+  max-width: 100%;
   overflow-x: auto;
 }
-.ih-wchart__table {
+.ih-tv__table {
   width: 100%;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
   font-size: 14px;
+  white-space: nowrap;
 }
-.ih-wchart__table th,
-.ih-wchart__table td {
+.ih-tv__table th,
+.ih-tv__table td {
   padding: 6px 10px;
-  border-bottom: 1px solid var(--ih-line);
+  border-bottom: 1px solid var(--tv-border-line);
   text-align: right;
 }
-.ih-wchart__table th:first-child,
-.ih-wchart__table thead th {
+.ih-tv__table th:first-child,
+.ih-tv__table thead th {
   text-align: left;
+}
+.ih-tv--thumb .ih-tv__table {
+  font-size: 11px;
+}
+.ih-tv--thumb .ih-tv__table th,
+.ih-tv--thumb .ih-tv__table td {
+  padding: 3px 6px;
+}
+.ih-tv__note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--tv-tick-ink);
+}
+/* pick: цель на каждую подпись X; выбранная — акцентом, проверка — цветом и словом в aria-label */
+.ih-tv__pick {
+  cursor: pointer;
+  outline: none;
+}
+.ih-tv__pickhit {
+  fill: transparent;
+}
+.ih-tv__pickdot {
+  fill: var(--tv-surface);
+  stroke: var(--tv-axis-line);
+  stroke-width: 2;
+}
+.ih-tv__pick:hover .ih-tv__pickdot {
+  stroke: var(--tv-pick-fill);
+}
+.ih-tv__pick:focus-visible .ih-tv__pickdot {
+  stroke: var(--tv-pick-fill);
+  stroke-width: 3;
+}
+.ih-tv__pick:focus-visible .ih-tv__pickhit {
+  fill: var(--tv-grid-line);
+}
+.ih-tv__pick.is-on .ih-tv__pickdot {
+  fill: var(--tv-pick-fill);
+  stroke: var(--tv-pick-fill);
+}
+.ih-tv__pick.is-ok .ih-tv__pickdot {
+  fill: var(--tv-ok-fill);
+  stroke: var(--tv-ok-fill);
+}
+.ih-tv__pick.is-bad .ih-tv__pickdot {
+  fill: var(--tv-bad-fill);
+  stroke: var(--tv-bad-fill);
+}
+.ih-tv__pick.is-miss .ih-tv__pickdot {
+  fill: var(--tv-surface);
+  stroke: var(--tv-miss-fill);
+  stroke-width: 3;
+  stroke-dasharray: 3 2;
 }
 
 /* редактор — макет «IELTS new» (Writing Task 2): шапка с логотипом, карточка по центру, «Подсказки» справа */
@@ -13870,7 +14022,7 @@
 
 /* Образец графика в гиде «Как писать»: svg тянется на ширину карточки (1000+ px), и подписи осей вырастали втрое.
    Своя ширина — как в редакторе задания. */
-.ih-wguide__sample .ih-wchart {
+.ih-wguide__sample .ih-tv {
   max-width: 560px;
 }
 
@@ -13984,9 +14136,6 @@
 /* линии, которые раньше были цветом прямо в JSX (stroke="#…"): классом, чтобы тёмная тема могла их перекрасить */
 .ih-pchart__gridline {
   stroke: #ece8f5;
-}
-.ih-wchart__slice {
-  stroke: #fff;
 }
 
 /* материалы IELTS закрыты до доступа от менеджера (IeltsLockedView): что произошло и что делать дальше */
@@ -14422,6 +14571,260 @@
   background: #fff;
 }
 
+/* Короткие тренировки Writing: шапка («← Назад», «Теория», бейдж типа), полоса прогресса, виды order / match / spot /
+   pick / free и итог. Перетаскивание строки — за ручку ⠿ на телефоне (touch-action: none), мышью — за всю строку. */
+.ih-wdrill__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px 6px 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ih-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ih-wdrill__back:hover {
+  color: var(--ih-ink);
+}
+.ih-wdrill__head h2 {
+  flex: 1 1 auto;
+}
+.ih-wdrill__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ih-wdrill__bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ih-line);
+  overflow: hidden;
+}
+.ih-wdrill__bar i {
+  display: block;
+  height: 100%;
+  background: var(--ih-violet);
+  transition: width 0.25s ease;
+}
+.ih-wdrill__note,
+.ih-wdrill__hint {
+  font-size: 13px;
+}
+.ih-wdrill__task {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--ih-soft);
+  font-size: 14px;
+  line-height: 22px;
+}
+.ih-wdrill__visual {
+  max-width: 560px;
+  overflow-x: auto;
+}
+.ih-wdrill__expected ol,
+.ih-wdrill__expected ul {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+.ih-wdrill__order {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ih-wdrill__orderrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--ih-line);
+  border-radius: 12px;
+  background: #fff;
+  cursor: grab;
+  user-select: none;
+}
+.ih-wdrill__orderrow.is-dragging {
+  border-color: var(--ih-violet);
+  box-shadow: 0 6px 18px rgba(20, 20, 40, 0.12);
+  cursor: grabbing;
+}
+.ih-wdrill__orderrow.is-ok {
+  border-color: var(--ih-green);
+  cursor: default;
+}
+.ih-wdrill__orderrow.is-wrong {
+  border-color: var(--ih-red);
+  cursor: default;
+}
+.ih-wdrill__grip {
+  flex: none;
+  padding: 6px 4px;
+  color: var(--ih-muted);
+  font-size: 18px;
+  line-height: 1;
+  touch-action: none;
+  cursor: grab;
+}
+.ih-wdrill__num {
+  flex: none;
+  min-width: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.ih-wdrill__ordertext {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ih-wdrill__mv {
+  display: inline-flex;
+  flex: none;
+  gap: 4px;
+}
+.ih-wdrill__mvbtn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--ih-line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ih-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.ih-wdrill__mvbtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ih-wdrill__matchrow b {
+  flex: 1 1 200px;
+}
+.ih-wdrill__select {
+  flex: 1 1 200px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--ih-line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ih-ink);
+  font: inherit;
+}
+.ih-wdrill__tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ih-wdrill__tok {
+  padding: 6px 10px;
+  border: 1px solid var(--ih-line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ih-ink);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.ih-wdrill__tok:disabled {
+  cursor: default;
+}
+.ih-wdrill__tok.is-ok {
+  border-color: var(--ih-green);
+  font-weight: 700;
+}
+.ih-wdrill__tok.is-wrong {
+  border-color: var(--ih-red);
+  text-decoration: line-through;
+}
+.ih-wdrill__free {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 96px;
+  padding: 10px 12px;
+  border: 1px solid var(--ih-line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ih-ink);
+  font: inherit;
+  font-size: 15px;
+  line-height: 22px;
+  resize: vertical;
+}
+.ih-wdrill__checks,
+.ih-wdrill__ticks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.ih-wdrill__checks .is-ok {
+  color: var(--ih-green);
+}
+.ih-wdrill__checks .is-wrong {
+  color: var(--ih-red);
+}
+.ih-wdrill__ticks label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+.ih-wdrill__selfcheck,
+.ih-wdrill__ai,
+.ih-wdrill__apply {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ih-wdrill__model {
+  padding: 10px 14px;
+  border-left: 3px solid var(--ih-green);
+}
+.ih-wdrill__score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.ih-wdrill__score > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.ih-wdrill__pct {
+  font-size: 40px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.ih-wdrill-review {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ih-wdrill-review__text h3,
+.ih-wdrill-review__text p {
+  margin: 0;
+}
+.ih-wdrill-review .ih-btn2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ih-wdrill__bar i {
+    transition: none;
+  }
+}
+
 /* Mock Writing по типу (writing/WritingMockView.jsx): описание перед стартом — условия экзамена и «Начать»;
    карточка и чипы — классы задания (ih-card, ih-rtask__chips), здесь только раскладка. */
 .ih-wmock {
@@ -14435,4 +14838,489 @@
 }
 .ih-wmock > p {
   margin: 0;
+}
+
+/* Разбор работы Writing (ТЗ §9.4, WritingWorkView): цвет критерия — у полосы балла, пометки в тексте, чипа фильтра
+   и карточки ошибки (TA фиолетовый, CC бирюзовый, LR оранжевый, GRA розовый). Тёмные значения токенов —
+   scripts/gen-dark-theme.js; подложки — color-mix от того же токена, поэтому темнеют сами. */
+.ih,
+.ih-run {
+  --ih-crit-ta: #9047ff;
+  --ih-crit-cc: #0f9b8e;
+  --ih-crit-lr: #e57a12;
+  --ih-crit-gra: #e0458f;
+}
+.ih-wrev__bars,
+.ih-wrev__legend,
+.ih-wrev__chips,
+.ih-wrev__block,
+.ih-wrev__err,
+.ih-wrev__mark {
+  --ih-c: var(--ih-violet, #9047ff);
+}
+.is-ta {
+  --ih-c: var(--ih-crit-ta, #9047ff);
+}
+.is-cc {
+  --ih-c: var(--ih-crit-cc, #0f9b8e);
+}
+.is-lr {
+  --ih-c: var(--ih-crit-lr, #e57a12);
+}
+.is-gra {
+  --ih-c: var(--ih-crit-gra, #e0458f);
+}
+.ih-wrun__copied {
+  color: var(--ih-orange, #e57a12);
+  font-size: 14px;
+}
+.ih-wrev__cap {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #fdeaed;
+  color: var(--ih-red, #e0364f);
+  font-weight: 600;
+}
+.ih-wrev__cap.is-note {
+  background: #fff1e3;
+  color: #b8741a;
+}
+.ih-wrev__cap svg {
+  flex: none;
+  margin-top: 2px;
+}
+.ih-wrev__bars {
+  display: grid;
+  gap: 10px;
+}
+.ih-wrev__barhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ih-wrev__barhead span {
+  min-width: 0;
+}
+.ih-wrev__barhead small {
+  font-weight: 400;
+  font-size: 13px;
+}
+.ih-wrev__barhead b {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.ih-wrev__dot {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ih-c);
+}
+.ih-wrev__track {
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 8px;
+  background: var(--ih-soft, #f4f4f4);
+  overflow: hidden;
+}
+.ih-wrev__track i {
+  display: block;
+  height: 100%;
+  border-radius: 8px;
+  background: var(--ih-c);
+}
+.ih-wrev__track i.is-low {
+  opacity: 0.7;
+}
+.ih-wrev__practice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  border: 2px solid var(--ih-violet, #9047ff);
+  background: #f3ecff;
+}
+.ih-wrev__practice h3 {
+  margin: 0 0 4px;
+}
+.ih-wrev__practice p {
+  margin: 0;
+}
+.ih-wrev__sub {
+  margin: 4px 0 0;
+}
+.ih-wrev__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 13px;
+  color: var(--ih-ink-2, #4a4a55);
+}
+.ih-wrev__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ih-wrev__mark {
+  padding: 0 2px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ih-c) 16%, transparent);
+  border-bottom: 2px solid var(--ih-c);
+  color: inherit;
+  cursor: pointer;
+}
+.ih-wrev__mark:focus-visible {
+  outline: 2px solid var(--ih-c);
+  outline-offset: 1px;
+}
+.ih-wrev__mark sup {
+  margin-left: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ih-c);
+}
+.ih-wrev__crit {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ih-wrev__crit h3 {
+  margin: 0;
+}
+.ih-wrev__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ih-wrev__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--ih-line, #ededf2);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ih-ink, #181818);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.ih-wrev__chip span {
+  font-weight: 700;
+  color: var(--ih-muted, #8a8a8a);
+}
+.ih-wrev__chip[aria-pressed='true'] {
+  border-color: var(--ih-c);
+  background: color-mix(in srgb, var(--ih-c) 12%, transparent);
+}
+.ih-wrev__block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 14px;
+  border-left: 4px solid var(--ih-c);
+}
+.ih-wrev__block header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ih-wrev__block p {
+  margin: 0;
+}
+.ih-wrev__block small {
+  display: block;
+  color: var(--ih-muted, #8a8a8a);
+}
+.ih-wrev__err {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--ih-line, #ededf2);
+  border-left: 4px solid var(--ih-c);
+  border-radius: 12px;
+  scroll-margin: 96px;
+  transition: box-shadow 0.2s, background 0.2s;
+}
+.ih-wrev__err.is-hl {
+  background: color-mix(in srgb, var(--ih-c) 10%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ih-c) 35%, transparent);
+}
+.ih-wrev__err header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+.ih-wrev__err p {
+  margin: 0;
+  font-size: 14px;
+}
+.ih-wrev__num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--ih-c);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ih-wrev__bad {
+  color: var(--ih-red, #e0364f);
+  text-decoration: line-through;
+}
+.ih-wrev__good {
+  color: var(--ih-green, #1f9d55);
+  font-weight: 600;
+}
+.ih-wrev__drills h3 {
+  margin: 0 0 12px;
+}
+.ih-wrev__drillrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.ih-wrev__again {
+  display: flex;
+  justify-content: flex-start;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ih-wrev__err {
+    transition: none;
+  }
+}
+/* Страница Writing (ТЗ §3.2): вкладки со счётчиками, чипы типа, карточки заданий с превью графика и тренировок,
+   блок «Перед заданием этого типа» — WritingCatalog.jsx. Цвета — токены .ih. */
+.ih-wcat__tabs {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ih-wcat__count {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+.ih-wcat__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+.ih-wcat__chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--ih-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ih-ink, #181818);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.ih-wcat__chip.is-on {
+  border-color: var(--ih-violet);
+  background: rgba(144, 71, 255, 0.1);
+  color: var(--ih-violet);
+  font-weight: 700;
+}
+.ih-wcat__chip:focus-visible,
+.ih-wcat__card:focus-visible {
+  outline: 2px solid var(--ih-violet);
+  outline-offset: 2px;
+}
+.ih-wcat__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ih-wcat__grid > li {
+  min-width: 0;
+  display: flex;
+}
+.ih-wcat__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--ih-line);
+  border-radius: 14px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ih-wcat__card:hover {
+  border-color: var(--ih-violet);
+}
+.ih-wcat__preview {
+  display: block;
+  height: 118px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #f7f7fb;
+}
+.ih-wcat__preview .ih-tv {
+  max-width: none;
+}
+.ih-wcat__excerpt {
+  margin: 0;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 19px;
+  color: #4b4b57;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ih-wcat__ph {
+  display: block;
+  height: 100%;
+}
+.ih-wcat__ph.is-loading {
+  background: linear-gradient(90deg, #f7f7fb, #ededf2, #f7f7fb);
+}
+.ih-wcat__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ih-wcat__badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1f1f5;
+  color: #4b4b57;
+  font-size: 12px;
+  line-height: 18px;
+}
+.ih-wcat__badge.is-type {
+  background: rgba(144, 71, 255, 0.1);
+  color: var(--ih-violet);
+}
+.ih-wcat__badge.is-new {
+  background: rgba(0, 212, 65, 0.12);
+  color: #007a25;
+}
+.ih-wcat__title {
+  font-size: 15px;
+  line-height: 21px;
+  overflow-wrap: anywhere;
+}
+.ih-wcat__meta {
+  font-size: 13px;
+  color: #6b6b78;
+}
+.ih-wcat__why {
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--ih-violet);
+  font-weight: 600;
+}
+.ih-wcat__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+.ih-wcat__status {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b6b78;
+}
+.ih-wcat__status.is-done {
+  color: #007a25;
+}
+.ih-wcat__status.is-pending {
+  color: #c25e00;
+}
+.ih-wcat__sec {
+  margin: 16px 0;
+}
+.ih-wcat__h {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+.ih-wcat__before {
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 1px solid var(--ih-line);
+  border-radius: 14px;
+  background: #faf7ff;
+}
+.ih-wcat__beforehead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ih-wcat__beforehead h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.ih-wcat__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ih-wcat__actions .ih-btn2 {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+.ih-wcat__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ih-wguide__links,
+.ih-wtask__warm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+.ih-wguide__links h3,
+.ih-wtask__warm h3 {
+  margin: 0;
+  font-size: 15px;
+}
+@media (max-width: 560px) {
+  .ih-wcat__grid {
+    grid-template-columns: 1fr;
+  }
 }

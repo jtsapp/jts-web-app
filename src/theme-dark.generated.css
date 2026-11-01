@@ -2442,6 +2442,9 @@ html[data-theme="dark"] .sch-row__join:hover {
 html[data-theme="dark"] .sch-row__join:focus-visible {
     outline: 2px solid var(--ink)
 }
+html[data-theme="dark"] .sch-row__dispute-note {
+    color: var(--muted, #6b6880)
+}
 html[data-theme="dark"] .sch-row__dispute {
     background: none;
     border: 0;
@@ -5639,7 +5642,7 @@ html[data-theme="dark"] .ih-para.is-focus {
     background: var(--dk-page);
     box-shadow: 0 0 0 8px var(--dk-page)
 }
-html[data-theme="dark"] .ih-para mark {
+html[data-theme="dark"] .ih-para mark, html[data-theme="dark"] .ih-run__questions mark {
     color: inherit;
     background: none
 }
@@ -5695,7 +5698,7 @@ html[data-theme="dark"] .ih-qsteps {
     border: 1px solid var(--ih-line);
     background: var(--dk-card)
 }
-html[data-theme="dark"] .ih-qfigure, html[data-theme="dark"] .ih-wchart__figure {
+html[data-theme="dark"] .ih-qfigure, html[data-theme="dark"] .ih-tv {
     --jts-ink: var(--dk-text);
     --jts-muted: var(--dk-muted);
     --jts-line: var(--dk-line);
@@ -6134,21 +6137,91 @@ html[data-theme="dark"] .ih-wtask__box {
 html[data-theme="dark"] .ih-wtask__after {
     color: var(--ih-ink-2)
 }
-html[data-theme="dark"] .ih-wchart {
-    border: 1px solid var(--ih-line);
-    background: var(--dk-card)
+html[data-theme="dark"] .ih-tv {
+    --tv-s1: var(--dk-acc);
+    --tv-s2: var(--dk-blue);
+    --tv-s3: var(--dk-orange);
+    --tv-s4: var(--dk-green);
+    --tv-s5: var(--dk-yellow);
+    --tv-s6: var(--dk-red);
+    --tv-surface: var(--dk-card);
+    --tv-panel-bg: var(--dk-page);
+    --tv-grid-line: var(--dk-line);
+    --tv-axis-line: var(--dk-line);
+    --tv-tick-ink: var(--dk-text-2);
+    --tv-title-ink: var(--dk-text);
+    --tv-border-line: var(--dk-line);
+    --tv-pick-fill: var(--dk-acc);
+    --tv-ok-fill: var(--dk-green);
+    --tv-bad-fill: var(--dk-red);
+    --tv-miss-fill: var(--dk-orange);
+    color: var(--tv-title-ink)
 }
-html[data-theme="dark"] .ih-wchart__grid {
-    stroke: var(--dk-muted)
+html[data-theme="dark"] .ih-tv--full {
+    border: 1px solid var(--tv-border-line);
+    background: var(--tv-surface)
 }
-html[data-theme="dark"] .ih-wchart__axis {
-    stroke: var(--dk-muted)
+html[data-theme="dark"] .ih-tv--drill, html[data-theme="dark"] .ih-tv--pick {
+    background: var(--tv-panel-bg)
 }
-html[data-theme="dark"] .ih-wchart__tick {
-    fill: var(--dk-text-2)
+html[data-theme="dark"] .ih-tv__title {
+    color: var(--tv-title-ink)
 }
-html[data-theme="dark"] .ih-wchart__table th, html[data-theme="dark"] .ih-wchart__table td {
-    border-bottom: 1px solid var(--ih-line)
+html[data-theme="dark"] .ih-tv__grid {
+    stroke: var(--tv-grid-line)
+}
+html[data-theme="dark"] .ih-tv__axis {
+    stroke: var(--tv-axis-line)
+}
+html[data-theme="dark"] .ih-tv__tick {
+    fill: var(--tv-tick-ink)
+}
+html[data-theme="dark"] .ih-tv__hit {
+    fill: transparent
+}
+html[data-theme="dark"] .ih-tv__slice {
+    stroke: var(--tv-surface)
+}
+html[data-theme="dark"] .ih-tv__table th, html[data-theme="dark"] .ih-tv__table td {
+    border-bottom: 1px solid var(--tv-border-line)
+}
+html[data-theme="dark"] .ih-tv__note {
+    color: var(--tv-tick-ink)
+}
+html[data-theme="dark"] .ih-tv__pick {
+    outline: none
+}
+html[data-theme="dark"] .ih-tv__pickhit {
+    fill: transparent
+}
+html[data-theme="dark"] .ih-tv__pickdot {
+    fill: var(--tv-surface);
+    stroke: var(--tv-axis-line)
+}
+html[data-theme="dark"] .ih-tv__pick:hover .ih-tv__pickdot {
+    stroke: var(--tv-pick-fill)
+}
+html[data-theme="dark"] .ih-tv__pick:focus-visible .ih-tv__pickdot {
+    stroke: var(--tv-pick-fill)
+}
+html[data-theme="dark"] .ih-tv__pick:focus-visible .ih-tv__pickhit {
+    fill: var(--tv-grid-line)
+}
+html[data-theme="dark"] .ih-tv__pick.is-on .ih-tv__pickdot {
+    fill: var(--tv-pick-fill);
+    stroke: var(--tv-pick-fill)
+}
+html[data-theme="dark"] .ih-tv__pick.is-ok .ih-tv__pickdot {
+    fill: var(--tv-ok-fill);
+    stroke: var(--tv-ok-fill)
+}
+html[data-theme="dark"] .ih-tv__pick.is-bad .ih-tv__pickdot {
+    fill: var(--tv-bad-fill);
+    stroke: var(--tv-bad-fill)
+}
+html[data-theme="dark"] .ih-tv__pick.is-miss .ih-tv__pickdot {
+    fill: var(--tv-surface);
+    stroke: var(--tv-miss-fill)
 }
 html[data-theme="dark"] .ih-wrun {
     background: var(--dk-page)
@@ -9131,9 +9204,6 @@ html[data-theme="dark"] .ih-mcheck__agree input[type='checkbox'], html[data-them
 html[data-theme="dark"] .ih-pchart__gridline {
     stroke: var(--dk-muted)
 }
-html[data-theme="dark"] .ih-wchart__slice {
-    stroke: #fff
-}
 html[data-theme="dark"] .ih-locked {
     background: var(--ih-card, #fff);
     border: 1px solid var(--dk-acc-line)
@@ -9248,6 +9318,245 @@ html[data-theme="dark"] .exam-pr__cta.is-primary {
 }
 html[data-theme="dark"] .exam-pr__how {
     background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wdrill .ih-opt.is-ok, html[data-theme="dark"] .ih-wdrill .ih-gap.is-ok {
+    border-color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-wdrill .ih-opt.is-wrong, html[data-theme="dark"] .ih-wdrill .ih-gap.is-wrong {
+    border-color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-wdrill__sortrow {
+    border: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-wdrill__sortrow.is-ok {
+    border-color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-wdrill__sortrow.is-wrong {
+    border-color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-wdrill__fix {
+    color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-wdrill__mistakes li {
+    border-left: 3px solid var(--ih-red)
+}
+html[data-theme="dark"] .ih-wdrill__frame {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-wdrill__back {
+    border: 0;
+    background: transparent;
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-wdrill__back:hover {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-wdrill__bar {
+    background: var(--ih-line)
+}
+html[data-theme="dark"] .ih-wdrill__bar i {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-wdrill__task {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-wdrill__orderrow {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-wdrill__orderrow.is-dragging {
+    border-color: var(--ih-violet);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24)
+}
+html[data-theme="dark"] .ih-wdrill__orderrow.is-ok {
+    border-color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-wdrill__orderrow.is-wrong {
+    border-color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-wdrill__grip {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-wdrill__mvbtn {
+    border: 1px solid var(--ih-line);
+    background: transparent;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-wdrill__select {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-wdrill__tok {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-wdrill__tok.is-ok {
+    border-color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-wdrill__tok.is-wrong {
+    border-color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-wdrill__free {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-wdrill__checks .is-ok {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-wdrill__checks .is-wrong {
+    color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-wdrill__model {
+    border-left: 3px solid var(--ih-green)
+}
+html[data-theme="dark"] .ih, html[data-theme="dark"] .ih-run {
+    --ih-crit-ta: var(--dk-acc);
+    --ih-crit-cc: var(--dk-green);
+    --ih-crit-lr: var(--dk-orange);
+    --ih-crit-gra: var(--dk-red)
+}
+html[data-theme="dark"] .ih-wrun__copied {
+    color: var(--ih-orange, #e57a12)
+}
+html[data-theme="dark"] .ih-wrev__cap {
+    background: var(--dk-red-tint);
+    color: var(--ih-red, #e0364f)
+}
+html[data-theme="dark"] .ih-wrev__cap.is-note {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .ih-wrev__dot {
+    background: var(--ih-c)
+}
+html[data-theme="dark"] .ih-wrev__track {
+    background: var(--ih-soft, #f4f4f4)
+}
+html[data-theme="dark"] .ih-wrev__track i {
+    background: var(--ih-c)
+}
+html[data-theme="dark"] .ih-wrev__practice {
+    border: 2px solid var(--ih-violet, #9047ff);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .ih-wrev__legend {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .ih-wrev__mark {
+    background: color-mix(in srgb, var(--ih-c) 16%, transparent);
+    border-bottom: 2px solid var(--ih-c);
+    color: inherit
+}
+html[data-theme="dark"] .ih-wrev__mark:focus-visible {
+    outline: 2px solid var(--ih-c)
+}
+html[data-theme="dark"] .ih-wrev__mark sup {
+    color: var(--ih-c)
+}
+html[data-theme="dark"] .ih-wrev__chip {
+    border: 1px solid var(--ih-line, #ededf2);
+    background: var(--dk-card);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .ih-wrev__chip span {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .ih-wrev__chip[aria-pressed='true'] {
+    border-color: var(--ih-c);
+    background: color-mix(in srgb, var(--ih-c) 12%, transparent)
+}
+html[data-theme="dark"] .ih-wrev__block {
+    border-left: 4px solid var(--ih-c)
+}
+html[data-theme="dark"] .ih-wrev__block small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .ih-wrev__err {
+    border: 1px solid var(--ih-line, #ededf2);
+    border-left: 4px solid var(--ih-c)
+}
+html[data-theme="dark"] .ih-wrev__err.is-hl {
+    background: color-mix(in srgb, var(--ih-c) 10%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ih-c) 35%, transparent)
+}
+html[data-theme="dark"] .ih-wrev__num {
+    background: var(--ih-c);
+    color: #fff
+}
+html[data-theme="dark"] .ih-wrev__bad {
+    color: var(--ih-red, #e0364f)
+}
+html[data-theme="dark"] .ih-wrev__good {
+    color: var(--ih-green, #1f9d55)
+}
+html[data-theme="dark"] .ih-wcat__chip {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .ih-wcat__chip.is-on {
+    border-color: var(--ih-violet);
+    background: color-mix(in oklab, var(--dk-acc) 10%, transparent);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-wcat__chip:focus-visible, html[data-theme="dark"] .ih-wcat__card:focus-visible {
+    outline: 2px solid var(--ih-violet)
+}
+html[data-theme="dark"] .ih-wcat__card {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: inherit
+}
+html[data-theme="dark"] .ih-wcat__card:hover {
+    border-color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-wcat__preview {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wcat__excerpt {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .ih-wcat__ph.is-loading {
+    background: linear-gradient(90deg, var(--dk-page), var(--dk-chip), var(--dk-page))
+}
+html[data-theme="dark"] .ih-wcat__badge {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .ih-wcat__badge.is-type {
+    background: color-mix(in oklab, var(--dk-acc) 10%, transparent);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-wcat__badge.is-new {
+    background: color-mix(in oklab, var(--dk-green) 12%, transparent);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .ih-wcat__meta {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .ih-wcat__why {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-wcat__status {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .ih-wcat__status.is-done {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .ih-wcat__status.is-pending {
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .ih-wcat__before {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wcat__more {
+    border: 0;
+    background: none
 }
 /*  sat.css  */
 html[data-theme="dark"] .st {
@@ -24227,6 +24536,10 @@ html[data-theme="dark"] .footer .legal-links a {
 html[data-theme="dark"] .footer .legal-links a:focus-visible {
     outline: 2px solid var(--dk-line)
 }
+html[data-theme="dark"] .footer .pay-logo--file {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card)
+}
 html[data-theme="dark"] .footer .footer-copy {
     color: #fff
 }
@@ -27022,7 +27335,7 @@ html[data-theme="dark"] .rg-done__avatar {
     html[data-theme="dark"] .kt-unit__num {
         background: var(--ring, #9047ff);
         box-shadow: 0 4px 0 color-mix(in srgb, var(--ring, #9047ff) 70%, #000);
-        color: #fff
+        color: var(--dk-on-bright)
     }
     html[data-theme="dark"] .kt-unit__num:empty {
         background: var(--dk-yellow) url(/assets/home-v2/ico/school.svg) center / 24px 24px no-repeat;

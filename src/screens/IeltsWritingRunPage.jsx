@@ -7,7 +7,7 @@ import ConfirmDialog from '../ielts/ui/ConfirmDialog.jsx'
 import WritingTaskBody from '../ielts/writing/WritingTaskBody.jsx'
 import { setIeltsParams } from '../ielts/urlParams.js'
 import { formatClock } from '../ielts/reading/run.js'
-import { countWords, dropWritingDraft, kindKey, loadWritingDraft, minWords, saveWritingDraft, timeLimitSec } from '../ielts/writing/writing.js'
+import { copiedWords, copyTaskText, countWords, dropWritingDraft, kindKey, loadWritingDraft, minWords, saveWritingDraft, timeLimitSec } from '../ielts/writing/writing.js'
 import { useMockAutosave } from '../ielts/mock/mockSession.js'
 import { mockTypeName } from '../ielts/writing/mockByType.js'
 import MockRunHeader from '../ielts/mock/MockRunHeader.jsx'
@@ -90,6 +90,10 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
   const saveState = useMockAutosave(mock, mock && state.status === 'ready' && !busy ? { text, pasteBlocked } : null)
   const words = useMemo(() => countWords(text), [text])
   const paragraphs = useMemo(() => text.split(/\n\s*\n+/).filter((p) => p.trim()).length, [text])
+  // слова, переписанные из задания (4-словия, как считает бэкенд): экзаменатор их не засчитывает — видно сразу
+  const taskText = useMemo(() => (state.doc ? copyTaskText(state.doc) : ''), [state.doc])
+  const copied = useMemo(() => (taskText ? copiedWords(text, taskText) : 0), [text, taskText])
+  const effective = Math.max(0, words - copied)
 
   // черновик — через секунду тишины, чтобы не писать на каждое нажатие
   useEffect(() => {
@@ -239,6 +243,7 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
               {words < min ? t('ieltsWriting.w2.words', { n: String(words), min: String(min) }) : t('ieltsWriting.w2.wordsOk', { n: String(words) })}
             </b>
             <span className="ih-muted">· {t('ieltsWriting.p.work.paragraphs', { n: String(paragraphs) })}</span>
+            {copied > 0 && <span className="ih-wrun__copied">· {t('ieltsWReview.copied', { n: String(copied) })}</span>}
             <span className={`ih-muted ih-wrun__paste ${pasteNote ? 'is-flash' : ''}`} role={pasteNote ? 'status' : undefined}>· {t('ieltsWriting.pasteOff')}</span>
             <span className="ih-run__spacer" />
             {(savedAt || (mock && saveState === 'saved')) && <span className="ih-wrun__draft"><CheckCircleIcon size={16} />{t('ieltsWriting.w2.draftSaved')}</span>}
@@ -259,7 +264,7 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
       <ConfirmDialog
         open={confirm}
         title={t('ieltsWriting.confirmTitle')}
-        text={words < min ? t('ieltsWriting.confirmShort', { n: String(words), min: String(min) }) : t('ieltsWriting.confirmText', { n: String(words) })}
+        text={effective < min ? t('ieltsWReview.confirmShort', { n: String(effective), min: String(min) }) : t('ieltsWriting.confirmText', { n: String(words) })}
         confirmLabel={t('ieltsWriting.submit')}
         cancelLabel={t('ieltsReading.cancel')}
         busy={busy}

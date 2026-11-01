@@ -363,6 +363,93 @@ export const SAMPLE_DRILLS = [
       },
     ],
   }),
+
+  // Новые виды банка writing-dev-pack (order / match / spot / pick / free) на одном графике — пример формата для методиста
+  sample({
+    id: 'WD-SAMPLE-T1-LINE',
+    drillKey: 'SAMPLE-T1-LINE',
+    part: 'T1',
+    types: ['line'],
+    guide: 't1ac.line',
+    module: 'academic',
+    category: 'task1',
+    title: 'Task 1 · Line graph basics',
+    name: { ru: 'Task 1: линейный график — от плана до введения', kk: 'Task 1: сызықтық график — жоспардан кіріспеге дейін', en: 'Task 1: line graph — from plan to introduction' },
+    minutes: 6,
+    rounds: [
+      {
+        id: 'SAMPLE-T1-LINE-001',
+        kind: 'order',
+        ty: 'line',
+        items: ['Introduction: paraphrase of the task', 'Overview: main trends, no numbers', 'Body 1: the most noticeable features with figures', 'Body 2: the remaining features and comparisons'],
+        why: {
+          ru: 'Четыре абзаца. Conclusion не нужен — его роль играет overview.',
+          kk: 'Төрт абзац. Conclusion керек емес — оның рөлін overview атқарады.',
+          en: 'Four paragraphs. No conclusion — the overview does that job.',
+        },
+      },
+      {
+        id: 'SAMPLE-T1-LINE-002',
+        kind: 'match',
+        ty: 'line',
+        pairs: [
+          ['shows', 'illustrates'],
+          ['the number of visitors', 'how many people visited'],
+          ['between 2002 and 2022', 'over a twenty-year period'],
+        ],
+        why: {
+          ru: 'Во введении меняйте и глагол, и существительные, и период.',
+          kk: 'Кіріспеде етістікті де, зат есімдерді де, кезеңді де өзгертіңіз.',
+          en: 'In the introduction, change the verb, the nouns and the time period.',
+        },
+      },
+      {
+        id: 'SAMPLE-T1-LINE-003',
+        kind: 'spot',
+        ty: 'line',
+        tokens: ['The', 'number', 'of', 'cars', 'increased', 'from', '200', 'in', '2000', 'to', '500', 'at', '2010.'],
+        wrong: 11,
+        accept: ['in'],
+        why: { ru: 'С годом — in: in 2010.', kk: 'Жылмен — in: in 2010.', en: 'With a year we use in: in 2010.' },
+      },
+      {
+        id: 'SAMPLE-T1-LINE-004',
+        kind: 'pick',
+        ty: 'line',
+        visual: { type: 'line', title: 'Cinema admissions (millions)', unit: 'm', x: ['2004', '2008', '2012', '2016', '2020', '2022'], series: [{ name: 'Admissions', values: [140, 150, 172, 168, 44, 120] }] },
+        answer: [0, 2, 4, 5],
+        why: {
+          ru: 'Начало, пик (2012), обвал (2020) и конец. 2008 и 2016 можно пропустить.',
+          kk: 'Басы, шыңы (2012), күрт құлдырау (2020) және соңы. 2008 бен 2016-ны өткізіп жіберуге болады.',
+          en: 'Start, peak (2012), collapse (2020) and end. 2008 and 2016 can be skipped.',
+        },
+      },
+      {
+        id: 'SAMPLE-T1-LINE-005',
+        kind: 'free',
+        ty: 'line',
+        ask: {
+          ru: 'Напишите введение (1 предложение): «The graph below shows the number of visitors to a city zoo between 2015 and 2023.»',
+          kk: 'Кіріспе жазыңыз (1 сөйлем): «The graph below shows the number of visitors to a city zoo between 2015 and 2023.»',
+          en: 'Write an introduction (1 sentence): ‘The graph below shows the number of visitors to a city zoo between 2015 and 2023.’',
+        },
+        min: 12,
+        max: 40,
+        starts: ['The', 'This'],
+        checklist: [
+          { ru: 'Указан тип графика (line graph)', kk: 'График түрі аталған (line graph)', en: 'The chart type is named (line graph)' },
+          { ru: 'Есть что измеряют, где и когда', kk: 'Не өлшенетіні, қайда және қашан екені бар', en: 'It says what is measured, where and when' },
+          { ru: 'Глагол и существительные заменены синонимами', kk: 'Етістік пен зат есімдер синониммен ауыстырылған', en: 'The verb and nouns are replaced with synonyms' },
+        ],
+        model: 'The line graph illustrates how many people visited a city zoo over the eight years from 2015.',
+        why: {
+          ru: 'Автопроверка смотрит на длину и начало фразы; смысл проверьте сами по чек-листу.',
+          kk: 'Автотексеру ұзындық пен бастамаға қарайды; мағынасын чек-лист бойынша өзіңіз тексеріңіз.',
+          en: 'The auto-check looks at length and the first word; check the meaning yourself with the checklist.',
+        },
+      },
+    ],
+  }),
 ]
 
 /** Пробный дрилл по id (без запроса к банку). */

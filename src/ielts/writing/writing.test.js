@@ -1,5 +1,19 @@
 import { describe, it, expect } from 'vitest'
-import { countWords, describeChart, overallBand, promptText, selfCheckFor, writingTasks, kindKey } from './writing.js'
+import { copiedWords, copyTaskText, countWords, describeChart, overallBand, promptText, selfCheckFor, writingTasks, kindKey } from './writing.js'
+
+describe('copiedWords — общие примеры с бэкендом (контракт §1)', () => {
+  const zoo = 'The graph below shows the number of visitors to a city zoo between 2015 and 2023.'
+  it('4-словия из задания вычитаются, пересказ — нет', () => {
+    expect(copiedWords('The graph below shows the number of visitors. It rose.', zoo)).toBe(8)
+    expect(copiedWords('The line chart illustrates how many people visited a zoo.', zoo)).toBe(0)
+    expect(copiedWords('a b c d a b c d', 'a b c d')).toBe(8)
+    expect(copiedWords('a b c', 'a b c d')).toBe(0)
+    expect(copiedWords('', zoo)).toBe(0)
+  })
+  it('текст задания — вопрос и пункты письма', () => {
+    expect(copyTaskText({ question: 'Write a letter.', bullets: ['say why', 'say when'], chart: { type: 'pie' } })).toBe('Write a letter. say why say when')
+  })
+})
 
 describe('Writing: задание и работа', () => {
   it('слова как на экзамене — тот же счёт, что у бэкенда', () => {

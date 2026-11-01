@@ -11,15 +11,19 @@ import WritingTaskBody from './WritingTaskBody.jsx'
 import { categoryLabel } from './WritingListView.jsx'
 import { dropWritingDraft, loadWritingDraft, minWords, timeLimitSec } from './writing.js'
 import { useI18n } from '../../i18n.jsx'
+import { pickLang } from './drills/drillModel.js'
+import { guideSection, writingDrillsForType } from '../practice/practiceModel.js'
 
 const MODES = [
   { key: 'exam', Icon: TimerIcon },
   { key: 'practice', Icon: TaskAltIcon },
 ]
 
-// Экран задания Writing: буклет с графиком, режим (с таймером, как на экзамене, или без), черновик, прошлые работы
-// по этому заданию и вход в «Как писать».
-export default function WritingTaskView({ token, testId, onBackToLearn, onBackToList, listLabel, onStart, onOpenWork, onGuide }) {
+// Экран задания Writing (ТЗ §3.4): буклет с графиком крупно, режим (с таймером, как на экзамене, или без), черновик;
+// справа — «Разминка перед заданием» (3–4 тренировки этого типа, запуск с ty), «Теория этого типа», «Начать писать»,
+// «Другие задания этого типа →» и последняя работа с переходом к разбору.
+// drills — тренировки трека с частью и типами (practiceModel.writingDrillList); onGuide(section) — глава гида.
+export default function WritingTaskView({ token, testId, onBackToLearn, onBackToList, listLabel, onStart, onOpenWork, onGuide, onBack, drills, onStartDrill, onTasksOfType }) {
   const { t, lang } = useI18n()
   const [state, setState] = useState({ status: 'loading' })
   const [mode, setMode] = useState('exam')
@@ -53,9 +57,14 @@ export default function WritingTaskView({ token, testId, onBackToLearn, onBackTo
   const { test, doc } = state
   const chosen = draft?.mode || mode
   const last = test.lastAttempt
+  const part = doc.kind === 'task2' ? 'T2' : doc.taskKind === 'task1_general' ? 'GT' : 'T1'
+  const ty = test.category || null
+  const warm = ty && drills ? writingDrillsForType(drills, part, ty) : []
+  const typeName = categoryLabel(t, doc.kind, ty)
   return (
     <div className="ih-rtask">
       <Breadcrumbs items={[...crumbs, { label: test.title }]} />
+      {onBack && <button type="button" className="ih-back" onClick={onBack}>← {t('ieltsWNav.back')}</button>}
       <div className="ih-rtask__grid">
         <div className="ih-rtask__main">
           <section className="ih-card ih-rtask__info">
@@ -100,24 +109,43 @@ export default function WritingTaskView({ token, testId, onBackToLearn, onBackTo
           </div>
           <div className="ih-rtask__start">
             <button type="button" className="ih-cta" onClick={() => onStart(test.id, chosen)}>
-              {draft ? t('ieltsReading.continue') : t('ieltsWriting.start')}
+              {draft ? t('ieltsReading.continue') : t('ieltsWNav.startWriting')}
               <ArrowForwardIcon size={20} />
             </button>
           </div>
+          {ty && onTasksOfType && (
+            <button type="button" className="ih-link ih-wcat__more" onClick={() => onTasksOfType(part, ty)}>
+              {t('ieltsWNav.otherTasks')} <ArrowForwardIcon size={16} />
+            </button>
+          )}
+          {/* разминка — тренировки именно этого типа, с фильтром раундов по типу (ТЗ §5.4) */}
+          {warm.length > 0 && (
+            <section className="ih-card ih-wtask__warm">
+              <h3>{t('ieltsWNav.warmup')}{warm.some((d) => d.minutes) ? ` · ~${t('ieltsHub.minutes', { n: String(warm.reduce((a, d) => a + (Number(d.minutes) || 0), 0)) })}` : ''}</h3>
+              <p className="ih-muted">{t('ieltsWNav.warmupSub', { type: typeName || '' })}</p>
+              <div className="ih-wcat__actions">
+                {warm.map((d) => (
+                  <button key={d.id} type="button" className="ih-btn2 ih-btn2--outline" onClick={() => onStartDrill?.(d, ty)}>
+                    {pickLang(d.name, lang) || d.title}{d.minutes ? ` · ${t('ieltsHub.minutes', { n: String(d.minutes) })}` : ''}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
           <section className="ih-rtask__tools">
-            <h3>{t('ieltsWriting.p.guide.title')}</h3>
-            <p><MenuBookIcon size={18} />{t('ieltsWriting.guideHint')}</p>
-            <button type="button" className="ih-btn ih-btn--soft-violet" onClick={onGuide}>{t('ieltsWriting.openGuide')}</button>
+            <h3>{t('ieltsWNav.theoryType')}</h3>
+            <p><MenuBookIcon size={18} />{typeName ? t('ieltsWNav.theoryHint', { type: typeName }) : t('ieltsWriting.guideHint')}</p>
+            <button type="button" className="ih-btn ih-btn--soft-violet" onClick={() => onGuide?.(guideSection(part, ty))}>{t('ieltsWriting.openGuide')}</button>
           </section>
           <section className="ih-card ih-rtask__last">
-            <h3>{t('ieltsReading.last.title')}</h3>
+            <h3>{t('ieltsWNav.lastWork')}</h3>
             {last ? (
               <>
                 <div className="ih-rtask__score">
-                  <b>{last.band != null ? `band ${last.band.toFixed(1)}` : last.status === 'failed' ? t('ieltsMock.result.cell.failed') : t('ieltsWriting.status.pending')}</b>
+                  <b>{last.band != null ? `Band ${last.band.toFixed(1)}` : last.status === 'failed' ? t('ieltsMock.result.cell.failed') : t('ieltsWriting.status.pending')}</b>
                 </div>
                 <p>{formatDate(last.finishedAt, lang)}</p>
-                <button type="button" className="ih-btn ih-btn--outline" onClick={() => onOpenWork(last.id)}>{t('ieltsWriting.openWork')}</button>
+                <button type="button" className="ih-btn ih-btn--outline" onClick={() => onOpenWork(last.id)}>{t(last.band != null ? 'ieltsWNav.openReview' : 'ieltsWriting.openWork')}</button>
               </>
             ) : (
               <p>{t('ieltsReading.last.none')}</p>

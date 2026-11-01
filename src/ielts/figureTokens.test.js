@@ -54,7 +54,8 @@ describe('токены схем IELTS', () => {
     expect(box.querySelectorAll('polygon').length).toBeGreaterThan(0)
   })
 
-  for (const wrap of ['.ih-wchart__figure', '.ih-qfigure']) {
+  // .ih-tv — корень TaskVisual: превью карточки, вопрос тренировки и pick лежат вне прежних обёрток (разбор A6)
+  for (const wrap of ['.ih-tv', '.ih-qfigure']) {
     it(`${wrap}: каждый токен банка задан в светлой теме`, () => {
       const have = declared(light, wrap)
       expect(BANK.filter((v) => !have.has(v))).toEqual([])
@@ -64,4 +65,16 @@ describe('токены схем IELTS', () => {
       expect(BANK.filter((v) => v !== '--font' && !have.has(v))).toEqual([])
     })
   }
+
+  // Цвета графиков TaskVisual — свои токены корня (серии, сетка, оси, состояния pick): компонент пишет var(--tv-*), а не
+  // hex, поэтому каждый токен обязан быть задан в светлой теме и переопределён генератором в тёмной.
+  it('.ih-tv: токены графиков заданы в обеих темах', () => {
+    const src = fs.readFileSync(path.join(SRC, 'ielts/writing/TaskVisual.jsx'), 'utf8')
+    expect(src).not.toMatch(/#[0-9a-f]{3,8}\b/i)
+    const lightTv = [...declared(light, '.ih-tv')].filter((v) => v.startsWith('--tv-'))
+    const darkTv = declared(dark, `${DARK} .ih-tv`)
+    expect(lightTv.length).toBeGreaterThan(10)
+    expect(lightTv.filter((v) => !darkTv.has(v))).toEqual([])
+    for (let i = 1; i <= 6; i++) expect(lightTv).toContain(`--tv-s${i}`)
+  })
 })
