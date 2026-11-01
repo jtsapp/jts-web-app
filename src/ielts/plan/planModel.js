@@ -3,6 +3,7 @@
 // дням. Статусы и выполнение считает бэкенд — экран их только показывает.
 
 import { typeLabel } from '../reading/meta.js'
+import { parseMockKey } from '../writing/mockByType.js'
 
 // Вид задачи → ключ подписи (ieltsPlan.item.<ключ>) и место в разделе. Подвид в подпись идёт как есть: это имя
 // типа вопроса / жанра эссе / набора слов, и оно английское во всех языках (язык экзамена).
@@ -13,9 +14,11 @@ const ROUTES = {
   weak: { tab: 'learn', view: 'types' },
   drill: { tab: 'learn', view: 'drills' },
   pm: { tab: 'learn', view: 'texts' },
-  full: { tab: 'mocks' },
+  // «полный Reading ×n» — полные тесты Reading в «Практике», а не полный mock всех четырёх секций
+  full: { tab: 'learn', view: 'reading-full' },
   guide: { tab: 'learn', view: 'writing-guide' },
-  ideas: { tab: 'learn', view: 'writing-guide' },
+  // «Идеи для эссе» прототипа — короткое упражнение Task 2, а не глава гида: ведёт в короткие тренировки Writing
+  ideas: { tab: 'learn', view: 'writing-drills' },
   t1: { tab: 'learn', view: 'writing-task1' },
   t2: { tab: 'learn', view: 'writing-task2' },
   pair: { tab: 'learn', view: 'writing-task2' },
@@ -27,7 +30,33 @@ const ROUTES = {
   dc: { tab: 'learn', view: 'listening-dictation' },
   spl: { tab: 'learn', view: 'listening-spelling' },
   listen: { tab: 'learn', view: 'listening-tasks' },
+  fmt: { tab: 'info' },
   vocab: { screen: 'vocab' },
+}
+
+// Задача с подвидом ведёт глубже списка раздела (прототип core-plan.js, path): тип вопроса и дрилл — в выбор заданий
+// своего набора, жанр эссе / вид графика / карточка Part 2 — в задания этого вида, гид — в свою главу, shadowing —
+// в своё задание. Без этого «Reading · TFNG» открывал страницу всех типов Reading.
+const listOf = (key) => ({ tab: 'learn', view: 'practice-list', list: key })
+// «на время» (extra.timed, токен программы «t2:opinion:timed») — mock этого типа (writing/mockByType.js): часы, без
+// подсказок, задание выбирается при старте. Тип не из трека ученика (график у General Training) — прежний список вида.
+const writingOf = (kind, category, task, track) => {
+  const key = `${kind}:${category}`
+  return task.extra?.timed === true && parseMockKey(key, track) ? { tab: 'learn', view: 'writing-mock', list: key } : listOf(`writing:${key}`)
+}
+const SUB_ROUTES = {
+  type: (sub) => listOf(`reading:types:${sub}`),
+  demo: (sub) => listOf(`reading:types:${sub}`),
+  mini: (sub) => listOf(`reading:types:${sub}`),
+  drill: (sub) => listOf(`reading:drill:${sub}`),
+  // Task 1 — по треку: у General Training это письмо (регистр в extra.gt), у Academic — график (sub)
+  t1: (sub, task, track) => writingOf('task1', (track === 'general' ? task.extra?.gt : sub) || sub, task, track),
+  t2: (sub, task, track) => writingOf('task2', sub, task, track),
+  pair: (sub) => listOf(`writing:task2:${sub}`),
+  p2: (sub) => listOf(`speaking:part2:${sub}`),
+  guide: (sub) => ({ tab: 'learn', view: 'writing-guide', section: sub }),
+  sg: (sub) => ({ tab: 'learn', view: 'speaking-guide', section: sub }),
+  sh: (sub) => ({ tab: 'learn', view: 'speaking-shadowing', testId: sub }),
 }
 
 /** Куда ведёт «Начать»: вкладка и список раздела, экран словаря или пробные тесты для контроля. */
@@ -35,7 +64,7 @@ const ROUTES = {
 const TEACHER_VIEW = {
   reading: (kind) => (kind === 'test' ? 'reading-full' : kind === 'types' ? 'types' : kind === 'drill' ? 'drills' : 'texts'),
   listening: (kind) => (kind === 'dictation' ? 'listening-dictation' : kind === 'spelling' ? 'listening-spelling' : 'listening-tasks'),
-  writing: (kind) => (kind === 'task1' ? 'writing-task1' : 'writing-task2'),
+  writing: (kind) => (kind === 'task1' ? 'writing-task1' : kind === 'drill' ? 'writing-drills' : 'writing-task2'),
   speaking: (kind) => (kind === 'part2' || kind === 'part3' ? `speaking-${kind}` : 'speaking-part1'),
 }
 
@@ -70,7 +99,8 @@ export function recommendTask(r) {
   return { ...r, recommend: true }
 }
 
-export function taskRoute(task) {
+/** track — трек ученика (academic | general): от него зависит, куда ведёт Task 1. */
+export function taskRoute(task, track) {
   if (task.recommend) return RECOMMEND_ROUTE[task.key] || { tab: 'learn' }
   if (task.origin === 'teacher') {
     const ex = task.extra || {}
@@ -86,6 +116,7 @@ export function taskRoute(task) {
     return task.control === 'weekly' ? { tab: 'learn', view: 'texts' } : task.control === 'writing' ? { tab: 'learn', view: 'writing-task2' }
       : task.control === 'speaking' ? { tab: 'learn', view: 'speaking-part2' } : { tab: 'mocks' }
   }
+  if (task.sub && SUB_ROUTES[task.kind]) return SUB_ROUTES[task.kind](String(task.sub), task, track)
   return ROUTES[task.kind] || { tab: 'learn' }
 }
 
@@ -103,11 +134,16 @@ function words(code) {
   return s ? s[0].toUpperCase() + s.slice(1) : ''
 }
 
-/** Имя подвида задачи плана для подписи; неизвестный код — словами, без подчёркиваний. */
-export function subLabel(t, task) {
+/**
+ * Имя подвида задачи плана для подписи; неизвестный код — словами, без подчёркиваний. track — трек ученика: Task 1
+ * у General Training — письмо (регистр в extra.gt), а не график из sub (прототип core-plan.js, label).
+ */
+export function subLabel(t, task, track) {
   const sub = task?.sub
   if (sub == null || sub === '') return ''
   const s = String(sub)
+  const gt = track === 'general'
+  const ex = task.extra || {}
   switch (task.kind) {
     case 'type': case 'demo': case 'mini': case 'weak': case 'listen':
       return typeLabel(s)
@@ -116,9 +152,15 @@ export function subLabel(t, task) {
       const name = t(key)
       return name && name !== key ? name : words(s)
     }
-    case 't2': case 'pair':
+    case 't2':
       return GENRE[s] || words(s)
+    case 'pair': {
+      // эссе + Task 1 своего трека: «Opinion · Bar chart» или «Opinion · Formal letter»
+      const t1 = gt ? ex.gt : ex.ac
+      return [GENRE[s] || words(s), t1 ? CHART[t1] || LETTER[t1] || words(t1) : ''].filter(Boolean).join(' · ')
+    }
     case 't1':
+      if (gt && ex.gt) return LETTER[ex.gt] || words(ex.gt)
       return s.split('/').map((x) => CHART[x] || LETTER[x] || words(x)).join(' · ')
     case 'guide': {
       const [part, topic] = s.split('.')
@@ -132,8 +174,8 @@ export function subLabel(t, task) {
   }
 }
 
-/** Подпись задачи: «Reading · tfng ×2», «Writing · эссе: opinion», «Контроль недели». */
-export function taskLabel(t, task) {
+/** Подпись задачи: «Reading · tfng ×2», «Writing · эссе: opinion», «Контроль недели». track — трек ученика. */
+export function taskLabel(t, task, track) {
   if (task.origin === 'weekly_control' || task.kind === 'checkpoint') return t(`ieltsPlan.control.${task.control || 'weekly'}`)
   // задача преподавателя — его формулировкой: «Reading · Test 3 на время», «Выучить слова темы Work»
   if (task.origin === 'teacher') {
@@ -141,8 +183,10 @@ export function taskLabel(t, task) {
     const secName = task.sec === 'vocab' ? t('ieltsPlan.sec.vocab') : SEC_KEY[task.sec]
     return secName ? `${secName} · ${title}` : title
   }
-  const sub = subLabel(t, task)
-  const body = t(`ieltsPlan.item.${task.kind}`, { sub, n: String(task.n) })
+  const sub = subLabel(t, task, track)
+  // у General Training текст на время — секция (прототип pr.item.pmGt)
+  const key = task.kind === 'pm' && track === 'general' ? 'pmGt' : task.kind
+  const body = t(`ieltsPlan.item.${key}`, { sub, n: String(task.n) })
   const sec = task.sec === 'vocab' ? t('ieltsPlan.sec.vocab') : SEC_KEY[task.sec] || task.sec
   return `${sec} · ${body}`
 }

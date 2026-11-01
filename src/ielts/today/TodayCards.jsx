@@ -58,7 +58,7 @@ export function TeacherNote({ task }) {
   return <span className="ih-tnote">{task.extra.note}</span>
 }
 
-export function TaskRow({ task, primary, onStart, onMark }) {
+export function TaskRow({ task, primary, track, onStart, onMark }) {
   const { t } = useI18n()
   const done = task.status === 'completed'
   const self = task.completionRule === 'self_report'
@@ -66,7 +66,7 @@ export function TaskRow({ task, primary, onStart, onMark }) {
     <li className={`ih-tt__task${primary ? ' is-primary' : ''}${done ? ' is-done' : ''}${taskOrigin(task) ? ` is-${taskOrigin(task)}` : ''}`}>
       <SecPlate sec={task.sec} />
       <div className="ih-tt__body">
-        <b>{taskLabel(t, task)}</b>
+        <b>{taskLabel(t, task, track)}</b>
         <TeacherNote task={task} />
         <span className="ih-tt__meta">
           {taskMeta(t, task)}
@@ -119,7 +119,7 @@ function LessonRow({ lesson, onOpenLessons }) {
   )
 }
 
-export function TodayTasksCard({ programme, live, lesson, onStartTask, onMark, onOpenPlan, onOpenLessons }) {
+export function TodayTasksCard({ programme, live, lesson, track, onStartTask, onMark, onOpenPlan, onOpenLessons }) {
   const { t } = useI18n()
   const tasks = programme?.tasks || []
   const recommended = programme?.recommended || []
@@ -145,7 +145,7 @@ export function TodayTasksCard({ programme, live, lesson, onStartTask, onMark, o
       ) : (
         <ul className="ih-tt__list">
           {live && <LessonRow lesson={lesson} onOpenLessons={onOpenLessons} />}
-          {tasks.map((task, i) => <TaskRow key={task.id} task={task} primary={!live && i === firstOpen} onStart={onStartTask} onMark={onMark} />)}
+          {tasks.map((task, i) => <TaskRow key={task.id} task={task} primary={!live && i === firstOpen} track={track} onStart={onStartTask} onMark={onMark} />)}
           {!tasks.length && !recommended.length && <li className="ih-tt__empty">{t('ieltsPlan.allDone')}</li>}
         </ul>
       )}

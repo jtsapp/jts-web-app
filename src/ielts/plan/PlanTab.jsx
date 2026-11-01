@@ -36,7 +36,8 @@ function writeUrl(view, at) {
   }
 }
 
-export default function PlanTab({ token, onStartTask, onOpenDiagnostic }) {
+// track — трек ученика (профиль): подписи Task 1 и текста на время у General Training свои
+export default function PlanTab({ token, track, onStartTask, onOpenDiagnostic }) {
   const { t } = useI18n()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
@@ -110,9 +111,9 @@ export default function PlanTab({ token, onStartTask, onOpenDiagnostic }) {
       )}
       {/* все задачи плана сделаны — советы бэкенда, план не заканчивается пустотой */}
       <RecommendedList items={data.recommended} onStart={onStartTask} />
-      {view === 'roadmap' && <RoadmapView key={data.currentWeek} data={data} onStart={onStartTask} onMark={mark} />}
-      {view === 'week' && <WeekView key={weekN} data={data} n={weekN} onWeek={(n) => pick('week', n ? String(n) : null)} onStart={onStartTask} onMove={move} />}
-      {view === 'month' && <MonthView key={month.slice(0, 7)} data={data} month={month} onMonth={(m) => pick('month', m)} onStart={onStartTask} onMark={mark} />}
+      {view === 'roadmap' && <RoadmapView key={data.currentWeek} data={data} track={track} onStart={onStartTask} onMark={mark} />}
+      {view === 'week' && <WeekView key={weekN} data={data} n={weekN} track={track} onWeek={(n) => pick('week', n ? String(n) : null)} onStart={onStartTask} onMove={move} />}
+      {view === 'month' && <MonthView key={month.slice(0, 7)} data={data} month={month} track={track} onMonth={(m) => pick('month', m)} onStart={onStartTask} onMark={mark} />}
     </div>
   )
 }

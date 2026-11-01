@@ -135,3 +135,39 @@ export async function listIeltsScores(profileId, limit = 50) {
     createdAt: String(r.created_at),
   }))
 }
+
+// ИИ-проверка «Мини-эссе» тренировок Writing (/api/ielts/writing/mini): своя дневная квота. Пишется ТОЛЬКО строкой
+// ielts_attempt (без ielts_score): это не оценка band — в истории баллов и прогрессе её быть не должно, а месячную
+// квоту IELTS (она считает ielts_score) она не тратит.
+export const WRITING_MINI_SECTION = 'writing_mini'
+
+/** Списать одну проверку ДО платного вызова. Возвращает id строки (для возврата при сбое) или null без БД. */
+export async function recordIeltsMiniCheck({ profileId, testId, roundId }) {
+  const sql = getSql()
+  if (!sql) return null
+  await ensureLearner(profileId)
+  const rows = await sql`
+    insert into ielts_attempt (device_id, section, response)
+    values (${profileId}, ${WRITING_MINI_SECTION}, ${sql.json({ testId, roundId })}::jsonb)
+    returning id
+  `
+  return rows[0]?.id ?? null
+}
+
+/** Возврат списания: модель не ответила. */
+export async function refundIeltsMiniCheck(id) {
+  const sql = getSql()
+  if (!sql || !id) return
+  await sql`delete from ielts_attempt where id = ${id} and section = ${WRITING_MINI_SECTION}`
+}
+
+/** Сколько проверок мини-эссе ученик сделал с момента since. */
+export async function countIeltsMiniChecksSince(profileId, sinceDate) {
+  const sql = getSql()
+  if (!sql) return 0
+  const rows = await sql`
+    select count(*)::int as count from ielts_attempt
+    where device_id = ${profileId} and section = ${WRITING_MINI_SECTION} and created_at >= ${sinceDate}
+  `
+  return rows[0]?.count ?? 0
+}
