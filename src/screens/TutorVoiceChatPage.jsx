@@ -440,6 +440,11 @@ function Wave({ micTrack, micLive, agentTrack, agentLive }) {
 // В рации волну ученика считаем от факта удержания, а не от мьюта: микрофон в
 // рации включён весь звонок (лишнее выбрасывает агент), и по нему уже не
 // понять, чья очередь.
+//
+// Выключатель показывает СОСТОЯНИЕ, а не действие: включён — фиолетовый обычный
+// значок, выключен — красный зачёркнутый. Со значком действия ученик принимал
+// включённый микрофон за выключенный, нажимал и глушил себя, а оранжевая точка
+// iPhone при этом не гаснет: при мьюте LiveKit трек не останавливает.
 function MicBar({ t, ptt, micOn, onToggleMic, holding, pointerHandlers, micTrack, listening, agentTrack, speaking, onEnd }) {
   const micLive = ptt ? holding : micOn && listening
   const wave = <Wave micTrack={micTrack} micLive={micLive} agentTrack={agentTrack} agentLive={speaking} />
@@ -475,7 +480,7 @@ function MicBar({ t, ptt, micOn, onToggleMic, holding, pointerHandlers, micTrack
         aria-label={micOn ? t('voice.micOn') : t('voice.micOff')}
         title={micOn ? t('voice.micOn') : t('voice.micOff')}
       >
-        {micOn ? <MicOffIcon size={24} /> : <MicLineIcon size={24} />}
+        {micOn ? <MicLineIcon size={24} /> : <MicOffIcon size={24} />}
       </button>
       {wave}
       {end}
