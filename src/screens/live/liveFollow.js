@@ -84,3 +84,21 @@ export function isAudioCommand(event) {
 export function isAudioBatch(events) {
   return Array.isArray(events) && events.length > 0 && events.every(isAudioCommand)
 }
+
+/**
+ * Событие показа меняет страницу (клик, ввод), а не только ставит её на место. Указка и ▶/■ с
+ * намерением повторяются без вреда — их можно проиграть второй раз.
+ */
+export function changesPage(event) {
+  const type = event?.eventType
+  return (type === 'click' || type === 'input' || type === 'change') && !isAudioCommand(event)
+}
+
+/**
+ * Место из снимка рамки преподавателя — стадия и прокрутка. Снимок «догнать» несёт весь поток
+ * его кликов: на странице, куда показ уже проигрывался, они повторились бы поверх (переключатели,
+ * «далее»), поэтому туда уходит только место — без перезагрузки рамки ученика.
+ */
+export function placeEvents(events) {
+  return (events || []).filter((event) => event?.eventType === 'stage' || event?.eventType === 'scroll')
+}

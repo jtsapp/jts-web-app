@@ -57,6 +57,11 @@ describe('lessonStages — стадии файла в «Темах» учени�
     expect(gotoStageMessage(4)).toEqual({ source: 'jts-workspace', type: 'goto-stage', index: 4 })
   })
 
+  it('gotoStageMessage silent — переход не по своему выбору, мост не пишет его кликом ученика', () => {
+    expect(gotoStageMessage(4, { silent: true })).toEqual({ source: 'jts-workspace', type: 'goto-stage', index: 4, silent: true })
+    expect(gotoStageMessage(4, { silent: false })).toEqual({ source: 'jts-workspace', type: 'goto-stage', index: 4 })
+  })
+
   it('gotoLessonMessage открывает урок файла, который вели в этот день', () => {
     expect(gotoLessonMessage(5)).toEqual({
       source: 'jts-workspace', type: 'goto-lesson', index: 5, review: false,

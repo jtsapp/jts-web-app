@@ -160,8 +160,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [classStage, setClassStage] = useState(NO_CLASS_STAGE)
   // Долг догоняющего снимка: ученик вошёл (или переподключился, или включил
   // следование) посреди показа и должен попросить у преподавателя снимок его
-  // рамки — как только у него откроется свежая страница следования того же
-  // материала (oweCatchUp). Объект, а не id: повторный вход — новая просьба.
+  // рамки — как только на экране рамка следования того же материала
+  // (oweCatchUp). Объект, а не id: повторный вход — новая просьба.
   const [catchUp, setCatchUp] = useState(null)
   // Указка «Перенести ученика сюда», ждущая рамку своего материала (bringToPointer):
   // материал ещё переключается или открыта доска. Объект, а не id: повторная
@@ -993,13 +993,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     oweCatchUp(live.materialId)
   }
 
-  // Мост проигрывает снимок потоком кликов, и на странице, где действия уже
-  // применены, они повторились бы (переключатели, «далее», play). Поэтому долг
-  // заводится вместе с перезагрузкой рамки: погасить его можно только на
-  // странице материала класса, открытой уже после этого, — свежей.
+  // Рамку ради снимка больше не перезагружаем: на каждом переподключении (iPad, ушедший в Meet)
+  // ученик видел «Загружаем урок…» и прыжок, а на входе рамка грузилась дважды (жалоба
+  // 28.10.2026). Клики снимка на странице, где показ уже шёл, повторились бы — поэтому туда
+  // рамка берёт из ответа только место (SectionMaterialFrame.catchUp).
   function oweCatchUp(materialId) {
     setCatchUp({ materialId })
-    setReloadToken((n) => n + 1)
   }
 
   // Ученик переключает «Идти за преподавателем». Выключение — тот же ручной
@@ -1083,7 +1082,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     },
     // Общий показ и адресный ответ на мою просьбу догнать класс (present/{self})
     // приходят сюда одинаково — и одинаково ждут рамку.
-    onPresent: (evt) => {
+    onPresent: (evt, { catchUp: catchUpReply = false } = {}) => {
       if (isStaff) return
       const events = evt.events || []
       // Указка «Перенести ученика сюда» — адресное «смотри сюда», а не показ
@@ -1109,7 +1108,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         pendingPresentRef.current.push(...events)
         return
       }
-      materialFrameRef.current.replay(events)
+      // Ответ на просьбу догнать класс рамка разбирает сама: весь поток или только место.
+      if (catchUpReply) materialFrameRef.current.catchUp(events)
+      else materialFrameRef.current.replay(events)
     },
     // Teacher only: a student's click/input/change/scroll inside the material they're
     // both looking at — replay it into the teacher's own iframe so it stays a live
@@ -1799,10 +1800,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   // Долг гасится одной просьбой, когда на экране рамка материала класса и это
   // страница следования: на шагах разбора снимка рамки нет, на доске рамки нет
-  // вовсе, а рамке другого материала он чужой. Свежая она по построению — долг
-  // заведён вместе с её перезагрузкой (oweCatchUp); ответ ляжет в буфер показа
-  // и проиграется, когда она загрузится. Отправленная просьба помечается, а не
-  // стирается — стирать через setState в эффекте значит каскад рендеров.
+  // вовсе, а рамке другого материала он чужой. Рамка та, что есть, без
+  // перезагрузки: ответ она разберёт сама (catchUp), а пока грузится — придержит.
+  // Отправленная просьба помечается, а не стирается — стирать через setState в
+  // эффекте значит каскад рендеров.
   const frameOnScreen = state === 'ready' && lesson != null && lessonOpen && tab === 'lesson' && view === 'file'
   // Рамка ушла с экрана (доска, указка на шаг разбора, урок закрылся) —
   // развёрнутость гаснет вместе с ней, а не ждёт возвращения: иначе ученик,

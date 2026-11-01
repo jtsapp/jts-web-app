@@ -59,9 +59,15 @@ export function parseStageMessage(data) {
   return { index, total: Number.isInteger(total) && total >= 0 ? total : null }
 }
 
-/** Просьба рамке перейти на стадию — её ждёт скрипт в файле. */
-export function gotoStageMessage(index) {
-  return { source: WORKSPACE_SOURCE, type: 'goto-stage', index }
+/**
+ * Просьба рамке перейти на стадию — её ждёт скрипт в файле. silent — переход не по своему
+ * выбору (стадия класса, доводка): мост не пишет его в ответы ученика и не шлёт
+ * преподавателю его кликом, который уносил рамку преподавателя наверх (стенд 01.11.2026).
+ */
+export function gotoStageMessage(index, { silent = false } = {}) {
+  return silent
+    ? { source: WORKSPACE_SOURCE, type: 'goto-stage', index, silent: true }
+    : { source: WORKSPACE_SOURCE, type: 'goto-stage', index }
 }
 
 /**

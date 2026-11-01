@@ -141,6 +141,8 @@ describe('SectionMaterialFrame — стадия как действие преп
   const ownFlags = (onStage) => onStage.mock.calls.map(([, { own }]) => own)
   const wait = (ms) => act(async () => { vi.advanceTimersByTime(ms) })
   const goto = (index) => [{ source: 'jts-workspace', type: 'goto-stage', index }, '*']
+  // Доводка — не выбор преподавателя: мост получает её тихой (без клика от его имени).
+  const quietGoto = (index) => [{ source: 'jts-workspace', type: 'goto-stage', index, silent: true }, '*']
 
   it('после своего клика стадия его, следующая подряд (проигрывание, зеркало) — уже нет', async () => {
     vi.useFakeTimers()
@@ -245,7 +247,7 @@ describe('SectionMaterialFrame — стадия как действие преп
     await settle(iframe)
 
     expect(post).toHaveBeenCalledWith(...goto(4))
-    expect(post).not.toHaveBeenCalledWith(...goto(3))
+    expect(post).not.toHaveBeenCalledWith(...quietGoto(3))
   })
 
   // Мост передаёт синтетический клик по рельсу наверх и после своего перехода:
@@ -292,7 +294,7 @@ describe('SectionMaterialFrame — стадия как действие преп
     act(() => { ref.current.restoreStage(3) })
     expect(post).not.toHaveBeenCalled()
     await settle(iframe)
-    expect(post).toHaveBeenCalledWith(...goto(3))
+    expect(post).toHaveBeenCalledWith(...quietGoto(3))
 
     await stage(3)
     await presentEvent()
@@ -327,7 +329,8 @@ describe('SectionMaterialFrame — стадия как действие преп
 describe('SectionMaterialFrame — стадия класса', () => {
   afterEach(() => vi.useRealTimers())
 
-  const gotoStage = (index) => [{ source: 'jts-workspace', type: 'goto-stage', index }, '*']
+  // Стадия класса — не выбор ученика: тихо, без клика от его имени в ответах и у преподавателя.
+  const gotoStage = (index) => [{ source: 'jts-workspace', type: 'goto-stage', index, silent: true }, '*']
 
   it('до загрузки не шлёт, после осадки — шлёт', async () => {
     vi.useFakeTimers()
@@ -987,5 +990,62 @@ describe('SectionMaterialFrame — права рамки (allow)', () => {
     const { container } = render(frame({ material: video }))
 
     expect(allowOf(container.querySelector('iframe'))).toEqual(expect.arrayContaining(['autoplay', 'fullscreen']))
+  })
+})
+
+// Снимок «догнать» раньше требовал перезагрузить рамку: его клики повторились бы на странице,
+// куда показ уже проигрывался. Теперь рамка помнит это сама и в такую страницу берёт только место.
+describe('SectionMaterialFrame — снимок «догнать»', () => {
+  afterEach(() => vi.useRealTimers())
+
+  const snapshot = [
+    { selector: '#a', eventType: 'click', value: null },
+    { selector: 'window', eventType: 'stage', value: '2' },
+    { selector: 'window', eventType: 'scroll', value: '500' },
+  ]
+  const presentedTypes = (post) => post.mock.calls
+    .filter(([m]) => m.type === 'present')
+    .flatMap(([m]) => m.events.map((e) => e.eventType))
+
+  it('в нетронутую рамку снимок уходит целиком', async () => {
+    vi.useFakeTimers()
+    const { ref, iframe } = renderFrame()
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    await settle(iframe)
+
+    act(() => { ref.current.catchUp(snapshot) })
+
+    expect(presentedTypes(post)).toEqual(['click', 'stage', 'scroll'])
+  })
+
+  it('после проигранного клика показа — только место; указка и ▶ рамку не «трогают»', async () => {
+    vi.useFakeTimers()
+    const { ref, iframe } = renderFrame()
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    await settle(iframe)
+    act(() => { ref.current.replay([{ selector: '#p', eventType: 'point', value: null }]) })
+    act(() => { ref.current.replay([{ selector: '#play', eventType: 'click', value: 'jts-audio:play' }]) })
+    act(() => { ref.current.catchUp(snapshot) })
+    expect(presentedTypes(post).slice(-3)).toEqual(['click', 'stage', 'scroll'])
+
+    post.mockClear()
+    act(() => { ref.current.catchUp(snapshot) })
+
+    expect(presentedTypes(post)).toEqual(['stage', 'scroll'])
+  })
+
+  it('новый документ рамки снова нетронутый', async () => {
+    vi.useFakeTimers()
+    const { ref, iframe, container, rerender } = renderFrame()
+    await settle(iframe)
+    act(() => { ref.current.replay([{ selector: '#a', eventType: 'click', value: null }]) })
+
+    rerender(frame({ ref, reloadToken: 1 }))
+    const fresh = container.querySelector('iframe')
+    const post = vi.spyOn(fresh.contentWindow, 'postMessage')
+    await settle(fresh)
+    act(() => { ref.current.catchUp(snapshot) })
+
+    expect(presentedTypes(post)).toEqual(['click', 'stage', 'scroll'])
   })
 })

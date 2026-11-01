@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isAudioBatch, isAudioCommand, isPointEvent, isPointerBatch, nextFollow, positionChanged } from './liveFollow.js'
+import { changesPage, isAudioBatch, isAudioCommand, isPointEvent, isPointerBatch, nextFollow, placeEvents, positionChanged } from './liveFollow.js'
 
 /**
  * Правило следования (спека §4.3) — одно на оба клиента: ученик в web-admin
@@ -209,5 +209,27 @@ describe('isAudioCommand / isAudioBatch — ▶/■ плеера урока', ()
     expect(isAudioBatch([play, click])).toBe(false)
     expect(isAudioBatch([])).toBe(false)
     expect(isAudioBatch(null)).toBe(false)
+  })
+})
+
+describe('changesPage / placeEvents — снимок «догнать» без перезагрузки рамки', () => {
+  it('клик и ввод меняют страницу; указка, ▶/■, стадия и прокрутка — нет', () => {
+    expect(changesPage({ selector: '#a', eventType: 'click', value: null })).toBe(true)
+    expect(changesPage({ selector: '#g', eventType: 'input', value: 'x' })).toBe(true)
+    expect(changesPage({ selector: '#a', eventType: 'click', value: 'jts-audio:play' })).toBe(false)
+    expect(changesPage({ selector: '#a', eventType: 'point', value: null })).toBe(false)
+    expect(changesPage({ selector: 'window', eventType: 'stage', value: '2' })).toBe(false)
+    expect(changesPage({ selector: 'window', eventType: 'scroll', value: '500' })).toBe(false)
+  })
+
+  it('из снимка остаётся только место — стадия и прокрутка, в прежнем порядке', () => {
+    const snapshot = [
+      { selector: '#a', eventType: 'click', value: null },
+      { selector: 'window', eventType: 'stage', value: '2' },
+      { selector: '#g', eventType: 'input', value: 'x' },
+      { selector: 'window', eventType: 'scroll', value: '500' },
+    ]
+    expect(placeEvents(snapshot).map((e) => e.eventType)).toEqual(['stage', 'scroll'])
+    expect(placeEvents(null)).toEqual([])
   })
 })
