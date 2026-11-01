@@ -4,6 +4,8 @@
 // прототипа data/jts-progress-report.html (T, GT, GSTL, SNAME, badges()) —
 // превью у преподавателя и вид у родителя должны совпадать слово в слово.
 
+import { pluralForm } from '../lib/plural.js'
+
 export const REPORT_LANGS = ['ru', 'kk', 'en']
 
 export function reportLang(lang) {
@@ -76,12 +78,37 @@ export function periodLabel(periodNo, lang) {
 // тексте WhatsApp, и правило в трёх местах разъехалось бы. Здесь — только
 // подпись. Незнакомый тип молча пропускаем: бэкенд может добавить бейдж
 // раньше, чем выйдет веб.
+//
+// Прототип склонял число одной формой («2 цели достигнуто», «Рост в 1
+// навыках») — родитель читает это в отчёте о ребёнке, поэтому формы берём по
+// правилам языка (CLDR, как в тарифах). Казахскому склонять нечего:
+// существительное после числа не меняется.
+const by = (n, lang, forms) => forms[pluralForm(n, lang)]
 const BADGES = {
   perfect_attendance: { icon: '🔥', ru: () => 'Ни одного пропуска', kk: () => 'Бірде-бір сабақ жібермеді', en: () => 'Perfect attendance' },
   homework_hero: { icon: '📚', ru: () => 'Герой домашки', kk: () => 'Үй тапсырмасының чемпионы', en: () => 'Homework hero' },
-  skills_growth: { icon: '📈', withN: true, ru: (n) => `Рост в ${n} навыках`, kk: (n) => `${n} дағдыда өсті`, en: (n) => `Grew in ${n} skills` },
-  goals_achieved: { icon: '🎯', withN: true, ru: (n) => `${n} цели достигнуто`, kk: (n) => `${n} мақсат орындалды`, en: (n) => `${n} goals achieved` },
-  months_with_jts: { icon: '🏅', withN: true, ru: (n) => `${n} мес. с JTS`, kk: (n) => `JTS-пен ${n} ай`, en: (n) => `${n} months with JTS` },
+  skills_growth: {
+    icon: '📈',
+    withN: true,
+    // Предложный падеж: у «few» и «many» одна форма — «в 3 навыках», «в 5 навыках».
+    ru: (n) => `Рост в ${n} ${by(n, 'ru', { one: 'навыке', few: 'навыках', many: 'навыках' })}`,
+    kk: (n) => `${n} дағдыда өсті`,
+    en: (n) => `Grew in ${n} ${by(n, 'en', { one: 'skill', few: 'skills', many: 'skills' })}`,
+  },
+  goals_achieved: {
+    icon: '🎯',
+    withN: true,
+    ru: (n) => `${n} ${by(n, 'ru', { one: 'цель достигнута', few: 'цели достигнуты', many: 'целей достигнуто' })}`,
+    kk: (n) => `${n} мақсат орындалды`,
+    en: (n) => `${n} ${by(n, 'en', { one: 'goal', few: 'goals', many: 'goals' })} achieved`,
+  },
+  months_with_jts: {
+    icon: '🏅',
+    withN: true,
+    ru: (n) => `${n} мес. с JTS`,
+    kk: (n) => `JTS-пен ${n} ай`,
+    en: (n) => `${n} ${by(n, 'en', { one: 'month', few: 'months', many: 'months' })} with JTS`,
+  },
 }
 
 export function badgeView(badge, lang) {
