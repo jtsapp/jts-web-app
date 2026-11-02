@@ -1,4 +1,4 @@
-import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, isRewardsScreen, isStudentMenuItemHidden } from '../config.js'
+import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, isRewardsScreen, isStudentSectionHidden } from '../config.js'
 import { isSectionOpen } from './studentSectionRules.js'
 
 // Меню ученика — одно на сайдбар (компьютер и планшет), нижнюю панель телефона и экран «Сервисы». Правила
@@ -21,11 +21,11 @@ const MY_TEACHER_ITEM = { key: 'my-teacher', label: 'nav.myTeacher', ico: 'perso
 // раздел `group` открыт только формату «в группе», а пока абонемента нет (онбординг), меню полное.
 const GROUP_ITEM = { key: 'group', label: 'nav.group', ico: 'groups' }
 
+// «Грамматики» и «Скорочтения» здесь нет намеренно: их экраны открыты, но вход — карточками «Практики»
+// (на проде с 31.10.2026, на всех стендах со 02.11.2026).
 const NAV_FULL = [
   { key: 'learning', label: 'nav.learning', ico: 'map' },
   { key: 'practice', label: 'nav.practice', ico: 'auto_stories' },
-  { key: 'grammar-games', label: 'nav.grammar', ico: 'spellcheck' },
-  { key: 'speed-reading', label: 'nav.speedReading', ico: 'speed' },
   { key: 'tutor', label: 'nav.tutor', ico: 'auto_awesome' },
   { key: 'lessons', label: 'nav.lessons', ico: 'videocam' },
   { key: 'homework', label: 'nav.homework', ico: 'assignment' },
@@ -83,7 +83,7 @@ export function menuItems({
       ? [...head, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
       : [...head, ...NAV]
   return all.filter((item) => {
-    if (!teacher && isStudentMenuItemHidden(item.key)) return false
+    if (!teacher && isStudentSectionHidden(item.key)) return false
     if (!rewards && isRewardsScreen(item.key)) return false
     if (!teacher && !isSectionOpen(sections, item.key)) return false
     if (item.key === 'ielts') return exams.ielts
