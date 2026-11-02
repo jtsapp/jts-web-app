@@ -907,7 +907,6 @@ html[data-theme="dark"] .pk-c--listening {
     --pk-acc: var(--dk-blue);
     --pk-tint: var(--dk-acc-tint);
     --pk-ink: var(--dk-blue);
-    --pk-on: var(--dk-card);
     --pk-mark: rgba(255, 255, 255, 0.22)
 }
 html[data-theme="dark"] .pk-c--reading {
@@ -916,7 +915,6 @@ html[data-theme="dark"] .pk-c--reading {
     --pk-acc: var(--dk-orange);
     --pk-tint: var(--dk-orange-tint);
     --pk-ink: var(--dk-orange);
-    --pk-on: var(--dk-card);
     --pk-mark: rgba(255, 255, 255, 0.22)
 }
 html[data-theme="dark"] .pk-c--writing {
@@ -925,7 +923,6 @@ html[data-theme="dark"] .pk-c--writing {
     --pk-acc: var(--dk-red);
     --pk-tint: var(--dk-red-tint);
     --pk-ink: var(--dk-red);
-    --pk-on: var(--dk-card);
     --pk-mark: rgba(255, 255, 255, 0.22)
 }
 html[data-theme="dark"] .pk-c--speaking {
@@ -934,7 +931,6 @@ html[data-theme="dark"] .pk-c--speaking {
     --pk-acc: var(--dk-green);
     --pk-tint: var(--dk-green-tint);
     --pk-ink: var(--dk-green);
-    --pk-on: var(--dk-card);
     --pk-mark: rgba(255, 255, 255, 0.22)
 }
 html[data-theme="dark"] .pk-c--grammarGames {
@@ -943,7 +939,6 @@ html[data-theme="dark"] .pk-c--grammarGames {
     --pk-acc: var(--dk-yellow);
     --pk-tint: var(--dk-yellow-tint);
     --pk-ink: var(--dk-yellow);
-    --pk-on: var(--dk-yellow-deep);
     --pk-mark: rgba(255, 255, 255, 0.4)
 }
 html[data-theme="dark"] .pk-ico {
@@ -1034,24 +1029,11 @@ html[data-theme="dark"] .pk-card:focus-visible {
 html[data-theme="dark"] .pk-card__cover {
     background: var(--pk-tint)
 }
-html[data-theme="dark"] .pk-card--tile .pk-card__cover {
-    background: linear-gradient(to bottom right, var(--pk-from), var(--pk-to));
-    color: var(--pk-on)
-}
-html[data-theme="dark"] .pk-card--tile .pk-card__cover::before {
-    background: rgba(255, 255, 255, 0.1)
-}
-html[data-theme="dark"] .pk-card--tile .pk-card__cover::after {
-    background: rgba(255, 255, 255, 0.08)
-}
 html[data-theme="dark"] .pk-card--collage .pk-card__cover::before {
     background: color-mix(in srgb, var(--pk-acc) 10%, transparent)
 }
 html[data-theme="dark"] .pk-card--collage .pk-card__cover::after {
     background: color-mix(in srgb, var(--pk-acc) 8%, transparent)
-}
-html[data-theme="dark"] .pk-card__mark {
-    background: var(--pk-mark)
 }
 html[data-theme="dark"] .pk-card__badge {
     background: var(--dk-card);
