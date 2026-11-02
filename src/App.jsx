@@ -22,6 +22,8 @@ import HomePage from './screens/HomePage.jsx'
 import PricingPage from './screens/PricingPage.jsx'
 import MinutesTopUpPage from './screens/MinutesTopUpPage.jsx'
 import PurchaseSuccessModal from './components/PurchaseSuccessModal.jsx'
+import DemoSubscriptionModal from './components/DemoSubscriptionModal.jsx'
+import { isDemoExpiredNow } from './lib/demoAccess.js'
 import SessionExpiredNotice from './components/SessionExpiredNotice.jsx'
 import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
@@ -676,6 +678,10 @@ export default function App() {
   // До какого момента действует демо: по нему «Главная» рисует обратный отсчёт.
   // null — демо без срока (менеджер выдал доступ руками), таймера тогда нет.
   const [demoExpiresAt, setDemoExpiresAt] = useState(null)
+  // Окно записи на пробный урок вместо витрины, когда срок демо вышел (openPricing);
+  // счётчик — чтобы «Главная» под окном перечитала заявку и перестала звать.
+  const [trialOffer, setTrialOffer] = useState(false)
+  const [trialRev, setTrialRev] = useState(0)
   // Когда заведён аккаунт (/user/me): учившимся до теста v16 он не навязывается (src/placement/existingStudent.js).
   const [accountCreatedAt, setAccountCreatedAt] = useState(null)
   // «Поздравляем с покупкой!»: окно показывается один раз, когда аккаунт
@@ -1758,6 +1764,16 @@ export default function App() {
     })
   }
 
+  // К тарифам ведёт два десятка кнопок (плашки демо, лимиты разделов, цель уровня,
+  // Луна), поэтому развилка одна — здесь. Срок демо вышел: пакеты с ценами пугают
+  // того, кто ещё не видел урока (решение 02.11.2026), и вместо витрины открывается
+  // запись на бесплатный пробный урок. Диплинк ?screen=pricing (возврат с оплаты)
+  // сюда не заходит — он остаётся рабочим.
+  function openPricing() {
+    if (isDemoAccount && isDemoExpiredNow()) setTrialOffer(true)
+    else setScreen('pricing')
+  }
+
   function handleNav(key, payload) {
     // Аккаунт класса ходит только в свой урок. Сайдбара у него нет вовсе, но
     // навигацию зовёт не только сайдбар (колокольчик уведомлений, карточки
@@ -1768,7 +1784,7 @@ export default function App() {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key) && key !== 'services') return
     if (key === 'home') setScreen('home')
     else if (key === 'services') setScreen('services')
-    else if (key === 'pricing') setScreen('pricing')
+    else if (key === 'pricing') openPricing()
     else if (key === 'minutes') setScreen('minutes')
     // Профиль из меню открывается своей кнопкой; сюда приходит от Луны (destinations.js).
     else if (key === 'profile') setScreen('profile')
@@ -2087,6 +2103,13 @@ export default function App() {
       {/* Поздравление живёт вне обёртки с key: иначе смена экрана
           перемонтировала бы его и окно моргало бы анимацией входа. */}
       {celebrate && <PurchaseSuccessModal onClose={() => setCelebrate(false)} />}
+      {trialOffer && token && (
+        <DemoSubscriptionModal
+          overPage
+          onClose={() => setTrialOffer(false)}
+          onTrialBooked={() => setTrialRev((n) => n + 1)}
+        />
+      )}
       {/* «Сессия истекла» — тоже вне обёртки с key: смена экрана после выхода
           не должна её перемонтировать и сбивать анимацию. Только гостю: у
           вошедшего сообщать не о чем. */}
@@ -2358,7 +2381,8 @@ export default function App() {
           tourKey={homeTourKey}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
-          onOpenPricing={() => setScreen('pricing')}
+          onOpenPricing={openPricing}
+          trialRev={trialRev}
           // Назначенный урок открывается тем же путём, что из расписания.
           onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }}
           // Записи на пробный урок в приложении нет: слоты подбирает менеджер,
@@ -2801,7 +2825,7 @@ export default function App() {
             if (await wantsTeacherPick()) setScreen('teacher-pick')
             else goBack(() => setScreen('home'))
           }}
-          onPricing={(p) => { if (p) setGeProfile(p); setScreen('pricing') }}
+          onPricing={(p) => { if (p) setGeProfile(p); openPricing() }}
           onEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
           onTest={() => openPlacement('ge-route')}
           onBack={() => goBack(() => setScreen('home'))}

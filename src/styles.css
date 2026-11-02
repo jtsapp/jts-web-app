@@ -5453,6 +5453,12 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
   padding: 24px;
   overflow: auto;
 }
+/* Окно поверх всего приложения: опоры-экрана нет, и absolute привязал бы его к
+   началу страницы — при прокрутке оно уезжало. Слой тот же, что у .lm-over и .bt-over. */
+.ds-over--page {
+  position: fixed;
+  z-index: 60;
+}
 .ds-card {
   margin: auto;
   display: flex;
@@ -5565,6 +5571,10 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
 }
 .ds-buy:hover {
   background: #7a2fe6;
+}
+.ds-buy:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 .ds-back:focus-visible,
 .ds-buy:focus-visible {
