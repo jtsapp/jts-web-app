@@ -64,6 +64,8 @@ export default function HomePage({
   onProfile,
   onOpenPricing,
   onOpenTrial,
+  // Растёт, когда заявку на пробный урок оставили в окне поверх экрана (App): перечитать.
+  trialRev = 0,
   onOpenLesson,
   onStartLevelTest,
   // Ключ отметки «тур показан» — из App, в нём id профиля (tourKeyFor).
@@ -281,7 +283,6 @@ export default function HomePage({
     let alive = true
     // Ни один из запросов не критичен: не ответил — соответствующая карточка
     // показывает «пусто», а экран остаётся целым. Это честнее пустого места.
-    getTrialRequestState(token).then((s) => { if (alive) setTrial(s) }).catch(() => {})
     // Домашние задания IELTS (преподаватель задаёт их в web-admin) живут в плане IELTS, а не в /admin/homework/my —
     // у ученика IELTS «Главная» иначе писала бы «Заданий нет» при открытом задании (то же, что в «Домашней работе»).
     Promise.all([
@@ -298,6 +299,13 @@ export default function HomePage({
       .catch(() => {})
     return () => { alive = false }
   }, [token, ieltsAccount])
+
+  useEffect(() => {
+    if (!token) return
+    let alive = true
+    getTrialRequestState(token).then((s) => { if (alive) setTrial(s) }).catch(() => {})
+    return () => { alive = false }
+  }, [token, trialRev])
 
   const book = async () => {
     if (sending) return
@@ -472,7 +480,9 @@ export default function HomePage({
         <header className="hm-top">
           <h1 className="hm-top__title">{t('nav.home')}</h1>
         </header>
-        {isDemoAccount && <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} />}
+        {isDemoAccount && (
+          <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} booked={!!trial?.requested || !!nextLesson} />
+        )}
 
         {/* Новый отчёт о прогрессе от преподавателя — выше всего остального:
             приходит раз в месяц и сам исчезает, как только ученик его открыл. */}

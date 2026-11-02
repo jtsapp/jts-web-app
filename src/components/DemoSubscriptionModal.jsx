@@ -1,8 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import AssetImage from './AssetImage.jsx'
+import { getTrialRequestState, requestTrialLesson } from '../api.js'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import { isDemoExpiredNow } from '../lib/demoAccess.js'
+import { loadToken } from '../lib/session.js'
 
 // Плашка «Данная функция доступна по подписке» — то, что видит ДЕМО-ученик,
 // упёршийся в свой демо-лимит: на тропе «Обучение» (KingdomInteriorPage,
@@ -18,20 +20,58 @@ import { isDemoExpiredNow } from '../lib/demoAccess.js'
 // Диалог сделан по образцу LessonExitConfirm (роль, aria-modal, подпись
 // заголовком, Esc, клик по подложке), плюс замок фокуса: без него Tab уходит на
 // экран под модалкой, где по требованию ничего нажимать нельзя.
-export default function DemoSubscriptionModal({ onClose, onBuy }) {
+//
+// Срок демо вышел — окно другое: говорит об этом прямо и зовёт на бесплатный
+// пробный урок, а не к покупке. Решение 02.11.2026: пакеты за 40–100 тысяч пугают
+// того, кто ещё не видел урока, а цену менеджер назовёт уже после него. Заявка —
+// /mobile/trial-request: бэкенд заводит сделку в amoCRM с тегом «Заявка на пробный
+// урок», только на первую заявку. WhatsApp сам не открываем: заявка и есть
+// обращение к менеджеру, он перезвонит (написать самому можно после заявки).
+//
+// overPage — окно открыто поверх всего приложения (App), а не внутри экрана: у
+// обычного .ds-over опора — контейнер экрана, и здесь он уезжал бы с прокруткой.
+export default function DemoSubscriptionModal({ onClose, onBuy, onTrialBooked, overPage = false }) {
   const { t } = useI18n()
-  // Срок демо вышел — окно говорит об этом прямо и зовёт к менеджеру, а не
-  // объясняет, что «вы используете демо-аккаунт».
   const expired = isDemoExpiredNow()
   const cardRef = useRef(null)
   const backRef = useRef(null)
+  const [trial, setTrial] = useState(null)
+  const [sending, setSending] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const booked = expired && !!trial?.requested
+
+  // Заявку могли оставить раньше (карточка на «Главной», другое устройство) —
+  // тогда звать ещё раз незачем. Не ответил сервер — покажем кнопку: повторная
+  // заявка на бэкенде безопасна.
+  useEffect(() => {
+    const token = expired ? loadToken() : null
+    if (!token) return
+    let alive = true
+    getTrialRequestState(token).then((s) => { if (alive) setTrial(s) }).catch(() => {})
+    return () => { alive = false }
+  }, [expired])
+
+  const bookTrial = async () => {
+    if (sending) return
+    setSending(true)
+    setFailed(false)
+    try {
+      setTrial(await requestTrialLesson(loadToken()))
+      onTrialBooked?.()
+    } catch {
+      setFailed(true)
+    } finally {
+      setSending(false)
+    }
+  }
 
   // Фокус при открытии — на «Вернуться», как в LessonExitConfirm на «Отменить»:
   // вторая кнопка уводит на WhatsApp в новой вкладке, и Enter по инерции
-  // выдёргивал бы человека из приложения.
+  // выдёргивал бы человека из приложения. После заявки — туда же: кнопка, на
+  // которой стоял фокус, исчезла.
   useEffect(() => {
     backRef.current?.focus()
-  }, [])
+  }, [booked])
 
   useEffect(() => {
     const onKey = (e) => {
@@ -64,7 +104,7 @@ export default function DemoSubscriptionModal({ onClose, onBuy }) {
   }, [onClose])
 
   return (
-    <div className="ds-over" onClick={onClose}>
+    <div className={`ds-over${overPage ? ' ds-over--page' : ''}`} onClick={onClose}>
       <div
         className="ds-card"
         role="dialog"
@@ -79,17 +119,20 @@ export default function DemoSubscriptionModal({ onClose, onBuy }) {
             внешнюю в вёрстку нельзя, поэтому берём то, что уже есть и по смыслу
             принадлежит этому голосу. Декоративная: текст рядом полный. */}
         <AssetImage className="ds-art" src="/assets/demo/modal-london.webp" alt="" />
-        <h2 className="ds-title" id="ds-title">{t(expired ? 'demo.expired.title' : 'demo.paywall.title')}</h2>
-        <p className="ds-body" id="ds-body">{t(expired ? 'demo.expired.body' : 'demo.paywall.body')}</p>
+        <h2 className="ds-title" id="ds-title">
+          {t(booked ? 'trial.doneTitle' : expired ? 'demo.expired.title' : 'demo.paywall.title')}
+        </h2>
+        <p className="ds-body" id="ds-body" aria-live="polite">
+          {t(booked
+            ? (trial.managerAssigned ? 'trial.doneManager' : 'trial.doneText')
+            : expired ? 'demo.expired.body' : 'demo.paywall.body')}
+        </p>
+        {/* Тот же абзац ошибки, что у карточки пробного урока на «Главной». */}
+        {failed && <p className="hm-trial__error" role="alert">{t('trial.failed')}</p>}
         <div className="ds-acts">
           <button type="button" className="ds-back" ref={backRef} onClick={onClose}>
             {t('demo.paywall.back')}
           </button>
-          {expired && (
-            <a className="ds-back" href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-              {t('demo.expired.manager')}
-            </a>
-          )}
           {/* Теперь у покупки есть свой экран — витрина тарифов (PricingPage),
               и «Приобрести подписку» ведёт туда: это тот же шаг, что и «Открыть
               полный доступ» в плашке демо, и разводить их по разным маршрутам
@@ -99,7 +142,15 @@ export default function DemoSubscriptionModal({ onClose, onBuy }) {
               onBuy не передали (окно открыто с экрана, который не умеет
               навигировать) — остаётся прежний путь в WhatsApp поддержки: кнопка,
               которая молча ничего не делает, читается как сломанная оплата. */}
-          {onBuy ? (
+          {booked ? (
+            <a className="ds-buy" href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+              {t('demo.expired.manager')}
+            </a>
+          ) : expired ? (
+            <button type="button" className="ds-buy" disabled={sending} onClick={bookTrial}>
+              {t(sending ? 'trial.sending' : 'demo.expired.trial')}
+            </button>
+          ) : onBuy ? (
             <button type="button" className="ds-buy" onClick={onBuy}>
               {t('demo.paywall.buy')}
             </button>
