@@ -120,6 +120,15 @@ describe('контекст вопроса', () => {
     expect(turn('I ___ rain. [кнопка «like» (отмечено как неверное)] Неверный ответ')).not.toMatch(/ещё не проверено/)
   })
 
+  // Жалоба 02.11.2026: «I have» вместо «I've» Луна назвала ошибкой. Разницу кладёт код рядом с вопросом.
+  it('эталон показан — рядом с вопросом разница по словам от кода, сокращение в ней не числится', () => {
+    const text = "Write the sentence. [поле: ученик ввёл «I have worked here for three month»] (отмечено как неверное) \n [верный ответ по заданию: «I've worked here for three months»] "
+    const last = buildTurns({ messages: [{ role: 'user', content: 'в чём ошибка?' }], user: {}, screen: { id: 'kingdom-interior', text }, lang: 'ru' }).at(-1).content
+    expect(last).toContain('«month» → «months»')
+    expect(last).toContain('Код сравнил ответ ученика с эталоном')
+    expect(last.split('Отличия только такие:')[1]).not.toMatch(/«have»|«i have»/i)
+  })
+
   it('несёт имя, уровень, язык, раздел и снимок', () => {
     const block = buildContextBlock({
       user: { name: 'Толик', languageLevel: 'A1' },
