@@ -59,7 +59,17 @@ const TEACHER_SECTIONS = ['lessons', 'practice']
 
 // Аккаунт IELTS (дизайн «IELTS new», 08.10.2026): ровно эти разделы и в этом порядке, а внизу «Настройки». Игровых
 // счётчиков и плашки уровня в макете нет. Каждый экзамен ниже проверяется и по матрице, и по своему доступу.
-const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'tokens', 'prizes', 'feedback', 'notifications', 'contracts']
+const IELTS_SECTIONS = ['practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'ielts', 'sat', 'tokens', 'prizes', 'feedback', 'notifications', 'contracts']
+
+// «Повторение» стоит после «Словаря» у всех учеников, включая IELTS/SAT (владелец, 03.11.2026; до того у экзаменов было первым).
+function learningAfterVocab(items) {
+  const learning = items.find((i) => i.key === 'learning')
+  const rest = items.filter((i) => i.key !== 'learning')
+  if (!learning) return items
+  const at = rest.findIndex((i) => i.key === 'vocab')
+  if (at < 0) return items
+  return [...rest.slice(0, at + 1), learning, ...rest.slice(at + 1)]
+}
 
 /**
  * Пункты меню по роли. Награды (tokens, prizes) — только там, где они включены (rewards); вкладки экзаменов — только
@@ -81,7 +91,7 @@ export function menuItems({
     : ieltsAccount
       // из NAV, а не NAV_FULL: в тьютор-онли аккаунт IELTS не должен видеть скрытые от всех разделы
       ? [...head, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
-      : [...head, ...NAV]
+      : [...head, ...learningAfterVocab(NAV)]
   return all.filter((item) => {
     if (!teacher && isStudentSectionHidden(item.key)) return false
     if (!rewards && isRewardsScreen(item.key)) return false

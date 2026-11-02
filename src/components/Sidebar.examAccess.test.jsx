@@ -34,14 +34,14 @@ describe('Sidebar: «Повторение» у учеников IELTS и SAT', (
     me.sat = null
   })
 
-  it('у ученика с доступом к SAT меню экзаменов — с «Повторением» первым', async () => {
+  it('у ученика с доступом к SAT меню экзаменов — с «Повторением» после «Словаря»', async () => {
     me.sat = { access: true, purchased: true }
     draw()
     await waitFor(() => expect(labels()).toContain('SAT'))
     const l = labels()
     expect(l[0]).toBe('Главная')
     expect(l[1]).toBe('Выбрать группу')
-    expect(l[2]).toBe('Повторение')
+    expect(l.indexOf('Повторение')).toBe(l.indexOf('Словарь') + 1)
     expect(l).not.toContain('IELTS')
   })
 
@@ -49,7 +49,7 @@ describe('Sidebar: «Повторение» у учеников IELTS и SAT', (
     me.ielts = { ieltsAccount: true }
     draw()
     await waitFor(() => expect(document.querySelector('.sb__item--settings')).not.toBeNull())
-    expect(labels()[2]).toBe('Повторение')
+    expect(labels().indexOf('Повторение')).toBe(labels().indexOf('Словарь') + 1)
     expect(labels()).toContain('Договоры')
     expect(labels()).toContain('Уведомления')
   })

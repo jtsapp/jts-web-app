@@ -22,7 +22,7 @@ function tokenFor(role) {
 }
 
 // Дизайн «IELTS new»: у аккаунта IELTS в меню ровно эти разделы — без счётчиков и плашки уровня, с «Настройками»
-// внизу. «Повторение» (Review) с 13.10.2026 в меню есть, первым после «Главной» (владелец, SAT-SYNC-PLAN E3).
+// внизу. «Повторение» (Review) с 13.10.2026 в меню есть, после «Словаря» (владелец, 03.11.2026; до того первым).
 describe('Sidebar — аккаунт IELTS', () => {
   it('показывает только разделы из макета', async () => {
     const onProfile = vi.fn()
@@ -34,7 +34,7 @@ describe('Sidebar — аккаунт IELTS', () => {
     )
     await waitFor(() => expect(screen.getByRole('button', { name: 'Настройки' })).toBeTruthy())
     const items = [...document.querySelectorAll('.sb__nav .sb__item > span')].map((b) => b.textContent)
-    expect(items).toEqual(['Главная', 'Выбрать группу', 'Повторение', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'IELTS', 'SAT', 'Мои токены', 'Призы', 'Feedback', 'Уведомления', 'Договоры'])
+    expect(items).toEqual(['Главная', 'Выбрать группу', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'Повторение', 'IELTS', 'SAT', 'Мои токены', 'Призы', 'Feedback', 'Уведомления', 'Договоры'])
     expect(document.querySelector('.sb__balance')).toBeNull()
     expect(document.querySelector('.sb__role')).toBeNull()
     screen.getByRole('button', { name: 'Настройки' }).click()
@@ -55,7 +55,7 @@ describe('Sidebar — аккаунт IELTS', () => {
     const items = [...document.querySelectorAll('.sb__nav .sb__item > span')].map((b) => b.textContent)
     expect(items).not.toContain('IELTS')
     expect(items).toContain('SAT')
-    expect(items[2]).toBe('Повторение')
+    expect(items.indexOf('Повторение')).toBe(items.indexOf('Словарь') + 1)
     expect(items).toContain('Договоры')
     expect(items).toContain('Уведомления')
   })

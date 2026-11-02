@@ -9,7 +9,7 @@ const keys = (list) => list.map((i) => i.key)
 describe('меню ученика', () => {
   it('обычный ученик: Главная и разделы курса, без экзаменов и наград', () => {
     expect(keys(menuItems())).toEqual([
-      'home', 'group', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'feedback', 'notifications', 'contracts',
     ])
   })
 
@@ -21,14 +21,14 @@ describe('меню ученика', () => {
   })
 
   it('«Мой учитель» — сразу под «Главной», когда на стенде есть подбор, и не у преподавателя', () => {
-    expect(keys(menuItems({ myTeacher: true })).slice(0, 4)).toEqual(['home', 'my-teacher', 'group', 'learning'])
+    expect(keys(menuItems({ myTeacher: true })).slice(0, 4)).toEqual(['home', 'my-teacher', 'group', 'practice'])
     expect(keys(menuItems({ myTeacher: true, ieltsAccount: true })).slice(0, 2)).toEqual(['home', 'my-teacher'])
     expect(keys(menuItems({ myTeacher: true, teacher: true }))).toEqual(['practice', 'lessons'])
   })
 
   it('экзамен появляется только при своей подписке', () => {
     expect(keys(menuItems({ exams: { ielts: true, sat: false } }))).toEqual([
-      'home', 'group', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'ielts', 'vocab', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'ielts', 'vocab', 'learning', 'feedback', 'notifications', 'contracts',
     ])
   })
 
@@ -55,7 +55,7 @@ describe('меню ученика', () => {
 
   it('аккаунт IELTS — свой порядок', () => {
     expect(keys(menuItems({ ieltsAccount: true, exams: { ielts: true, sat: true } }))).toEqual([
-      'home', 'group', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'ielts', 'sat', 'feedback', 'notifications', 'contracts',
     ])
   })
 })
@@ -75,7 +75,7 @@ describe('нижняя панель телефона', () => {
 
   it('Сервисы — разделы, которые не стали вкладками, в порядке меню', () => {
     expect(keys(serviceItems(menuItems({ exams: { ielts: true, sat: true } })))).toEqual([
-      'group', 'learning', 'homework', 'ielts', 'sat', 'vocab', 'feedback', 'notifications', 'contracts',
+      'group', 'homework', 'ielts', 'sat', 'vocab', 'learning', 'feedback', 'notifications', 'contracts',
     ])
     expect(serviceItems(menuItems({ teacher: true }))).toEqual([])
   })
