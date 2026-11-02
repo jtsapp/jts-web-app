@@ -2316,6 +2316,15 @@ export function saveStudentVocab(token, body) {
   })
 }
 
+// Пример к слову «Моего словаря»: есть — сервер отдаёт его, нет — пишет один раз и сохраняет (V525).
+// Ответ: { id, example } — example: null, если примера нет и написать не удалось.
+export function ensureVocabExample(token, id) {
+  return authPost(`/mobile/lesson-vocab/words/${encodeURIComponent(id)}/example`, token).then((data) => {
+    if (data?.example) dropCachedAuthGet('/mobile/lesson-vocab/saved', token)
+    return data
+  })
+}
+
 export function deleteStudentVocabWord(token, id) {
   return authDelete(`/mobile/lesson-vocab/words/${encodeURIComponent(id)}`, token).then((data) => {
     dropCachedAuthGet('/mobile/lesson-vocab', token)
@@ -2496,13 +2505,13 @@ export async function searchDictionary(token, q = '', size = 30) {
 // Сохранить слово из тап-перевода читалки (POST /mobile/saved-words).
 // alternates — строка «через запятую», language — язык перевода ("ru"/"kk"),
 // source — откуда слово (название книги). Возвращает SavedWordResponse.
-export async function saveWord(token, { word, translation, alternates, language = 'ru', source, catalogLessonId }) {
+export async function saveWord(token, { word, translation, alternates, language = 'ru', source, catalogLessonId, example }) {
   let res
   try {
     res = await fetch(`${BASE}/mobile/saved-words`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ word, translation, alternates, language, source, catalogLessonId }),
+      body: JSON.stringify({ word, translation, alternates, language, source, catalogLessonId, example }),
     })
   } catch (e) {
     throw new Error('Нет связи с сервером.')

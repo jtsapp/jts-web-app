@@ -10,6 +10,7 @@ import {
   openLessonVocab,
   saveStudentVocab,
   deleteStudentVocabWord,
+  ensureVocabExample,
   markVocabLearned,
   getIeltsMe,
   getIeltsTests,
@@ -346,7 +347,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       ru: w.translationRu,
       kk: w.translationKz,
       ipa: w.ipa,
-      example: '',
+      example: w.example || '',
     }))
     startPractice(cards, t('vocab.home.mine'), 'mine', 'mine')
   }
@@ -1016,6 +1017,16 @@ export function LessonWords({ t, lang, token, scopeId, lesson, meta, speak, phon
 function MineScreen({ t, lang, session, token, speak, flash, phone, onBack, onChanged, onPractice }) {
   const [openAdd, setOpenAdd] = useState(false)
   const [detail, setDetail] = useState(null)
+  // Окно слова: примера нет — просим его у сервера (пишется один раз), окно открывается сразу, без ожидания.
+  const openDetail = (w) => {
+    setDetail(w)
+    if (w.example || w.ex || !w.id || !token) return
+    ensureVocabExample(token, w.id)
+      .then((res) => {
+        if (res?.example) setDetail((d) => (d && d.id === w.id ? { ...d, example: res.example } : d))
+      })
+      .catch(() => {})
+  }
   const [word, setWord] = useState('')
   const [tr, setTr] = useState('')
   const words = session?.words || []
@@ -1069,7 +1080,7 @@ function MineScreen({ t, lang, session, token, speak, flash, phone, onBack, onCh
       {!words.length && <p className="vp-state">{t('vocab.lesson.empty')}</p>}
       <div className="vp-words">
         {words.map((w) => (
-          <button type="button" className={`vp-wcard${w.learned ? ' is-learned' : ''}`} key={w.id || w.word} onClick={() => setDetail(w)}>
+          <button type="button" className={`vp-wcard${w.learned ? ' is-learned' : ''}`} key={w.id || w.word} onClick={() => openDetail(w)}>
             <div className="top">
               <b>{w.word}</b>
               <span
@@ -1080,7 +1091,7 @@ function MineScreen({ t, lang, session, token, speak, flash, phone, onBack, onCh
             </div>
             <div className="tr">{trOf(w, lang)}</div>
             {/* Пример — на карточке телефона, как в макете; на компьютере он только в окне слова. */}
-            {phone && (w.example || w.ex) ? <div className="ex" dangerouslySetInnerHTML={{ __html: savedExampleHtml(w) }} /> : null}
+            {w.example || w.ex ? <div className="ex" dangerouslySetInnerHTML={{ __html: savedExampleHtml(w) }} /> : null}
             <div className="foot">{w.learned ? t('vocab.learnedBadge') : (w.source || t('vocab.home.mine'))}</div>
           </button>
         ))}
