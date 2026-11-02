@@ -1018,6 +1018,58 @@
 .cp-fb.is-no .cp-fb__ic {
   background: #ff4646;
 }
+/* «Не могу слушать сейчас»: пропуск — не ошибка, плашка нейтральная. */
+.cp-fb.is-skip {
+  background: #f1f1f5;
+  color: #4b4b58;
+}
+.cp-fb.is-skip .cp-fb__ic {
+  background: #8e8e99;
+}
+.cp-foot:has(.cp-skip) {
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.cp-skip {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: #6b4eff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cp-transcript {
+  width: 402px;
+  max-width: 100%;
+  margin: 16px auto 0;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: #f7f5ff;
+  color: #2c2c38;
+}
+.cp-transcript summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+.cp-transcript__body {
+  margin: 8px 0 0;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+html[data-theme="dark"] .cp-fb.is-skip {
+  background: #2a2a33;
+  color: #d6d6e0;
+}
+html[data-theme="dark"] .cp-skip {
+  color: #b9a8ff;
+}
+html[data-theme="dark"] .cp-transcript {
+  background: #24222f;
+  color: #e6e6ee;
+}
 .cp-fb__coin {
   display: flex;
   align-items: center;

@@ -15,6 +15,7 @@ import TapText from '../screens/workspace/TapText.jsx'
 import TappableHtml from '../screens/workspace/TappableHtml.jsx'
 import TranslatePopover from '../screens/workspace/TranslatePopover.jsx'
 import { readResume, saveResume, clearResume } from '../lib/lessonResume.js'
+import { transcriptFor } from './courseTranscripts.js'
 
 // Пошаговый плеер урока (макет Figma «Обучение», секции Warm-up … Wrap).
 //
@@ -543,6 +544,22 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
   const [checked, setChecked] = useState(false)
   const [text, setText] = useState('')
   const [revealed, setRevealed] = useState(false)
+  // «Не могу слушать сейчас» (как в Duolingo): шаг закрывается без монет и не считается ни верным, ни ошибкой —
+  // onGraded не зовётся, поэтому точность урока (correct / answered) он не портит. Показываем ответ и текст записи.
+  const [skipped, setSkipped] = useState(false)
+  const audioSrc = step.type === 'listen' ? listenSrc(step, level) : trackSrc(step, level)
+  const canSkipListening = graded && !!audioSrc && !exam
+  const [transcript, setTranscript] = useState(null)
+  useEffect(() => {
+    if (!checked || !audioSrc) return undefined
+    let alive = true
+    transcriptFor(level, audioSrc).then((value) => {
+      if (alive) setTranscript(value)
+    })
+    return () => {
+      alive = false
+    }
+  }, [checked, audioSrc, level])
 
   // Варианты перемешиваются, чтобы верный не стоял всегда первым. Исключение —
   // шаг с флагом keep: там порядок сам по себе часть задания (шкала, числа,
@@ -630,6 +647,11 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
         ? Object.values(picks).some(Boolean)
         : true
   const showCheck = graded ? !checked : step.type === 'write' && !revealed && !!step.model
+
+  const skip = () => {
+    setSkipped(true)
+    setChecked(true)
+  }
 
   const act = () => {
     if (showCheck) {
@@ -729,7 +751,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
           пилюле. Раньше знак был текстовым глифом в белом кружке 28. */}
       {checked && (
         <div
-          className={`cp-fb ${isRight ? 'is-ok' : 'is-no'}`}
+          className={`cp-fb ${isRight ? 'is-ok' : skipped ? 'is-skip' : 'is-no'}`}
           // Эталон для помощника — только после неверного ответа и не на тесте юнита (там ответы не подсказывают).
           data-assistant-expected={!isRight && !exam ? expectedAnswer(step) || undefined : undefined}
         >
@@ -749,9 +771,12 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
           {/* Разбор ответа из самого курса («don't ставится перед like»):
               без него у ошибки нет объяснения, а оно там написано. */}
           <b>
-            {isRight ? t('lesson.correct') : t('lesson.wrong')}
+            {isRight ? t('lesson.correct') : skipped ? t('lesson.skippedListening') : t('lesson.wrong')}
+            {skipped && expectedAnswer(step) && (
+              <span className="cp-fb__why">{t('lesson.skippedAnswer', { answer: expectedAnswer(step) })}</span>
+            )}
             {step.why && <span className="cp-fb__why">{step.why}</span>}
-            {!isRight && <AskAssistantButton />}
+            {!isRight && !skipped && <AskAssistantButton />}
           </b>
           {isRight && (
             <span className="cp-fb__coin">
@@ -762,10 +787,23 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
         </div>
       )}
 
+      {/* Текст записи — после проверки и после пропуска: при пропуске сразу раскрыт, после проверки свёрнут. */}
+      {checked && transcript && (
+        <details className="cp-transcript" open={skipped}>
+          <summary>{t('lesson.transcript')}</summary>
+          <TapText as="p" className="cp-transcript__body" text={transcript} onWord={onWord} />
+        </details>
+      )}
+
       <div className="cp-foot">
-        <button className={`cp-cta ${showCheck ? 'is-check' : 'is-go'}`} disabled={!canCheck} onClick={act}>
+        <button className={`cp-cta ${showCheck ? 'is-check' : 'is-go'}`} disabled={!canCheck && !skipped} onClick={act}>
           {showCheck ? t('lesson.check') : step.type === 'checklist' ? t('lesson.finish') : t('lesson.continue')}
         </button>
+        {canSkipListening && !checked && (
+          <button type="button" className="cp-skip" onClick={skip}>
+            {t('lesson.cantListen')}
+          </button>
+        )}
       </div>
     </>
   )
