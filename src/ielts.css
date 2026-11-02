@@ -15230,7 +15230,7 @@
 .ih-wcat__title {
   font-size: 15px;
   line-height: 21px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .ih-wcat__meta {
   font-size: 13px;
