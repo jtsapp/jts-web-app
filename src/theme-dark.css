@@ -139,7 +139,6 @@ html[data-theme="dark"] .pk-c--grammarGames {
   --pk-acc: var(--dk-yellow);
   --pk-tint: var(--dk-yellow-soft);
   --pk-ink: var(--dk-yellow);
-  --pk-on: var(--dk-on-bright);
 }
 
 /* Плитки «Сервисов» (services.css): фон и значок — переменными модификатора, генератор до них не достаёт. На графите
