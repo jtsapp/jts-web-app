@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cleanWord, translateWord } from '../../lib/wordTranslate.js'
 import { saveWord } from '../../api.js'
+import { sentenceAround } from '../../lib/sentenceAround.js'
 
 // Тап-перевод слова в живом уроке — тот же приём, что в читалке книг
 // (BookDetail.jsx: словарь книги → gtx-перевод → сохранение в личный словарь),
@@ -47,7 +48,9 @@ export function useTapTranslate({ token, lang, source, catalogLessonId }) {
     if (!w || !anchorEl) return
     const seq = ++seqRef.current
     const rect = anchorEl.getBoundingClientRect()
-    setPop({ word: w, translation: '', alternates: [], loading: true, saving: false, saved: false, rect })
+    // Предложение, где ученик нажал на слово, — пример для «Моего словаря».
+    const example = sentenceAround(anchorEl, w)
+    setPop({ word: w, example, translation: '', alternates: [], loading: true, saving: false, saved: false, rect })
     translateWord(w, ctxRef.current.tl)
       .then(
         (t) =>
@@ -72,6 +75,7 @@ export function useTapTranslate({ token, lang, source, catalogLessonId }) {
         language: ctxRef.current.tl,
         source: ctxRef.current.source,
         catalogLessonId: ctxRef.current.catalogLessonId,
+        example: current.example || undefined,
       })
       if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false, saved: true, saveError: false })
     } catch {
