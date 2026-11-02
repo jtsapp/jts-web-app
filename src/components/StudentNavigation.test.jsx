@@ -43,7 +43,7 @@ describe('одни права для компьютера и телефона', 
     expect(getMySections).toHaveBeenCalledTimes(1)
 
     getMySections.mockResolvedValue(access(['practice', 'ielts']))
-    await act(async () => { window.dispatchEvent(new Event('focus')) })
+    await act(async () => { window.dispatchEvent(new Event('online')) })
     await waitFor(() => expect(tileNames(container)).toContain('IELTS'))
     expect(tileNames(container)).not.toContain('SAT')
     expect(menuKeys(container)).toContain('practice')
@@ -52,14 +52,27 @@ describe('одни права для компьютера и телефона', 
     expect(getMySections).toHaveBeenCalledTimes(2)
   })
 
-  it('сбой обновления скрывает старые вкладки на всех поверхностях, а повтор восстанавливает', async () => {
+  it('сбой перепроверки не прячет открытые вкладки; следующий ответ применяется на всех поверхностях', async () => {
     getMySections.mockResolvedValue(access(['lessons', 'sat']))
     const { container } = draw()
     await waitFor(() => expect(tileNames(container)).toContain('SAT'))
     getMySections.mockRejectedValue(new Error('offline'))
-    await act(async () => { window.dispatchEvent(new Event('focus')) })
-    await waitFor(() => expect(menuKeys(container)).not.toContain('lessons'))
+    await act(async () => { window.dispatchEvent(new Event('online')) })
+    await waitFor(() => expect(getMySections).toHaveBeenCalledTimes(2))
+    expect(menuKeys(container)).toContain('lessons')
+    expect(tileNames(container)).toContain('SAT')
+    expect(tabKeys(container)).toEqual(['home', 'lessons', 'services'])
+    expect(container.querySelector('[data-testid="section-access-notice"]')).toBeNull()
+    getMySections.mockResolvedValue(access(['practice']))
+    await act(async () => { window.dispatchEvent(new Event('online')) })
+    await waitFor(() => expect(tabKeys(container)).toEqual(['home', 'practice', 'services']))
     expect(tileNames(container)).not.toContain('SAT')
+  })
+
+  it('первая проверка не ответила — вкладки разделов скрыты, повтор восстанавливает', async () => {
+    getMySections.mockRejectedValue(new Error('offline'))
+    const { container } = draw()
+    await waitFor(() => expect(container.querySelector('[data-testid="section-access-notice"]')).not.toBeNull())
     expect(tabKeys(container)).toEqual(['home', 'services'])
     expect(menuKeys(container)).toContain('contracts')
     getMySections.mockResolvedValue(access(['lessons']))

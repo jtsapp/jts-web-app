@@ -122,11 +122,25 @@ export function getMySections(token, options = {}) {
         throw new Error('Invalid section access')
       }
       // Новый тариф или решение координатора должны перепроверить и отдельный оплаченный доступ к экзаменам.
-      _ieltsMe.delete(token)
-      _satMe.delete(token)
+      // Не на каждый опрос: разделы перепроверяются раз в 30 с и на возврат в окно, а сброс тянул за собой ещё
+      // два запроса (/mobile/ielts/plan/me, /mobile/sat/me) — 02.11.2026 это были ~16 тыс. запросов в час каждого.
+      // Покупку экзамена отдельно от тарифа замечаем по сроку EXAM_ACCESS_RECHECK_MS; `examsRechecked` говорит
+      // studentSectionStore, что снимок надо обновить даже при тех же разделах — иначе меню не перечитает экзамены.
+      const signature = sectionsSignature(d)
+      const seen = _sectionsSeen.get(token)
+      if (!seen || seen.signature !== signature || Date.now() - seen.at >= EXAM_ACCESS_RECHECK_MS) {
+        _ieltsMe.delete(token)
+        _satMe.delete(token)
+        _sectionsSeen.set(token, { signature, at: Date.now() })
+        return { ...d, examsRechecked: true }
+      }
       return d
     })
 }
+
+export const EXAM_ACCESS_RECHECK_MS = 5 * 60 * 1000
+const _sectionsSeen = new Map()
+const sectionsSignature = (d) => JSON.stringify([d.known, d.tariff ?? null, d.format ?? null, [...d.allowed].sort()])
 
 export function getCabinetFeedback(token) {
   return authGet('/cabinet/feedback/mine', token)
