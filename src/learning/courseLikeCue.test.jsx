@@ -90,6 +90,17 @@ describe('A0, урок 1: значок 👍/👎 в условии задани�
     expect([...document.querySelectorAll('.cp-choice')].map((b) => b.textContent).sort()).toEqual(["I don't like rain.", 'I like rain.'])
   })
 
+  // Жалоба 02.11.2026: значок был, но ученица после «Выберите то, что вам нравится» отвечала по своим вкусам. Теперь
+  // инструкция над строкой говорит, что ответ задаёт значок.
+  it('инструкция объясняет значок: «👍 — нравится, 👎 — не нравится.» — и ученица видит это над строкой', () => {
+    for (const { index, step } of steps) {
+      expect(String(step.title), `шаг ${index} (${step.type})`).toContain(`${UP} — нравится, ${DOWN} — не нравится.`)
+    }
+    const coffee = lesson.steps.find((s) => s.type === 'choice' && s.answer === 'like' && /coffee/.test(s.prompt))
+    play(coffee)
+    expect(document.querySelector('.cp-step__title').textContent).toContain(`${UP} — нравится, ${DOWN} — не нравится.`)
+  })
+
   it('«впиши пропуск»: значок стоит перед предложением', () => {
     const coffee = lesson.steps.find((s) => s.type === 'gap' && (s.answers || [])[0] === 'like')
     play(coffee)

@@ -144,10 +144,32 @@ function acceptedList(sc) {
 // не вкусом. yes / no — значения таблицы cue-fixes.js для заданий, где знака в
 // файле курса нет.
 const CUE_SIGNS = { like: '\u{1F44D}', yes: '\u{1F44D}', dislike: '\u{1F44E}', no: '\u{1F44E}' } // 👍 / 👎
+const cueOf = (sc, ctx) => sc.cue || (ctx.cueFix ? ctx.cueFix(sc) : null)
 function cueSign(sc, ctx) {
-  return CUE_SIGNS[sc.cue || (ctx.cueFix ? ctx.cueFix(sc) : null)] || ''
+  return CUE_SIGNS[cueOf(sc, ctx)] || ''
 }
 const withSign = (sign, text) => (sign ? `${sign} ${text || ''}`.trim() : text)
+// Значок сам себя не объясняет (жалоба 02.11.2026): после «Выберите то, что вам нравится» ученица отвечала по своим
+// вкусам и получала «неверно». Поэтому у задания со значком инструкция говорит, что ответ задаёт он. like/dislike —
+// вкус, yes/no (cue-fixes.js, «I ___ at university» — was/wasn't) — просто «да / нет».
+const CUE_LEGEND = {
+  taste: {
+    ru: '\u{1F44D} — нравится, \u{1F44E} — не нравится.',
+    kk: '\u{1F44D} — ұнайды, \u{1F44E} — ұнамайды.',
+    en: "\u{1F44D} — like, \u{1F44E} — don't like.",
+  },
+  fact: {
+    ru: '\u{1F44D} — да, \u{1F44E} — нет.',
+    kk: '\u{1F44D} — иә, \u{1F44E} — жоқ.',
+    en: '\u{1F44D} — yes, \u{1F44E} — no.',
+  },
+}
+function withLegend(sc, ctx, title, lang) {
+  const cue = cueOf(sc, ctx)
+  if (!CUE_SIGNS[cue]) return title
+  const legend = CUE_LEGEND[cue === 'like' || cue === 'dislike' ? 'taste' : 'fact']
+  return `${title || ''} ${legend[lang] || legend.ru}`.trim()
+}
 // «Выберите предложение» без строки: в курсе предмет — картинка (art: "cat"),
 // а её плеер не рисует. Предмет берём словом из ответа: «I like cats.» → «cats».
 const cueSubject = (answer) =>
@@ -358,6 +380,7 @@ function screenToStep(sc, ctx) {
       return {
         ...base,
         type: 'choice',
+        title: withLegend(sc, ctx, base.title, lang),
         prompt,
         options: opts,
         // keep в источнике значит «порядок вариантов осмысленный» — шкала,
@@ -452,10 +475,12 @@ function screenToStep(sc, ctx) {
 
     case 'gap': {
       const { before, after } = splitGap(sc.line)
+      const sign = cueSign(sc, ctx)
       return {
         ...base,
         type: 'gap',
-        before: withSign(cueSign(sc, ctx), before),
+        title: withLegend(sc, ctx, base.title, lang),
+        before: withSign(sign, before),
         after,
         answers: acceptedList(sc),
         bank: sc.bank ? shuffle(sc.bank, seed) : [],

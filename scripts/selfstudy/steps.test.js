@@ -357,3 +357,23 @@ describe('selfstudy/steps — splitGap', () => {
     expect(splitGap('Write the sentence.')).toEqual({ before: 'Write the sentence.', after: '' })
   })
 })
+
+// Жалоба 02.11.2026 (A0, урок 1): значок 👍/👎 стоял в строке, но ученица после «Выберите то, что вам нравится»
+// отвечала по своим вкусам. Инструкция задания со значком объясняет его; у yes/no (cue-fixes.js) — «да / нет».
+describe('selfstudy/steps — расшифровка значка 👍/👎 в инструкции', () => {
+  const ins = { ru: 'Выберите правильное слово.' }
+  it('like / dislike: «👍 — нравится, 👎 — не нравится.»', () => {
+    const [step] = steps([{ t: 'mcq', stage: 'prac', ins, items: [{ q: 'I ___ rain.', opts: ['like', "don't like"], a: 1, cue: 'dislike' }] }])
+    expect(step.title).toBe('Выберите правильное слово. \u{1F44D} — нравится, \u{1F44E} — не нравится.')
+    expect(step.prompt).toBe('\u{1F44E} I ___ rain.')
+  })
+  it('yes / no из таблицы cue-fixes: «👍 — да, 👎 — нет.»', () => {
+    const fixCtx = { ...ctx, cueFix: () => 'yes' }
+    const [step] = lessonSteps({ key: '1', no: 1, groups: [{ t: 'gap', stage: 'prac', ins, items: [{ line: 'I ___ at home.' }] }] }, PER_ITEM, fixCtx)
+    expect(step.title).toBe('Выберите правильное слово. \u{1F44D} — да, \u{1F44E} — нет.')
+  })
+  it('без значка инструкция прежняя', () => {
+    const [step] = steps([{ t: 'mcq', stage: 'prac', ins, items: [{ q: 'Tea is my ___ drink.', opts: ['favourite', 'like'], a: 0 }] }])
+    expect(step.title).toBe('Выберите правильное слово.')
+  })
+})
