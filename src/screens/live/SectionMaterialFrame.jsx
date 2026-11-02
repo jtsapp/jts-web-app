@@ -6,6 +6,7 @@ import LiveLoader from './LiveLoader.jsx'
 import PdfViewer from './pdf/PdfViewer.jsx'
 import { isPdfMaterial } from './pdf/isPdfMaterial.js'
 import { changesPage, placeEvents } from './liveFollow.js'
+import usePracticeUnitCredit from '../../practice/usePracticeUnitCredit.js'
 
 const BRIDGE = 'jts-bridge'
 const BRIDGE_HOST = 'jts-bridge-host'
@@ -100,6 +101,9 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 ) {
   const { t } = useI18n()
   const iframeRef = useRef(null)
+  // Задания из «Практики» засчитывают свой юнит, когда ученик их проверил. Рамка
+  // преподавателя — не работа ученика.
+  usePracticeUnitCredit(iframeRef, !isStaff)
   // Просмотрщик PDF, если материал — PDF (тогда рамки нет и iframeRef пуст).
   const pdfRef = useRef(null)
   const loadedRef = useRef(false)

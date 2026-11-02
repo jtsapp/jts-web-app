@@ -122,7 +122,7 @@ export default function ServicesPage({ userName, userLevel, levelUnknown = false
           </div>
         )}
 
-        {demo && <DemoOfferCard onUse={() => onNav?.('pricing')} />}
+        {demo && <DemoOfferCard onUse={() => onNav?.('pricing')} onTrial={() => onNav?.('trial-offer')} />}
       </div>
     </LearningLayout>
   )

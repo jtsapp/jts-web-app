@@ -191,3 +191,16 @@ describe('LiveLessonPage — преподаватель по-прежнему т
     }
   })
 })
+
+// Менеджер закрыл ученику прошедшие уроки («Доступ к контенту»): сервер отвечает 403 со своим текстом, и экран
+// показывает его, а не «обновите страницу» — обновление тут ничего не даст.
+describe('LiveLessonPage — сервер закрыл урок ученику', () => {
+  it('COMPLETED и 403 на разделах: на экране текст сервера', async () => {
+    const api = await import('../api.js')
+    const refusal = Object.assign(new Error('403'), { status: 403, serverMessage: 'Прошедшие уроки закрыты. Обратитесь к менеджеру' })
+    api.getLessonSections.mockRejectedValueOnce(refusal)
+    await renderLesson('COMPLETED')
+    await waitFor(() => expect(screen.getByText('Прошедшие уроки закрыты. Обратитесь к менеджеру')).toBeTruthy())
+    expect(screen.queryByText('Не удалось загрузить материалы урока — обновите страницу')).toBeNull()
+  })
+})

@@ -1,5 +1,6 @@
 import { useI18n } from '../i18n.jsx'
 import { RETRY_OFFER, formatPrice, CURRENCY } from '../data/pricing.js'
+import { isDemoExpiredNow } from '../lib/demoAccess.js'
 
 // Плашка скидки внизу сайдбара демо-аккаунта: перечёркнутая обычная цена
 // пробного занятия и цена по скидке.
@@ -8,8 +9,22 @@ import { RETRY_OFFER, formatPrice, CURRENCY } from '../data/pricing.js'
 // ещё пустой (заданий он почти не проходил), и две полупустые полосы подряд
 // внизу колонки читались бы как незагрузившийся интерфейс. После снятия
 // демо-флага плашка исчезает и балансу возвращается его место — см. Sidebar.
-export default function DemoOfferCard({ onUse }) {
+//
+// Срок демо вышел — на том же месте бесплатный пробный урок без цен (см.
+// DemoSubscriptionModal): кнопка открывает окно записи (onTrial), а не витрину.
+export default function DemoOfferCard({ onUse, onTrial }) {
   const { t } = useI18n()
+  if (isDemoExpiredNow()) {
+    return (
+      <div className="dm-offer">
+        <b className="dm-offer__title">{t('home.trial.title')}</b>
+        <span className="dm-offer__sub">{t('home.trial.sub')}</span>
+        <button type="button" className="dm-offer__cta" onClick={onTrial}>
+          {t('home.trial.cta')}
+        </button>
+      </div>
+    )
+  }
   return (
     <div className="dm-offer">
       <div className="dm-offer__prices">

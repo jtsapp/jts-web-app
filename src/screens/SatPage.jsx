@@ -13,6 +13,7 @@ import MaterialsTab from '../sat/tabs/MaterialsTab.jsx'
 import ProgressTab from '../sat/tabs/ProgressTab.jsx'
 import { getSatDiagnostic, getSatMe, getSatPlan, getSatProfile, getSatToday, startSatSession, updateSatLesson } from '../api.js'
 import SatStartView from '../sat/tabs/SatStartView.jsx'
+import { satStarted } from '../sat/model/start.js'
 import { loadToken } from '../lib/session.js'
 import { plural } from '../lib/plural.js'
 import { daysUntil } from '../sat/model/profile.js'
@@ -301,8 +302,8 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
   }
 
   // Старт обязателен: без глав об экзамене и диагностики (после них доступ открывается сам) вкладок нет вовсе (просьба владельца
-  // 13.10.2026). Пока «me» не пришёл — рисуем шапку без вкладок, а не мигаем вкладками перед замком.
-  const started = me && me.access && me.onboarded && me.diagnosticDone
+  // 13.10.2026), кроме клоузера (satStarted). Пока «me» не пришёл — рисуем шапку без вкладок, а не мигаем вкладками перед замком.
+  const started = satStarted(me)
   if (!started) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="sat" token={token} onNav={onNav} onProfile={onProfile}>

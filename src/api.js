@@ -122,11 +122,25 @@ export function getMySections(token, options = {}) {
         throw new Error('Invalid section access')
       }
       // Новый тариф или решение координатора должны перепроверить и отдельный оплаченный доступ к экзаменам.
-      _ieltsMe.delete(token)
-      _satMe.delete(token)
+      // Не на каждый опрос: разделы перепроверяются раз в 30 с и на возврат в окно, а сброс тянул за собой ещё
+      // два запроса (/mobile/ielts/plan/me, /mobile/sat/me) — 02.11.2026 это были ~16 тыс. запросов в час каждого.
+      // Покупку экзамена отдельно от тарифа замечаем по сроку EXAM_ACCESS_RECHECK_MS; `examsRechecked` говорит
+      // studentSectionStore, что снимок надо обновить даже при тех же разделах — иначе меню не перечитает экзамены.
+      const signature = sectionsSignature(d)
+      const seen = _sectionsSeen.get(token)
+      if (!seen || seen.signature !== signature || Date.now() - seen.at >= EXAM_ACCESS_RECHECK_MS) {
+        _ieltsMe.delete(token)
+        _satMe.delete(token)
+        _sectionsSeen.set(token, { signature, at: Date.now() })
+        return { ...d, examsRechecked: true }
+      }
       return d
     })
 }
+
+export const EXAM_ACCESS_RECHECK_MS = 5 * 60 * 1000
+const _sectionsSeen = new Map()
+const sectionsSignature = (d) => JSON.stringify([d.known, d.tariff ?? null, d.format ?? null, [...d.allowed].sort()])
 
 export function getCabinetFeedback(token) {
   return authGet('/cabinet/feedback/mine', token)
@@ -2302,6 +2316,15 @@ export function saveStudentVocab(token, body) {
   })
 }
 
+// Пример к слову «Моего словаря»: есть — сервер отдаёт его, нет — пишет один раз и сохраняет (V525).
+// Ответ: { id, example } — example: null, если примера нет и написать не удалось.
+export function ensureVocabExample(token, id) {
+  return authPost(`/mobile/lesson-vocab/words/${encodeURIComponent(id)}/example`, token).then((data) => {
+    if (data?.example) dropCachedAuthGet('/mobile/lesson-vocab/saved', token)
+    return data
+  })
+}
+
 export function deleteStudentVocabWord(token, id) {
   return authDelete(`/mobile/lesson-vocab/words/${encodeURIComponent(id)}`, token).then((data) => {
     dropCachedAuthGet('/mobile/lesson-vocab', token)
@@ -2482,13 +2505,13 @@ export async function searchDictionary(token, q = '', size = 30) {
 // Сохранить слово из тап-перевода читалки (POST /mobile/saved-words).
 // alternates — строка «через запятую», language — язык перевода ("ru"/"kk"),
 // source — откуда слово (название книги). Возвращает SavedWordResponse.
-export async function saveWord(token, { word, translation, alternates, language = 'ru', source, catalogLessonId }) {
+export async function saveWord(token, { word, translation, alternates, language = 'ru', source, catalogLessonId, example }) {
   let res
   try {
     res = await fetch(`${BASE}/mobile/saved-words`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ word, translation, alternates, language, source, catalogLessonId }),
+      body: JSON.stringify({ word, translation, alternates, language, source, catalogLessonId, example }),
     })
   } catch (e) {
     throw new Error('Нет связи с сервером.')

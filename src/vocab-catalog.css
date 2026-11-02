@@ -263,7 +263,7 @@
 .vp-wcard .tr { font-size: 14px; color: #555; }
 .vp-wcard .ex {
   font-size: 13px; color: #666; line-height: 1.4; margin-top: 2px;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .vp-wcard .ex mark {
   background: none; color: var(--vp-violet); font-weight: 700; padding: 0;

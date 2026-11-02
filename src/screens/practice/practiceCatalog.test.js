@@ -22,15 +22,11 @@ describe('practiceCatalog', () => {
     }
   })
 
-  it('картинки и значки обложек лежат в public', () => {
+  it('у каждой карточки есть обложка с содержимым раздела', () => {
     for (const id of used) {
       const c = cardOf(id)
-      if (c.cover === 'tile') {
-        expect(c.icon, id).toBeTruthy()
-        expect(fs.existsSync(path.join(PUBLIC, 'practice/cards/ico', `${c.icon}.svg`)), `${id}: ${c.icon}`).toBe(true)
-      } else {
-        expect(fs.existsSync(path.join(PUBLIC, c.image)), `${id}: ${c.image}`).toBe(true)
-      }
+      expect(fs.existsSync(path.join(PUBLIC, c.image)), `${id}: ${c.image}`).toBe(true)
+      expect(c.cover, id).toBe(id === 'runner' ? 'photo' : 'collage')
     }
   })
 

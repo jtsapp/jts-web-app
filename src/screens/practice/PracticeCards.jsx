@@ -122,8 +122,8 @@ export function SkillCard({ skill, count, sub, active, onClick }) {
 const ANCHOR = { justListen: 'listen', speedReading: 'speed-reading', speak: 'arcade-speak', runner: 'arcade-runner' }
 
 // Карточка тренажёра — один шаблон на всё (система макета, 7405:4469): обложка → название → одна фраза → чип →
-// переход. Вся карточка — кнопка. Обложки: `tile` (градиент раздела, значок и он же крупно прозрачным), `collage`
-// и `photo` (картинка экспорта макета). Бейдж «Новое» / «Бета» — в правом верхнем углу обложки.
+// переход. Вся карточка — кнопка. Обложка — картинка с содержимым раздела: `collage` поверх фона его цвета, `photo`
+// во всю обложку. Бейдж «Новое» / «Бета» — в правом верхнем углу обложки.
 // Чип — токены за прохождение (только если правило есть на сервере) или своя подпись карточки («125 тем»).
 export function PracticeTile({ card, tokens = 0, onOpen }) {
   const { t, lang } = useI18n()
@@ -137,16 +137,7 @@ export function PracticeTile({ card, tokens = 0, onOpen }) {
       onClick={onOpen}
     >
       <span className="pk-card__cover">
-        {card.cover === 'tile' ? (
-          <>
-            <PkIco name={card.icon} className="pk-card__glyph" />
-            <span className="pk-card__mark">
-              <PkIco name={card.icon} />
-            </span>
-          </>
-        ) : (
-          <img className="pk-card__img" src={card.image} alt="" loading="lazy" />
-        )}
+        <img className="pk-card__img" src={card.image} alt="" loading="lazy" />
         {card.badge && <span className="pk-card__badge">{t(`practice.badge.${card.badge}`)}</span>}
       </span>
       <span className="pk-card__body">

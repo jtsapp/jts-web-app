@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, waitFor, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
-const api = vi.hoisted(() => ({ mine: null, fail: false }))
+const api = vi.hoisted(() => ({ mine: null, fail: false, example: null }))
 
 vi.mock('../api.js', () => ({
   getVocabCatalog: vi.fn(async () => ({ levels: [{ id: 'A1', name: 'Starter' }], fields: [] })),
@@ -19,6 +19,7 @@ vi.mock('../api.js', () => ({
   }),
   saveStudentVocab: vi.fn(),
   deleteStudentVocabWord: vi.fn(),
+  ensureVocabExample: vi.fn(async (_token, id) => ({ id, example: api.example })),
   markVocabLearned: vi.fn(async () => {}),
   getSatMeCached: vi.fn(async () => null),
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: false })),
@@ -97,5 +98,45 @@ describe('«Мой словарь» на главной', () => {
     const { container } = open()
     await waitFor(() => expect(container.querySelector('#vsec-mine')).not.toBeNull())
     expect(container.querySelector('#vsec-mine button.vp-btn')).toBeNull()
+  })
+})
+
+// Отзыв АруЖан (03.11.2026): в Словаре нет примеров. Пример виден на карточке (и на компьютере), а окно слова без
+// примера просит его у сервера — тот пишет один раз и сохраняет.
+describe('«Мой словарь»: пример к слову', () => {
+  beforeEach(() => {
+    api.fail = false
+    api.example = null
+  })
+
+  async function openMineScreen(words) {
+    api.mine = { words }
+    const view = open()
+    const arrow = await waitFor(() => {
+      const b = view.container.querySelector('#vsec-mine .vp-sec-arrow')
+      if (!b) throw new Error('нет стрелки')
+      return b
+    })
+    fireEvent.click(arrow)
+    return view
+  }
+
+  it('пример со слова видно на карточке', async () => {
+    const { container } = await openMineScreen([{ id: 1, word: 'worked', translationRu: 'работал', example: 'I have worked here.' }])
+    await waitFor(() => expect(container.querySelector('.vp-wcard .ex')?.textContent).toContain('I have worked here.'))
+  })
+
+  it('у слова без примера окно просит его у сервера и показывает ответ', async () => {
+    api.example = 'They accused him of lying.'
+    const { container } = await openMineScreen([{ id: 5, word: 'accuse', translationRu: 'обвинять' }])
+    const card = await waitFor(() => {
+      const c = container.querySelector('.vp-wcard')
+      if (!c) throw new Error('нет карточки')
+      return c
+    })
+    fireEvent.click(card)
+    const { ensureVocabExample } = await import('../api.js')
+    await waitFor(() => expect(ensureVocabExample).toHaveBeenCalledWith(TOKEN, 5))
+    await waitFor(() => expect(container.querySelector('.vp-modal')?.textContent).toContain('They accused him of lying.'))
   })
 })

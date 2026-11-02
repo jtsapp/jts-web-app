@@ -16,6 +16,9 @@ const ownerOf = (token) => token ? `student:${userIdFromToken(token) ?? token}` 
 const serverSnapshot = () => LOADING
 const idleSubscribe = () => () => {}
 const visible = () => typeof document === 'undefined' || document.visibilityState !== 'hidden'
+const sameAccess = (snapshot, access) => !access.examsRechecked && snapshot.status === 'ready' && snapshot.known === access.known
+  && snapshot.tariff === access.tariff && snapshot.format === access.format
+  && snapshot.allowed.length === access.allowed.length && snapshot.allowed.every((key, i) => key === access.allowed[i])
 
 function entryFor(owner) {
   if (entries.has(owner)) return entries.get(owner)
@@ -50,11 +53,15 @@ function entryFor(owner) {
       if (sequence !== entry.sequence) return
       if (!validStudentSections(access)) throw new Error('Invalid section access')
       entry.updatedAt = Date.now()
-      emit({ ...access, status: 'ready' })
+      // Тот же ответ — тот же снимок: иначе каждый опрос перерисовывал кабинет и перезапрашивал экзамены.
+      if (!sameAccess(entry.snapshot, access)) emit({ ...access, status: 'ready' })
     }).catch(() => {
       if (sequence !== entry.sequence) return
       entry.updatedAt = 0
-      emit(FAILED)
+      // Сбой ФОНОВОЙ перепроверки не закрывает открытый урок: прежний ответ сервера остаётся, следующий опрос
+      // проверит снова. Раньше таймаут или 502 подменял урок и домашку экраном «Проверьте соединение»,
+      // размонтируя их с несохранёнными ответами (жалобы 02.11.2026). Ошибку видно, только пока ответа не было.
+      if (entry.snapshot.status !== 'ready') emit(FAILED)
     }).finally(() => {
       clearTimeout(timeout)
       if (entry.pending === task) { entry.pending = null; entry.controller = null }
@@ -63,21 +70,24 @@ function entryFor(owner) {
     return task
   }
   const refreshVisible = () => { if (visible()) entry.refresh(true) }
+  // Возврат в окно — не чаще опроса: в уроке и домашке фокус уходит во фрейм задания и возвращается на каждом
+  // клике, и принудительная перепроверка давала запрос раз в несколько секунд у каждого ученика.
+  const refreshReturned = () => { if (visible()) entry.refresh(false) }
   entry.subscribe = (fn) => {
     listeners.add(fn)
     if (listeners.size === 1) {
       entry.timer = setInterval(refreshVisible, STUDENT_SECTIONS_POLL_MS)
-      window.addEventListener('focus', refreshVisible)
+      window.addEventListener('focus', refreshReturned)
       window.addEventListener('online', refreshVisible)
-      document.addEventListener('visibilitychange', refreshVisible)
+      document.addEventListener('visibilitychange', refreshReturned)
     }
     return () => {
       listeners.delete(fn)
       if (listeners.size) return
       clearInterval(entry.timer)
-      window.removeEventListener('focus', refreshVisible)
+      window.removeEventListener('focus', refreshReturned)
       window.removeEventListener('online', refreshVisible)
-      document.removeEventListener('visibilitychange', refreshVisible)
+      document.removeEventListener('visibilitychange', refreshReturned)
       entry.sequence += 1
       entry.controller?.abort()
       entry.controller = null

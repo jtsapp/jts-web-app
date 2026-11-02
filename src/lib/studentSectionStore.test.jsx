@@ -39,16 +39,55 @@ describe('единое состояние разделов ученика', () =
     expect(result.current.allowed).toEqual(['practice'])
   })
 
-  it('ошибка удаляет прежние разрешения; повторная попытка восстанавливает их', async () => {
+  it('сбой перепроверки не закрывает открытый раздел; следующий ответ применяется', async () => {
     const t = token(103)
     const { result } = renderHook(() => useStudentSections(t))
     await settle()
     getMySections.mockRejectedValue(new Error('offline'))
     await act(async () => { await refreshStudentSections(t) })
+    expect(result.current).toMatchObject({ status: 'ready', allowed: ['lessons'] })
+    getMySections.mockReturnValue(new Promise(() => {}))
+    await act(async () => { await vi.advanceTimersByTimeAsync(STUDENT_SECTIONS_POLL_MS + STUDENT_SECTIONS_TIMEOUT_MS) })
+    expect(result.current).toMatchObject({ status: 'ready', allowed: ['lessons'] })
+    getMySections.mockResolvedValue(access(['homework']))
+    await act(async () => { await refreshStudentSections(t) })
+    expect(result.current).toMatchObject({ status: 'ready', allowed: ['homework'] })
+  })
+
+  it('первая проверка не ответила — ошибка с повтором', async () => {
+    getMySections.mockRejectedValue(new Error('offline'))
+    const t = token(110)
+    const { result } = renderHook(() => useStudentSections(t))
+    await settle()
     expect(result.current).toMatchObject({ status: 'error', allowed: [] })
     getMySections.mockResolvedValue(access(['homework']))
     await act(async () => { await refreshStudentSections(t) })
     expect(result.current).toMatchObject({ status: 'ready', allowed: ['homework'] })
+  })
+
+  it('тот же ответ сервера — тот же снимок: опрос не перерисовывает кабинет', async () => {
+    const t = token(111)
+    const { result } = renderHook(() => useStudentSections(t))
+    await settle()
+    const before = result.current
+    await act(async () => { await vi.advanceTimersByTimeAsync(STUDENT_SECTIONS_POLL_MS) })
+    expect(getMySections).toHaveBeenCalledTimes(2)
+    expect(result.current).toBe(before)
+    getMySections.mockResolvedValue({ ...access(), examsRechecked: true })
+    await act(async () => { await vi.advanceTimersByTimeAsync(STUDENT_SECTIONS_POLL_MS) })
+    expect(result.current).not.toBe(before)
+    expect(result.current.allowed).toEqual(['lessons'])
+  })
+
+  it('возврат в окно перепроверяет не чаще опроса', async () => {
+    renderHook(() => useStudentSections(token(112)))
+    await settle()
+    for (let i = 0; i < 5; i += 1) await act(async () => { window.dispatchEvent(new Event('focus')) })
+    expect(getMySections).toHaveBeenCalledTimes(1)
+    await act(async () => { await vi.advanceTimersByTimeAsync(STUDENT_SECTIONS_POLL_MS - 1000) })
+    vi.setSystemTime(Date.now() + 2000)
+    await act(async () => { window.dispatchEvent(new Event('focus')) })
+    expect(getMySections).toHaveBeenCalledTimes(2)
   })
 
   it.each([null, {}, { known: true }, { known: false }, { known: true, allowed: [false] }])('не принимает неполный ответ %j', async (value) => {

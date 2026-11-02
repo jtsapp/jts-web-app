@@ -22,6 +22,7 @@ import HomePage from './screens/HomePage.jsx'
 import PricingPage from './screens/PricingPage.jsx'
 import MinutesTopUpPage from './screens/MinutesTopUpPage.jsx'
 import PurchaseSuccessModal from './components/PurchaseSuccessModal.jsx'
+import DemoSubscriptionModal from './components/DemoSubscriptionModal.jsx'
 import SessionExpiredNotice from './components/SessionExpiredNotice.jsx'
 import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
@@ -676,6 +677,10 @@ export default function App() {
   // До какого момента действует демо: по нему «Главная» рисует обратный отсчёт.
   // null — демо без срока (менеджер выдал доступ руками), таймера тогда нет.
   const [demoExpiresAt, setDemoExpiresAt] = useState(null)
+  // Окно записи на пробный урок: его открывают плашки демо, когда срок вышел;
+  // счётчик — чтобы «Главная» под окном перечитала заявку и перестала звать.
+  const [trialOffer, setTrialOffer] = useState(false)
+  const [trialRev, setTrialRev] = useState(0)
   // Когда заведён аккаунт (/user/me): учившимся до теста v16 он не навязывается (src/placement/existingStudent.js).
   const [accountCreatedAt, setAccountCreatedAt] = useState(null)
   // «Поздравляем с покупкой!»: окно показывается один раз, когда аккаунт
@@ -1763,6 +1768,11 @@ export default function App() {
     // навигацию зовёт не только сайдбар (колокольчик уведомлений, карточки
     // внутри экранов) — поэтому запрет стоит здесь, у самой навигации.
     if (boothAccount) return
+    // Не экран, а окно поверх текущего: списки разделов ниже о нём не знают.
+    if (key === 'trial-offer') {
+      setTrialOffer(true)
+      return
+    }
     if ((!rewardsEnabled && isRewardsScreen(key)) || (!isTeacher(token) && isStudentSectionHidden(key))) return
     // «Сервисы» — вкладка телефона с профилем: нужна и в тьютор-онли, иначе из панели не попасть в профиль.
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key) && key !== 'services') return
@@ -2087,6 +2097,17 @@ export default function App() {
       {/* Поздравление живёт вне обёртки с key: иначе смена экрана
           перемонтировала бы его и окно моргало бы анимацией входа. */}
       {celebrate && <PurchaseSuccessModal onClose={() => setCelebrate(false)} />}
+      {trialOffer && token && (
+        <DemoSubscriptionModal
+          overPage
+          onClose={() => setTrialOffer(false)}
+          onBuy={() => {
+            setTrialOffer(false)
+            setScreen('pricing')
+          }}
+          onTrialBooked={() => setTrialRev((n) => n + 1)}
+        />
+      )}
       {/* «Сессия истекла» — тоже вне обёртки с key: смена экрана после выхода
           не должна её перемонтировать и сбивать анимацию. Только гостю: у
           вошедшего сообщать не о чем. */}
@@ -2359,6 +2380,8 @@ export default function App() {
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onOpenPricing={() => setScreen('pricing')}
+          onOpenTrialOffer={() => setTrialOffer(true)}
+          trialRev={trialRev}
           // Назначенный урок открывается тем же путём, что из расписания.
           onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }}
           // Записи на пробный урок в приложении нет: слоты подбирает менеджер,

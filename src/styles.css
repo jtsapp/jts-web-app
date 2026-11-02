@@ -3510,7 +3510,6 @@ textarea {
   --pk-acc: #2f6bf0;
   --pk-tint: #e8efff;
   --pk-ink: #1d47b8;
-  --pk-on: #ffffff;
   --pk-mark: rgba(255, 255, 255, 0.22);
 }
 .pk-c--reading {
@@ -3519,7 +3518,6 @@ textarea {
   --pk-acc: #f2742e;
   --pk-tint: #ffebdd;
   --pk-ink: #b8480f;
-  --pk-on: #ffffff;
   --pk-mark: rgba(255, 255, 255, 0.22);
 }
 .pk-c--writing {
@@ -3528,7 +3526,6 @@ textarea {
   --pk-acc: #d6409f;
   --pk-tint: #ffe6f4;
   --pk-ink: #9e1f72;
-  --pk-on: #ffffff;
   --pk-mark: rgba(255, 255, 255, 0.22);
 }
 .pk-c--speaking {
@@ -3537,7 +3534,6 @@ textarea {
   --pk-acc: #1fa56c;
   --pk-tint: #e0f5eb;
   --pk-ink: #127048;
-  --pk-on: #ffffff;
   --pk-mark: rgba(255, 255, 255, 0.22);
 }
 /* Золотой: на светлом градиенте белый значок не читается — на обложках он тёмный (#3a2800), а плитка значка
@@ -3548,7 +3544,6 @@ textarea {
   --pk-acc: #e5a512;
   --pk-tint: #fff3cc;
   --pk-ink: #7a5400;
-  --pk-on: #3a2800;
   --pk-mark: rgba(255, 255, 255, 0.4);
 }
 
@@ -3760,12 +3755,7 @@ textarea {
   border-radius: 14px;
   background: var(--pk-tint);
 }
-.pk-card--tile .pk-card__cover {
-  background: linear-gradient(to bottom right, var(--pk-from), var(--pk-to));
-  color: var(--pk-on);
-}
-/* Два круга обложки — в долях 240×148: у плитки белые (10 % справа сверху, 8 % слева снизу), у коллажа — цвета
-   раздела, в другом углу. */
+/* Два круга обложки цвета раздела — в долях 240×148. */
 .pk-card__cover::before,
 .pk-card__cover::after {
   content: '';
@@ -3773,36 +3763,10 @@ textarea {
   aspect-ratio: 1;
   border-radius: 50%;
 }
-.pk-card--tile .pk-card__cover::before { left: 62.5%; top: -40.5%; width: 75%; background: rgba(255, 255, 255, 0.1); }
-.pk-card--tile .pk-card__cover::after { left: -12.5%; top: 60.8%; width: 50%; background: rgba(255, 255, 255, 0.08); }
 .pk-card--collage .pk-card__cover::before { left: -16.7%; top: -33.8%; width: 62.5%; background: color-mix(in srgb, var(--pk-acc) 10%, transparent); }
 .pk-card--collage .pk-card__cover::after { left: 70.8%; top: 54%; width: 45.8%; background: color-mix(in srgb, var(--pk-acc) 8%, transparent); }
 .pk-card--photo .pk-card__cover::before,
 .pk-card--photo .pk-card__cover::after { content: none; }
-/* Значок крупно, прозрачностью 14 %, справа — тот же, что в плитке. */
-.pk-card__glyph {
-  position: absolute;
-  left: 52.5%;
-  top: 18.9%;
-  z-index: 1;
-  width: 53.3%;
-  height: auto;
-  aspect-ratio: 1;
-  opacity: 0.14;
-}
-.pk-card__mark {
-  position: absolute;
-  left: 16px;
-  top: 16px;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: var(--pk-mark);
-}
-.pk-card__mark .pk-ico { width: 32px; height: 32px; }
 .pk-card__img {
   position: absolute;
   inset: 0;
@@ -5489,6 +5453,12 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
   padding: 24px;
   overflow: auto;
 }
+/* Окно поверх всего приложения: опоры-экрана нет, и absolute привязал бы его к
+   началу страницы — при прокрутке оно уезжало. Слой тот же, что у .lm-over и .bt-over. */
+.ds-over--page {
+  position: fixed;
+  z-index: 60;
+}
 .ds-card {
   margin: auto;
   display: flex;
@@ -5602,8 +5572,26 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
 .ds-buy:hover {
   background: #7a2fe6;
 }
+.ds-buy:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+/* Тарифы после конца демо: доступны, но не кнопкой рядом с записью. */
+.ds-link {
+  margin-top: 16px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
 .ds-back:focus-visible,
-.ds-buy:focus-visible {
+.ds-buy:focus-visible,
+.ds-link:focus-visible {
   outline: 2px solid var(--purple);
   outline-offset: 2px;
 }

@@ -14,6 +14,7 @@ import IeltsHomeCard from './home/IeltsHomeCard.jsx'
 import GeGoalBanner from './home/GeGoalBanner.jsx'
 import GeStartHero, { GeFinishHero, StartHereCard } from './home/GeStartHero.jsx'
 import { PlacementNext, PlacementResults, usePlacementReport } from './home/PlacementReport.jsx'
+import { placementCollapseKey } from './home/placementCollapse.js'
 import GeTodayCard from './home/GeTodayCard.jsx'
 import TourSections from './home/TourSections.jsx'
 import TemperInvite from './home/TemperInvite.jsx'
@@ -64,6 +65,10 @@ export default function HomePage({
   onProfile,
   onOpenPricing,
   onOpenTrial,
+  // Окно записи на пробный урок (App): его открывает плашка демо, когда срок вышел.
+  onOpenTrialOffer,
+  // Растёт, когда заявку на пробный урок оставили в окне поверх экрана (App): перечитать.
+  trialRev = 0,
   onOpenLesson,
   onStartLevelTest,
   // Ключ отметки «тур показан» — из App, в нём id профиля (tourKeyFor).
@@ -281,7 +286,6 @@ export default function HomePage({
     let alive = true
     // Ни один из запросов не критичен: не ответил — соответствующая карточка
     // показывает «пусто», а экран остаётся целым. Это честнее пустого места.
-    getTrialRequestState(token).then((s) => { if (alive) setTrial(s) }).catch(() => {})
     // Домашние задания IELTS (преподаватель задаёт их в web-admin) живут в плане IELTS, а не в /admin/homework/my —
     // у ученика IELTS «Главная» иначе писала бы «Заданий нет» при открытом задании (то же, что в «Домашней работе»).
     Promise.all([
@@ -298,6 +302,13 @@ export default function HomePage({
       .catch(() => {})
     return () => { alive = false }
   }, [token, ieltsAccount])
+
+  useEffect(() => {
+    if (!token) return
+    let alive = true
+    getTrialRequestState(token).then((s) => { if (alive) setTrial(s) }).catch(() => {})
+    return () => { alive = false }
+  }, [token, trialRev])
 
   const book = async () => {
     if (sending) return
@@ -472,7 +483,9 @@ export default function HomePage({
         <header className="hm-top">
           <h1 className="hm-top__title">{t('nav.home')}</h1>
         </header>
-        {isDemoAccount && <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} />}
+        {isDemoAccount && (
+          <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} onTrial={onOpenTrialOffer} booked={!!trial?.requested || !!nextLesson} />
+        )}
 
         {/* Новый отчёт о прогрессе от преподавателя — выше всего остального:
             приходит раз в месяц и сам исчезает, как только ученик его открыл. */}
@@ -532,7 +545,7 @@ export default function HomePage({
             )}
             <PracticeToday t={t} lang={lang} token={token} onNav={onNav} />
             {/* Отчёт теста уровня v16; теста нет — тот же блок пустым и зовёт на тест (решение владельца 21.10.2026). */}
-            {!ieltsAccount && <PlacementResults report={report} onRetake={onStartLevelTest} />}
+            {!ieltsAccount && <PlacementResults report={report} onRetake={onStartLevelTest} collapseKey={placementCollapseKey(tourKey)} />}
           </div>
 
           <div className="hm-grid__side">
