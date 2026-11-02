@@ -23,7 +23,6 @@ import PricingPage from './screens/PricingPage.jsx'
 import MinutesTopUpPage from './screens/MinutesTopUpPage.jsx'
 import PurchaseSuccessModal from './components/PurchaseSuccessModal.jsx'
 import DemoSubscriptionModal from './components/DemoSubscriptionModal.jsx'
-import { isDemoExpiredNow } from './lib/demoAccess.js'
 import SessionExpiredNotice from './components/SessionExpiredNotice.jsx'
 import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
@@ -678,7 +677,7 @@ export default function App() {
   // До какого момента действует демо: по нему «Главная» рисует обратный отсчёт.
   // null — демо без срока (менеджер выдал доступ руками), таймера тогда нет.
   const [demoExpiresAt, setDemoExpiresAt] = useState(null)
-  // Окно записи на пробный урок вместо витрины, когда срок демо вышел (openPricing);
+  // Окно записи на пробный урок: его открывают плашки демо, когда срок вышел;
   // счётчик — чтобы «Главная» под окном перечитала заявку и перестала звать.
   const [trialOffer, setTrialOffer] = useState(false)
   const [trialRev, setTrialRev] = useState(0)
@@ -1764,27 +1763,22 @@ export default function App() {
     })
   }
 
-  // К тарифам ведёт два десятка кнопок (плашки демо, лимиты разделов, цель уровня,
-  // Луна), поэтому развилка одна — здесь. Срок демо вышел: пакеты с ценами пугают
-  // того, кто ещё не видел урока (решение 02.11.2026), и вместо витрины открывается
-  // запись на бесплатный пробный урок. Диплинк ?screen=pricing (возврат с оплаты)
-  // сюда не заходит — он остаётся рабочим.
-  function openPricing() {
-    if (isDemoAccount && isDemoExpiredNow()) setTrialOffer(true)
-    else setScreen('pricing')
-  }
-
   function handleNav(key, payload) {
     // Аккаунт класса ходит только в свой урок. Сайдбара у него нет вовсе, но
     // навигацию зовёт не только сайдбар (колокольчик уведомлений, карточки
     // внутри экранов) — поэтому запрет стоит здесь, у самой навигации.
     if (boothAccount) return
+    // Не экран, а окно поверх текущего: списки разделов ниже о нём не знают.
+    if (key === 'trial-offer') {
+      setTrialOffer(true)
+      return
+    }
     if ((!rewardsEnabled && isRewardsScreen(key)) || (!isTeacher(token) && isStudentSectionHidden(key))) return
     // «Сервисы» — вкладка телефона с профилем: нужна и в тьютор-онли, иначе из панели не попасть в профиль.
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key) && key !== 'services') return
     if (key === 'home') setScreen('home')
     else if (key === 'services') setScreen('services')
-    else if (key === 'pricing') openPricing()
+    else if (key === 'pricing') setScreen('pricing')
     else if (key === 'minutes') setScreen('minutes')
     // Профиль из меню открывается своей кнопкой; сюда приходит от Луны (destinations.js).
     else if (key === 'profile') setScreen('profile')
@@ -2107,6 +2101,10 @@ export default function App() {
         <DemoSubscriptionModal
           overPage
           onClose={() => setTrialOffer(false)}
+          onBuy={() => {
+            setTrialOffer(false)
+            setScreen('pricing')
+          }}
           onTrialBooked={() => setTrialRev((n) => n + 1)}
         />
       )}
@@ -2381,7 +2379,8 @@ export default function App() {
           tourKey={homeTourKey}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
-          onOpenPricing={openPricing}
+          onOpenPricing={() => setScreen('pricing')}
+          onOpenTrialOffer={() => setTrialOffer(true)}
           trialRev={trialRev}
           // Назначенный урок открывается тем же путём, что из расписания.
           onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }}
@@ -2825,7 +2824,7 @@ export default function App() {
             if (await wantsTeacherPick()) setScreen('teacher-pick')
             else goBack(() => setScreen('home'))
           }}
-          onPricing={(p) => { if (p) setGeProfile(p); openPricing() }}
+          onPricing={(p) => { if (p) setGeProfile(p); setScreen('pricing') }}
           onEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
           onTest={() => openPlacement('ge-route')}
           onBack={() => goBack(() => setScreen('home'))}

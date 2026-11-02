@@ -64,6 +64,8 @@ export default function HomePage({
   onProfile,
   onOpenPricing,
   onOpenTrial,
+  // Окно записи на пробный урок (App): его открывает плашка демо, когда срок вышел.
+  onOpenTrialOffer,
   // Растёт, когда заявку на пробный урок оставили в окне поверх экрана (App): перечитать.
   trialRev = 0,
   onOpenLesson,
@@ -481,7 +483,7 @@ export default function HomePage({
           <h1 className="hm-top__title">{t('nav.home')}</h1>
         </header>
         {isDemoAccount && (
-          <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} booked={!!trial?.requested || !!nextLesson} />
+          <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} onTrial={onOpenTrialOffer} booked={!!trial?.requested || !!nextLesson} />
         )}
 
         {/* Новый отчёт о прогрессе от преподавателя — выше всего остального:

@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test'
 import { gateReply } from './helpers/login.js'
 
-// Демо кончилось — ученик не должен попасть на пакеты с ценами: любой переход к
-// тарифам открывает окно с записью на пробный урок (решение 02.11.2026). Заявку
-// подменяем: настоящая завела бы сделку в amoCRM.
+// Демо кончилось — плашки зовут на пробный урок, а не к пакетам с ценами, но сами
+// тарифы остаются доступны (решение 02.11.2026). Заявку подменяем: настоящая
+// завела бы сделку в amoCRM.
 
 const jwt = ['eyJhbGciOiJIUzI1NiJ9', Buffer.from(JSON.stringify({ role: 'USER', sub: '7', userId: 7 })).toString('base64url'), 'sig'].join('.')
 const json = (body) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
@@ -85,6 +85,25 @@ test('плашка скидки после конца демо — без цен
   await dialog.getByRole('button', { name: 'Записаться на пробный урок' }).click()
   await expect(dialog).toContainText('Заявка принята')
   expect(posts).toHaveLength(1)
+})
+
+test('после конца демо тарифы доступны: тихая ссылка в окне', async ({ page }, info) => {
+  await signInDemo(page, { demoExpiresAt: '2026-10-01T10:00:00' })
+  await page.goto(info.project.name === 'mobile' ? '/?screen=services' : '/?screen=home')
+
+  await page.locator('.dm-offer:visible').getByRole('button').click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toContainText('Пробный доступ закончился')
+  await dialog.getByRole('button', { name: 'Посмотреть тарифы' }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect(page.locator('.pr__title')).toBeVisible()
+})
+
+test('после конца демо тарифы открываются и по прямому адресу', async ({ page }) => {
+  await signInDemo(page, { demoExpiresAt: '2026-10-01T10:00:00' })
+  await page.goto('/?screen=pricing')
+  await expect(page.locator('.pr__title')).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
 test('пока демо идёт, кнопка плашки ведёт на тарифы', async ({ page }, info) => {

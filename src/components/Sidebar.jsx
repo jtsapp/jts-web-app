@@ -159,7 +159,7 @@ export default function Sidebar({
           счётчики у него всё равно пустые (заданий он почти не проходил), а
           продать полный доступ здесь важнее. */}
       {demo ? (
-        <DemoOfferCard onUse={() => pick(onNav)('pricing')} />
+        <DemoOfferCard onUse={() => pick(onNav)('pricing')} onTrial={() => pick(onNav)('trial-offer')} />
       ) : (
       <div className="sb__balance">
         <div className="sb__stat">

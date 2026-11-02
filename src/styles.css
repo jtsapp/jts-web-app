@@ -5576,8 +5576,22 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
   opacity: 0.6;
   cursor: default;
 }
+/* Тарифы после конца демо: доступны, но не кнопкой рядом с записью. */
+.ds-link {
+  margin-top: 16px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
 .ds-back:focus-visible,
-.ds-buy:focus-visible {
+.ds-buy:focus-visible,
+.ds-link:focus-visible {
   outline: 2px solid var(--purple);
   outline-offset: 2px;
 }

@@ -13,9 +13,9 @@ import { demoTimeLeft, formatDemoLeft } from '../lib/demoAccess.js'
 // Тик раз в минуту, а не в секунду: в макете самая мелкая единица — минута,
 // и посекундный интервал перерисовывал бы шапку 60 раз впустую.
 //
-// Срок вышел — зовём на бесплатный пробный урок, а не к полному доступу (см.
-// DemoSubscriptionModal); booked — заявка уже есть, звать больше не на что.
-export default function DemoBanner({ expiresAt, onOpenAccess, booked = false }) {
+// Срок вышел — зовём на бесплатный пробный урок, а не к полному доступу (onTrial,
+// см. DemoSubscriptionModal); booked — заявка уже есть, звать больше не на что.
+export default function DemoBanner({ expiresAt, onOpenAccess, onTrial, booked = false }) {
   const { t } = useI18n()
   // Первый рендер обязан совпасть с серверным, иначе Next роняет гидратацию:
   // на сервере Date.now() другой. Поэтому остаток считаем эффектом, а до него
@@ -45,7 +45,7 @@ export default function DemoBanner({ expiresAt, onOpenAccess, booked = false }) 
         </span>
       )}
       {!(expired && booked) && (
-        <button type="button" className="dm-banner__cta" onClick={onOpenAccess}>
+        <button type="button" className="dm-banner__cta" onClick={expired ? onTrial : onOpenAccess}>
           {t(expired ? 'demo.expired.trial' : 'demo.open')}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="m9 5 7 7-7 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />

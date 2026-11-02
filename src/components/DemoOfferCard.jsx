@@ -11,15 +11,15 @@ import { isDemoExpiredNow } from '../lib/demoAccess.js'
 // демо-флага плашка исчезает и балансу возвращается его место — см. Sidebar.
 //
 // Срок демо вышел — на том же месте бесплатный пробный урок без цен (см.
-// DemoSubscriptionModal). onUse тот же: App сам откроет окно записи вместо витрины.
-export default function DemoOfferCard({ onUse }) {
+// DemoSubscriptionModal): кнопка открывает окно записи (onTrial), а не витрину.
+export default function DemoOfferCard({ onUse, onTrial }) {
   const { t } = useI18n()
   if (isDemoExpiredNow()) {
     return (
       <div className="dm-offer">
         <b className="dm-offer__title">{t('home.trial.title')}</b>
         <span className="dm-offer__sub">{t('home.trial.sub')}</span>
-        <button type="button" className="dm-offer__cta" onClick={onUse}>
+        <button type="button" className="dm-offer__cta" onClick={onTrial}>
           {t('home.trial.cta')}
         </button>
       </div>
