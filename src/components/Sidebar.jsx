@@ -11,7 +11,7 @@ import { useMenuItems } from './useMenuItems.js'
 import SectionAccessNotice from './SectionAccessNotice.jsx'
 import { ChevronRightIcon, CloseIcon, UserIcon, SettingsIcon } from './icons.jsx'
 
-const NEW_ITEMS = new Set(['speed-reading', 'prizes', 'feedback'])
+const NEW_ITEMS = new Set(['prizes', 'feedback'])
 
 // Состав меню по роли — lib/navSections.js: его же показывают нижняя панель телефона и «Сервисы».
 // Значки пунктов рисуются маской (.sb__ico), поэтому цвет берут от пункта: фиолетовый, у активного белый.

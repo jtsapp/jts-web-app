@@ -9,8 +9,15 @@ const keys = (list) => list.map((i) => i.key)
 describe('меню ученика', () => {
   it('обычный ученик: Главная и разделы курса, без экзаменов и наград', () => {
     expect(keys(menuItems())).toEqual([
-      'home', 'group', 'learning', 'practice', 'grammar-games', 'speed-reading', 'tutor', 'lessons', 'homework', 'vocab', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'feedback', 'notifications', 'contracts',
     ])
+  })
+
+  it('«Грамматики» и «Скорочтения» в меню нет, даже когда разделы открыты тарифом: вход — карточками «Практики»', () => {
+    const sections = { known: true, allowed: ['practice', 'grammar', 'speed'] }
+    expect(keys(menuItems({ sections }))).toContain('practice')
+    expect(keys(menuItems({ sections }))).not.toContain('grammar-games')
+    expect(keys(menuItems({ sections }))).not.toContain('speed-reading')
   })
 
   it('«Мой учитель» — сразу под «Главной», когда на стенде есть подбор, и не у преподавателя', () => {
@@ -21,7 +28,7 @@ describe('меню ученика', () => {
 
   it('экзамен появляется только при своей подписке', () => {
     expect(keys(menuItems({ exams: { ielts: true, sat: false } }))).toEqual([
-      'home', 'group', 'learning', 'practice', 'grammar-games', 'speed-reading', 'tutor', 'lessons', 'homework', 'ielts', 'vocab', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'ielts', 'vocab', 'feedback', 'notifications', 'contracts',
     ])
   })
 
@@ -68,7 +75,7 @@ describe('нижняя панель телефона', () => {
 
   it('Сервисы — разделы, которые не стали вкладками, в порядке меню', () => {
     expect(keys(serviceItems(menuItems({ exams: { ielts: true, sat: true } })))).toEqual([
-      'group', 'learning', 'grammar-games', 'speed-reading', 'homework', 'ielts', 'sat', 'vocab', 'feedback', 'notifications', 'contracts',
+      'group', 'learning', 'homework', 'ielts', 'sat', 'vocab', 'feedback', 'notifications', 'contracts',
     ])
     expect(serviceItems(menuItems({ teacher: true }))).toEqual([])
   })
