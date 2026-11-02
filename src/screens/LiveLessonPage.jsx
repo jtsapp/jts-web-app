@@ -315,9 +315,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       if (place?.materialId != null) setActiveMaterialId(place.materialId)
       setActiveSectionId((prev) => (prev != null && list.some((s) => String(s.id) === String(prev))) ? prev : (place?.sectionId ?? list[0]?.id ?? null))
       return list
-    }).catch(() => {
+    }).catch((err) => {
       if (sectionsRequestRef.current !== request) return sectionsRequestRef.current
-      setSectionsFailed(true)
+      // Отказ сервера со своим текстом («Прошедшие уроки закрыты…», «Сеанс в классе завершён…») показываем как есть:
+      // «обновите страницу» тут не поможет.
+      setSectionsFailed(err?.status === 403 && err.serverMessage ? err.serverMessage : true)
       return null
     })
     sectionsRequestRef.current = request
@@ -2298,7 +2300,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           метка живёт в списке тем. */}
                       {sections.length === 0 ? (
                         <p className={`live__status-msg ${sectionsFailed ? 'live__status-msg--error' : ''}`}>
-                          {t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
+                          {typeof sectionsFailed === 'string' ? sectionsFailed : t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
                         </p>
                       ) : (
                         <LessonSidePanel
