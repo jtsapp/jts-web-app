@@ -50,6 +50,7 @@ const dict = {
     'demo.expired.title': 'Пробный доступ закончился',
     'demo.expired.body': 'Запишитесь на бесплатный пробный урок с преподавателем — менеджер свяжется с вами и подберёт удобное время.',
     'demo.expired.trial': 'Записаться на пробный урок',
+    'demo.expired.plans': 'Посмотреть тарифы',
     'demo.expired.manager': 'Написать менеджеру',
     // --- Демо-аккаунт: «Главная», срок доступа, витрина тарифов ---
     'nav.home': 'Главная',
@@ -7571,6 +7572,7 @@ const dict = {
     'demo.expired.title': 'Your trial has ended',
     'demo.expired.body': 'Book a free trial lesson with a teacher — a manager will contact you and find a time that suits you.',
     'demo.expired.trial': 'Book a trial lesson',
+    'demo.expired.plans': 'View plans',
     'demo.expired.manager': 'Contact manager',
     'nav.home': 'Home',
     'nav.myTeacher': 'My teacher',
@@ -15057,6 +15059,7 @@ const dict = {
     'demo.expired.title': 'Сынақ мерзімі аяқталды',
     'demo.expired.body': 'Мұғаліммен тегін сынақ сабағына жазылыңыз — менеджер сізбен байланысып, ыңғайлы уақытты таңдайды.',
     'demo.expired.trial': 'Сынақ сабағына жазылу',
+    'demo.expired.plans': 'Тарифтерді қарау',
     'demo.expired.manager': 'Менеджерге жазу',
     'nav.home': 'Басты бет',
     'nav.myTeacher': 'Менің мұғалімім',

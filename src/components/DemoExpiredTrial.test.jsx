@@ -9,10 +9,11 @@ import DemoSubscriptionModal from './DemoSubscriptionModal.jsx'
 import DemoBanner from './DemoBanner.jsx'
 import DemoOfferCard from './DemoOfferCard.jsx'
 
-// Срок демо вышел — ни одна плашка не ведёт к пакетам с ценами (решение 02.11.2026:
-// цены пугают того, кто ещё не видел урока), все зовут на бесплатный пробный урок.
-// Заявку заводит /mobile/trial-request: бэкенд сам ставит сделке в amoCRM тег
-// «Заявка на пробный урок».
+// Срок демо вышел — плашки демо зовут на бесплатный пробный урок, а не к пакетам с
+// ценами (решение 02.11.2026: цены пугают того, кто ещё не видел урока, а тарифы
+// преподаватель предложит после урока). Сами тарифы остаются доступны: в окне к ним
+// ведёт тихая ссылка. Заявку заводит /mobile/trial-request: бэкенд сам ставит сделке
+// в amoCRM тег «Заявка на пробный урок».
 
 vi.mock('../api.js', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -47,7 +48,24 @@ describe('окно после конца демо', () => {
     expect(screen.getByText(/бесплатный пробный урок/)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Записаться на пробный урок' })).toBeTruthy()
     expect(screen.queryByText('Приобрести подписку')).toBeNull()
-    expect(document.body.textContent).not.toMatch(/тариф|подписк/i)
+  })
+
+  it('тарифы — тихой ссылкой, а главная кнопка остаётся записью', async () => {
+    const onBuy = vi.fn()
+    const { container } = inApp(<DemoSubscriptionModal onClose={() => {}} onBuy={onBuy} />)
+    await waitFor(() => expect(getTrialRequestState).toHaveBeenCalled())
+    expect(container.querySelector('.ds-buy').textContent).toBe('Записаться на пробный урок')
+    const link = screen.getByRole('button', { name: 'Посмотреть тарифы' })
+    expect(link.className).toContain('ds-link')
+    fireEvent.click(link)
+    expect(onBuy).toHaveBeenCalledTimes(1)
+    expect(requestTrialLesson).not.toHaveBeenCalled()
+  })
+
+  it('экрану некуда вести — ссылки на тарифы нет', async () => {
+    inApp(<DemoSubscriptionModal onClose={() => {}} />)
+    await waitFor(() => expect(getTrialRequestState).toHaveBeenCalled())
+    expect(screen.queryByText('Посмотреть тарифы')).toBeNull()
   })
 
   it('кнопка оставляет заявку и окно говорит, что она принята', async () => {
@@ -85,6 +103,7 @@ describe('окно после конца демо', () => {
     rememberDemoDeadline(null)
     inApp(<DemoSubscriptionModal onClose={() => {}} onBuy={() => {}} />)
     expect(screen.getByText('Приобрести подписку')).toBeTruthy()
+    expect(screen.queryByText('Посмотреть тарифы')).toBeNull()
     expect(getTrialRequestState).not.toHaveBeenCalled()
   })
 })
@@ -92,9 +111,11 @@ describe('окно после конца демо', () => {
 describe('плашка «Главной» после конца демо', () => {
   it('зовёт на пробный урок', async () => {
     const onOpenAccess = vi.fn()
-    inApp(<DemoBanner expiresAt={PAST} onOpenAccess={onOpenAccess} />)
+    const onTrial = vi.fn()
+    inApp(<DemoBanner expiresAt={PAST} onOpenAccess={onOpenAccess} onTrial={onTrial} />)
     fireEvent.click(await screen.findByRole('button', { name: 'Записаться на пробный урок' }))
-    expect(onOpenAccess).toHaveBeenCalledTimes(1)
+    expect(onTrial).toHaveBeenCalledTimes(1)
+    expect(onOpenAccess).not.toHaveBeenCalled()
     expect(screen.queryByText('Открыть полный доступ')).toBeNull()
     expect(screen.getByText(/запишитесь на бесплатный пробный урок/)).toBeTruthy()
   })
@@ -105,28 +126,36 @@ describe('плашка «Главной» после конца демо', () =>
     expect(container.querySelector('.dm-banner__cta')).toBeNull()
   })
 
-  it('пока демо идёт, зовёт на полный доступ', () => {
+  it('пока демо идёт, зовёт на полный доступ', async () => {
     const until = new Date(Date.now() + 3 * 3600_000).toISOString()
-    inApp(<DemoBanner expiresAt={until} booked onOpenAccess={() => {}} />)
-    expect(screen.getByText('Открыть полный доступ')).toBeTruthy()
+    const onOpenAccess = vi.fn()
+    const onTrial = vi.fn()
+    inApp(<DemoBanner expiresAt={until} booked onOpenAccess={onOpenAccess} onTrial={onTrial} />)
+    fireEvent.click(screen.getByText('Открыть полный доступ'))
+    expect(onOpenAccess).toHaveBeenCalledTimes(1)
+    expect(onTrial).not.toHaveBeenCalled()
   })
 })
 
 describe('плашка скидки после конца демо', () => {
   it('без цен — пробный урок бесплатно', () => {
     const onUse = vi.fn()
-    const { container } = inApp(<DemoOfferCard onUse={onUse} />)
+    const onTrial = vi.fn()
+    const { container } = inApp(<DemoOfferCard onUse={onUse} onTrial={onTrial} />)
     expect(container.querySelector('.dm-offer__prices')).toBeNull()
     expect(container.textContent).not.toContain('₸')
     expect(screen.getByText('Пробный урок — бесплатно')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Записаться' }))
-    expect(onUse).toHaveBeenCalledTimes(1)
+    expect(onTrial).toHaveBeenCalledTimes(1)
+    expect(onUse).not.toHaveBeenCalled()
   })
 
-  it('пока демо идёт, скидка прежняя', () => {
+  it('пока демо идёт, скидка прежняя и ведёт на тарифы', () => {
     rememberDemoDeadline(null)
-    inApp(<DemoOfferCard onUse={() => {}} />)
+    const onUse = vi.fn()
+    inApp(<DemoOfferCard onUse={onUse} onTrial={() => {}} />)
     expect(screen.getByText('900 ₸')).toBeTruthy()
-    expect(screen.getByText('Использовать скидку')).toBeTruthy()
+    fireEvent.click(screen.getByText('Использовать скидку'))
+    expect(onUse).toHaveBeenCalledTimes(1)
   })
 })
