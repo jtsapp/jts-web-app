@@ -25,7 +25,7 @@ html,body{margin:0;height:100%;background:var(--midnight);overflow:hidden;-webki
 .jts .wm{font-family:var(--ui);font-weight:700;font-size:13px;letter-spacing:.02em;color:var(--frost);text-shadow:0 2px 8px rgba(0,0,0,.5);}
 .jts .wm b{background:linear-gradient(135deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;color:transparent;}
 #app{position:fixed;inset:0;height:100dvh;overflow:hidden;} /* dvh: одним inset:0 fixed-блок на телефоне берёт высокий вьюпорт, и низ (рассказ, выборы) уходил под панель браузера */
-.screen{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .9s ease;}
+.screen{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .9s ease;} #app .screen{min-height:0;} /* у приложения свой .screen с min-height:100vh, а 100vh на телефоне — высота БЕЗ панелей браузера: экран вылезал за #app, и низ рассказа с выборами уходил под панель */
 .screen.on{opacity:1;pointer-events:auto;}
 img{-webkit-user-drag:none;user-drag:none;}
 
@@ -420,15 +420,15 @@ img{-webkit-user-drag:none;user-drag:none;}
 @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
 
 /* narration bar (audiobook) */
-#narration{position:absolute;left:0;right:0;bottom:0;z-index:47;padding:16px 16px calc(20px + env(safe-area-inset-bottom));
-  background:linear-gradient(0deg,rgba(6,10,23,.94) 55%,rgba(6,10,23,.4) 85%,transparent);
+#narration{position:absolute;left:0;right:0;bottom:0;z-index:47;padding:24px 16px calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(0deg,rgba(6,10,23,.94) 66%,rgba(6,10,23,.55) 86%,transparent);
   transform:translateY(120%);transition:transform .5s cubic-bezier(.4,0,.2,1);}
 #narration.show{transform:translateY(0);}
-.narr-inner{max-width:720px;margin:0 auto;}
-.narr-who{font-family:var(--ui);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:.35em;}
-.narr-text{font-size:min(4.8vw,20px);line-height:1.5;color:var(--frost);min-height:2.6em;}
-.narr-foot{display:flex;justify-content:space-between;align-items:center;margin-top:.7em;gap:8px;}
-.narr-hint{font-style:italic;font-size:12px;color:var(--frost-dim);}
+.narr-inner{max-width:720px;margin:0 auto;display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:8px;}
+.narr-who{font-family:var(--ui);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);}
+.narr-text{grid-column:1/-1;font-size:min(4.8vw,20px);line-height:1.5;color:var(--frost);min-height:2.6em;margin-top:.3em;max-height:6em;max-height:min(6em,24dvh);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:thin;} /* четыре строки, остальное листается: плашка во весь текст закрывала героя целиком */ .narr-text.more{-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 1.5em),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 1.5em),transparent);} @media (min-width:761px) and (min-height:700px){.narr-text{max-height:9em;}}
+.narr-foot{grid-column:2;grid-row:1;display:flex;justify-content:flex-end;align-items:center;margin:-6px 0;gap:8px;}
+.narr-hint{display:none;}
 .narr-actions{display:flex;gap:8px;}
 .miniic{width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;
   background:rgba(20,34,66,.8);border:1px solid rgba(150,190,255,.3);color:var(--frost);}
@@ -575,7 +575,7 @@ img{-webkit-user-drag:none;user-drag:none;}
 #app[data-tale="aldar_kose"] .btn.ghost{background:linear-gradient(180deg,rgba(120,70,30,.5),rgba(60,32,12,.6));
   color:#fdf1dc;border:1px solid rgba(232,164,58,.5);box-shadow:0 4px 16px rgba(30,14,0,.4);}
 #app[data-tale="aldar_kose"] #vignette{background:radial-gradient(120% 100% at 50% 42%,transparent 48%,rgba(30,16,4,.4) 84%,rgba(24,12,3,.86));}
-#app[data-tale="aldar_kose"] #narration{background:linear-gradient(0deg,rgba(28,16,6,.95) 55%,rgba(28,16,6,.4) 85%,transparent);}
+#app[data-tale="aldar_kose"] #narration{background:linear-gradient(0deg,rgba(28,16,6,.95) 66%,rgba(28,16,6,.55) 86%,transparent);}
 #app[data-tale="aldar_kose"] #objective{background:rgba(40,22,8,.66);border-color:rgba(232,164,58,.35);}
 #app[data-tale="aldar_kose"] .iconbtn{background:rgba(52,30,12,.7);border-color:rgba(232,164,58,.4);color:#fdf1dc;}
 #app[data-tale="aldar_kose"] #promptbar,#app[data-tale="aldar_kose"] #playerturn{background:linear-gradient(0deg,rgba(28,16,6,.95),transparent);}
@@ -598,7 +598,7 @@ img{-webkit-user-drag:none;user-drag:none;}
 #app[data-tale="er_tostik"] .btn.ghost{background:linear-gradient(180deg,rgba(120,70,30,.5),rgba(60,32,12,.6));
   color:#fdf1dc;border:1px solid rgba(232,164,58,.5);box-shadow:0 4px 16px rgba(30,14,0,.4);}
 #app[data-tale="er_tostik"] #vignette{background:radial-gradient(120% 100% at 50% 42%,transparent 48%,rgba(30,16,4,.4) 84%,rgba(24,12,3,.86));}
-#app[data-tale="er_tostik"] #narration{background:linear-gradient(0deg,rgba(28,16,6,.95) 55%,rgba(28,16,6,.4) 85%,transparent);}
+#app[data-tale="er_tostik"] #narration{background:linear-gradient(0deg,rgba(28,16,6,.95) 66%,rgba(28,16,6,.55) 86%,transparent);}
 #app[data-tale="er_tostik"] #objective{background:rgba(40,22,8,.66);border-color:rgba(232,164,58,.35);}
 #app[data-tale="er_tostik"] .iconbtn{background:rgba(52,30,12,.7);border-color:rgba(232,164,58,.4);color:#fdf1dc;}
 #app[data-tale="er_tostik"] #promptbar,#app[data-tale="er_tostik"] #playerturn{background:linear-gradient(0deg,rgba(28,16,6,.95),transparent);}
@@ -2851,7 +2851,7 @@ function applyCamCue(cam){
 }
 function applyCineStep(st, si){
   applyStaging(st);   // fx / wind / cam / grade / cast are all handled here now
-  if(st.narr){ vwRender($("#narrText"),t(st.narr)); $("#narration").classList.add("show");
+  if(st.narr){ narrRender(st.narr); $("#narration").classList.add("show");
     // cine narration has its own recorded clip, keyed  <path>:<ci>:<bi>:c<stepIndex>
     const ck=(S!=null && si!=null) ? (storyPath()+":"+S.ci+":"+S.bi+":c"+si) : null;
     lastPlayed={type:"narr",obj:st.narr,who:"narrator",key:ck};
@@ -2943,7 +2943,7 @@ function narrKey(){ return S? (storyPath()+":"+S.ci+":"+S.bi+":narr") : null; }
 function dlgKey(li){ return S? (storyPath()+":"+S.ci+":"+S.bi+":d"+li) : null; }
 function showNarration(obj,next){
   hideBubble(); curNarrObj=obj; curBubbleObj=null;
-  vwRender($("#narrText"),t(obj));
+  narrRender(obj);
   $("#narration").classList.add("show"); $("#dlgadv").classList.remove("show");
   lastPlayed={type:"narr",obj:obj,who:"narrator",key:narrKey()};
   cameraEstablish();                 // wide establishing shot while the narrator speaks
@@ -2951,7 +2951,7 @@ function showNarration(obj,next){
   armLine(autoAfter(800), estReadMs(t(obj)));   // hold a beat after the narration, then advance
   speak(t(obj),"narrator","narr",narrKey());
 }
-function hideNarration(){ $("#narration").classList.remove("show"); curNarrObj=null; stopClip(); }
+function hideNarration(){ $("#narration").classList.remove("show"); curNarrObj=null; stopClip(); } /* текст листается внутри плашки: новая реплика — снова с начала, а затухание снизу видно, только пока есть что дочитать */ function narrRender(obj){ const el=$("#narrText"); vwRender(el,t(obj)); el.scrollTop=0; narrMore(); } function narrMore(){ const el=$("#narrText"); el.classList.toggle("more",el.scrollHeight-el.clientHeight-el.scrollTop>2); }
 
 let lastSpeakerKey=null;
 /* the mouth/talking motion runs for exactly as long as the audio does: it is
@@ -3061,7 +3061,7 @@ function replayLast(){ if(!lastPlayed) return;
 function relocalizeLive(){
   if(!S || current!=="world") return;
   if(lang!=="en") stopClip();   // recorded clips are English; RU/KK fall back to per-character TTS
-  if(curNarrObj) vwRender($("#narrText"),t(curNarrObj));
+  if(curNarrObj) narrRender(curNarrObj);
   if(curBubble&&curBubbleObj){ const el=curBubble.querySelector(".btx"); if(el) el.textContent=t(curBubbleObj);
     const wh=curBubble.querySelector(".who"); if(wh&&lastPlayed) wh.textContent=nameOf(lastPlayed.who); }
   Object.values(actors).forEach(a=>{ const tg=a.el.querySelector(".tag"); if(tg) tg.textContent=nameOf(a.key); });
@@ -7959,7 +7959,7 @@ $("#ptSay").addEventListener("click",(e)=>{ e.stopPropagation(); resolvePlayer(n
 $("#ptPlay").addEventListener("click",(e)=>{ e.stopPropagation(); playTake(); });
 $("#ptRerec").addEventListener("click",(e)=>{ e.stopPropagation(); recForTurn=true; startRecording(); });
 $("#ptInput").addEventListener("keydown",(e)=>{ if(e.key==="Enter") resolvePlayer($("#ptInput").value, false); });
-$("#narrCont").addEventListener("click",(e)=>{ e.stopPropagation(); doAdvance(); });
+$("#narrCont").addEventListener("click",(e)=>{ e.stopPropagation(); doAdvance(); }); $("#narrText").addEventListener("scroll",narrMore,{passive:true}); window.addEventListener("resize",narrMore);
 $("#narrReplay").addEventListener("click",(e)=>{ e.stopPropagation(); replayLast(); });
 $("#btnVoice").addEventListener("click",()=>{ S.voice=!S.voice; $("#btnVoice").style.opacity=S.voice?1:0.45;
   if(!S.voice){ stopClip(); if(window.speechSynthesis) speechSynthesis.cancel(); } save(); });
@@ -8509,7 +8509,7 @@ function cinResumeFromPlayer(resumeAt){
 /* visual-only narration (no speak / no auto-advance — the master supplies the voice) */
 function cinemaNarrText(obj){
   hideBubble(); curNarrObj=obj; curBubbleObj=null;
-  vwRender($("#narrText"),t(obj));
+  narrRender(obj);
   $("#narration").classList.add("show");
   $("#dlgadv").classList.remove("show");
 }

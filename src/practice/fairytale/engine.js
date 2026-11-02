@@ -1916,7 +1916,7 @@ function applyCamCue(cam){
 }
 function applyCineStep(st, si){
   applyStaging(st);   // fx / wind / cam / grade / cast are all handled here now
-  if(st.narr){ vwRender($("#narrText"),t(st.narr)); $("#narration").classList.add("show");
+  if(st.narr){ narrRender(st.narr); $("#narration").classList.add("show");
     // cine narration has its own recorded clip, keyed  <path>:<ci>:<bi>:c<stepIndex>
     const ck=(S!=null && si!=null) ? (storyPath()+":"+S.ci+":"+S.bi+":c"+si) : null;
     lastPlayed={type:"narr",obj:st.narr,who:"narrator",key:ck};
@@ -2008,7 +2008,7 @@ function narrKey(){ return S? (storyPath()+":"+S.ci+":"+S.bi+":narr") : null; }
 function dlgKey(li){ return S? (storyPath()+":"+S.ci+":"+S.bi+":d"+li) : null; }
 function showNarration(obj,next){
   hideBubble(); curNarrObj=obj; curBubbleObj=null;
-  vwRender($("#narrText"),t(obj));
+  narrRender(obj);
   $("#narration").classList.add("show"); $("#dlgadv").classList.remove("show");
   lastPlayed={type:"narr",obj:obj,who:"narrator",key:narrKey()};
   cameraEstablish();                 // wide establishing shot while the narrator speaks
@@ -2016,7 +2016,7 @@ function showNarration(obj,next){
   armLine(autoAfter(800), estReadMs(t(obj)));   // hold a beat after the narration, then advance
   speak(t(obj),"narrator","narr",narrKey());
 }
-function hideNarration(){ $("#narration").classList.remove("show"); curNarrObj=null; stopClip(); }
+function hideNarration(){ $("#narration").classList.remove("show"); curNarrObj=null; stopClip(); } /* текст листается внутри плашки: новая реплика — снова с начала, а затухание снизу видно, только пока есть что дочитать */ function narrRender(obj){ const el=$("#narrText"); vwRender(el,t(obj)); el.scrollTop=0; narrMore(); } function narrMore(){ const el=$("#narrText"); el.classList.toggle("more",el.scrollHeight-el.clientHeight-el.scrollTop>2); }
 
 let lastSpeakerKey=null;
 /* the mouth/talking motion runs for exactly as long as the audio does: it is
@@ -2126,7 +2126,7 @@ function replayLast(){ if(!lastPlayed) return;
 function relocalizeLive(){
   if(!S || current!=="world") return;
   if(lang!=="en") stopClip();   // recorded clips are English; RU/KK fall back to per-character TTS
-  if(curNarrObj) vwRender($("#narrText"),t(curNarrObj));
+  if(curNarrObj) narrRender(curNarrObj);
   if(curBubble&&curBubbleObj){ const el=curBubble.querySelector(".btx"); if(el) el.textContent=t(curBubbleObj);
     const wh=curBubble.querySelector(".who"); if(wh&&lastPlayed) wh.textContent=nameOf(lastPlayed.who); }
   Object.values(actors).forEach(a=>{ const tg=a.el.querySelector(".tag"); if(tg) tg.textContent=nameOf(a.key); });
@@ -7029,7 +7029,7 @@ $("#ptSay").addEventListener("click",(e)=>{ e.stopPropagation(); resolvePlayer(n
 $("#ptPlay").addEventListener("click",(e)=>{ e.stopPropagation(); playTake(); });
 $("#ptRerec").addEventListener("click",(e)=>{ e.stopPropagation(); recForTurn=true; startRecording(); });
 $("#ptInput").addEventListener("keydown",(e)=>{ if(e.key==="Enter") resolvePlayer($("#ptInput").value, false); });
-$("#narrCont").addEventListener("click",(e)=>{ e.stopPropagation(); doAdvance(); });
+$("#narrCont").addEventListener("click",(e)=>{ e.stopPropagation(); doAdvance(); }); $("#narrText").addEventListener("scroll",narrMore,{passive:true}); window.addEventListener("resize",narrMore);
 $("#narrReplay").addEventListener("click",(e)=>{ e.stopPropagation(); replayLast(); });
 $("#btnVoice").addEventListener("click",()=>{ S.voice=!S.voice; $("#btnVoice").style.opacity=S.voice?1:0.45;
   if(!S.voice){ stopClip(); if(window.speechSynthesis) speechSynthesis.cancel(); } save(); });
@@ -7601,7 +7601,7 @@ function cinResumeFromPlayer(resumeAt){
 /* visual-only narration (no speak / no auto-advance — the master supplies the voice) */
 function cinemaNarrText(obj){
   hideBubble(); curNarrObj=obj; curBubbleObj=null;
-  vwRender($("#narrText"),t(obj));
+  narrRender(obj);
   $("#narration").classList.add("show");
   $("#dlgadv").classList.remove("show");
 }
