@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { fetchLatestAttempt } from '../../placement/api.js'
 import { reportView, SKILL_ORDER } from '../../placement/reportModel.js'
+import { usePlacementCollapsed } from './placementCollapse.js'
 
 /**
  * Отчёт последнего теста уровня v16 на «Главной» (указание руководителя 14.10.2026: «после теста все данные — очень
@@ -49,21 +50,38 @@ const SKILL_ICON = {
  * непройденный тест спрашивается в этом блоке). Так у всех, кто без теста, — и у нового ученика, и у учившегося до
  * теста v16 (решение 14.10: не заставлять, но тест должен числиться непройденным).
  */
-export function PlacementResults({ report, onRetake }) {
+// Кнопка «Скрыть / Показать» в шапке карточки: свёрнутой остаются заголовок и статус.
+function CollapseToggle({ collapsed, onToggle, bodyId }) {
+  const { t } = useI18n()
+  return (
+    <button type="button" className="pl-report__toggle" aria-expanded={!collapsed} aria-controls={bodyId} onClick={onToggle}>
+      {t(collapsed ? 'placement.report.expand' : 'placement.report.collapse')}
+    </button>
+  )
+}
+
+export function PlacementResults({ report, onRetake, collapseKey }) {
   const { t, lang } = useI18n()
   const { loaded, view } = report
+  const [collapsed, toggle] = usePlacementCollapsed(collapseKey)
   // ответа ещё нет — пусто: «Не пройден» мигал бы у прошедших тест
   if (!loaded) return null
   if (!view) {
     return (
-      <section className="hm-card pl-report pl-report--missing" aria-labelledby="pl-missing-title">
+      <section
+        className={`hm-card pl-report pl-report--missing${collapsed ? ' is-collapsed' : ''}`}
+        aria-labelledby="pl-missing-title"
+      >
         <div className="pl-report__head">
           <h2 id="pl-missing-title" className="hm-card__title">
             {t('placement.report.title')}
           </h2>
           <span className="pl-report__status">{t('placement.report.missingStatus')}</span>
+          <CollapseToggle collapsed={collapsed} onToggle={toggle} bodyId="pl-missing-body" />
         </div>
 
+        {!collapsed && (
+        <div id="pl-missing-body" className="pl-report__body">
         <div className="pl-report__overall is-empty">
           <b className="pl-report__level" aria-hidden="true">
             ?
@@ -89,6 +107,8 @@ export function PlacementResults({ report, onRetake }) {
             </li>
           ))}
         </ul>
+        </div>
+        )}
       </section>
     )
   }
@@ -100,14 +120,17 @@ export function PlacementResults({ report, onRetake }) {
       : null
 
   return (
-    <section className="hm-card pl-report" aria-labelledby="pl-report-title">
+    <section className={`hm-card pl-report${collapsed ? ' is-collapsed' : ''}`} aria-labelledby="pl-report-title">
       <div className="pl-report__head">
         <h2 id="pl-report-title" className="hm-card__title">
           {t('placement.report.title')}
         </h2>
         {when && <span className="pl-report__date">{when}</span>}
+        <CollapseToggle collapsed={collapsed} onToggle={toggle} bodyId="pl-report-body" />
       </div>
 
+      {!collapsed && (
+      <div id="pl-report-body" className="pl-report__body">
       <div className="pl-report__overall">
         <b className="pl-report__level">{view.overall}</b>
         <span className="pl-report__overallText">
@@ -167,6 +190,8 @@ export function PlacementResults({ report, onRetake }) {
         <button type="button" className="pl-report__retake" onClick={onRetake}>
           {t('placement.report.retake')}
         </button>
+      )}
+      </div>
       )}
     </section>
   )

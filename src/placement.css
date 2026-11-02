@@ -356,7 +356,30 @@
   gap: 12px;
 }
 .pl-report__head .hm-card__title {
-  margin: 0;
+  /* справа от заголовка — статус (или дата) и «Скрыть» рядом */
+  margin: 0 auto 0 0;
+}
+/* Тело карточки под шапкой — свёрнутой карточкой (кнопка «Скрыть», placementCollapse.js) остаётся одна шапка. */
+.pl-report__body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.pl-report__toggle {
+  flex: none;
+  padding: 4px 12px;
+  border: 1px solid var(--hm-line, #e6e6ec);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--hm-sec, #5a5a66);
+  font: inherit;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pl-report__toggle:hover {
+  color: var(--hm-ink, #1b1b24);
 }
 .pl-report__date {
   display: inline-flex;

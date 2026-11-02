@@ -14,6 +14,7 @@ import IeltsHomeCard from './home/IeltsHomeCard.jsx'
 import GeGoalBanner from './home/GeGoalBanner.jsx'
 import GeStartHero, { GeFinishHero, StartHereCard } from './home/GeStartHero.jsx'
 import { PlacementNext, PlacementResults, usePlacementReport } from './home/PlacementReport.jsx'
+import { placementCollapseKey } from './home/placementCollapse.js'
 import GeTodayCard from './home/GeTodayCard.jsx'
 import TourSections from './home/TourSections.jsx'
 import TemperInvite from './home/TemperInvite.jsx'
@@ -544,7 +545,7 @@ export default function HomePage({
             )}
             <PracticeToday t={t} lang={lang} token={token} onNav={onNav} />
             {/* Отчёт теста уровня v16; теста нет — тот же блок пустым и зовёт на тест (решение владельца 21.10.2026). */}
-            {!ieltsAccount && <PlacementResults report={report} onRetake={onStartLevelTest} />}
+            {!ieltsAccount && <PlacementResults report={report} onRetake={onStartLevelTest} collapseKey={placementCollapseKey(tourKey)} />}
           </div>
 
           <div className="hm-grid__side">
