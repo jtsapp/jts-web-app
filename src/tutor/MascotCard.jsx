@@ -11,7 +11,7 @@ export default function MascotCard({ children }) {
   return (
     <div className="t-card">
       <div className="t-card__panel">
-        <img className="t-card__mascot" src="/tutor/mascot.png" alt="" />
+        <img className="t-card__mascot" src="/tutor/mascot.webp" alt="" />
         <div className="t-card__carousel">
           {TUTORS.map((tt) => (
             <div className="t-card__slide" key={tt.key}>

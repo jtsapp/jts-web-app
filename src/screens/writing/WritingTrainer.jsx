@@ -86,7 +86,7 @@ export default function WritingTrainer({ genre, meta, step, onStep, onOpenPad })
           {/* Монетка — общий ассет тренажёров (как в TrainerResult);
               статическая иконка 15px, next/image тут не окупается. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/practice/listening/coin.png" alt="" />+{coins}
+          <img src="/practice/listening/coin.webp" alt="" />+{coins}
         </span>
       </div>
 
