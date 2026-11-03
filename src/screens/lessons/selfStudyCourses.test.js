@@ -7,6 +7,7 @@ import {
   courseShortName,
   defaultCourse,
   findPickedCourse,
+  selfStudyLessonPlace,
 } from './selfStudyCourses.js'
 
 const A2 = { id: 3, code: 'A2', label: 'just to study — Pre-Intermediate A2 · Course' }
@@ -195,5 +196,41 @@ describe('курс по умолчанию', () => {
   it('открытого нет — первый', () => {
     const first = { ...A2, locked: true }
     expect(defaultCourse([first, { ...B2, locked: true }])).toBe(first)
+  })
+})
+
+describe('selfStudyLessonPlace', () => {
+  const levels = [
+    {
+      id: 1,
+      units: [
+        { id: 1, name: 'U1', lessons: [
+          { id: 10, mode: 'SELF_STUDY' },
+          { id: 11, mode: 'GROUP' },
+          { id: 12, mode: 'self_study', locked: true },
+          { id: 13, mode: 'SELF_STUDY' },
+        ] },
+        { id: 2, name: 'Только занятия', lessons: [{ id: 14, mode: 'GROUP' }] },
+        { id: 3, name: 'U3', lessons: [{ id: 15, mode: 'SELF_STUDY' }] },
+      ],
+    },
+    { id: 2, units: [{ id: 4, name: 'B', lessons: [{ id: 20, mode: 'SELF_STUDY' }] }] },
+  ]
+
+  it('соседи — только открытые самостоятельные уроки, через границу юнита', () => {
+    const place = selfStudyLessonPlace(levels, 13)
+    expect(place.level.id).toBe(1)
+    expect(place.previous.id).toBe(10)
+    expect(place.next.id).toBe(15)
+    expect(place.units.map((unit) => unit.id)).toEqual([1, 3])
+  })
+
+  it('следующего урока за концом курса нет, в чужой курс не уходим', () => {
+    expect(selfStudyLessonPlace(levels, 15).next).toBeNull()
+  })
+
+  it('урока нет в каталоге или он закрыт — места нет', () => {
+    expect(selfStudyLessonPlace(levels, 12)).toBeNull()
+    expect(selfStudyLessonPlace(null, 10)).toBeNull()
   })
 })

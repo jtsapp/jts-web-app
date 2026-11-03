@@ -1513,7 +1513,11 @@ html[data-theme="dark"] .ds-buy {
 html[data-theme="dark"] .ds-buy:hover {
     background: var(--dk-acc)
 }
-html[data-theme="dark"] .ds-back:focus-visible, html[data-theme="dark"] .ds-buy:focus-visible {
+html[data-theme="dark"] .ds-link {
+    border: none;
+    background: none
+}
+html[data-theme="dark"] .ds-back:focus-visible, html[data-theme="dark"] .ds-buy:focus-visible, html[data-theme="dark"] .ds-link:focus-visible {
     outline: 2px solid var(--purple)
 }
 html[data-theme="dark"] .kh-ring__track {
@@ -20521,7 +20525,7 @@ html[data-theme="dark"] .kk-res__btn--soft {
     color: var(--dk-acc-text)
 }
 /*  lessonWorkspace.css  */
-html[data-theme="dark"] .lv, html[data-theme="dark"] .lw, html[data-theme="dark"] .live, html[data-theme="dark"] .lw-doc, html[data-theme="dark"] .hw-exercises {
+html[data-theme="dark"] .lv, html[data-theme="dark"] .lw, html[data-theme="dark"] .live, html[data-theme="dark"] .lw-doc, html[data-theme="dark"] .ssf, html[data-theme="dark"] .ssf-panel, html[data-theme="dark"] .hw-exercises {
     --lw-bg: var(--dk-page);
     --lw-surface: var(--dk-card);
     --lw-primary: var(--dk-acc);
@@ -22042,6 +22046,93 @@ html[data-theme="dark"] .lw-frame-collapse {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     color: #fff
 }
+html[data-theme="dark"] .ssf {
+    background: var(--lw-bg);
+    color: var(--lw-ink)
+}
+html[data-theme="dark"] .ssf-stage {
+    border: 0;
+    background: var(--lw-surface);
+    color: var(--lw-ink-2)
+}
+html[data-theme="dark"] .ssf-stage:hover {
+    background: var(--lw-tint-1)
+}
+html[data-theme="dark"] .ssf-stage.is-past {
+    color: var(--lw-primary-ink)
+}
+html[data-theme="dark"] .ssf-stage.is-current {
+    background: var(--lw-primary-ink);
+    color: #ffffff
+}
+html[data-theme="dark"] .ssf-stage:focus-visible, html[data-theme="dark"] .ssf-btn:focus-visible, html[data-theme="dark"] .ssf-lesson:focus-visible {
+    outline: 2px solid var(--lw-primary)
+}
+html[data-theme="dark"] .ssf__frame {
+    background: var(--lw-surface)
+}
+html[data-theme="dark"] .ssf__iframe {
+    border: 0;
+    background: var(--lw-surface)
+}
+html[data-theme="dark"] .ssf__loading {
+    color: var(--lw-ink-2);
+    background: var(--lw-surface)
+}
+html[data-theme="dark"] .ssf__count {
+    color: var(--lw-ink-2)
+}
+html[data-theme="dark"] .ssf-btn {
+    border: 0
+}
+html[data-theme="dark"] .ssf-btn--ghost {
+    background: var(--lw-tint-1);
+    color: var(--lw-primary-ink)
+}
+html[data-theme="dark"] .ssf-btn--ghost:hover:not(:disabled) {
+    background: var(--lw-tint-2)
+}
+html[data-theme="dark"] .ssf-btn--primary {
+    background: var(--lw-primary-ink);
+    color: #ffffff
+}
+html[data-theme="dark"] .ssf-btn--primary:hover:not(:disabled) {
+    background: var(--lw-primary)
+}
+html[data-theme="dark"] .ssf-panel__scrim {
+    border: 0;
+    background: rgba(24, 24, 24, 0.4)
+}
+html[data-theme="dark"] .ssf-panel__body {
+    background: var(--lw-surface);
+    color: var(--lw-ink)
+}
+html[data-theme="dark"] .ssf-unit__name {
+    color: var(--lw-ink-2)
+}
+html[data-theme="dark"] .ssf-lesson {
+    border: 0;
+    background: none;
+    color: var(--lw-ink)
+}
+html[data-theme="dark"] .ssf-lesson:hover {
+    background: var(--lw-tint-1)
+}
+html[data-theme="dark"] .ssf-lesson.is-current {
+    background: var(--lw-tint-1)
+}
+html[data-theme="dark"] .ssf-lesson__tag {
+    color: var(--lw-primary-ink)
+}
+html[data-theme="dark"] .ssf-lesson__tag--done {
+    color: var(--lw-ink-2)
+}
+@media (max-width: 900px) {
+    html[data-theme="dark"] .ssf__nav {
+        background: var(--lw-surface);
+        box-shadow: 0 -1px 0 var(--lw-track)
+    }
+}
 /*  courseCatalog.css  */
 html[data-theme="dark"] .cc-entry {
     border: 1.5px solid var(--dk-acc);
@@ -22474,6 +22565,33 @@ html[data-theme="dark"] .cp-fb.is-ok .cp-fb__ic {
 }
 html[data-theme="dark"] .cp-fb.is-no .cp-fb__ic {
     background: var(--dk-red)
+}
+html[data-theme="dark"] .cp-fb.is-skip {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .cp-fb.is-skip .cp-fb__ic {
+    background: var(--dk-raised)
+}
+html[data-theme="dark"] .cp-skip {
+    border: none;
+    background: transparent;
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .cp-transcript {
+    background: var(--dk-page);
+    color: var(--dk-text)
+}
+html[data-theme="dark"][data-theme="dark"] .cp-fb.is-skip {
+    background: var(--dk-ink-bg);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"][data-theme="dark"] .cp-skip {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"][data-theme="dark"] .cp-transcript {
+    background: var(--dk-ink-bg);
+    color: var(--dk-muted)
 }
 html[data-theme="dark"] .cp-fb__coin {
     background: var(--dk-card);
@@ -24737,6 +24855,14 @@ html[data-theme="dark"] .pl-speak__skip {
     border: 0;
     background: none;
     color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .pl-report__toggle {
+    border: 1px solid var(--hm-line, #e6e6ec);
+    background: transparent;
+    color: var(--hm-sec, #5a5a66)
+}
+html[data-theme="dark"] .pl-report__toggle:hover {
+    color: var(--hm-ink, #1b1b24)
 }
 html[data-theme="dark"] .pl-report__date {
     background: var(--hm-tile, #f8f8f8);

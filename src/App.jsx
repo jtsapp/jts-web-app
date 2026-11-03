@@ -199,6 +199,7 @@ const ServicesPage = lazyScreen(() => import('./screens/ServicesPage.jsx'))
 const AccountDeletedPage = lazyScreen(() => import('./screens/AccountDeletedPage.jsx'))
 const FeedbackCenter = lazyScreen(() => import('./feedback/FeedbackCenter.jsx'))
 const LessonWorkspacePage = lazyScreen(() => import('./screens/LessonWorkspacePage.jsx'))
+const SelfStudyLessonPage = lazyScreen(() => import('./screens/lessons/SelfStudyLessonPage.jsx'))
 const CourseCatalogPage = lazyScreen(() => import('./screens/CourseCatalogPage.jsx'))
 const BoothEntryPage = lazyScreen(() => import('./screens/BoothEntryPage.jsx'))
 
@@ -371,6 +372,13 @@ export default function App() {
     if (catalogParam) {
       setLiveWorkspaceId(catalogParam)
       setWorkspaceSource('catalog')
+    }
+    // ?self=<id> — самостоятельный урок (?screen=lesson-workspace&self=<id>): пишется
+    // адресом и возвращает ученика в урок после F5 (см. screenUrlParams).
+    const selfParam = searchParams.get('self')
+    if (selfParam) {
+      setLiveWorkspaceId(selfParam)
+      setWorkspaceSource('self')
     }
     // ?card=<адрес> — карточка урока, заданная на дом (?screen=lesson-workspace
     // &catalog=<id>&card=<адрес>). Ссылку на неё ученик открывает из домашней
@@ -1565,6 +1573,7 @@ export default function App() {
       url.searchParams.delete('live')
       url.searchParams.delete('catalog')
       url.searchParams.delete('card')
+      url.searchParams.delete('self')
       window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
     } catch {
       /* адрес не обязателен: экран входа уже поставлен */
@@ -1690,6 +1699,7 @@ export default function App() {
       liveLessonId,
       liveWorkspaceId,
       workspaceCardId,
+      workspaceSource,
     }))
     // SAT держит своё состояние в ?satTab=, ?satMock= и т.п.; вне SAT-экранов оно не нужно и не должно оставаться в адресе
     let satLeft = false
@@ -1702,7 +1712,7 @@ export default function App() {
       }
     }
     if (changed || satLeft) window.history.replaceState(null, '', url)
-  }, [screen, restoring, liveLessonId, liveWorkspaceId, workspaceCardId])
+  }, [screen, restoring, liveLessonId, liveWorkspaceId, workspaceCardId, workspaceSource])
 
   // «Известный урок» экрана класса — одно выражение на оба источника, а не два
   // разных по месту использования. boothLessonId — обычный случай (сеанс
@@ -3442,7 +3452,12 @@ export default function App() {
     case 'lesson-workspace': {
       const catalogSource = workspaceSource === 'catalog' || workspaceSource === 'self' || workspaceSource === 'homework'
       const fromHomework = workspaceSource === 'homework' || Boolean(workspaceCardId)
-      return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => handleNav('vocab', { back: true })} catalogLessonId={catalogSource && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={catalogSource ? loadCatalogLesson : undefined} onExit={() => goBack(() => setScreen(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons'))} backLabel={backLabel(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+      const workspacePage = <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => handleNav('vocab', { back: true })} catalogLessonId={catalogSource && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={catalogSource ? loadCatalogLesson : undefined} onExit={() => goBack(() => setScreen(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons'))} backLabel={backLabel(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+      // Самостоятельный урок открывается страницей из файла живого урока, если у него есть пара в файле уровня.
+      if (workspaceSource === 'self' && liveWorkspaceId != null) {
+        return <SelfStudyLessonPage key={liveWorkspaceId} lessonId={liveWorkspaceId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onExit={() => goBack(() => setScreen('lessons'))} backLabel={backLabel('lessons')} onOpenLesson={setLiveWorkspaceId} fallback={workspacePage} />
+      }
+      return workspacePage
     }
     default:
       // Неизвестный экран (опечатка в диплинке ?screen=, старая закладка, экран, которого больше нет) раньше давал

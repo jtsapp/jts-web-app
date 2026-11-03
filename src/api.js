@@ -683,6 +683,12 @@ export function getCourseCatalogLesson(id, token) {
   return authGet(`/mobile/course-catalog/lessons/${id}`, token)
 }
 
+// Самостоятельный урок страницей из файла живого урока: её грузит рамка, поэтому токен в адресе.
+export function selfStudyLessonRenderUrl(id, token) {
+  const params = new URLSearchParams({ access_token: token || '' })
+  return `${BASE}/student/catalog-lessons/${encodeURIComponent(id)}/render?${params.toString()}`
+}
+
 // Урок теста на определение уровня по адресу его файла: в дерево ученика тест не
 // входит, его дают только преподаватель — на занятии или на дом. 404 — не дан.
 export function getLevelTestByFile(fileUrl, token) {
