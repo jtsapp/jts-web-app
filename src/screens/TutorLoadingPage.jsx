@@ -16,7 +16,7 @@ export default function TutorLoadingPage({
   delay = 2200,
 }) {
   const t = useT()
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png', face = '' } = tutor
+  const { name = 'Спарк', avatar = '/tutor/tutor-spark.webp', face = '' } = tutor
   const head = heading ?? t('loading.heading', { name })
   useEffect(() => {
     if (!onDone) return

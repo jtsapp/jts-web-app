@@ -1861,7 +1861,7 @@ Vosk уходит WAV в `/api/assistant/transcribe`; обращение сре�
 
 **При казахском интерфейсе помощник — Айзере (19.10.2026, решение владельца).** Персона идёт за языком интерфейса,
 а не вопроса: `lib/assistant/persona.js` (`assistantPersona(lang)`, общий для браузера и сервера) — имя, аватар
-(`public/assets/aizere-assistant.webp`, уменьшенный `tutor-aizere.png`), запасной голос, тьютор звонка, пример позывного.
+(`public/assets/aizere-assistant.webp`, уменьшенный `tutor-aizere.webp`), запасной голос, тьютор звонка, пример позывного.
 Имя и подписи окна — казахский словарь i18n (там вместо Луны везде Айзере, с падежами: Айзереге, Айзерені…). Голос — её клон ElevenLabs
 «zere» (`eleven_v4_turbo`, тот же, что в звонке Speaking Buddy) на ЛЮБОМ языке фразы: `/api/assistant/speak` с
 `persona: 'aizere'` зовёт `synth('eleven', …, 'aizere')`, обходного «казахское — сразу потоком» у неё нет

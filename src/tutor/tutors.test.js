@@ -33,7 +33,7 @@ describe('PICK_TUTORS — карточки экрана выбора', () => {
     expect(st.key).toBe('sparktest')
     expect(st.face).toBeUndefined()
     expect(st.assistant).toBeFalsy()
-    expect(st.avatar).toMatch(/^\/tutor\/.+\.png$/)
+    expect(st.avatar).toMatch(/^\/tutor\/.+\.webp$/)
     expect(st.figure).toMatch(/^\/tutor\/pick\/.+\.webp$/)
     expect(temperFor('sparktest', 'harsh')).toBeNull()
   })
@@ -50,7 +50,7 @@ describe('PICK_TUTORS — карточки экрана выбора', () => {
       expect(TUTORS.map((t) => t.key)).toEqual(
         dev ? ['luna', 'dexter', 'spark', 'aizere', 'jarvis', 'sparktest'] : ['luna', 'dexter', 'spark', 'aizere'],
       )
-      expect(aizere.avatar).toMatch(/^\/tutor\/.+\.png$/)
+      expect(aizere.avatar).toMatch(/^\/tutor\/.+\.webp$/)
       // Нрава 18+ нет, как у Луны: наверх уходит null, агент берёт базовую персону.
       expect(temperFor('aizere', 'harsh')).toBeNull()
     }

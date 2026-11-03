@@ -30,6 +30,8 @@ if (mapping.length === 0) throw new Error('пустая карта BOOKS')
 // Обложка книги: art.cover — base64-JPEG внутри books.html. Декодируем в
 // обычный файл public/practice/covers/books/<id>.jpg — карточки каталога
 // используют его, когда у книги бэкенда нет coverImageUrl.
+// В репозитории обложки уже пережаты в WebP (высота 900) и пути в data/books ведут
+// на .webp: повторный прогон вернёт тяжёлые .jpg, их придётся пережать заново.
 const COVERS = path.join(ROOT, 'public/practice/covers/books')
 function extractCover(artVar, id) {
   // cover — не всегда первый ключ объекта ({"audioSquare": true, "cover": …}),

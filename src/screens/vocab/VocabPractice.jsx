@@ -516,7 +516,7 @@ export default function VocabPractice({ cards, lang: uiLang, title, onExit, spea
         <div className={`vp-res-card${good ? ' is-good' : ' is-bad'}`}>
           <div className="vp-res-hero" aria-hidden="true">
             <img
-              src={good ? '/practice/listening/win.png' : '/practice/listening/lose.png'}
+              src={good ? '/practice/listening/win.webp' : '/practice/listening/lose.webp'}
               alt=""
             />
           </div>
