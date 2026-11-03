@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
+import { LEGAL_VERSION } from '../src/lib/legalDocuments.js'
 
 // Тест уровня v16 при первом входе (спека 2026-10-14-placement-v16-first-login-design.md): у нового ученика роадмап
 // «Главной» закрыт блюром → тест открывается экраном с iframe → итог уходит в наши роуты и профиль GE → маршрут →
@@ -73,6 +74,9 @@ async function setup(page, { level = 'A2', tours = false, createdAt = null, prof
     if (url.includes('/admin/lessons/occurrences') || url.includes('/admin/homework/my')) return route.fulfill(json([]))
     return route.fulfill(json({}))
   })
+  // Замки поверх приложения у вошедшего (с 29.10.2026): без этих двух ответов вместо экрана теста — «Документы платформы».
+  await page.route('**/user/legal-documents**', (route) => route.fulfill(json({ version: LEGAL_VERSION, acceptedAt: '2026-10-29T10:00:00' })))
+  await page.route('**/cabinet/my-sections', (route) => route.fulfill(json({ known: false, allowed: [] })))
   await page.route('**/api/auth/me', (route) => route.fulfill(json({ user: me() })))
   await page.route('**/api/profile/level-goal', (route) => route.fulfill(json({ configured: true, goal: null })))
   await page.route('**/api/placement/complete', (route) => route.fulfill(json({ configured: false })))
@@ -172,6 +176,115 @@ test('настоящий экран итога v16: итог сохраняет�
   await page.frameLocator('.pl-page__frame').locator('#prLearn').click()
   await expect(page.getByRole('heading', { name: 'Как дойти до B1' })).toBeVisible({ timeout: 20000 })
   expect(state.puts).toHaveLength(1)
+})
+
+// Жалоба с прода 03.11.2026: ученик с тарифным уровнем прошёл тест, а «Главная» снова звала на него. Итог сохранялся
+// только на экране итога; итог «Foundation» читался как «теста не было». Уровень тарифа тест не трогает ни в каком случае.
+test.describe('пройденный тест не просит пройти его заново', () => {
+  // Тест v16 настоящий, ответы — симулятором автора. Прогон (и анкета) готовы, экран и отметка автора — ещё нет.
+  async function answerAllSections(page, { foundation = false } = {}) {
+    await page.goto('/?screen=placement')
+    const frame = page.locator('.pl-page__frame')
+    await expect(frame).toBeVisible({ timeout: 20000 })
+    const f = await (await frame.elementHandle()).contentFrame()
+    await f.waitForFunction(() => typeof window.JTSPlacementConfig?.onComplete === 'function', null, { timeout: 30000 })
+    await f.evaluate((wantFoundation) => {
+      /* global simulateRealProfile, app, afterComplete, save, render */
+      if (wantFoundation) {
+        for (let i = 0; simulateRealProfile('A0', 0, i).overall !== 'Foundation'; i++) if (i > 200) throw new Error('нет Foundation')
+      } else {
+        simulateRealProfile('B1', 2, 1)
+      }
+      SELFTEST_ACTIVE = false
+      app.goalOnboarding = { step: 5, selections: { travel: ['travel_independent'] }, customText: {}, followUpDrafts: { deadline: { value: '3_6_months', customText: '' } }, returnScreen: null }
+      window.JTSStudentGoals.getData()
+      app.studentGoals.selectedCategories = ['travel']
+      app.studentGoals.completed = true
+      app.completedByUser = false
+    }, foundation)
+    return f
+  }
+
+  // Тот же переход, что после последнего раздела у живого ученика: afterComplete → экран говорения, окно записи само.
+  const finishCoreSections = (f) =>
+    f.evaluate(() => {
+      afterComplete()
+      save()
+      render()
+    })
+
+  test('прошёл три раздела и ушёл с говорения — итог уже сохранён, «Главная» на тест не зовёт', async ({ page }) => {
+    test.skip(test.info().project.name === 'mobile', 'на телефоне отчёт теста и баннер маршрута скрыты (спека 2026-10-26)')
+    const state = await setup(page, { level: 'A2' })
+    const f = await answerAllSections(page)
+    expect(state.attempts).toHaveLength(0)
+    await finishCoreSections(f)
+
+    await expect(page.locator('.pl-speak')).toBeVisible({ timeout: 15000 })
+    await expect.poll(() => state.attempts.length, { timeout: 15000 }).toBeGreaterThan(0)
+    expect(state.attempts[0].assessment.overallCEFR).toBe('B1')
+    await expect.poll(() => state.puts.length).toBe(1)
+    expect(state.level).toBe('A2')
+
+    // ушёл, так и не открыв итог: закрыл вкладку и вернулся
+    await page.goto('/?screen=home')
+    await expect(page.locator('.pl-report__level')).toHaveText('B1', { timeout: 20000 })
+    await expect(page.locator('.pl-report--missing')).toHaveCount(0)
+    await expect(page.locator('.ge-invite')).toContainText('Выберите, как будете заниматься')
+    await expect(page.locator('.ge-locked')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Пройти тест уровня' })).toHaveCount(0)
+  })
+
+  test('пропуск говорения сразу открывает итог', async ({ page }) => {
+    await setup(page, { level: 'A2' })
+    const f = await answerAllSections(page)
+    await finishCoreSections(f)
+    await page.locator('.pl-speak').getByRole('button', { name: 'Пропустить' }).click()
+    await expect(page.frameLocator('.pl-page__frame').locator('.personal-results')).toBeVisible({ timeout: 15000 })
+  })
+
+  test('прогон, брошенный до итога прежней версией, сохраняется при следующем открытии теста', async ({ page }) => {
+    test.skip(test.info().project.name === 'mobile', 'на телефоне отчёт теста скрыт (спека 2026-10-26)')
+    const state = await setup(page, { level: 'A2' })
+    const f = await answerAllSections(page)
+    // Так выглядит застрявший ученик: говорение пропущено, итог не открывал, приложению ничего не ушло.
+    await f.evaluate(() => {
+      app.completedByUser = true
+      app.speaking = { status: 'error' }
+      app.active = 'S'
+      app.screen = 'speaking'
+      save()
+    })
+    expect(state.attempts).toHaveLength(0)
+
+    await page.goto('/?screen=placement')
+    await expect.poll(() => state.attempts.length, { timeout: 30000 }).toBeGreaterThan(0)
+    expect(state.attempts[0].assessment.overallCEFR).toBe('B1')
+  })
+
+  test('итог «Foundation» у тарифного ученика: результат вместо «Не пройден», уровень тарифа на месте', async ({ page }) => {
+    test.skip(test.info().project.name === 'mobile', 'на телефоне отчёт теста скрыт (спека 2026-10-26)')
+    const state = await setup(page, { level: 'A2' })
+    const f = await answerAllSections(page, { foundation: true })
+    await f.evaluate(() => {
+      app.screen = 'result'
+      render()
+    })
+    await expect.poll(() => state.attempts.length, { timeout: 15000 }).toBeGreaterThan(0)
+    expect(state.attempts.at(-1).assessment.overallCEFR).toBe(null)
+    expect(state.level).toBe('A2')
+
+    await page.goto('/?screen=home')
+    const report = page.locator('.pl-report')
+    await expect(report).toContainText('Начать с основ', { timeout: 20000 })
+    await expect(report.locator('.pl-report__level')).toHaveText('Foundation')
+    // На разделы он отвечал: уровня нет, но плитка не пишет «не пройдено», а показывает ответы.
+    await expect(report).not.toContainText('не пройдено')
+    await expect(report.locator('.pl-report__skill').first().locator('.pl-report__note')).toContainText(/\d+\D+\d+/)
+    await expect(page.locator('.pl-report--missing')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Пройти тест уровня' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Пройти тест заново' })).toBeVisible()
+  })
 })
 
 // Жалоба 16.10.2026: после записи окно говорения минуту молчало без единой кнопки, а потом само показывало уровень и

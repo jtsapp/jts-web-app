@@ -5,7 +5,8 @@
 //   JTSPlacementConfig.navigate(d)                  — кнопка раздела на итоге (d.section);
 //   JTSSpeakingBuddy.start(args)                    — экран говорения просит провести разговор.
 // И один свой, которого у автора нет: JTSHostSpeakingFeedback(speaking, lang) — панель отзыва о говорении на экране
-// итога (вызов вставляет патч сборки, scripts/build-placement-v16.js; почему — speakingFeedback.js).
+// итога (вызов вставляет патч сборки, scripts/build-placement-v16.js; почему — speakingFeedback.js). И JTSHostCoreDone()
+// — пройдены три раздела: итог сохраняем сразу, с экрана итога ученик может и не дойти (патч core-done-report там же).
 // Iframe с того же адреса (public/placement/v16/), поэтому крючки кладутся прямо в его window — postMessage не нужен.
 //
 // «Главной» нужен полный конверт (с анкетой и рекомендациями). openLearning получает его от теста сам; onComplete
@@ -52,15 +53,16 @@ export function readEnvelope(win, now) {
 export function installBridge(win, handlers) {
   if (!win) return () => {}
   const prev = win.JTSPlacementConfig || {}
+  // Итог отрисовывается следом за вызовом — конверт читаем на следующем тике, когда автор допишет метки итога.
+  const reportResult = () => {
+    setTimeout(() => {
+      const env = readEnvelope(win)
+      if (env) handlers.onResult?.(env)
+    }, 0)
+  }
   win.JTSPlacementConfig = {
     ...prev,
-    // Итог отрисовывается следом за вызовом — конверт читаем на следующем тике, когда автор допишет метки итога.
-    onComplete: () => {
-      setTimeout(() => {
-        const env = readEnvelope(win)
-        if (env) handlers.onResult?.(env)
-      }, 0)
-    },
+    onComplete: reportResult,
     openLearning: async (payload) => {
       const env = withHost(win, payload) || readEnvelope(win)
       await handlers.onContinue?.(env)
@@ -88,11 +90,20 @@ export function installBridge(win, handlers) {
   // Круглая «назад» в шапке теста (патч skin-back-button сборки): своя полоса «← На главную» над iframe ушла
   // вместе с макетом, и выйти из теста теперь можно только отсюда.
   win.JTSHostExit = () => handlers.onExit?.()
+  win.JTSHostCoreDone = reportResult
+  // Прогон лежит в браузере ученика: три раздела могли быть пройдены раньше, а итог так и не ушёл (закрыл вкладку, сеть,
+  // прежняя версия теста). Тест при этом уже загрузился, поэтому подбираем его здесь — когда крючки на месте.
+  try {
+    win.jtsHostReportCore?.()
+  } catch {
+    /* итог всё равно уйдёт со своего экрана */
+  }
   return () => {
     try {
       delete win.JTSSpeakingBuddy
       delete win.JTSHostSpeakingFeedback
       delete win.JTSHostExit
+      delete win.JTSHostCoreDone
       win.JTSPlacementConfig = prev
     } catch {
       /* окно уже выгружено */

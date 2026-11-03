@@ -4054,6 +4054,8 @@ const dict = {
     'placement.report.expand': 'Көрсету',
     'placement.report.overall': 'Жалпы деңгей',
     'placement.report.partial': 'алдын ала',
+    'placement.report.foundation': 'Негізден бастау',
+    'placement.report.foundationSub': 'Тест тапсырылды. Бұл деңгей бағасы емес, неден бастау керектігі туралы ұсыныс.',
     'placement.report.notAssessed': 'тапсырылмады',
     'placement.report.notAssessedS': 'бағаланбады',
     'placement.report.correct': '{total} сұрақтың {correct} дұрыс',

@@ -4054,6 +4054,8 @@ const dict = {
     'placement.report.expand': 'Show',
     'placement.report.overall': 'Overall level',
     'placement.report.partial': 'preliminary',
+    'placement.report.foundation': 'Starting from basics',
+    'placement.report.foundationSub': 'Test completed. This is a recommendation on where to start, not a level rating.',
     'placement.report.notAssessed': 'not taken',
     'placement.report.notAssessedS': 'not assessed',
     'placement.report.correct': '{correct} of {total} correct',

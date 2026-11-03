@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { fetchLatestAttempt } from '../../placement/api.js'
-import { reportView, SKILL_ORDER } from '../../placement/reportModel.js'
+import { homeReport, SKILL_ORDER } from '../../placement/reportModel.js'
 import { usePlacementCollapsed } from './placementCollapse.js'
 
 /**
@@ -27,8 +27,8 @@ export function usePlacementReport(token, version = 0) {
       alive = false
     }
   }, [token, version])
-  const view = useMemo(() => reportView(env, lang), [env, lang])
-  return { loaded: env !== undefined, view: view?.overall ? view : null }
+  const view = useMemo(() => homeReport(env, lang), [env, lang])
+  return { loaded: env !== undefined, view }
 }
 
 // Есть ли что показать в «Что делать дальше». Нет — блока нет, и «Пройти тест заново» переезжает в карточку итогов:
@@ -131,11 +131,12 @@ export function PlacementResults({ report, onRetake, collapseKey }) {
 
       {!collapsed && (
       <div id="pl-report-body" className="pl-report__body">
-      <div className="pl-report__overall">
-        <b className="pl-report__level">{view.overall}</b>
+      <div className={`pl-report__overall${view.foundation ? ' is-foundation' : ''}`}>
+        <b className="pl-report__level">{view.foundation ? 'Foundation' : view.overall}</b>
         <span className="pl-report__overallText">
           <span className="pl-report__label">{t('placement.report.overall')}</span>
-          <span className="pl-report__name">{t(`cefr.${view.overall}`)}</span>
+          <span className="pl-report__name">{view.foundation ? t('placement.report.foundation') : t(`cefr.${view.overall}`)}</span>
+          {view.foundation && <span className="pl-report__muted">{t('placement.report.foundationSub')}</span>}
           {view.partial && <span className="pl-report__tag">{t('placement.report.partial')}</span>}
         </span>
       </div>
@@ -146,10 +147,11 @@ export function PlacementResults({ report, onRetake, collapseKey }) {
             <span className="pl-report__skillName">{t(`placement.skill.${s.id}`)}</span>
             <b className="pl-report__chip">{s.level || '—'}</b>
             <span className="pl-report__note">
-              {!s.assessed
-                ? t(s.id === 'S' ? 'placement.report.notAssessedS' : 'placement.report.notAssessed')
-                : s.total != null
-                  ? t('placement.report.correct', { correct: String(s.correct ?? 0), total: String(s.total) })
+              {/* Отвечал, но уровень не подтвердился — это не «не пройдено»: показываем ответы (пометка «нужно подтвердить» ниже). */}
+              {s.total
+                ? t('placement.report.correct', { correct: String(s.correct ?? 0), total: String(s.total) })
+                : !s.assessed
+                  ? t(s.id === 'S' ? 'placement.report.notAssessedS' : 'placement.report.notAssessed')
                   : ''}
               {s.confirmed === false && <em> · {t('placement.report.unconfirmed')}</em>}
             </span>
