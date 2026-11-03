@@ -115,7 +115,7 @@ export default function SpeakingTestPage({
   // Язык фидбека = язык интерфейса: раньше здесь стояло 'ru' числом, и казахский
   // ученик получал разбор уровня по-русски. Роут ждёт ISO 'kk', в приложении 'kz'.
   const uiLang = lang === 'kz' ? 'kk' : lang === 'en' ? 'en' : 'ru'
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png', face = '' } = tutor
+  const { name = 'Спарк', avatar = '/tutor/tutor-spark.webp', face = '' } = tutor
   const [supported] = useState(() => isMediaRecordingSupported())
   const rec = useWavRecorder()
   const [phase, setPhase] = useState('ready') // ready | recording | processing | error

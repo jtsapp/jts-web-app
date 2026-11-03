@@ -18,7 +18,7 @@ export default function TrainerResult({ correct, wrong, coins = 0, onAgain, onHo
   return (
     <div className={`lt-res ${good ? 'lt-res--good' : 'lt-res--bad'}`}>
       <div className="lt-res__hero">
-        <img src={good ? '/practice/listening/win.png' : '/practice/listening/lose.png'} alt="" />
+        <img src={good ? '/practice/listening/win.webp' : '/practice/listening/lose.webp'} alt="" />
       </div>
       <div className="lt-res__info">
         <div className="lt-res__pct">{pct}%</div>
@@ -41,7 +41,7 @@ export default function TrainerResult({ correct, wrong, coins = 0, onAgain, onHo
         </div>
         {coins > 0 && (
           <div className="lt-res__coins">
-            <img src="/practice/listening/coin.png" alt="" />
+            <img src="/practice/listening/coin.webp" alt="" />
             <span>+{coins}</span>
           </div>
         )}

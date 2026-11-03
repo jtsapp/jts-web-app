@@ -8,7 +8,7 @@ import { useT } from '../i18n/LanguageContext.jsx'
 // живой орб; без этого пропа дефолт avatar подставлял Джарвису аватарку Спарка,
 // и экран «Джарвис хочет узнать твой уровень» шёл с чужим лицом.
 export default function TutorStatus({
-  avatar = '/tutor/tutor-spark.png',
+  avatar = '/tutor/tutor-spark.webp',
   face = '',
   name = 'Спарк',
   role,
