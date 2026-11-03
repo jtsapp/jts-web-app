@@ -1,4 +1,4 @@
-import { Component, Suspense, useEffect, useState } from 'react'
+import { Component, Suspense, useEffect } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { allowStaleBuildReload, clearStaleBuildMark } from '../lib/lazyModule.js'
 import { ScreenChunkError, lazyScreen } from '../lib/lazyScreen.js'
@@ -11,10 +11,6 @@ export function preloadScreenSkeleton() {
   ScreenSkeleton.preload().catch(() => {})
 }
 
-// Чанк из кэша браузера приезжает за десятки миллисекунд, и заглушка только мигнула бы. Новый экран всё равно проявляется
-// анимацией .scr-in, поэтому такая пауза незаметна.
-const PLACEHOLDER_DELAY_MS = 200
-
 function Spinner({ label }) {
   return (
     <div className="scr-load scr-load--page" role="status" aria-busy="true" aria-label={label}>
@@ -23,19 +19,17 @@ function Spinner({ label }) {
   )
 }
 
+// Без паузы перед показом, хотя чанк из кэша приезжает за десятки миллисекунд. Пустая обёртка хуже: под ней тёмный фон страницы,
+// а нижняя панель телефона прячется, когда на странице нет оболочки (src/mobile/nav.css). Мелькнуть заглушка не успевает: весь
+// экран в это время ещё проявляется анимацией .scr-in, а кружок показывается с задержкой (.scr-load--page в styles.css).
 function ScreenPlaceholder({ view, shell }) {
   const { t } = useI18n()
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), PLACEHOLDER_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
-  if (!visible) return null
   const label = t('screen.loading')
   const active = shell?.token ? shellNavOf(view) : undefined
   if (active === undefined) return <Spinner label={label} />
   return (
-    <Suspense fallback={<Spinner label={label} />}>
+    // .learn: панель телефона не должна пропасть и пока едет чанк самой заглушки
+    <Suspense fallback={<div className="learn"><Spinner label={label} /></div>}>
       <ScreenSkeleton {...shell} active={active} label={label} />
     </Suspense>
   )

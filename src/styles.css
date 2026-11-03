@@ -1728,6 +1728,15 @@ textarea {
   min-height: 100vh;
   background: #ffffff;
 }
+.scr-load--page .spinner {
+  animation: spin 0.8s linear infinite, scr-load-wait 0.2s;
+}
+@keyframes scr-load-wait {
+  from,
+  to {
+    opacity: 0;
+  }
+}
 .scr-load--page .le-btn {
   width: auto;
   min-width: 240px;

@@ -32,37 +32,48 @@ describe('ScreenBoundary', () => {
   })
 
   describe('заглушка', () => {
-    it('появляется не сразу: быстрая загрузка из кэша браузера не мигает', async () => {
-      vi.useFakeTimers()
+    // Пустая обёртка показала бы тёмный фон страницы и спрятала бы нижнюю панель телефона.
+    it('стоит на месте экрана сразу, без паузы', () => {
       const Screen = pending()
       renderIn(<ScreenBoundary view="pricing"><Screen /></ScreenBoundary>)
-      expect(screen.queryByRole('status')).toBeNull()
-      await act(() => vi.advanceTimersByTimeAsync(200))
       expect(screen.getByRole('status')).toBeTruthy()
     })
 
     it('у экрана кабинета — оболочка с нужным пунктом меню', async () => {
-      vi.useFakeTimers()
       const Screen = pending()
       renderIn(<ScreenBoundary view="reading" shell={{ token: 't' }}><Screen /></ScreenBoundary>)
-      await act(() => vi.advanceTimersByTimeAsync(200))
+      await settle()
       expect(screen.getByText('оболочка:practice')).toBeTruthy()
     })
 
+    // Отдельным набором модулей: чанк оболочки здесь не должен приехать, а в общем наборе он уже загружен соседними тестами.
+    it('панель телефона не пропадает, и пока едет чанк самой оболочки', async () => {
+      vi.resetModules()
+      vi.doMock('./ScreenSkeleton.jsx', () => new Promise(() => {}))
+      try {
+        const { I18nProvider: Provider } = await import('../i18n.jsx')
+        const { default: Boundary } = await import('./ScreenBoundary.jsx')
+        const { lazyScreen: lazyFresh } = await import('../lib/lazyScreen.js')
+        const Screen = lazyFresh(() => new Promise(() => {}))
+        const { container } = render(<Provider><Boundary view="vocab" shell={{ token: 't' }}><Screen /></Boundary></Provider>)
+        expect(container.querySelector('.learn')).toBeTruthy()
+      } finally {
+        vi.doUnmock('./ScreenSkeleton.jsx')
+      }
+    })
+
     it('у экрана во всё окно — без оболочки: сайдбар на миг появился бы и исчез', async () => {
-      vi.useFakeTimers()
       const Screen = pending()
       renderIn(<ScreenBoundary view="sat-mock" shell={{ token: 't' }}><Screen /></ScreenBoundary>)
-      await act(() => vi.advanceTimersByTimeAsync(200))
+      await settle()
       expect(screen.queryByText(/оболочка/)).toBeNull()
       expect(screen.getByRole('status')).toBeTruthy()
     })
 
     it('гостю — без оболочки кабинета', async () => {
-      vi.useFakeTimers()
       const Screen = pending()
       renderIn(<ScreenBoundary view="home" shell={{ token: null }}><Screen /></ScreenBoundary>)
-      await act(() => vi.advanceTimersByTimeAsync(200))
+      await settle()
       expect(screen.queryByText(/оболочка/)).toBeNull()
     })
   })
