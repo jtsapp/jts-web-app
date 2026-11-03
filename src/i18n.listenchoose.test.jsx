@@ -6,6 +6,7 @@
 // Тест читает словарь текстом (тот же приём, что cefrNames.test.js): предмет
 // проверки — сами ключи и значения.
 
+import { i18nText } from './i18n/i18nText.testutil.js'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,7 +15,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { I18nProvider, useI18n } from './i18n.jsx'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const text = readFileSync(join(here, 'i18n.jsx'), 'utf8').replace(/\r\n/g, '\n')
+const text = i18nText()
 const source = JSON.parse(readFileSync(join(here, '..', 'scripts', 'listenchoose-i18n-source.json'), 'utf8'))
 
 // Ключи прототипа, которые порт не переносит: строки браузерного синтеза

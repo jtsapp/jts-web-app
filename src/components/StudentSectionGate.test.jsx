@@ -11,10 +11,10 @@ const access = { known: true, allowed: ['lessons', 'ielts', 'sat'] }
 const exams = { ready: true, ielts: true, sat: true }
 
 describe('защита экрана раздела', () => {
-  it.each(['loading', 'error'])('%s не вызывает загрузчик экрана и его запросы', (status) => {
+  it.each(['loading', 'error'])('%s не вызывает загрузчик экрана и его запросы', async (status) => {
     const loadScreen = vi.fn(() => <div>content</div>)
     render(<StudentSectionGate required active="lessons" access={{ status }} render={loadScreen} />)
-    expect(screen.getByText(status)).toBeTruthy()
+    expect(await screen.findByText(status)).toBeTruthy()
     expect(loadScreen).not.toHaveBeenCalled()
   })
 
