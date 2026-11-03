@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { fetchLatestAttempt } from '../../placement/api.js'
+import { fetchLatestAttempt, saveAttempt } from '../../placement/api.js'
 import { homeReport, SKILL_ORDER } from '../../placement/reportModel.js'
 import { usePlacementCollapsed } from './placementCollapse.js'
+import SpeakingTask from '../../placement/SpeakingTask.jsx'
+import { retakeArgs, speakingMissing, withSpeakingResult } from '../../placement/speakingRetake.js'
 
 /**
  * Отчёт последнего теста уровня v16 на «Главной» (указание руководителя 14.10.2026: «после теста все данные — очень
@@ -17,6 +19,8 @@ export function usePlacementReport(token, version = 0) {
   const { lang } = useI18n()
   // undefined — запрос ещё в пути: отметку «не пройден» до ответа не рисуем, иначе она мигала бы у прошедших тест.
   const [env, setEnv] = useState(undefined)
+  // Свой счётчик перечитывания — после пересдачи говорения с «Главной» (speakingRetake.js).
+  const [own, setOwn] = useState(0)
   useEffect(() => {
     if (!token) return undefined
     let alive = true
@@ -26,9 +30,10 @@ export function usePlacementReport(token, version = 0) {
     return () => {
       alive = false
     }
-  }, [token, version])
+  }, [token, version, own])
   const view = useMemo(() => homeReport(env, lang), [env, lang])
-  return { loaded: env !== undefined, view }
+  const reload = useCallback(() => setOwn((n) => n + 1), [])
+  return { loaded: env !== undefined, view, env: env || null, reload }
 }
 
 // Есть ли что показать в «Что делать дальше». Нет — блока нет, и «Пройти тест заново» переезжает в карточку итогов:
@@ -60,10 +65,21 @@ function CollapseToggle({ collapsed, onToggle, bodyId }) {
   )
 }
 
-export function PlacementResults({ report, onRetake, collapseKey }) {
+export function PlacementResults({ report, onRetake, collapseKey, token }) {
   const { t, lang } = useI18n()
   const { loaded, view } = report
   const [collapsed, toggle] = usePlacementCollapsed(collapseKey)
+  // Пересдача говорения без уровня — окно говорения поверх «Главной» (решение владельца 03.11.2026).
+  const [retaking, setRetaking] = useState(false)
+  const [retakeFailed, setRetakeFailed] = useState(false)
+  const canRetake = !!(token && report.env && speakingMissing(report.env))
+  const retakeDone = async (r) => {
+    setRetaking(false)
+    const next = withSpeakingResult(report.env, r)
+    const ok = next ? await saveAttempt(token, next) : false
+    setRetakeFailed(!ok)
+    if (ok) report.reload?.()
+  }
   // ответа ещё нет — пусто: «Не пройден» мигал бы у прошедших тест
   if (!loaded) return null
   if (!view) {
@@ -146,6 +162,11 @@ export function PlacementResults({ report, onRetake, collapseKey }) {
           <li className={`pl-report__skill${s.assessed ? '' : ' is-empty'}`} key={s.id}>
             <span className="pl-report__skillName">{t(`placement.skill.${s.id}`)}</span>
             <b className="pl-report__chip">{s.level || '—'}</b>
+            {s.id === 'S' && !s.assessed && canRetake && (
+              <button type="button" className="pl-report__retakeS" onClick={() => setRetaking(true)} data-testid="speaking-retake">
+                {t('placement.report.speakingRetake')}
+              </button>
+            )}
             <span className="pl-report__note">
               {/* Отвечал, но уровень не подтвердился — это не «не пройдено»: показываем ответы (пометка «нужно подтвердить» ниже). */}
               {s.total
@@ -158,6 +179,11 @@ export function PlacementResults({ report, onRetake, collapseKey }) {
           </li>
         ))}
       </ul>
+      {retakeFailed && (
+        <p className="pl-report__retakeErr" role="alert">
+          {t('placement.report.retakeFailed')}
+        </p>
+      )}
 
       {/* Отзыв о говорении — в отчёте рядом с уровнями (жалоба 16.10.2026: раньше он выходил посреди теста). В макете
           его нет, но без него ученик не узнал бы, что сказал грейдер. */}
@@ -194,6 +220,9 @@ export function PlacementResults({ report, onRetake, collapseKey }) {
         </button>
       )}
       </div>
+      )}
+      {retaking && (
+        <SpeakingTask token={token} args={retakeArgs(report.env)} onDone={retakeDone} onSkip={() => setRetaking(false)} />
       )}
     </section>
   )

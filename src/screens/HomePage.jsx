@@ -545,7 +545,7 @@ export default function HomePage({
             )}
             <PracticeToday t={t} lang={lang} token={token} onNav={onNav} />
             {/* Отчёт теста уровня v16; теста нет — тот же блок пустым и зовёт на тест (решение владельца 21.10.2026). */}
-            {!ieltsAccount && <PlacementResults report={report} onRetake={onStartLevelTest} collapseKey={placementCollapseKey(tourKey)} />}
+            {!ieltsAccount && <PlacementResults report={report} onRetake={onStartLevelTest} collapseKey={placementCollapseKey(tourKey)} token={token} />}
           </div>
 
           <div className="hm-grid__side">

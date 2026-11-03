@@ -2977,3 +2977,18 @@ html[lang='kk'] #app .progress-mini::before {
 #app .star-note {
   display: none;
 }
+
+/* «Пройти говорение ещё раз» на карточке Speaking итога (патч speaking-retry-result сборки) */
+#app .skillcard .jts-speak-retry {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: #9047ff;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}

@@ -32,7 +32,16 @@ describe('build-placement-v16', () => {
 
   it('пропуск говорения после трёх разделов сразу открывает итог, а до них — нет', () => {
     const out = applyPatches(fs.readFileSync(SRC, 'utf8'))
-    expect(out).toContain("app.flags.push('speaking_connection_error');if(app.screen==='speaking'&&allCoreDone())app.screen='result';save();render()")
+    // Метка пропуска — причина из окна говорения (патч speaking-skip-reason), без неё — прежняя.
+    expect(out).toContain("app.flags.push((e&&e.jtsFlag)||'speaking_connection_error');if(app.screen==='speaking'&&allCoreDone())app.screen='result';save();render()")
+  })
+
+  it('пропущенное говорение пересдаётся: кнопка на экране говорения и на карточке Speaking итога (жалоба 03.11.2026)', () => {
+    const out = applyPatches(fs.readFileSync(SRC, 'utf8'))
+    expect(out).toContain('id=\"jtsRetrySpeaking\"')
+    expect(out).toContain('data-jts-retry-speaking')
+    // Пересдача снимает отметку «итог отправлен» — новый результат снова уходит приложению.
+    expect(out.split("app.completedNotified=false;").length - 1).toBe(2)
   })
 
   it('собранная страница содержит правки сохранения итога', () => {

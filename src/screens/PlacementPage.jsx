@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { installBridge } from '../placement/bridge.js'
 import SpeakingTask from '../placement/SpeakingTask.jsx'
+import MicNotice from '../placement/MicNotice.jsx'
 
 // Тест уровня v16 (спека 2026-10-14-placement-v16-first-login-design.md): тест методиста встроен как есть — страница
 // public/placement/v16/index.html в iframe с того же адреса, — а своё приложение подключает его крючками (bridge.js).
@@ -56,6 +57,8 @@ export default function PlacementPage({ token, profileId, onExit, onResult, onCo
 
   return (
     <div className="pl-page">
+      {/* Микрофон нужен только говорению, но узнать, что его нет, лучше до получаса грамматики и чтения. */}
+      <MicNotice />
       {/* «Назад» — круглой кнопкой в шапке самого теста (макет «3 · Тест уровня»), она зовёт onExit через мост. */}
       <iframe
         ref={frame}
@@ -75,8 +78,9 @@ export default function PlacementPage({ token, profileId, onExit, onResult, onCo
             speaking.resolve(r)
             setSpeaking(null)
           }}
-          onSkip={() => {
-            speaking.reject(new Error('skipped'))
+          onSkip={(flag) => {
+            // Причину пропуска тест кладёт в метки конверта (патч speaking-skip-reason сборки v16).
+            speaking.reject(Object.assign(new Error('skipped'), { jtsFlag: flag || 'speaking_skipped' }))
             setSpeaking(null)
           }}
         />
