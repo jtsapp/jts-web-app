@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { getCourseCatalog, getCatalogProgress, completeCatalogLesson, uncompleteCatalogLesson } from '../../api.js'
 import { levelIndex } from '../../kingdoms.js'
@@ -244,6 +244,19 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
     }
   }, [pickedCourse, picked])
 
+  // На телефоне ряд уровней шире экрана, и курс открывается на самом высоком: без этого
+  // выбранная обложка стояла бы за правым краем. Двигаем только ряд, страница остаётся на месте.
+  const levelsRow = useRef(null)
+  const activeKey = active ? courseKey(active) : null
+  useEffect(() => {
+    const row = levelsRow.current
+    const on = row?.querySelector('[aria-pressed="true"]')
+    if (!on) return
+    const rowBox = row.getBoundingClientRect()
+    const onBox = on.getBoundingClientRect()
+    row.scrollLeft += onBox.left - rowBox.left - (rowBox.width - onBox.width) / 2
+  }, [activeKey])
+
   if (!token) return <p className="cc__state">{t('selfStudy.needAuth')}</p>
   if (error) return <p className="cc__state cc__state--error">{t('catalog.error')}</p>
   if (levels === null) return <p className="cc__state">{t('catalog.loading')}</p>
@@ -283,11 +296,36 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
       {/* Показываем ВСЕ уровни, чужие — с замком. Раньше их просто не было в
           списке, и курс выглядел заканчивающимся там, где он продолжается:
           ученик не знал ни что дальше есть, ни что для этого нужно. */}
-      <div className="gr-levels">
+      <div className="gr-levels" ref={levelsRow}>
         {shown.map((level) => {
           const key = courseKey(level)
           const on = level === active
           const caption = captions.get(key)
+          const pick = () => {
+            setPicked(key)
+            // Запоминаем только открытый: вернуть ученика на замок вместо
+            // урока было бы издевательством.
+            if (!level.locked) writeSelfStudyLevel(key)
+          }
+          // Обложка есть у курса с файлом в «Живых уроках». У отдельного курса файла нет,
+          // и он остаётся чипом с именем.
+          if (level.coverUrl) {
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`ss-course${on ? ' on' : ''}${level.locked ? ' is-locked' : ''}`}
+                aria-pressed={on}
+                onClick={pick}
+              >
+                <span className="ss-course__cover">
+                  <img src={level.coverUrl} alt="" width="132" height="176" />
+                  {level.locked && <span className="ss-course__lock"><LockIcon /></span>}
+                </span>
+                <span className="ss-course__code">{level.code}</span>
+              </button>
+            )
+          }
           return (
             <button
               key={key}
@@ -297,12 +335,7 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
               // Имя на чипе режется многоточием — полное название курса в
               // подсказке, чтобы его можно было дочитать.
               title={caption ? level.label || undefined : undefined}
-              onClick={() => {
-                setPicked(key)
-                // Запоминаем только открытый: вернуть ученика на замок вместо
-                // урока было бы издевательством.
-                if (!level.locked) writeSelfStudyLevel(key)
-              }}
+              onClick={pick}
             >
               {level.locked && <LockIcon />}
               {level.code}

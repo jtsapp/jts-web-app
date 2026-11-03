@@ -94,6 +94,36 @@ describe('Самостоятельное обучение', () => {
     expect(chips(container)).toEqual(['A1', 'A2', 'B2'])
   })
 
+  it('курс с обложкой выбирается обложкой, курс без неё остаётся чипом', async () => {
+    catalog.value = CATALOG.map((level) => (
+      level.code === 'A2' ? { ...level, coverUrl: 'https://files/a2.jpg' } : level
+    ))
+    const { container } = draw()
+    await screen.findByText('Changing direction')
+
+    const course = container.querySelector('.ss-course')
+    expect(course.textContent).toBe('A2')
+    expect(course.querySelector('img').getAttribute('src')).toBe('https://files/a2.jpg')
+    expect(course.getAttribute('aria-pressed')).toBe('true')
+    expect(chips(container)).toEqual(['A1', 'B2'])
+
+    fireEvent.click(container.querySelector('.gr-levelchip'))
+    expect(course.getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(course)
+    expect(course.getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('ряд уровней прокручен к выбранному курсу', async () => {
+    const box = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function rect() {
+      if (this.classList.contains('gr-levels')) return { left: 0, width: 390 }
+      return { left: 500, width: 100 }
+    })
+    const { container } = draw()
+    await screen.findByText('Changing direction')
+    expect(container.querySelector('.gr-levels').scrollLeft).toBe(355)
+    box.mockRestore()
+  })
+
   it('чужой уровень помечен замком, свой — нет', async () => {
     const { container } = draw()
     await screen.findByText('Changing direction')
