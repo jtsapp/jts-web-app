@@ -1713,6 +1713,78 @@ textarea {
   color: #fff;
   border-color: transparent;
 }
+/* Экран загружается (components/ScreenBoundary.jsx): кружок по центру или полосы вместо содержимого кабинета */
+.scr-load {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  text-align: center;
+}
+/* Светлая, как содержимое кабинета: страница под ним тёмная (--page-bg), и переход мигал бы чёрным */
+.scr-load--page {
+  min-height: 100vh;
+  background: #ffffff;
+}
+.scr-load--page .spinner {
+  animation: spin 0.8s linear infinite, scr-load-wait 0.2s;
+}
+@keyframes scr-load-wait {
+  from,
+  to {
+    opacity: 0;
+  }
+}
+.scr-load--page .le-btn {
+  width: auto;
+  min-width: 240px;
+}
+.scr-load--over {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  background: rgba(0, 0, 0, 0.25);
+}
+.scr-load__text {
+  max-width: 420px;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.scr-load__body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 32px;
+}
+/* order: мобильный слой «Главной» ставит .ge-skel в конец своей сетки, а здесь порядок обычный */
+.scr-load__bar.ge-skel {
+  order: 0;
+  min-height: 40px;
+  max-width: 320px;
+  border-radius: 12px;
+}
+.scr-load__block.ge-skel {
+  order: 0;
+  flex: 1;
+  min-height: 200px;
+  border-radius: 20px;
+}
+.scr-load__row {
+  display: flex;
+  gap: 20px;
+}
+@media (max-width: 560px) {
+  .scr-load__body {
+    padding: 16px;
+  }
+  .scr-load__row {
+    flex-direction: column;
+  }
+}
 .spinner {
   width: 40px;
   height: 40px;

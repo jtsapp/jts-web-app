@@ -3,13 +3,14 @@
 // пропуск или копия русского в kk/en глазами не видны — ловим здесь. Тексты те
 // же, что у преподавателя (web-admin, homework.materialPart.scope*): обе стороны
 // называют выданное одинаково.
+import { i18nText } from './i18n/i18nText.testutil.js'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const text = readFileSync(join(here, 'i18n.jsx'), 'utf8').replace(/\r\n/g, '\n')
+const text = i18nText()
 
 function block(lang) {
   const start = new RegExp(`^  ${lang}: \\{$`, 'm').exec(text)

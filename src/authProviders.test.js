@@ -1,3 +1,4 @@
+import { i18nText } from './i18n/i18nText.testutil.js'
 import { describe, it, expect } from 'vitest'
 import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -69,14 +70,14 @@ describe('вход: Apple убран, Google на месте', () => {
   })
 
   it('подписи кнопки Google новых экранов есть во всех трёх языках', () => {
-    const dict = readFileSync(join(src, 'i18n.jsx'), 'utf8')
+    const dict = i18nText()
     for (const key of ['rg.google.continue', 'rg.google.signin']) {
       expect(dict.split(`'${key}':`).length - 1, key).toBe(3)
     }
   })
 
   it('подписи кнопки есть во всех трёх языках', () => {
-    const dict = readFileSync(join(src, 'i18n.jsx'), 'utf8')
+    const dict = i18nText()
     expect(dict.match(/'auth\.google':/g) || []).toHaveLength(3)
   })
 })

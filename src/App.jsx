@@ -1,5 +1,12 @@
 'use client'
-import LessonFeedbackPrompt from './components/LessonFeedbackPrompt.jsx'
+// Стили, которые подключают сами компоненты. Здесь, а не только в них: экраны теперь ленивые, и файл, приехавший с чанком
+// экрана, встал бы в каскад позже прежнего и не действовал бы до первого захода на этот экран, а все эти классы раньше были
+// на странице всегда. Стартовый CSS от этого не вырос.
+import './components/LessonFeedbackPrompt.css'
+import './components/section-access-notice.css'
+import './components/tokenBlocks.css'
+import './screens/rewards.css'
+import './feedback/feedbackCenter.css'
 import LegalDocumentsGate from './components/LegalDocumentsGate.jsx'
 import { isLegalDocumentsScreen } from './lib/legalDocuments.js'
 
@@ -15,123 +22,23 @@ import PasswordStep from './screens/auth/PasswordStep.jsx'
 import DoneStep from './screens/auth/DoneStep.jsx'
 import GoogleGateStep from './screens/auth/GoogleGateStep.jsx'
 import { LoginCodeScreen, LoginPasswordScreen } from './screens/auth/LoginScreens.jsx'
-import CompleteRegistrationPage from './screens/CompleteRegistrationPage.jsx'
-import PlacementPage from './screens/PlacementPage.jsx'
-import LearningPage from './screens/LearningPage.jsx'
-import HomePage from './screens/HomePage.jsx'
-import PricingPage from './screens/PricingPage.jsx'
-import MinutesTopUpPage from './screens/MinutesTopUpPage.jsx'
-import PurchaseSuccessModal from './components/PurchaseSuccessModal.jsx'
-import DemoSubscriptionModal from './components/DemoSubscriptionModal.jsx'
 import SessionExpiredNotice from './components/SessionExpiredNotice.jsx'
-import PracticePage from './screens/PracticePage.jsx'
-import ListeningPage from './screens/ListeningPage.jsx'
-import ShadowingPage from './screens/ShadowingPage.jsx'
-import WritingPage from './screens/WritingPage.jsx'
-import WorkbookPage from './screens/WorkbookPage.jsx'
-import ReadingPage from './screens/ReadingPage.jsx'
-import WordsPage from './screens/WordsPage.jsx'
-import VerbsPage from './screens/VerbsPage.jsx'
-import SpeakSpinPage from './screens/SpeakSpinPage.jsx'
-import NumbersPage from './screens/NumbersPage.jsx'
-import PrepositionsPage from './screens/PrepositionsPage.jsx'
-import PronunciationPage from './screens/PronunciationPage.jsx'
-import GrammarGamesPage from './screens/GrammarGamesPage.jsx'
-import SpeedReadingPage from './screens/SpeedReadingPage.jsx'
-import CartoonsPage from './screens/CartoonsPage.jsx'
-import WordHuntPage from './screens/WordHuntPage.jsx'
-import ListenPage from './screens/ListenPage.jsx'
-import SituationsPage from './screens/SituationsPage.jsx'
-import ListenChoosePage from './screens/ListenChoosePage.jsx'
-import ArcadePage from './screens/ArcadePage.jsx'
-import LessonsPage from './screens/LessonsPage.jsx'
-import MyTeacherPage from './screens/MyTeacherPage.jsx'
-import GroupPickPage from './screens/GroupPickPage.jsx'
-import NotificationsPage from './screens/NotificationsPage.jsx'
-import ContractsPage from './screens/ContractsPage.jsx'
-import TeacherWizardPage from './screens/TeacherWizardPage.jsx'
-import TeacherPickPage, { teacherPickSeen } from './screens/TeacherPickPage.jsx'
-import MatchingPopups from './matching/MatchingPopups.jsx'
+import { teacherPickSeen } from './matching/teacherPickSeen.js'
 import { refreshMatching, getMatchingSnapshot, resetMatchingStore } from './matching/matchingStore.js'
 import { matchingView, needsTeacherPick } from './matching/matchingState.js'
-import HomeworkPage from './screens/HomeworkPage.jsx'
-import TokensPage, { PrizesPage } from './screens/RewardsPages.jsx'
-import LiveLessonPage from './screens/LiveLessonPage.jsx'
-import IeltsPage from './screens/IeltsPage.jsx'
-import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
-import IeltsListeningPage from './screens/IeltsListeningPage.jsx'
-import IeltsReadingPage from './screens/IeltsReadingPage.jsx'
-import IeltsSpeakingPage from './screens/IeltsSpeakingPage.jsx'
-import IeltsProgressPage from './screens/IeltsProgressPage.jsx'
-import IeltsReadingRunPage from './screens/IeltsReadingRunPage.jsx'
-import IeltsReadingReviewPage from './screens/IeltsReadingReviewPage.jsx'
-import IeltsListeningRunPage from './screens/IeltsListeningRunPage.jsx'
-import IeltsDictationPage from './screens/IeltsDictationPage.jsx'
-import IeltsWritingRunPage from './screens/IeltsWritingRunPage.jsx'
-import IeltsSpeakingRunPage from './screens/IeltsSpeakingRunPage.jsx'
-import IeltsMockPage from './screens/IeltsMockPage.jsx'
-import IeltsOnboardingPage from './screens/IeltsOnboardingPage.jsx'
-import SatPage from './screens/SatPage.jsx'
-import SatRunPage from './screens/SatRunPage.jsx'
-import SatDiagnosticPage from './screens/SatDiagnosticPage.jsx'
-import SatStudyPage from './screens/SatStudyPage.jsx'
-import SatDailyPage from './screens/SatDailyPage.jsx'
-import SatWeeklyPage from './screens/SatWeeklyPage.jsx'
-import SatPapersPage from './screens/SatPapersPage.jsx'
-import SatMockPage from './screens/SatMockPage.jsx'
-import SatMockReviewPage from './screens/SatMockReviewPage.jsx'
-import SatUnitPage from './screens/SatUnitPage.jsx'
-import SatOnboardingPage from './screens/SatOnboardingPage.jsx'
-import ExamPricingPage from './screens/ExamPricingPage.jsx'
-import IeltsDiagnosticPage from './screens/IeltsDiagnosticPage.jsx'
-import IeltsDiagnosticResultPage from './screens/IeltsDiagnosticResultPage.jsx'
-import IeltsRoutePage from './screens/IeltsRoutePage.jsx'
-import GeOnboardingPage from './screens/GeOnboardingPage.jsx'
-import GeRoutePage from './screens/GeRoutePage.jsx'
-import GePlanPage from './screens/GePlanPage.jsx'
 import { syncLegacyGoal } from './ge/legacyGoal.js'
 import { ieltsAccountRedirect } from './lib/ieltsAccountRedirect.js'
-import SpeakingTestPage from './screens/SpeakingTestPage.jsx'
-import VocabularyPage from './screens/VocabularyPage.jsx'
-import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
-import TutorLanguagePage from './screens/TutorLanguagePage.jsx'
-import TutorChoosePage from './screens/TutorChoosePage.jsx'
-import TutorLoadingPage from './screens/TutorLoadingPage.jsx'
-import TutorLevelOfferPage from './screens/TutorLevelOfferPage.jsx'
-import TutorVoiceIntroPage from './screens/TutorVoiceIntroPage.jsx'
-import TutorVoiceChatPage from './screens/TutorVoiceChatPage.jsx'
-import TutorLevelResultPage from './screens/TutorLevelResultPage.jsx'
-import TutorInterestsPage from './screens/TutorInterestsPage.jsx'
-import TutorProfessionPage from './screens/TutorProfessionPage.jsx'
-import TutorAnalysisPage from './screens/TutorAnalysisPage.jsx'
-import TutorDashboardPage from './screens/TutorDashboardPage.jsx'
-import TutorLessonPlanPage from './screens/TutorLessonPlanPage.jsx'
-import TutorManagePage from './screens/TutorManagePage.jsx'
-import TutorPracticeResultPage from './screens/TutorPracticeResultPage.jsx'
-import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
-import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
-import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
-import TutorCallReportPage from './screens/TutorCallReportPage.jsx'
 import { NO_PREVIOUS_CALL } from './lib/callSummary/freshCall.js'
-import ProfilePage from './screens/ProfilePage.jsx'
-import ServicesPage from './screens/ServicesPage.jsx'
-import AccountDeletedPage from './screens/AccountDeletedPage.jsx'
 import MobileTabBar from './components/MobileTabBar.jsx'
 import { MobileTabContext } from './components/mobileTab.js'
 import { showsTabBar } from './lib/navSections.js'
-import FeedbackCenter from './feedback/FeedbackCenter.jsx'
-import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
-import SelfStudyLessonPage from './screens/lessons/SelfStudyLessonPage.jsx'
-import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
-import BoothEntryPage from './screens/BoothEntryPage.jsx'
-import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
 import { getTutor, temperFor, tempersForAll, tempersFromProfile } from './tutor/tutors.js'
 // Звук трансляции учителя разрешается ЗАРАНЕЕ, на жесте входа в урок: на iOS
 // сокет-событие такого разрешения уже не получит (см. live/audioReport.js).
 import { unlockBroadcastAudio } from './screens/live/audioReport.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
-import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
-import { syncTourMarks, tourMarksReady, useTourMarks } from './lib/tourMarks.js'
+import { tourKeyFor } from './lib/tourName.js'
+import { isTourSeen, syncTourMarks, tourMarksReady, useTourMarks } from './lib/tourMarks.js'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
 import { useStudentSections, refreshStudentSections } from './lib/studentSections.js'
@@ -143,8 +50,6 @@ import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
 import { screenNeedsLogin } from './lib/guestLogin.js'
 import { isTeacher, userIdFromToken } from './lib/jwt.js'
-import AssistantWidget from './components/AssistantWidget.jsx'
-import PlatformPresence from './components/PlatformPresence.jsx'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
 import { onAssistantNavigate } from './lib/assistant/assistantBus.js'
 import { destinationOf } from './lib/assistant/destinations.js'
@@ -175,6 +80,128 @@ import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, areRewardsEnabled, isRewardsScreen, is
 import { SUPPORT_WHATSAPP_URL } from './lib/support.js'
 import { trackDemoState, forgetDemoState } from './lib/purchaseCelebration.js'
 import { KINGDOMS } from './kingdoms.js'
+import { lazyScreen } from './lib/lazyScreen.js'
+import { recoverFromStaleImport } from './lib/lazyModule.js'
+import ScreenBoundary, { OptionalPart, preloadScreenSkeleton } from './components/ScreenBoundary.jsx'
+
+// Части поверх экранов, которые ученик видит не сразу или не всегда: помощник весит с библиотеками больше всей оболочки.
+const AssistantWidget = lazyScreen(() => import('./components/AssistantWidget.jsx'))
+const PlatformPresence = lazyScreen(() => import('./components/PlatformPresence.jsx'))
+const MatchingPopups = lazyScreen(() => import('./matching/MatchingPopups.jsx'))
+const LessonFeedbackPrompt = lazyScreen(() => import('./components/LessonFeedbackPrompt.jsx'))
+const PurchaseSuccessModal = lazyScreen(() => import('./components/PurchaseSuccessModal.jsx'))
+const DemoSubscriptionModal = lazyScreen(() => import('./components/DemoSubscriptionModal.jsx'))
+
+const loadCatalogLesson = (...args) =>
+  import('./screens/workspace/loadCatalogLesson.js').then(
+    (mod) => mod.loadCatalogLesson(...args),
+    (error) => {
+      recoverFromStaleImport(error)
+      throw error
+    },
+  )
+
+// Экраны грузятся по требованию (почему и как — src/lib/lazyScreen.js). Новый экран — строка здесь и ветка в renderScreen.
+// В стартовом бандле остаются только экраны первого входа: вход и регистрация весят вместе ~10 КБ в gzip, а гость без
+// них увидел бы лишний кружок на первом же экране и на каждом шаге формы.
+const CompleteRegistrationPage = lazyScreen(() => import('./screens/CompleteRegistrationPage.jsx'))
+const PlacementPage = lazyScreen(() => import('./screens/PlacementPage.jsx'))
+const LearningPage = lazyScreen(() => import('./screens/LearningPage.jsx'))
+const HomePage = lazyScreen(() => import('./screens/HomePage.jsx'))
+const PricingPage = lazyScreen(() => import('./screens/PricingPage.jsx'))
+const MinutesTopUpPage = lazyScreen(() => import('./screens/MinutesTopUpPage.jsx'))
+const PracticePage = lazyScreen(() => import('./screens/PracticePage.jsx'))
+const ListeningPage = lazyScreen(() => import('./screens/ListeningPage.jsx'))
+const ShadowingPage = lazyScreen(() => import('./screens/ShadowingPage.jsx'))
+const WritingPage = lazyScreen(() => import('./screens/WritingPage.jsx'))
+const WorkbookPage = lazyScreen(() => import('./screens/WorkbookPage.jsx'))
+const ReadingPage = lazyScreen(() => import('./screens/ReadingPage.jsx'))
+const WordsPage = lazyScreen(() => import('./screens/WordsPage.jsx'))
+const VerbsPage = lazyScreen(() => import('./screens/VerbsPage.jsx'))
+const SpeakSpinPage = lazyScreen(() => import('./screens/SpeakSpinPage.jsx'))
+const NumbersPage = lazyScreen(() => import('./screens/NumbersPage.jsx'))
+const PrepositionsPage = lazyScreen(() => import('./screens/PrepositionsPage.jsx'))
+const PronunciationPage = lazyScreen(() => import('./screens/PronunciationPage.jsx'))
+const GrammarGamesPage = lazyScreen(() => import('./screens/GrammarGamesPage.jsx'))
+const SpeedReadingPage = lazyScreen(() => import('./screens/SpeedReadingPage.jsx'))
+const CartoonsPage = lazyScreen(() => import('./screens/CartoonsPage.jsx'))
+const WordHuntPage = lazyScreen(() => import('./screens/WordHuntPage.jsx'))
+const ListenPage = lazyScreen(() => import('./screens/ListenPage.jsx'))
+const SituationsPage = lazyScreen(() => import('./screens/SituationsPage.jsx'))
+const ListenChoosePage = lazyScreen(() => import('./screens/ListenChoosePage.jsx'))
+const ArcadePage = lazyScreen(() => import('./screens/ArcadePage.jsx'))
+const LessonsPage = lazyScreen(() => import('./screens/LessonsPage.jsx'))
+const MyTeacherPage = lazyScreen(() => import('./screens/MyTeacherPage.jsx'))
+const GroupPickPage = lazyScreen(() => import('./screens/GroupPickPage.jsx'))
+const NotificationsPage = lazyScreen(() => import('./screens/NotificationsPage.jsx'))
+const ContractsPage = lazyScreen(() => import('./screens/ContractsPage.jsx'))
+const TeacherWizardPage = lazyScreen(() => import('./screens/TeacherWizardPage.jsx'))
+const TeacherPickPage = lazyScreen(() => import('./screens/TeacherPickPage.jsx'))
+const HomeworkPage = lazyScreen(() => import('./screens/HomeworkPage.jsx'))
+const TokensPage = lazyScreen(() => import('./screens/RewardsPages.jsx'))
+const PrizesPage = lazyScreen(() => import('./screens/RewardsPages.jsx'), 'PrizesPage')
+const LiveLessonPage = lazyScreen(() => import('./screens/LiveLessonPage.jsx'))
+const IeltsPage = lazyScreen(() => import('./screens/IeltsPage.jsx'))
+const IeltsWritingPage = lazyScreen(() => import('./screens/IeltsWritingPage.jsx'))
+const IeltsListeningPage = lazyScreen(() => import('./screens/IeltsListeningPage.jsx'))
+const IeltsReadingPage = lazyScreen(() => import('./screens/IeltsReadingPage.jsx'))
+const IeltsSpeakingPage = lazyScreen(() => import('./screens/IeltsSpeakingPage.jsx'))
+const IeltsProgressPage = lazyScreen(() => import('./screens/IeltsProgressPage.jsx'))
+const IeltsReadingRunPage = lazyScreen(() => import('./screens/IeltsReadingRunPage.jsx'))
+const IeltsReadingReviewPage = lazyScreen(() => import('./screens/IeltsReadingReviewPage.jsx'))
+const IeltsListeningRunPage = lazyScreen(() => import('./screens/IeltsListeningRunPage.jsx'))
+const IeltsDictationPage = lazyScreen(() => import('./screens/IeltsDictationPage.jsx'))
+const IeltsWritingRunPage = lazyScreen(() => import('./screens/IeltsWritingRunPage.jsx'))
+const IeltsSpeakingRunPage = lazyScreen(() => import('./screens/IeltsSpeakingRunPage.jsx'))
+const IeltsMockPage = lazyScreen(() => import('./screens/IeltsMockPage.jsx'))
+const IeltsOnboardingPage = lazyScreen(() => import('./screens/IeltsOnboardingPage.jsx'))
+const SatPage = lazyScreen(() => import('./screens/SatPage.jsx'))
+const SatRunPage = lazyScreen(() => import('./screens/SatRunPage.jsx'))
+const SatDiagnosticPage = lazyScreen(() => import('./screens/SatDiagnosticPage.jsx'))
+const SatStudyPage = lazyScreen(() => import('./screens/SatStudyPage.jsx'))
+const SatDailyPage = lazyScreen(() => import('./screens/SatDailyPage.jsx'))
+const SatWeeklyPage = lazyScreen(() => import('./screens/SatWeeklyPage.jsx'))
+const SatPapersPage = lazyScreen(() => import('./screens/SatPapersPage.jsx'))
+const SatMockPage = lazyScreen(() => import('./screens/SatMockPage.jsx'))
+const SatMockReviewPage = lazyScreen(() => import('./screens/SatMockReviewPage.jsx'))
+const SatUnitPage = lazyScreen(() => import('./screens/SatUnitPage.jsx'))
+const SatOnboardingPage = lazyScreen(() => import('./screens/SatOnboardingPage.jsx'))
+const ExamPricingPage = lazyScreen(() => import('./screens/ExamPricingPage.jsx'))
+const IeltsDiagnosticPage = lazyScreen(() => import('./screens/IeltsDiagnosticPage.jsx'))
+const IeltsDiagnosticResultPage = lazyScreen(() => import('./screens/IeltsDiagnosticResultPage.jsx'))
+const IeltsRoutePage = lazyScreen(() => import('./screens/IeltsRoutePage.jsx'))
+const GeOnboardingPage = lazyScreen(() => import('./screens/GeOnboardingPage.jsx'))
+const GeRoutePage = lazyScreen(() => import('./screens/GeRoutePage.jsx'))
+const GePlanPage = lazyScreen(() => import('./screens/GePlanPage.jsx'))
+const SpeakingTestPage = lazyScreen(() => import('./screens/SpeakingTestPage.jsx'))
+const VocabularyPage = lazyScreen(() => import('./screens/VocabularyPage.jsx'))
+const KingdomInteriorPage = lazyScreen(() => import('./screens/KingdomInteriorPage.jsx'))
+const TutorLanguagePage = lazyScreen(() => import('./screens/TutorLanguagePage.jsx'))
+const TutorChoosePage = lazyScreen(() => import('./screens/TutorChoosePage.jsx'))
+const TutorLoadingPage = lazyScreen(() => import('./screens/TutorLoadingPage.jsx'))
+const TutorLevelOfferPage = lazyScreen(() => import('./screens/TutorLevelOfferPage.jsx'))
+const TutorVoiceIntroPage = lazyScreen(() => import('./screens/TutorVoiceIntroPage.jsx'))
+const TutorVoiceChatPage = lazyScreen(() => import('./screens/TutorVoiceChatPage.jsx'))
+const TutorLevelResultPage = lazyScreen(() => import('./screens/TutorLevelResultPage.jsx'))
+const TutorInterestsPage = lazyScreen(() => import('./screens/TutorInterestsPage.jsx'))
+const TutorProfessionPage = lazyScreen(() => import('./screens/TutorProfessionPage.jsx'))
+const TutorAnalysisPage = lazyScreen(() => import('./screens/TutorAnalysisPage.jsx'))
+const TutorDashboardPage = lazyScreen(() => import('./screens/TutorDashboardPage.jsx'))
+const TutorLessonPlanPage = lazyScreen(() => import('./screens/TutorLessonPlanPage.jsx'))
+const TutorManagePage = lazyScreen(() => import('./screens/TutorManagePage.jsx'))
+const TutorPracticeResultPage = lazyScreen(() => import('./screens/TutorPracticeResultPage.jsx'))
+const TutorErrorAnalyticsPage = lazyScreen(() => import('./screens/TutorErrorAnalyticsPage.jsx'))
+const TutorScenariosPage = lazyScreen(() => import('./screens/TutorScenariosPage.jsx'))
+const TutorChatHistoryPage = lazyScreen(() => import('./screens/TutorChatHistoryPage.jsx'))
+const TutorCallReportPage = lazyScreen(() => import('./screens/TutorCallReportPage.jsx'))
+const ProfilePage = lazyScreen(() => import('./screens/ProfilePage.jsx'))
+const ServicesPage = lazyScreen(() => import('./screens/ServicesPage.jsx'))
+const AccountDeletedPage = lazyScreen(() => import('./screens/AccountDeletedPage.jsx'))
+const FeedbackCenter = lazyScreen(() => import('./feedback/FeedbackCenter.jsx'))
+const LessonWorkspacePage = lazyScreen(() => import('./screens/LessonWorkspacePage.jsx'))
+const SelfStudyLessonPage = lazyScreen(() => import('./screens/lessons/SelfStudyLessonPage.jsx'))
+const CourseCatalogPage = lazyScreen(() => import('./screens/CourseCatalogPage.jsx'))
+const BoothEntryPage = lazyScreen(() => import('./screens/BoothEntryPage.jsx'))
 
 // Переводит ошибку запроса кода в ключ локализованного сообщения — или null,
 // если случай не распознан (тогда показываем текст бэкенда/общий фолбэк). Коды
@@ -261,7 +288,7 @@ function sessionStore() {
 
 export default function App() {
   const rewardsEnabled = areRewardsEnabled()
-  const { t, lang, setLang } = useI18n()
+  const { t, lang, setLang, langReady } = useI18n()
   // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
   // ?screen=… переопределяет начальный экран — так экраны тьютора остаются
   // достижимы для отладки/диплинков.
@@ -504,6 +531,8 @@ export default function App() {
     // Без токена в localStorage restoreSession() не ходит в сеть и отдаёт null
     // синхронно — аноним не видит заметной паузы.
     const hadToken = Boolean(loadToken())
+    // Чанк первого экрана просим сразу, параллельно с запросами сессии: иначе он пошёл бы только после них, отдельным шагом.
+    const firstChunk = hadToken ? preloadScreen(deepLink || homeScreenFor({ token: loadToken() })) : undefined
     restoreSession()
       .then(async (session) => {
         // Токен был, а сессии нет — restoreSession уже стёр мёртвый токен
@@ -611,7 +640,9 @@ export default function App() {
           tutorOnboarded: !!profile?.tutor,
         }))
       })
-      .finally(() => {
+      .finally(async () => {
+        // Спиннер держим и до приезда чанка: иначе после него на миг вышла бы заглушка экрана, а за ней сам экран.
+        await firstChunk
         if (!cancelled) setRestoring(false)
       })
 
@@ -638,6 +669,14 @@ export default function App() {
   const [justRegistered, setJustRegistered] = useState(false)
   const [mode, setMode] = useState('register') // 'register' | 'login' — что ответил бэкенд
   const [token, setToken] = useState(null)
+  useEffect(() => {
+    if (!token) return
+    // Вошёл через форму: следующим будет домашний экран, и за ней ещё есть время его загрузить. При восстановлении сессии
+    // первый экран уже просит эффект выше, а лишний чанк соперничал бы с его картинками.
+    if (!restoring) preloadScreen(homeScreenFor({ token }))
+    preloadScreenSkeleton()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- нужен только момент появления токена
+  }, [token])
   // Аккаунт IELTS (дизайн «IELTS new»): теста уровня General English на входе у такого ученика нет. «Повторение»
   // (тропа kingdom) с 13.10.2026 ему доступно — пункт есть в его меню (Sidebar.jsx, IELTS_SECTIONS).
   const sectionAccess = useStudentSections(token && !isTeacher(token) ? token : null, screen)
@@ -2041,9 +2080,9 @@ export default function App() {
     }
   }
 
-  if (restoring) {
+  if (restoring || !langReady) {
     return (
-      <div className="screen">
+      <div className="screen scr-load">
         <div className="spinner" aria-label="Загрузка" />
       </div>
     )
@@ -2094,7 +2133,9 @@ export default function App() {
     <MobileTabContext.Provider value={setMobileTab}>
       {page && (
         <div key={`${view}#${screenNonce}`} className="scr-in">
-          {page}
+          <ScreenBoundary view={view} shell={{ token, userName: name, userLevel, onNav: handleNav, onProfile: () => setScreen('profile') }}>
+            {page}
+          </ScreenBoundary>
         </div>
       )}
       {/* Нижняя панель телефона — вне обёртки с key и её анимации (transform делал .scr-in опорой для fixed, и
@@ -2106,18 +2147,20 @@ export default function App() {
       )}
       {/* Поздравление живёт вне обёртки с key: иначе смена экрана
           перемонтировала бы его и окно моргало бы анимацией входа. */}
-      {celebrate && <PurchaseSuccessModal onClose={() => setCelebrate(false)} />}
-      {trialOffer && token && (
-        <DemoSubscriptionModal
-          overPage
-          onClose={() => setTrialOffer(false)}
-          onBuy={() => {
-            setTrialOffer(false)
-            setScreen('pricing')
-          }}
-          onTrialBooked={() => setTrialRev((n) => n + 1)}
-        />
-      )}
+      <OptionalPart>
+        {celebrate && <PurchaseSuccessModal onClose={() => setCelebrate(false)} />}
+        {trialOffer && token && (
+          <DemoSubscriptionModal
+            overPage
+            onClose={() => setTrialOffer(false)}
+            onBuy={() => {
+              setTrialOffer(false)
+              setScreen('pricing')
+            }}
+            onTrialBooked={() => setTrialRev((n) => n + 1)}
+          />
+        )}
+      </OptionalPart>
       {/* «Сессия истекла» — тоже вне обёртки с key: смена экрана после выхода
           не должна её перемонтировать и сбивать анимацию. Только гостю: у
           вошедшего сообщать не о чем. */}
@@ -2134,16 +2177,26 @@ export default function App() {
       {/* Помощник по сайту — тоже вне обёртки с key: разговор переживает
           переходы между экранами. Смонтирован для любого ученика, а на
           экзаменах, живом уроке и звонке тьютора только скрыт (enabled). */}
-      {token && !isTeacher(token) && <PlatformPresence token={token} />}
+      <OptionalPart>{token && !isTeacher(token) && <PlatformPresence token={token} />}</OptionalPart>
       {/* Окна подбора учителя при входе (ТЗ 08 §2.12) — вне обёртки с key по той же причине. */}
-      {token && !boothAccount && !isTeacher(token) && <LessonFeedbackPrompt key={userIdFromToken(token)} token={token} enabled={isLegalDocumentsScreen(view) && !['live-lesson', 'lesson-workspace'].includes(view)} />}
-      {token && !boothAccount && !isTeacher(token) && !isStudentSectionHidden('my-teacher') && <MatchingPopups token={token} screen={view} onNav={handleNav} />}
-      {token && !boothAccount && !isTeacher(token) && (
+      <OptionalPart>{token && !boothAccount && !isTeacher(token) && <LessonFeedbackPrompt key={userIdFromToken(token)} token={token} enabled={isLegalDocumentsScreen(view) && !['live-lesson', 'lesson-workspace'].includes(view)} />}</OptionalPart>
+      <OptionalPart>{token && !boothAccount && !isTeacher(token) && !isStudentSectionHidden('my-teacher') && <MatchingPopups token={token} screen={view} onNav={handleNav} />}</OptionalPart>
+      <OptionalPart>{token && !boothAccount && !isTeacher(token) && (
         <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
-      )}
+      )}</OptionalPart>
     </MobileTabContext.Provider>
     </LegalDocumentsGate>
   )
+
+  // Чанк экрана заранее. Какой компонент у экрана, знает только renderScreen, поэтому спрашиваем у него: он лишь собирает
+  // элемент и ничего не монтирует. Обещание нужно App, чтобы дождаться чанка; отказ здесь не важен, его покажет ScreenBoundary.
+  function preloadScreen(name) {
+    try {
+      return renderScreen(name)?.type?.preload?.().catch(() => {})
+    } catch {
+      return undefined
+    }
+  }
 
   function renderScreen(view) {
   switch (view) {

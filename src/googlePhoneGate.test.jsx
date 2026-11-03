@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { i18nText } from './i18n/i18nText.testutil.js'
 import { describe, it, expect, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -15,7 +16,7 @@ import GoogleGateStep from './screens/auth/GoogleGateStep.jsx'
 const dir = dirname(fileURLToPath(import.meta.url))
 const read = (p) => readFileSync(join(dir, p), 'utf8')
 const app = read('App.jsx')
-const i18n = read('i18n.jsx')
+const i18n = i18nText()
 
 function body(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker)

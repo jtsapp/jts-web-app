@@ -903,6 +903,19 @@
   font-size: 12px;
   line-height: 16px;
 }
+/* Итог «Foundation»: слово вместо кода уровня — кегль под круг 88. */
+.pl-report__overall.is-foundation .pl-report__level {
+  font-size: 13px;
+  line-height: 16px;
+}
+.pl-report__overall.is-foundation .pl-report__name {
+  font-size: 22px;
+  line-height: 30px;
+}
+.pl-report__overall.is-foundation .pl-report__muted {
+  font-size: 12px;
+  line-height: 16px;
+}
 .pl-report__cta {
   flex: none;
   height: 40px;

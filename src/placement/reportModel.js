@@ -12,6 +12,18 @@ export const SKILL_ORDER = ['LU', 'R', 'L', 'S']
 const cefr = (v) => (CEFR.includes(v) ? v : null)
 const arr = (v) => (Array.isArray(v) ? v : [])
 
+// Сколько ответов отличает законченный тест от брошенного, когда уровня нет: v16 в обоих случаях отдаёт overallCEFR null,
+// а признака «раздел закончен» в конверте нет. Замер симулятором v16 (612 прогонов с итогом Foundation, 03.11.2026):
+// грамматика 14–15 ответов (раньше 10 v16 её не останавливает, EARLY_STOP), чтение 8 (четыре текста ветки A0). Аудирование
+// не считаем: его разрешено пропустить из-за проблемы со звуком.
+const FOUNDATION_MIN = { LU: 10, R: 8 }
+
+function isFoundation(a) {
+  if (cefr(a.overallCEFR)) return false
+  const answered = (id) => (Number.isFinite(a.skillResults?.[id]?.total) ? a.skillResults[id].total : 0)
+  return answered('LU') >= FOUNDATION_MIN.LU && answered('R') >= FOUNDATION_MIN.R
+}
+
 function skillRow(id, r) {
   if (id === 'S') {
     const done = r?.status === 'completed' && cefr(r.level)
@@ -40,6 +52,9 @@ export function reportView(env, lang = 'ru') {
   return {
     attemptId: a.attemptId,
     overall: cefr(a.overallCEFR),
+    // Тест пройден, но ни один уровень не подтвердился: итог v16 «Foundation — начни с основ». Это его рекомендация, а не
+    // A0, поэтому уровня в отчёте нет, но и «Не пройден» здесь неправда (жалоба с прода 03.11.2026).
+    foundation: isFoundation(a),
     // partial — тест открыт до конца (чаще всего без говорения): уровень предварительный.
     partial: a.overallStatus === 'partial',
     completedAt: a.completedAt || env.host?.savedAt || null,
@@ -68,4 +83,10 @@ export function reportView(env, lang = 'ru') {
         nav: navForActivity(r),
       })),
   }
+}
+
+/** Отчёт для «Главной» или null — тест не пройден: попытки нет либо тест брошен раньше, чем v16 определил хоть что-то. */
+export function homeReport(env, lang = 'ru') {
+  const view = reportView(env, lang)
+  return view && (view.overall || view.foundation) ? view : null
 }

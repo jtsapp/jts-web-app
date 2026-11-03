@@ -30,11 +30,13 @@ export default function LearningLayout({
   // На десктопе «Практики» угол с редизайна 29.10.2026 тоже есть — в строке
   // заголовка (см. .learn__main:has(.pk) в styles.css).
   onHelp,
+  // false — без уведомлений и их сокета: заглушка экрана (ScreenSkeleton) живёт доли секунды.
+  notifications = true,
   children,
 }) {
   const { t } = useI18n()
   const [drawer, setDrawer] = useState(false)
-  const notificationsEnabled = isTeacher(token) || !isStudentSectionHidden('notifications')
+  const notificationsEnabled = notifications && (isTeacher(token) || !isStudentSectionHidden('notifications'))
   // Телефон (≤560): вместо бургера шапки — нижняя панель приложения, одна на всё приложение (App, mobileTab.js);
   // оболочка сообщает, какая вкладка горит. Шапка с бургером остаётся планшету 561–760.
   useMobileTab(active)

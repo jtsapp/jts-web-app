@@ -24,7 +24,8 @@ export function payloadOf(token) {
               .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
               .join('')
           )
-        : Buffer.from(padded, 'base64').toString('utf8')
+        // globalThis: голое имя Buffer заставило бы сборщик положить его заменитель (6 КБ в gzip) в браузерный бандл
+        : globalThis.Buffer.from(padded, 'base64').toString('utf8')
     return JSON.parse(json)
   } catch {
     return null
