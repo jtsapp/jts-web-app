@@ -21,7 +21,8 @@
  * @param liveLessonId   id живого урока — у экрана «Живой урок»
  * @param liveWorkspaceId id урока каталога — у экрана урока
  * @param workspaceCardId адрес карточки, заданной на дом
- * @returns `{ screen, live, catalog, card }`, где null — «этого параметра быть
+ * @param workspaceSource откуда открыт урок: 'self' — раздел «Самостоятельно»
+ * @returns `{ screen, live, catalog, card, self }`, где null — «этого параметра быть
  *          не должно»
  */
 export function screenUrlParams({
@@ -30,8 +31,9 @@ export function screenUrlParams({
   liveLessonId = null,
   liveWorkspaceId = null,
   workspaceCardId = null,
+  workspaceSource = null,
 } = {}) {
-  const params = { screen: null, live: null, catalog: null, card: null }
+  const params = { screen: null, live: null, catalog: null, card: null, self: null }
 
   const isLiveLesson = screen === 'live-lesson' && liveLessonId != null
   // Карточка урока, заданная на дом: на неё ведёт ссылка из домашней работы, и
@@ -42,7 +44,12 @@ export function screenUrlParams({
   const isCardWorkspace =
     screen === 'lesson-workspace' && Boolean(workspaceCardId) && liveWorkspaceId != null
 
-  if (!(persists || isLiveLesson || isCardWorkspace)) return params
+  // Самостоятельный урок: ученик проходит его долго, и F5 посреди этапа не должен
+  // уводить его из урока. Свой параметр, а не catalog: тот открывает другой экран.
+  const isSelfWorkspace =
+    screen === 'lesson-workspace' && workspaceSource === 'self' && liveWorkspaceId != null && !isCardWorkspace
+
+  if (!(persists || isLiveLesson || isCardWorkspace || isSelfWorkspace)) return params
 
   params.screen = screen
   if (isLiveLesson) params.live = String(liveLessonId)
@@ -50,6 +57,7 @@ export function screenUrlParams({
     params.catalog = String(liveWorkspaceId)
     params.card = String(workspaceCardId)
   }
+  if (isSelfWorkspace) params.self = String(liveWorkspaceId)
   return params
 }
 

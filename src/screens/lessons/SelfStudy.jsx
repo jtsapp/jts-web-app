@@ -3,7 +3,7 @@ import { useI18n } from '../../i18n.jsx'
 import { getCourseCatalog, getCatalogProgress, completeCatalogLesson, uncompleteCatalogLesson } from '../../api.js'
 import { levelIndex } from '../../kingdoms.js'
 import { readSelfStudyLevel, writeSelfStudyLevel } from './selfStudyLevel.js'
-import { compareCourses, courseCaptions, courseKey, courseShortName, defaultCourse, findPickedCourse } from './selfStudyCourses.js'
+import { compareCourses, courseCaptions, courseKey, courseShortName, defaultCourse, findPickedCourse, selfStudyUnits } from './selfStudyCourses.js'
 import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
 
 /** Замок на чипе закрытого уровня и на карточке-заглушке. */
@@ -214,14 +214,7 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
         locked: typeof level.locked === 'boolean'
           ? level.locked
           : Boolean(level.separateAccess) || !isLevelOpen(level.code, userLevel),
-        units: (level.units || [])
-          .map((unit) => ({
-            ...unit,
-            lessons: (unit.lessons || []).filter(
-              (l) => !l.locked && String(l.mode || '').toUpperCase() === 'SELF_STUDY',
-            ),
-          }))
-          .filter((unit) => unit.lessons.length > 0),
+        units: selfStudyUnits(level),
       }))
       .filter((level) => level.units.length > 0)
       // Чипы идут по возрастанию — так же, как идёт курс; внутри уровня общий

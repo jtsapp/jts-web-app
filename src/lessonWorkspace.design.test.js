@@ -349,8 +349,9 @@ describe('токены доступны там, где рисуется прак
     // `.lw-doc` — документ урока в «Самостоятельно»: когда плеер не осилил урок
     // целиком, он сам себе корень, и без токенов весь урок выходил голым
     // текстом — варианты ответа без фона, карточки без подложки.
+    // `.ssf` и `.ssf-panel` — самостоятельный урок-файл и его содержание.
     expect(css).toMatch(/\.lv,\s*\.lw,/)
-    const roots = css.match(/\.lw,\s*\.live,\s*\.lw-doc,\s*\.hw-exercises\s*\{/)
+    const roots = css.match(/\.lw,\s*\.live,\s*\.lw-doc,\s*\.ssf,\s*\.ssf-panel,\s*\.hw-exercises\s*\{/)
 
     expect(roots).not.toBeNull()
   })

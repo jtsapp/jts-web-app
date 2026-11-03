@@ -14,6 +14,40 @@
 
 import { levelIndex } from '../../kingdoms.js'
 
+/**
+ * Юниты курса, которые видит ученик: только самостоятельные записи и незакрытые
+ * уроки. Каждый урок лежит в каталоге трижды, по разу на режим; пустые юниты не
+ * показываем.
+ */
+export function selfStudyUnits(level) {
+  return (level?.units || [])
+    .map((unit) => ({
+      ...unit,
+      lessons: (unit.lessons || []).filter(
+        (lesson) => !lesson.locked && String(lesson.mode || '').toUpperCase() === 'SELF_STUDY',
+      ),
+    }))
+    .filter((unit) => unit.lessons.length > 0)
+}
+
+/**
+ * Курс и соседи урока — для содержания и перехода к следующему уроку. Ищем по всему
+ * каталогу, а не по уровню ученика: он мог открыть любой выданный курс. Не нашли
+ * (каталог ещё едет, урок закрыли) — null.
+ */
+export function selfStudyLessonPlace(levels, lessonId) {
+  const id = Number(lessonId)
+  for (const level of levels || []) {
+    const units = selfStudyUnits(level)
+    const lessons = units.flatMap((unit) => unit.lessons)
+    const index = lessons.findIndex((lesson) => Number(lesson.id) === id)
+    if (index >= 0) {
+      return { level, units, previous: lessons[index - 1] || null, next: lessons[index + 1] || null }
+    }
+  }
+  return null
+}
+
 /** Ключ курса: для React, для выбора и для запомненного значения. */
 export function courseKey(course) {
   return String(course.id)
