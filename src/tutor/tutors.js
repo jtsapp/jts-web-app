@@ -21,6 +21,8 @@
 //             (portraits — по ключу эмоции TutorPortrait); остальным анимаций
 //             пока нет — временно нейтральное лицо (картинки владельца
 //             29.10.2026, белый фон срезан, кадр как у Декстера);
+//  mini     — то же лицо для кружка «Другие тьюторы»: 96×96 из portrait, ~5 КБ
+//             вместо 50 (кружок 32 px, а портреты делили канал с главным лицом);
 //  tint     — фон под лицом: в рамке и в кружке «Другие тьюторы».
 import { JARVIS_ENABLED } from '../config.js'
 
@@ -42,6 +44,7 @@ const BASE_TUTORS = [
     card: '/tutor/v2/card-luna.webp',
     stage: '#ffebe0',
     portrait: '/tutor/v2/portrait-luna.webp',
+    mini: '/tutor/v2/mini-luna.webp',
     tint: '#ffd9c7',
     traitColors: ['#ba29e2', '#21b398', '#c3c032'],
     mood: 'idle', // спокойная
@@ -54,6 +57,7 @@ const BASE_TUTORS = [
     card: '/tutor/v2/card-dexter.webp',
     stage: '#efe7ff',
     portrait: '/tutor/v2/portrait-dexter.webp',
+    mini: '/tutor/v2/mini-dexter.webp',
     portraits: {
       happy: '/tutor/v2/dexter-happy.webp',
       surprised: '/tutor/v2/dexter-surprised.webp',
@@ -79,6 +83,7 @@ const BASE_TUTORS = [
     card: '/tutor/v2/card-spark.webp',
     stage: '#dff0ff',
     portrait: '/tutor/v2/portrait-spark.webp',
+    mini: '/tutor/v2/mini-spark.webp',
     tint: '#c9e4ff',
     traitColors: ['#ffa200', '#f12929', '#51a41e'],
     mood: 'happy', // радостный
@@ -111,6 +116,7 @@ const JARVIS = {
   card: '/tutor/v2/card-luna.webp',
   stage: '#ffebe0',
   portrait: '/tutor/v2/portrait-luna.webp',
+  mini: '/tutor/v2/mini-luna.webp',
   tint: '#ffd9c7',
   traitColors: ['#ba29e2', '#21b398', '#c3c032'],
   mood: 'idle',
@@ -133,6 +139,7 @@ const AIZERE = {
   card: '/tutor/v2/card-aizere.webp',
   stage: '#ffdcdc',
   portrait: '/tutor/v2/portrait-aizere.webp',
+  mini: '/tutor/v2/mini-aizere.webp',
   tint: '#ffd0d2',
   traitColors: ['#2f6fd6', '#3aa66b'],
   mood: 'idle', // спокойная
@@ -157,6 +164,7 @@ const SPARK_TEST = {
   card: '/tutor/v2/card-spark.webp',
   stage: '#dff0ff',
   portrait: '/tutor/v2/portrait-spark.webp',
+  mini: '/tutor/v2/mini-spark.webp',
   tint: '#c9e4ff',
   traitColors: ['#ffa200', '#f12929', '#51a41e'],
   mood: 'happy',

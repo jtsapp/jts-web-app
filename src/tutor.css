@@ -792,11 +792,15 @@
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  /* Уходящее лицо гаснет, когда новое уже проявилось: при одновременной смене оба
+     на миг полупрозрачны, и лицо мигает фоном рамки. */
+  transition: opacity 0.2s ease 0.12s;
   user-select: none;
 }
 .tp-portrait__img.is-on {
+  z-index: 1;
   opacity: 1;
+  transition: opacity 0.2s ease;
 }
 .tp-portrait .tp-portrait__rig {
   animation: tp-breathe 3.6s ease-in-out infinite;

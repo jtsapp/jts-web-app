@@ -23,7 +23,7 @@ export default function TutorHero({ tutor = {}, level, onOthers, onManage, class
           <span className="tp-hero__stack" aria-hidden="true">
             {others.map((tt) => (
               <span className="tp-hero__face" key={tt.key} style={tt.tint ? { background: tt.tint } : undefined}>
-                <img src={tt.portrait || tt.avatar} alt="" />
+                <img src={tt.mini || tt.portrait || tt.avatar} alt="" />
               </span>
             ))}
           </span>
