@@ -63,10 +63,16 @@ test.describe('страница тьютора — компьютер', () => {
 
   test('карточка настроек заходит на лицо и лежит поверх', async ({ page }) => {
     await page.goto('/?screen=tutor-dashboard')
-    const frame = await page.locator('.tp-dash__frame').boundingBox()
-    const card = await page.locator('.tp-composer').boundingBox()
+    await page.locator('.tp-composer').waitFor()
+    // Оба размера за один снимок: экран въезжает анимацией `.scr-in`, и два отдельных
+    // замера давали разницу на её сдвиг (33 вместо 32 в прод-сборке).
+    const overlap = await page.evaluate(() => {
+      const frame = document.querySelector('.tp-dash__frame').getBoundingClientRect()
+      const card = document.querySelector('.tp-composer').getBoundingClientRect()
+      return frame.bottom - card.top
+    })
     // gap −32 в кадре: верх карточки на 32 выше низа лица.
-    expect(Math.round(frame.y + frame.height - card.y)).toBe(32)
+    expect(Math.round(overlap)).toBe(32)
   })
 })
 
