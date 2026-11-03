@@ -67,7 +67,9 @@ const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justto
 
 export const metadata = {
   title: 'Just to Study — Обучайся английскому с личным тьютором',
-  icons: { icon: '/assets/dexter.png' },
+  // Отдельный файл на 3 КБ: браузер качает иконку на первом заходе, и dexter.png
+  // (130 КБ) уходил каждому ради картинки 32 px во вкладке.
+  icons: { icon: '/assets/dexter-icon.png' },
 }
 
 export const viewport = {
