@@ -7,7 +7,11 @@ export default {
     // идут через `@/…`, и без алиаса vitest не резолвит их вовсе. Существующие
     // тесты это не задевает — '@' матчится только как '@' или префикс '@/',
     // поэтому пакеты вроде @testing-library/react идут прежним путём.
-    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+    alias: [
+      { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+      // Английский и казахский на сайте приезжают чанком, а тесты проверяют текст сразу после render.
+      { find: /^\.\/i18n\/langTables\.js$/, replacement: fileURLToPath(new URL('./src/i18n/langTables.eager.js', import.meta.url)) },
+    ],
   },
   esbuild: {
     // Components in src/**/*.jsx use the automatic JSX runtime (no explicit

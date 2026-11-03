@@ -1,3 +1,4 @@
+import { i18nText } from './i18n/i18nText.testutil.js'
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -19,7 +20,7 @@ import { fileURLToPath } from 'node:url'
  * их показали (тот же приём, что в lessonWorkspace.design.test.js).
  */
 const here = dirname(fileURLToPath(import.meta.url))
-const i18n = readFileSync(join(here, 'i18n.jsx'), 'utf8').replace(/\r\n/g, '\n')
+const i18n = i18nText()
 
 /** Все значения ключа во всех языковых блоках. */
 function valuesOf(key) {

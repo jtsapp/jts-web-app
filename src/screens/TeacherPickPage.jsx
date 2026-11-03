@@ -5,20 +5,11 @@ import { studentTimezone } from '../matching/slots.js'
 import { useMatchingT } from '../matching/texts.js'
 import { TariffLine, useToast } from '../matching/ui.jsx'
 import ManagerPickModal, { managerButtonLabel } from '../matching/ManagerPickModal.jsx'
+import { markTeacherPickSeen } from '../matching/teacherPickSeen.js'
 
 // Последний шаг онбординга (ТЗ §2.1): после итога теста, пока учителя нет. Экран во всё окно, как анкета GE —
 // это продолжение первого входа, а не раздел кабинета. Показан хоть раз — App больше сюда не уводит
 // (teacherPickSeen), дальше подбор живёт в «Мой учитель».
-const seenKey = (id) => `jts_teacher_pick_seen:${id}`
-
-export function teacherPickSeen(studentId) {
-  try {
-    return localStorage.getItem(seenKey(studentId)) === '1'
-  } catch {
-    return true
-  }
-}
-
 export default function TeacherPickPage({ token, userLevel, onNav }) {
   const { t, lang } = useMatchingT()
   const snap = useMatching(token)
@@ -33,7 +24,7 @@ export default function TeacherPickPage({ token, userLevel, onNav }) {
   useEffect(() => {
     if (!view.studentId) return
     try {
-      localStorage.setItem(seenKey(view.studentId), '1')
+      markTeacherPickSeen(view.studentId)
     } catch {
       /* без хранилища онбординг просто покажется ещё раз */
     }
