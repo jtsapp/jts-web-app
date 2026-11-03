@@ -4,7 +4,7 @@ import { envelopeSummary, levelFromEnvelope, validateEnvelope, MAX_ENVELOPE_BYTE
 import { geProfileBody, purposeFromGoals } from './geMapping.js'
 import { navForActivity, navForSection } from './activityRoutes.js'
 import { bandFor, pickTopic, topicById, TOPICS } from './speakingTopics.js'
-import { reportView } from './reportModel.js'
+import { homeReport, reportView } from './reportModel.js'
 import { installBridge, readEnvelope } from './bridge.js'
 import { isExistingStudent } from './existingStudent.js'
 import { feedbackHtml, pickFeedback } from './speakingFeedback.js'
@@ -139,6 +139,38 @@ describe('reportModel', () => {
 
   it('без конверта — нечего рисовать', () => {
     expect(reportView(null)).toBe(null)
+    expect(homeReport(null)).toBe(null)
+  })
+
+  // Жалоба с прода 03.11.2026: ученик дошёл до итога «Foundation» (ни один уровень не подтвердился), попытка лежала в
+  // базе, а «Главная» писала «Не пройден» и звала на тест снова. Ответов — как у настоящего прогона (симулятор v16).
+  function foundationEnv({ lu = 14, r = 8 } = {}) {
+    const e = env()
+    const s = e.assessment.skillResults
+    e.assessment.overallCEFR = null
+    s.LU = { ...s.LU, label: 'Уровень не установлен', level: null, confirmed: false, total: lu, correct: 3 }
+    s.R = { ...s.R, label: 'Уровень не установлен', level: null, confirmed: false, total: r, correct: r ? 2 : 0 }
+    return e
+  }
+
+  it('итог «Foundation» — тест пройден: отчёт есть, а не «Не пройден»', () => {
+    const v = homeReport(foundationEnv(), 'ru')
+    expect(v).not.toBe(null)
+    expect(v.foundation).toBe(true)
+    expect(v.overall).toBe(null)
+    expect(v.skills[0]).toMatchObject({ id: 'LU', level: null, assessed: false, total: 14 })
+  })
+
+  it('обычный итог — не «Foundation»', () => {
+    const v = homeReport(env(), 'ru')
+    expect(v.overall).toBe('B1')
+    expect(v.foundation).toBe(false)
+  })
+
+  it('тест, брошенный на грамматике или до чтения, остаётся непройденным', () => {
+    expect(homeReport(foundationEnv({ lu: 5, r: 0 }), 'ru')).toBe(null)
+    expect(homeReport(foundationEnv({ lu: 14, r: 0 }), 'ru')).toBe(null)
+    expect(homeReport(foundationEnv({ lu: 14, r: 4 }), 'ru')).toBe(null)
   })
 
   it('отзыв о говорении едет в отчёт вместе с уровнем, без отзыва — null', () => {
@@ -222,6 +254,38 @@ describe('bridge', () => {
     expect(win.JTSSpeakingBuddy).toBe(undefined)
     expect(win.JTSHostSpeakingFeedback).toBe(undefined)
     vi.useRealTimers()
+  })
+
+  // Жалоба с прода 03.11.2026: итог сохранялся только на экране итога, и ушедший с говорения ученик числился не прошедшим.
+  it('три раздела пройдены — итог уходит в приложение, не дожидаясь экрана итога', async () => {
+    vi.useFakeTimers()
+    const win = fakeWin()
+    const h = { onResult: vi.fn(), startSpeaking: vi.fn() }
+    const off = installBridge(win, h)
+
+    win.JTSHostCoreDone()
+    await vi.runAllTimersAsync()
+    expect(h.onResult).toHaveBeenCalledTimes(1)
+    expect(h.onResult).toHaveBeenCalledWith(expect.objectContaining({ schemaVersion: 1, host: expect.any(Object) }))
+
+    off()
+    expect(win.JTSHostCoreDone).toBe(undefined)
+    vi.useRealTimers()
+  })
+
+  it('открытие теста подбирает прогон, закрытый до экрана итога: крючки уже стоят', () => {
+    const win = fakeWin()
+    let hookSeen = null
+    win.jtsHostReportCore = vi.fn(() => {
+      hookSeen = typeof win.JTSHostCoreDone
+    })
+    installBridge(win, { onResult: vi.fn(), startSpeaking: vi.fn() })
+    expect(win.jtsHostReportCore).toHaveBeenCalledTimes(1)
+    expect(hookSeen).toBe('function')
+  })
+
+  it('страница теста старой сборки без подбора прогона мост не роняет', () => {
+    expect(() => installBridge(fakeWin(), { onResult: vi.fn(), startSpeaking: vi.fn() })).not.toThrow()
   })
 
   it('ответ говорения уходит в тест с отзывом отдельным полем — тест донесёт его до итога', async () => {

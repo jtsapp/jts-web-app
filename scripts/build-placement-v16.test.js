@@ -21,6 +21,26 @@ describe('build-placement-v16', () => {
     expect(out).toMatch(/\$\{evidence\(p,r\)\}\$\{[^}]*JTSHostSpeakingFeedback[^}]*\}\$\{goalsHTML\(g\)\}/)
   })
 
+  // Жалоба с прода 03.11.2026: «прошёл тест, а он просит пройти заново». Экран итога был единственным местом, где
+  // итог уходил приложению, а после пропуска говорения тест к нему сам не вёл.
+  it('три раздела пройдены — тест сам сообщает хосту, симулятор автора не считается', () => {
+    const out = applyPatches(fs.readFileSync(SRC, 'utf8'))
+    expect(out).toContain("function jtsHostReportCore(){if(SELFTEST_ACTIVE||!allCoreDone()||app.completedNotified)return;")
+    expect(out).toContain('window.JTSHostCoreDone')
+    expect(out).toContain("app.completedByUser=true;app.active='S';app.screen='speaking';jtsHostReportCore()}}")
+  })
+
+  it('пропуск говорения после трёх разделов сразу открывает итог, а до них — нет', () => {
+    const out = applyPatches(fs.readFileSync(SRC, 'utf8'))
+    expect(out).toContain("app.flags.push('speaking_connection_error');if(app.screen==='speaking'&&allCoreDone())app.screen='result';save();render()")
+  })
+
+  it('собранная страница содержит правки сохранения итога', () => {
+    const built = fs.readFileSync(path.join(__dirname, '..', 'public', 'placement', 'v16', 'index.html'), 'utf8')
+    expect(built).toContain('function jtsHostReportCore(')
+    expect(built).toContain("if(app.screen==='speaking'&&allCoreDone())app.screen='result';save();render()")
+  })
+
   // Скин макета (21.10.2026): патчи вставляют куски шаблонов автора — опечатка в кавычках или ${} сломала бы весь тест
   // у ученика белым экраном, поэтому скрипты страницы после патчей обязаны хотя бы компилироваться.
   it('скрипты страницы после патчей скина компилируются', () => {

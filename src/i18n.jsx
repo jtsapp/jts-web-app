@@ -4108,6 +4108,8 @@ const dict = {
     'placement.report.expand': 'Показать',
     'placement.report.overall': 'Общий уровень',
     'placement.report.partial': 'предварительно',
+    'placement.report.foundation': 'Начать с основ',
+    'placement.report.foundationSub': 'Тест пройден. Это рекомендация, с чего начать, а не оценка уровня.',
     'placement.report.notAssessed': 'не пройдено',
     'placement.report.notAssessedS': 'не оценено',
     'placement.report.correct': 'верно {correct} из {total}',

@@ -103,6 +103,23 @@ const PATCHES = [
     // speakingFeedback.js): у автора панели отзыва нет, а текст модели надо экранировать.
     'speaking-feedback-result',
   ],
+  [
+    "function afterComplete(){if(allCoreDone()&&!app.completedByUser){app.completedByUser=true;app.active='S';app.screen='speaking'}}",
+    "function jtsHostReportCore(){if(SELFTEST_ACTIVE||!allCoreDone()||app.completedNotified)return;try{window.JTSHostCoreDone&&window.JTSHostCoreDone()}catch(e){console.warn('JTS core done callback:',e)}}" +
+      "function afterComplete(){if(allCoreDone()&&!app.completedByUser){app.completedByUser=true;app.active='S';app.screen='speaking';jtsHostReportCore()}}",
+    // Итог автор отдаёт приложению только с экрана итога. Ученик, ушедший с говорения (оно в общий уровень не входит),
+    // числился не прошедшим и получал «Пройти тест» снова (жалоба с прода 03.11.2026). Теперь итог уходит, как только
+    // пройдены три раздела; мост зовёт эту же функцию при открытии теста — так подбирается прогон, брошенный раньше.
+    // Симулятор автора (SELFTEST_ACTIVE) не считается, а показанный итог свой onComplete уже отправил.
+    'core-done-report',
+  ],
+  [
+    "app.flags.push('speaking_connection_error');save();render()",
+    "app.flags.push('speaking_connection_error');if(app.screen==='speaking'&&allCoreDone())app.screen='result';save();render()",
+    // Пропуск говорения оставлял ученика на экране «Speaking Buddy не вернул результат», и итог надо было ещё найти
+    // кнопкой. Три раздела пройдены — показываем итог сразу. До них остаёмся: итог был бы по обрывку теста.
+    'speaking-skip-to-result',
+  ],
   ...skinPatches(),
 ]
 
