@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { blobToWav16kMono, isMediaRecordingSupported } from '../../lib/ielts-audio.js'
+import { micErrorKind, openMic } from '../../lib/micAccess.js'
 
 function pickMime() {
   for (const m of ['audio/webm', 'audio/mp4', 'audio/ogg']) {
@@ -13,14 +14,22 @@ function pickMime() {
  * запись и держится до ухода с экрана: в Part 1 вопросы идут подряд, и спрашивать разрешение на каждый — резать
  * первый слог ответа. Потолок maxSec останавливает запись сам — как экзаменатор на Part 2.
  *
- * state: idle | recording | processing; error: 'unsupported' | 'denied' | 'failed' | null.
+ * state: idle | recording | processing; error: 'unsupported' | 'denied' | 'nodevice' | 'busy' | 'failed' | null
+ * (причины — micAccess.js). Сразу после неудачного start() причину отдаёт lastError(): `error` из состояния
+ * вызывающий увидит только в следующей отрисовке, и окно говорения теста из-за этого всегда писало «не получилось оценить».
  *
  * Адрес записи (blob:) держит WAV в памяти, пока его не отозвать, — до закрытия вкладки, а это ~2 МБ на минуту речи.
  * Поэтому все выданные адреса отзываются при уходе с экрана, а замену дубля экран отзывает сам (drop).
  */
 export function useRecorder() {
   const [state, setState] = useState('idle')
-  const [error, setError] = useState(null)
+  const [error, setErrorState] = useState(null)
+  const errorRef = useRef(null)
+  const setError = useCallback((kind) => {
+    errorRef.current = kind
+    setErrorState(kind)
+  }, [])
+  const lastError = useCallback(() => errorRef.current, [])
   const [elapsed, setElapsed] = useState(0)
   // поток микрофона наружу — для живой акустики под записью (liveAcoustics.js): тот же микрофон, второго запроса нет
   const [stream, setStream] = useState(null)
@@ -64,7 +73,7 @@ export function useRecorder() {
     if (streamRef.current && !streamRef.current.getAudioTracks().some((t) => t.readyState === 'live')) release()
     try {
       if (!streamRef.current) {
-        const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+        const s = await openMic()
         // экран закрыли, пока висел запрос разрешения: такой поток уже никто не остановит — гасим сразу
         if (!mountedRef.current) {
           s.getTracks().forEach((t) => t.stop())
@@ -74,7 +83,7 @@ export function useRecorder() {
         setStream(s)
       }
     } catch (e) {
-      setError(e?.name === 'NotAllowedError' ? 'denied' : 'failed')
+      setError(micErrorKind(e))
       return false
     }
     setError(null)
@@ -124,11 +133,11 @@ export function useRecorder() {
       if (s >= maxSec && rec.state === 'recording') rec.stop()
     }, 250)
     return true
-  }, [])
+  }, [release, setError])
 
   const stop = useCallback(() => {
     if (recRef.current?.state === 'recording') recRef.current.stop()
   }, [])
 
-  return { state, error, elapsed, stream, start, stop, release, drop }
+  return { state, error, lastError, elapsed, stream, start, stop, release, drop }
 }

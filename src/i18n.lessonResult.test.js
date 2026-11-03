@@ -4,6 +4,7 @@
 // интерфейсе — переключатель языка стоит прямо в уроке — ученик видел русские
 // итоги посреди переведённого урока. t() молча откатывается на русский, поэтому
 // пропуск ключа в en/kk незаметен глазами — ловим его здесь.
+import { i18nText } from './i18n/i18nText.testutil.js'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 import { stageLabel } from './learning/CourseStepPlayer.jsx'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const text = readFileSync(join(here, 'i18n.jsx'), 'utf8').replace(/\r\n/g, '\n')
+const text = i18nText()
 
 function block(lang) {
   const start = new RegExp(`^  ${lang}: \\{$`, 'm').exec(text)

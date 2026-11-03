@@ -233,7 +233,142 @@
   -webkit-mask-image: url(/placement/v16/skin/ico/mic_off.svg);
   mask-image: url(/placement/v16/skin/ico/mic_off.svg);
 }
+/* проверка микрофона на первом шаге и инструкция «как включить» (жалоба 03.11.2026) */
+.pl-mic {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: #f6f1ff;
+  text-align: left;
+}
+.pl-mic__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pl-mic__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #b8b0c8;
+}
+.pl-mic--ok .pl-mic__dot {
+  background: #2fa36b;
+}
+.pl-mic--testing .pl-mic__dot {
+  background: #9047ff;
+}
+.pl-mic--problem {
+  background: #fdebec;
+}
+.pl-mic--problem .pl-mic__dot {
+  background: #d9363e;
+}
+.pl-mic__status {
+  flex: 1 1 200px;
+  color: #3a3a46;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.pl-mic--problem .pl-mic__status {
+  color: #b32a31;
+}
+.pl-mic__test {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #d6c7f5;
+  border-radius: 12px;
+  background: #fff;
+  color: #7a35e6;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pl-mic__hint {
+  margin: 0;
+  color: #5a5a66;
+  font-size: 13px;
+  line-height: 18px;
+}
+.pl-mic__meter {
+  height: 8px;
+  border-radius: 4px;
+  background: #e6dcf8;
+  overflow: hidden;
+}
+.pl-mic__meter i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: #9047ff;
+  transition: width 80ms linear;
+}
+.pl-mic__help {
+  align-self: stretch;
+  text-align: left;
+  color: #3a3a46;
+  font-size: 14px;
+  line-height: 20px;
+}
+.pl-mic__helpTitle {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+.pl-mic__help ol {
+  margin: 0;
+  padding-left: 20px;
+}
+.pl-mic__help li + li {
+  margin-top: 4px;
+}
+/* плашка над тестом: микрофон недоступен ещё до говорения */
+.pl-micnote {
+  flex: none;
+  padding: 10px 16px;
+  background: #fff4e0;
+  color: #6b4a00;
+  font-size: 14px;
+  line-height: 20px;
+  border-bottom: 1px solid #f1d38a;
+}
+.pl-micnote__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pl-micnote__text {
+  flex: 1 1 260px;
+}
+.pl-micnote__how,
+.pl-micnote__close {
+  border: 0;
+  background: none;
+  color: #7a35e6;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pl-micnote__close {
+  font-size: 20px;
+  line-height: 1;
+  color: #6b4a00;
+}
+.pl-micnote .pl-mic__help {
+  margin-top: 8px;
+  color: #6b4a00;
+}
 @media (prefers-reduced-motion: reduce) {
+  .pl-mic__meter i {
+    transition: none;
+  }
   .pl-speak__dot,
   .pl-speak__wave i,
   .pl-speak__bar--busy i {
@@ -496,6 +631,26 @@
 .pl-report__note em {
   color: var(--hm-down, #e57a12);
   font-style: normal;
+}
+/* «Пройти говорение» на плитке без уровня — пересдача одного говорения (speakingRetake.js) */
+.pl-report__retakeS {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--hm-accent, #9047ff);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pl-report__retakeErr {
+  margin: 8px 0 0;
+  color: #d9363e;
+  font-size: 13px;
+  line-height: 18px;
 }
 .pl-report__muted {
   color: var(--hm-sec, #5a5a66);
@@ -900,6 +1055,19 @@
   line-height: 30px;
 }
 .pl-report__overall.is-empty .pl-report__muted {
+  font-size: 12px;
+  line-height: 16px;
+}
+/* Итог «Foundation»: слово вместо кода уровня — кегль под круг 88. */
+.pl-report__overall.is-foundation .pl-report__level {
+  font-size: 13px;
+  line-height: 16px;
+}
+.pl-report__overall.is-foundation .pl-report__name {
+  font-size: 22px;
+  line-height: 30px;
+}
+.pl-report__overall.is-foundation .pl-report__muted {
   font-size: 12px;
   line-height: 16px;
 }

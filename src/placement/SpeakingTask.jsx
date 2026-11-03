@@ -5,12 +5,17 @@ import { useI18n } from '../i18n.jsx'
 import { useRecorder } from '../ielts/speaking/useRecorder.js'
 import { MAX_SECONDS, MIN_SECONDS, PREP_SECONDS, pickTopic } from './speakingTopics.js'
 import { assessSpeaking } from './api.js'
+import MicCheck, { MicHelp } from './MicCheck.jsx'
 
 // Говорение теста уровня — окно поверх теста v16 (тест зовёт его крючком Speaking Buddy, см. bridge.js). Ход как у
 // SpeakSpin (решение 14.10.2026): тема по уровню, минута подготовки, запись до трёх минут, оценка Azure + Sonnet.
 //
-// Окно отвечает тесту одним из двух: done(результат) — v16 примет уровень говорения, skip() — ученик отказался
-// (микрофона нет, не хочет). На skip тест помечает говорение «не оценено» и сам окно больше не зовёт.
+// Окно отвечает тесту одним из двух: done(результат) — v16 примет уровень говорения, skip(причина) — ученик отказался.
+// Причина (`speaking_skipped`, `speaking_mic_<причина>`, `speaking_assess_failed`) уходит в метки конверта: раньше любой
+// пропуск записывался «обрывом связи», и в данных нельзя было отличить «нет микрофона» от «не захотел».
+//
+// Микрофон проверяется до записи (MicCheck), а сбой записи называется своей причиной с инструкцией (жалоба 03.11.2026:
+// при любом сбое микрофона ученик видел «Не получилось оценить запись», и запрос на сервер даже не уходил).
 //
 // Своего итога у окна НЕТ: оценка пришла — окно сразу отдаёт её тесту и закрывается, а тест открывает результаты.
 // Раньше здесь показывались уровень и отзыв с кнопкой «Вернуться к тесту» — отзыв выходил раньше результатов
@@ -32,6 +37,9 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
   const [phase, setPhase] = useState('intro') // intro | prep | recording | assessing | retry
   const [left, setLeft] = useState(PREP_SECONDS)
   const [error, setError] = useState('')
+  // Причина, по которой не записать (micAccess.js), — для инструкции на экране ошибки и метки пропуска.
+  const [micIssue, setMicIssue] = useState(null)
+  const assessFailed = useRef(false)
   const rec = useRecorder()
   const timer = useRef(null)
   // Пропуск посреди записи останавливает рекордер, и его onDone всё равно придёт: без отметки запись ушла бы на платную
@@ -58,7 +66,8 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
   const send = async (take) => {
     if (skipped.current) return
     if (!take?.wav) {
-      setError(t('placement.speaking.err.failed'))
+      // Запись шла, но не превратилась в звук — до оценки дело не дошло.
+      setError(t('placement.speaking.err.record'))
       setPhase('retry')
       return
     }
@@ -78,6 +87,7 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
       onDone(r)
     } catch (e) {
       const key = e?.code === 'daily_limit_reached' ? 'limit' : e?.code === 'not_configured' ? 'off' : 'failed'
+      assessFailed.current = true
       setError(t(`placement.speaking.err.${key}`))
       setPhase('retry')
     }
@@ -87,11 +97,16 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
     clearInterval(timer.current)
     setError('')
     const ok = await rec.start({ maxSec: MAX_SECONDS, onDone: send })
-    if (ok) setPhase('recording')
-    else {
-      setError(t(rec.error === 'denied' ? 'placement.speaking.err.mic' : 'placement.speaking.err.failed'))
-      setPhase('retry')
+    if (ok) {
+      setMicIssue(null)
+      setPhase('recording')
+      return
     }
+    // Причину — из lastError(): rec.error этого рендера ещё прежний (null), и раньше любой сбой читался «не оценили».
+    const kind = rec.lastError() || 'failed'
+    setMicIssue(kind)
+    setError(t(`placement.speaking.err.mic.${kind}`))
+    setPhase('retry')
   }
 
   // Макет «3 · Тест уровня», кадры Speaking: Speaking Buddy сверху (своя поза на каждую фазу), чип «Тема» и тема,
@@ -101,7 +116,7 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
     skipped.current = true
     clearInterval(timer.current)
     rec.stop()
-    onSkip()
+    onSkip(micIssue ? `speaking_mic_${micIssue}` : assessFailed.current ? 'speaking_assess_failed' : 'speaking_skipped')
   }
   const skipButton = (
     <button type="button" className="pl-speak__skip" onClick={skip}>
@@ -126,6 +141,7 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
         {phase === 'intro' && (
           <>
             <p className="pl-speak__text">{t('placement.speaking.intro', { prep: String(PREP_SECONDS) })}</p>
+            <MicCheck onIssue={setMicIssue} />
             <div className="pl-speak__actions">
               <button type="button" className="pl-btn pl-btn--main" onClick={startPrep}>
                 {t('placement.speaking.prep')}
@@ -187,9 +203,10 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
 
         {phase === 'retry' && (
           <>
-            <p id="pl-speak-title" className={`pl-speak__error${rec.error === 'denied' ? ' pl-speak__error--mic' : ''}`} role="alert">
+            <p id="pl-speak-title" className={`pl-speak__error${micIssue ? ' pl-speak__error--mic' : ''}`} role="alert">
               {error}
             </p>
+            {micIssue && <MicHelp kind={micIssue} />}
             <div className="pl-speak__actions">
               <button type="button" className="pl-btn pl-btn--main pl-btn--again" onClick={startRecording}>
                 {t('placement.speaking.again')}

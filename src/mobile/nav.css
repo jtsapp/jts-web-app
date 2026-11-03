@@ -24,7 +24,7 @@
   :root:has(.mtab):has(.learn, .t-app) {
     --mtab-h: calc(58px + env(safe-area-inset-bottom, 0px));
   }
-  :root:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view) {
+  :root:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view, .ssf) {
     --mtab-h: 0px;
   }
 
@@ -50,7 +50,7 @@
     border-top: 1px solid #ececf1;
     background: #fff;
   }
-  :root:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view) .mtab,
+  :root:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view, .ssf) .mtab,
   :root:not(:has(.learn, .t-app)) .mtab {
     display: none;
   }
@@ -166,7 +166,7 @@
     gap: 8px;
     padding: 12px 16px 0;
   }
-  :root:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view) .learn__bell,
+  :root:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view, .ssf) .learn__bell,
   .learn__main:has(.cp) .learn__bell {
     display: none;
   }
@@ -248,13 +248,13 @@
   }
 
   /* Луна над панелью; там, где панели нет, — прежнее место над кнопкой шага урока (assistant.css). */
-  :root:has(.mtab):has(.learn, .t-app):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__launcher {
+  :root:has(.mtab):has(.learn, .t-app):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view, .ssf)) .asst__launcher {
     bottom: calc(var(--mtab-h) + 16px);
   }
-  :root:has(.mtab):has(.learn, .t-app):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__hint {
+  :root:has(.mtab):has(.learn, .t-app):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view, .ssf)) .asst__hint {
     bottom: calc(var(--mtab-h) + 16px + 28px);
   }
-  :root:has(.mtab):has(.learn, .t-app):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__badge {
+  :root:has(.mtab):has(.learn, .t-app):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view, .ssf)) .asst__badge {
     bottom: calc(var(--mtab-h) + 16px + 56px + 20px);
   }
 }

@@ -103,6 +103,62 @@ const PATCHES = [
     // speakingFeedback.js): у автора панели отзыва нет, а текст модели надо экранировать.
     'speaking-feedback-result',
   ],
+  [
+    "function afterComplete(){if(allCoreDone()&&!app.completedByUser){app.completedByUser=true;app.active='S';app.screen='speaking'}}",
+    "function jtsHostReportCore(){if(SELFTEST_ACTIVE||!allCoreDone()||app.completedNotified)return;try{window.JTSHostCoreDone&&window.JTSHostCoreDone()}catch(e){console.warn('JTS core done callback:',e)}}" +
+      "function afterComplete(){if(allCoreDone()&&!app.completedByUser){app.completedByUser=true;app.active='S';app.screen='speaking';jtsHostReportCore()}}",
+    // Итог автор отдаёт приложению только с экрана итога. Ученик, ушедший с говорения (оно в общий уровень не входит),
+    // числился не прошедшим и получал «Пройти тест» снова (жалоба с прода 03.11.2026). Теперь итог уходит, как только
+    // пройдены три раздела; мост зовёт эту же функцию при открытии теста — так подбирается прогон, брошенный раньше.
+    // Симулятор автора (SELFTEST_ACTIVE) не считается, а показанный итог свой onComplete уже отправил.
+    'core-done-report',
+  ],
+  [
+    "app.flags.push('speaking_connection_error');save();render()",
+    "app.flags.push('speaking_connection_error');if(app.screen==='speaking'&&allCoreDone())app.screen='result';save();render()",
+    // Пропуск говорения оставлял ученика на экране «Speaking Buddy не вернул результат», и итог надо было ещё найти
+    // кнопкой. Три раздела пройдены — показываем итог сразу. До них остаёмся: итог был бы по обрывку теста.
+    'speaking-skip-to-result',
+  ],
+  [
+    "app.speaking.status='error';app.flags.push('speaking_connection_error');",
+    "app.speaking.status='error';app.flags.push((e&&e.jtsFlag)||'speaking_connection_error');",
+    // Окно говорения отклоняет вызов с причиной (SpeakingTask → PlacementPage: speaking_skipped, speaking_mic_<причина>,
+    // speaking_assess_failed). Автор метил любой отказ «обрывом связи» — в данных не было видно, что у ученика нет
+    // микрофона (жалоба 03.11.2026). Сбой без нашей причины по-прежнему speaking_connection_error.
+    'speaking-skip-reason',
+  ],
+  [
+    "t('buddyMissing')}</div><button class=\"gradbtn\" id=\"availableResults\"",
+    "t('buddyMissing')}</div>${app.speaking.status==='error'?'<button class=\"gradbtn\" id=\"jtsRetrySpeaking\">'+(({ru:'Пройти говорение ещё раз',kk:'Сөйлеуді қайта өту',en:'Try speaking again'})[lang]||'Try speaking again')+'</button>':''}<button class=\"gradbtn\" id=\"availableResults\"",
+    // Пропущенное или сорвавшееся говорение автор больше не открывал: окно зовётся само только при «не оценено», а на
+    // «ошибке» оставалась надпись без кнопки — пересдать можно было лишь весь тест (жалоба 03.11.2026).
+    'speaking-retry-button',
+  ],
+  [
+    "document.querySelector('#availableResults').onclick=()=>{app.screen='result';save();render()};",
+    "document.querySelector('#availableResults').onclick=()=>{app.screen='result';save();render()};" +
+      "const jtsRetry=document.querySelector('#jtsRetrySpeaking');if(jtsRetry)jtsRetry.onclick=()=>{app.speaking={status:'not_assessed'};" +
+      "app.flags=app.flags.filter(f=>!(typeof f==='string'&&f.indexOf('speaking_')===0));app.completedNotified=false;save();render()};",
+    // «Пройти ещё раз»: «не оценено» — и экран сам снова зовёт окно говорения (connectBuddy); метки прошлого отказа
+    // снимаются. completedNotified сброшен, чтобы новый итог ушёл приложению (onComplete) и сохранился в отчёт.
+    'speaking-retry-action',
+  ],
+  [
+    "<span class=\"caption\">${esc(subtitle)}</span>${key==='L'&&val==='B2'",
+    "<span class=\"caption\">${esc(subtitle)}</span>${isSpeaking&&r.status!=='completed'?'<button type=\"button\" class=\"jts-speak-retry\" data-jts-retry-speaking>'+esc(({ru:'Пройти говорение ещё раз',kk:'Сөйлеуді қайта өту',en:'Try speaking again'})[lang]||'Try speaking again')+'</button>':''}${key==='L'&&val==='B2'",
+    // После пропуска говорения ученик сразу попадает на итог (патч speaking-skip-to-result), и кнопка на экране
+    // говорения ему уже не видна. Поэтому пересдача — и на карточке «Speaking» итога, пока там «не оценено».
+    'speaking-retry-result',
+  ],
+  [
+    "document.querySelector('#restart').onclick=()=>{",
+    "document.querySelectorAll('[data-jts-retry-speaking]').forEach(b=>b.onclick=()=>{app.speaking={status:'not_assessed'};" +
+      "app.flags=app.flags.filter(f=>!(typeof f==='string'&&f.indexOf('speaking_')===0));app.completedNotified=false;app.active='S';app.screen='speaking';save();render()});" +
+      "document.querySelector('#restart').onclick=()=>{",
+    // Как у speaking-retry-action: «не оценено» — и экран говорения сам зовёт окно; новый итог снова уйдёт приложению.
+    'speaking-retry-result-action',
+  ],
   ...skinPatches(),
 ]
 

@@ -37,7 +37,7 @@ const BASE_TUTORS = [
   {
     key: 'luna',
     name: 'Луна',
-    avatar: '/tutor/tutor-luna.png',
+    avatar: '/tutor/tutor-luna.webp',
     figure: '/tutor/pick/luna.webp',
     card: '/tutor/v2/card-luna.webp',
     stage: '#ffebe0',
@@ -49,7 +49,7 @@ const BASE_TUTORS = [
   {
     key: 'dexter',
     name: 'Декстер',
-    avatar: '/tutor/tutor-dexter.png',
+    avatar: '/tutor/tutor-dexter.webp',
     figure: '/tutor/pick/dexter.webp',
     card: '/tutor/v2/card-dexter.webp',
     stage: '#efe7ff',
@@ -74,7 +74,7 @@ const BASE_TUTORS = [
   {
     key: 'spark',
     name: 'Спарк',
-    avatar: '/tutor/tutor-spark.png',
+    avatar: '/tutor/tutor-spark.webp',
     figure: '/tutor/pick/spark.webp',
     card: '/tutor/v2/card-spark.webp',
     stage: '#dff0ff',
@@ -106,7 +106,7 @@ const BASE_TUTORS = [
 const JARVIS = {
   key: 'jarvis',
   name: 'Луна тест',
-  avatar: '/tutor/tutor-luna.png',
+  avatar: '/tutor/tutor-luna.webp',
   figure: '/tutor/pick/luna.webp',
   card: '/tutor/v2/card-luna.webp',
   stage: '#ffebe0',
@@ -128,7 +128,7 @@ const JARVIS = {
 const AIZERE = {
   key: 'aizere',
   name: 'Айзере',
-  avatar: '/tutor/tutor-aizere.png',
+  avatar: '/tutor/tutor-aizere.webp',
   figure: '/tutor/pick/aizere.webp',
   card: '/tutor/v2/card-aizere.webp',
   stage: '#ffdcdc',
@@ -152,7 +152,7 @@ const AIZERE = {
 const SPARK_TEST = {
   key: 'sparktest',
   name: 'Спарк тест',
-  avatar: '/tutor/tutor-spark.png',
+  avatar: '/tutor/tutor-spark.webp',
   figure: '/tutor/pick/spark.webp',
   card: '/tutor/v2/card-spark.webp',
   stage: '#dff0ff',

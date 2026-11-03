@@ -247,7 +247,8 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
 
   // Ошибки самой записи (нет разрешения, не открылся микрофон) приходят из
   // useRecorder и гаснут с началом следующей записи.
-  const error = ownError ?? (recError === 'denied' ? 'denied' : recError === 'failed' ? 'stt_failed' : null)
+  // Микрофон не найден или занят — для Луны то же «не вышло», что и прочий сбой записи.
+  const error = ownError ?? (recError === 'denied' ? 'denied' : ['failed', 'nodevice', 'busy'].includes(recError) ? 'stt_failed' : null)
   const state = recState === 'recording'
     ? 'recording'
     : starting

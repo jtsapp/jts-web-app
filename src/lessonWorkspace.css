@@ -40,10 +40,14 @@
    лежит внутри `.live` и потому выглядит правильно, а здесь — сам себе корень,
    и без объявления токены не разрешались: варианты ответа теряли фон и
    скругление, карточки — подложку, весь урок выходил голым текстом. */
+/* Пятый и шестой корни — `.ssf` и `.ssf-panel`: самостоятельный урок-файл и его содержание,
+   панель лежит снаружи `.ssf`, чтобы перекрыть весь экран вместе с сайдбаром. */
 .lv,
 .lw,
 .live,
 .lw-doc,
+.ssf,
+.ssf-panel,
 .hw-exercises {
   /* --- цвет ---------------------------------------------------- */
   --lw-bg: #f8f8f8;
@@ -5879,4 +5883,232 @@ button.lw-tap-pop__save.is-on:disabled {
 .lv.is-immersive .lv-flag--led,
 .lv.is-immersive .lv-flag--watch {
   display: none;
+}
+
+/* --- Самостоятельный урок-файл (screens/lessons/SelfStudyLessonPage.jsx) ----------
+   В режиме self страница урока прячет свои панели, поэтому навигация здесь, вокруг
+   рамки: шапка, этапы, рамка и кнопки столбиком на всю высоту экрана. Прокручивается
+   только рамка: кнопки перехода всегда под рукой, а не в конце длинного этапа. */
+.ssf {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100dvh;
+  min-height: 0;
+  padding: 16px 24px;
+  box-sizing: border-box;
+  background: var(--lw-bg);
+  color: var(--lw-ink);
+}
+
+.ssf__bar,
+.ssf__nav {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ssf__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ssf__stages {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Обводка фокуса не должна обрезаться прокруткой полосы. */
+  padding: 3px;
+  margin: -3px;
+}
+.ssf__stages::-webkit-scrollbar { display: none; }
+
+.ssf-stage {
+  flex: none;
+  min-height: 36px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-surface);
+  color: var(--lw-ink-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ssf-stage:hover { background: var(--lw-tint-1); }
+.ssf-stage.is-past { color: var(--lw-primary-ink); }
+.ssf-stage.is-current { background: var(--lw-primary-ink); color: #ffffff; }
+.ssf-stage:focus-visible,
+.ssf-btn:focus-visible,
+.ssf-lesson:focus-visible { outline: 2px solid var(--lw-primary); outline-offset: 2px; }
+
+.ssf__frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: var(--lw-r-block);
+  overflow: hidden;
+  background: var(--lw-surface);
+}
+
+.ssf__iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--lw-surface);
+}
+
+.ssf__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: var(--lw-ink-2);
+  background: var(--lw-surface);
+}
+
+/* По центру, а не по краям: правый нижний угол занимает кнопка Луны (assistant.css), и «Далее» оказалось бы под ней. */
+.ssf__nav { justify-content: center; gap: 16px; }
+
+.ssf__count {
+  color: var(--lw-ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.ssf-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.ssf-btn:disabled { opacity: 0.45; cursor: default; }
+.ssf-btn--ghost { background: var(--lw-tint-1); color: var(--lw-primary-ink); }
+.ssf-btn--ghost:hover:not(:disabled) { background: var(--lw-tint-2); }
+.ssf-btn--primary { background: var(--lw-primary-ink); color: #ffffff; }
+.ssf-btn--primary:hover:not(:disabled) { background: var(--lw-primary); }
+
+.ssf-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ssf-panel__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(24, 24, 24, 0.4);
+  cursor: pointer;
+}
+
+.ssf-panel__body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 100%);
+  height: 100%;
+  background: var(--lw-surface);
+  color: var(--lw-ink);
+  animation: ssf-panel-in 0.18s ease-out;
+}
+
+@keyframes ssf-panel-in {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+.ssf-panel__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+}
+.ssf-panel__title { margin: 0; font-size: 18px; font-weight: 700; }
+
+.ssf-panel__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 20px 24px;
+}
+
+.ssf-unit + .ssf-unit { margin-top: 18px; }
+.ssf-unit__name { margin: 0 0 6px; color: var(--lw-ink-2); font-size: 13px; font-weight: 700; }
+.ssf-unit__lessons { margin: 0; padding: 0; list-style: none; }
+
+.ssf-lesson {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: var(--lw-r-block);
+  background: none;
+  color: var(--lw-ink);
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+.ssf-lesson:hover { background: var(--lw-tint-1); }
+.ssf-lesson.is-current { background: var(--lw-tint-1); font-weight: 700; }
+.ssf-lesson__title { min-width: 0; }
+.ssf-lesson__tag { flex: none; color: var(--lw-primary-ink); font-size: 12px; font-weight: 700; }
+.ssf-lesson__tag--done { color: var(--lw-ink-2); }
+
+@media (max-width: 900px) {
+  /* Телефон: панель кнопок внизу, рамка до края экрана — длинному заданию нужна вся ширина. */
+  .ssf { gap: 8px; padding: 10px 0 0; }
+  .ssf__bar, .ssf__stages { margin-left: 12px; margin-right: 12px; }
+  .ssf__stages { margin-top: 0; margin-bottom: 0; }
+  .ssf__title { font-size: 15px; }
+  .ssf__bar .lw-doc__back span { display: none; }
+  .ssf__bar .lw-doc__back { padding: 9px 11px; }
+  .ssf__frame { border-radius: 0; }
+  .ssf__nav {
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    background: var(--lw-surface);
+    box-shadow: 0 -1px 0 var(--lw-track);
+  }
+  .ssf__count { font-size: 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ssf-panel__body { animation: none; }
+  .ssf-stage, .ssf-btn { transition: none; }
 }

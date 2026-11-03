@@ -14,7 +14,7 @@ export default function TutorLevelOfferPage({
   onLater,
 }) {
   const t = useT()
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png', face = '' } = tutor
+  const { name = 'Спарк', avatar = '/tutor/tutor-spark.webp', face = '' } = tutor
   return (
     <TutorShell
       active="tutor"

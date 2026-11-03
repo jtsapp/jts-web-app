@@ -450,14 +450,14 @@ export default function HomePage({
           <AssetImage className="hm-level__trophy" src="/assets/m/home/trophy.webp" alt="" />
         ) : track.goal && (options.length ? (
           <button type="button" className="hm-level__goal" title={t('home.goal.change')} onClick={openGoal}>
-            <AssetImage className="hm-level__medal" src="/assets/medal-goal.png" alt="" />
+            <AssetImage className="hm-level__medal" src="/assets/medal-goal.webp" alt="" />
             <i className="hm-level__flag" aria-hidden="true" />
             <span>{t('home.level.goal', { level: track.goal })}</span>
             <b className="hm-level__edit">{t('home.level.goalEdit')}</b>
           </button>
         ) : (
           <div className="hm-level__goal">
-            <AssetImage className="hm-level__medal" src="/assets/medal-goal.png" alt="" />
+            <AssetImage className="hm-level__medal" src="/assets/medal-goal.webp" alt="" />
             <i className="hm-level__flag" aria-hidden="true" />
             <span>{t('home.level.goal', { level: track.goal })}</span>
           </div>
@@ -545,7 +545,7 @@ export default function HomePage({
             )}
             <PracticeToday t={t} lang={lang} token={token} onNav={onNav} />
             {/* Отчёт теста уровня v16; теста нет — тот же блок пустым и зовёт на тест (решение владельца 21.10.2026). */}
-            {!ieltsAccount && <PlacementResults report={report} onRetake={onStartLevelTest} collapseKey={placementCollapseKey(tourKey)} />}
+            {!ieltsAccount && <PlacementResults report={report} onRetake={onStartLevelTest} collapseKey={placementCollapseKey(tourKey)} token={token} />}
           </div>
 
           <div className="hm-grid__side">
