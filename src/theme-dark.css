@@ -542,3 +542,6 @@ html[data-theme="dark"] .tb-legend__item--purple i {
 html[data-theme="dark"] .tb-legend__item--gold i {
   background: var(--dk-yellow);
 }
+html[data-theme="dark"] .scr-load--page {
+  background: var(--dk-page);
+}

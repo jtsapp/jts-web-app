@@ -2,13 +2,14 @@
 // откатывается на русский, если ключа в языке нет, поэтому пропуск в en/kk
 // выглядел бы как «раздел наполовину по-русски», а не как ошибка.
 
+import { i18nText } from './i18n/i18nText.testutil.js'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const text = readFileSync(join(here, 'i18n.jsx'), 'utf8').replace(/\r\n/g, '\n')
+const text = i18nText()
 
 function block(lang) {
   const start = new RegExp(`^  ${lang}: \\{$`, 'm').exec(text)

@@ -75,6 +75,23 @@ import { rememberPlace, resumeOf } from '../lib/navStack.js'
 // public/practice/books/ (см. scripts/extract-books.js).
 const TALES_URL = '/practice/fairytales.html'
 
+// Мир сказок весит 1,6 МБ в gzip (музыка и арт в base64). Загружаем, когда ученик открыл список сказок: первый клик тогда
+// открывает мир почти сразу. Раньше он качался при каждом входе в Практику, и на Slow 4G эти 8 секунд отнимались у картинок.
+function TaleWorldWarmup() {
+  useEffect(() => {
+    const load = () => {
+      import('../practice/fairytale/taleWorld.js').catch(() => {})
+    }
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(load, { timeout: 4000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const id = setTimeout(load, 2500) // Safari: requestIdleCallback нет
+    return () => clearTimeout(id)
+  }, [])
+  return null
+}
+
 // Выбранные вкладка и уровень переживают уход в раздел и возврат: «Практика»
 // монтируется заново при каждом переходе, и ученик, открывший ситуацию из
 // «Говорения», возвращался бы на «Аудирование». sessionStorage, а не
@@ -348,21 +365,6 @@ export default function PracticePage({
       alive = false
     }
   }, [token, catalogRetry])   // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Тяжёлый оверлей мира сказок (~3 МБ) подгружаем на простое после первого
-  // рендера: первый клик открывает его мгновенно и загрузка не конкурирует с
-  // каталогами выше.
-  useEffect(() => {
-    const load = () => {
-      import('../practice/fairytale/taleWorld.js').catch(() => {})
-    }
-    if (typeof window.requestIdleCallback === 'function') {
-      const id = window.requestIdleCallback(load, { timeout: 4000 })
-      return () => window.cancelIdleCallback(id)
-    }
-    const id = setTimeout(load, 2500) // Safari: requestIdleCallback нет
-    return () => clearTimeout(id)
-  }, [])
 
   // Каталог комиксов и поиск по нему. Ждём токен: эндпоинты под авторизацией,
   // как остальные /mobile-каталоги. Комиксы 18+ отсекает гейт (comicsData.js).
@@ -675,6 +677,8 @@ export default function PracticePage({
   // поверх Практики (deep-link на конкретную сказку). Модуль ~3 МБ (base64-
   // музыка и арт), поэтому грузим его лениво при первом клике.
   const taleLoadingRef = useRef(false)
+  // Нажали раньше, чем мир докачался: без знака ожидания это выглядело бы как кнопка, которая не работает.
+  const [taleOpening, setTaleOpening] = useState(false)
   //
   // Сказки и мемы открываются оверлеем, не уходя со страницы, поэтому ответ
   // квоты, снятый при её открытии, дальше не обновлялся: демо-ученик после
@@ -692,6 +696,7 @@ export default function PracticePage({
         return
       }
       markSeen('tales', tale.id)
+      setTaleOpening(true)
       // loadModule, а не голый import: без catch отказ загрузки уходил в
       // никуда — нажатие на карточку не делало ровно ничего, ни экрана, ни
       // ошибки. Чаще всего так ломается вкладка, открытая до выката; она сама
@@ -702,6 +707,7 @@ export default function PracticePage({
       })
     } finally {
       taleLoadingRef.current = false
+      setTaleOpening(false)
     }
   }
 
@@ -879,6 +885,7 @@ export default function PracticePage({
       case 'tales':
         return (
           <section key={sec.id} id="sec-tales" className="pk-sec">
+            <TaleWorldWarmup />
             {head(sec, t('practice.chip.tales'))}
             <Rail grid={grid}>
               {TALES.map((tl) => (
@@ -1202,6 +1209,12 @@ export default function PracticePage({
           units={pickedUnits.map((u) => unitToPayload(grammarLevel, u))}
           onClear={clearPickedUnits}
         />
+      )}
+
+      {taleOpening && (
+        <div className="scr-load scr-load--over" role="status" aria-busy="true" aria-label={t('screen.loading')}>
+          <div className="spinner" />
+        </div>
       )}
 
       {tour.open && (
