@@ -15466,7 +15466,7 @@ html[data-theme="dark"] .lt-modal__close:hover {
 }
 html[data-theme="dark"] .lt-modal__icon {
     background-color: var(--dk-acc-tint);
-    background-image: url('/practice/listening/lose.png')
+    background-image: url('/practice/listening/lose.webp')
 }
 html[data-theme="dark"] .lt-modal__title {
     color: var(--ink, #171326)
@@ -25997,7 +25997,7 @@ html[data-theme="dark"] .rg-done__avatar {
         background-image: url(/assets/reg/wa.svg)
     }
     html[data-theme="dark"] .hero {
-        background-image: url(/assets/reg/hero.jpg) !important
+        background-image: url(/assets/reg/hero.webp) !important
     }
     html[data-theme="dark"] .hero__title {
         text-shadow: none

@@ -98,7 +98,7 @@
 
   /* Фон героя — кроп макета 440×955 (inline backgroundImage перебиваем) */
   .hero {
-    background-image: url(/assets/reg/hero.jpg) !important;
+    background-image: url(/assets/reg/hero.webp) !important;
     background-size: cover;
     background-position: center top;
   }
