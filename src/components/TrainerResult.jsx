@@ -41,7 +41,7 @@ export default function TrainerResult({ correct, wrong, coins = 0, onAgain, onHo
         </div>
         {coins > 0 && (
           <div className="lt-res__coins">
-            <img src="/practice/listening/coin.png" alt="" />
+            <img src="/practice/listening/coin.webp" alt="" />
             <span>+{coins}</span>
           </div>
         )}

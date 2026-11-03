@@ -511,9 +511,9 @@ export default function ProfilePage({
           <div
             className="pf-hero__scene"
             style={{
-              // PNG-шапка (если есть) ложится поверх градиента; при её отсутствии
+              // Шапка (если есть) ложится поверх градиента; при её отсутствии
               // виден только градиент — экран самодостаточен.
-              backgroundImage: `url(/assets/world/hero/${(userLevel || 'a1').toLowerCase()}.png), ${heroGradientFor(userLevel)}`,
+              backgroundImage: `url(/assets/world/hero/${(userLevel || 'a1').toLowerCase()}.webp), ${heroGradientFor(userLevel)}`,
             }}
           />
           <div className="pf-hero__sheet">

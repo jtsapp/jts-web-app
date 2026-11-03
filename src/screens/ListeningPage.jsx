@@ -254,7 +254,7 @@ function Feedback({ ok, body, expected }) {
       </div>
       {ok && (
         <div className="lt-fb__coin">
-          <img src="/practice/listening/coin.png" alt="" />
+          <img src="/practice/listening/coin.webp" alt="" />
           <span>+{COINS_PER_TASK}</span>
         </div>
       )}
@@ -268,7 +268,7 @@ function Intro({ level, loading, onStart, doneCount }) {
   return (
     <div className="lt-intro">
       <div className="lt-intro__mascot">
-        <img src="/practice/listening-mascot.png" alt="" />
+        <img src="/practice/listening-mascot.webp" alt="" />
       </div>
       <h2 className="lt-intro__title">{t('listening.introTitle')}</h2>
       <p className="lt-intro__sub">{t('practice.listening.desc')}</p>
