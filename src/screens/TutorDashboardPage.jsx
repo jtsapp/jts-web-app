@@ -70,8 +70,10 @@ export default function TutorDashboardPage({
   // Ситуация звонка: '' — без ситуации, как отмечено в макете по умолчанию.
   const [situation, setSituation] = useState('')
   const [tab, setTab] = useState('settings')
+  // Лицо — главное на странице: обложки ситуаций начинают качаться после него.
+  const [faceReady, setFaceReady] = useState(false)
 
-  const talk = () => (situation ? onSuggest?.(situation) : onTalk?.())
+  const talk =() => (situation ? onSuggest?.(situation) : onTalk?.())
 
   // Шаг про сценарии выкидываем вместе с самой сеткой: OnboardingTour ищет
   // элемент по селектору, и подсветка несуществующего .t-scenarios сломала бы
@@ -165,7 +167,7 @@ export default function TutorDashboardPage({
             <div className={'tp-dash' + (isAssistant ? ' tp-dash--solo' : '')}>
               {/* Лицо по-прежнему начинает разговор: по нему кликали и до кнопки. */}
               <button className="tp-dash__frame t-dash__orb" type="button" onClick={talk} aria-label={t('scen.start')}>
-                <TutorPortrait tutor={tutor} />
+                <TutorPortrait tutor={tutor} onReady={() => setFaceReady(true)} />
               </button>
 
               {!isAssistant && !phone && (
@@ -218,7 +220,7 @@ export default function TutorDashboardPage({
           </TutorHero>
 
           {/* Сетка — тоже про урок английского: у ассистента её нет. */}
-          {!isAssistant && <SituationGrid onScenario={onScenario} />}
+          {!isAssistant && <SituationGrid onScenario={onScenario} hold={!faceReady} />}
         </div>
       </div>
 
