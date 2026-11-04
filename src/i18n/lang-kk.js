@@ -1932,6 +1932,7 @@ const dict = {
     'homework.submitNothingDone': 'Алдымен кемінде бір тапсырманы орындаңыз немесе файл тіркеңіз',
     'homework.submitWorkFailed': 'Жұмысты тапсыру мүмкін болмады. Қайталап көріңіз',
     'homework.opening': 'Ашылуда…',
+    'homework.restoring': 'Жауаптарыңыз қалпына келтірілуде…',
     'homework.openFailed': 'Тапсырманы ашу мүмкін болмады. Қайталап көріңіз',
     'homework.scope.fragment': 'Сабақтың үзіндісі',
     'homework.scope.tasks': 'Сабақ тапсырмалары',

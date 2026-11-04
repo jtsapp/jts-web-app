@@ -1966,6 +1966,7 @@ const dict = {
     'homework.submitNothingDone': 'Сначала выполните хотя бы одно задание или приложите файл',
     'homework.submitWorkFailed': 'Не удалось сдать работу. Попробуйте ещё раз',
     'homework.opening': 'Открываем…',
+    'homework.restoring': 'Восстанавливаем ваши ответы…',
     'homework.openFailed': 'Не удалось открыть задание. Попробуйте ещё раз',
     // Что задано из материала, когда своей подписи сервер не дал
     // (materialAssignments.js → assignmentScope). Тексты те же, что у

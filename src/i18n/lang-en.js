@@ -1932,6 +1932,7 @@ const dict = {
     'homework.submitNothingDone': 'Do at least one task or attach a file first',
     'homework.submitWorkFailed': 'Could not hand in the work. Please try again',
     'homework.opening': 'Opening…',
+    'homework.restoring': 'Restoring your answers…',
     'homework.openFailed': 'Could not open the task. Please try again',
     'homework.scope.fragment': 'Lesson excerpt',
     'homework.scope.tasks': 'Lesson tasks',

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { createRef } from 'react'
-import { describe, it, expect, afterEach } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import HomeworkFrame from './HomeworkFrame.jsx'
 
@@ -92,5 +92,74 @@ describe('HomeworkFrame', () => {
     const frameRef = createRef()
     const { container } = показать({ frameRef })
     expect(frameRef.current).toBe(container.querySelector('iframe'))
+  })
+})
+
+/**
+ * Жалоба 04.11.2026: сданная домашка открывалась пустой, ответы проявлялись через полминуты, и казалось, что
+ * ученик ничего не делал. Пока мост проигрывает ответы, рамку закрывает лоадер.
+ */
+describe('HomeworkFrame — восстановление ответов', () => {
+  afterEach(() => vi.useRealTimers())
+
+  const лоадер = () => screen.queryByText('Восстанавливаем ваши ответы…')
+
+  function отМоста(container, data, source = container.querySelector('iframe').contentWindow) {
+    act(() => {
+      window.dispatchEvent(new MessageEvent('message', { data: { source: 'jts-bridge', type: 'replay', ...data }, source }))
+    })
+  }
+
+  it('лоадер стоит с открытия рамки и уходит, когда мост закончил', () => {
+    const { container } = показать()
+    expect(лоадер()).not.toBeNull()
+
+    отМоста(container, { busy: true, size: -1 })
+    fireEvent.load(container.querySelector('iframe'))
+    expect(лоадер()).not.toBeNull()
+
+    отМоста(container, { busy: false, size: 0 })
+    expect(лоадер()).toBeNull()
+  })
+
+  it('одиночное действие и сообщение чужой рамки лоадер не показывают', () => {
+    const { container } = показать()
+    отМоста(container, { busy: false, size: 0 })
+
+    отМоста(container, { busy: true, size: 1 })
+    отМоста(container, { busy: true, size: 40 }, window)
+
+    expect(лоадер()).toBeNull()
+  })
+
+  it('страница без моста: лоадер уходит вскоре после загрузки', () => {
+    vi.useFakeTimers()
+    const { container } = показать()
+
+    fireEvent.load(container.querySelector('iframe'))
+    expect(лоадер()).not.toBeNull()
+
+    act(() => { vi.advanceTimersByTime(1000) })
+    expect(лоадер()).toBeNull()
+  })
+
+  it('мост замолчал: страховка открывает задание', () => {
+    vi.useFakeTimers()
+    const { container } = показать()
+    отМоста(container, { busy: true, size: -1 })
+
+    act(() => { vi.advanceTimersByTime(120000) })
+
+    expect(лоадер()).toBeNull()
+  })
+
+  it('разворот во весь экран лоадер и рамку не сбрасывает', () => {
+    const { container } = показать()
+    const before = container.querySelector('iframe')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Во весь экран' }))
+
+    expect(лоадер()).not.toBeNull()
+    expect(container.querySelector('iframe')).toBe(before)
   })
 })
