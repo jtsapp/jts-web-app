@@ -62,7 +62,7 @@ p = profile()
 # ── Кто включается ───────────────────────────────────────────────────────────
 assert SPARK_TEST_STAND == "sparktest", "ключ зашит в token route и tutors.js"
 assert buddy_test_on(p)
-assert buddy_persona_for(p) == "spark"
+assert buddy_persona_for(p) == "spark_fun", "с 04.11.2026 у стенда два нрава, см. test_spark_tempers.py"
 assert buddy_persona_for(LearnerProfile(tutor="jarvis")) == "luna", "KZ TEST с 14.10 — новая Луна"
 assert not buddy_test_on(profile(mode="scenario", scenario_id="ordering-coffee"))
 assert not buddy_test_on(profile(mode="placement"))
@@ -79,8 +79,8 @@ os.environ["VOICE_STACK"] = "cascade"
 # ── Промпт: тот же пакет, персона Спарка ─────────────────────────────────────
 text = build_buddy_instructions(p, buddy_persona_for(p))
 persona = text.partition(PERSONA_HEADER)[2]
-assert "# SPARK — PERSONA v3.5" in persona and "# DEXTER" not in text
-assert context_of(text)["selection"]["persona_id"] == "spark"
+assert "# SPARK — FUNNY MODE" in persona and "# DEXTER" not in text
+assert context_of(text)["selection"]["persona_id"] == "spark_fun"
 # Ступени ростинга — только персоне с матом; у Спарка его нет.
 assert "==== YOUR WORD RATING IN THIS CALL" not in text
 assert "==== LIMITS FOR EVERY REPLY" in text

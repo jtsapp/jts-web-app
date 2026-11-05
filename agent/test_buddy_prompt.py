@@ -86,7 +86,7 @@ wrapper, _, persona = text.partition(PERSONA_HEADER)
 # ── Файлы пакета на месте ────────────────────────────────────────────────────
 assert BUDDY_CORE.startswith("# JTS SPEAKING BUDDY — SHARED CORE v3.5")
 assert set(BUDDY_LEVEL_PROFILES) == {"A0", "A1", "A2", "B1", "B2"}
-assert set(BUDDY_PERSONAS) == {"dexter", "dexter_calm", "dexter_hooligan", "luna", "spark", "aizere"}
+assert set(BUDDY_PERSONAS) == {"dexter", "dexter_calm", "dexter_hooligan", "luna", "spark", "spark_fun", "spark_sting", "aizere"}
 # Заметки о правках (HTML-комментарии) в промпт не попадают.
 for block in [BUDDY_CORE, *BUDDY_LEVEL_PROFILES.values(), *BUDDY_PERSONAS.values()]:
     assert "<!--" not in block and "Правки JTS" not in block
@@ -406,7 +406,7 @@ assert context_of(calm)["selection"]["persona_id"] == "dexter_calm"
 assert context_of(calm)["language"]["support_language"] == "ru"
 assert buddy_default_mood("dexter_calm") is None, "базовая эмоция ровная"
 # Другие стенды нрав Декстера не трогает.
-assert buddy_persona_for(profile(tutor="sparktest", temper="calm")) == "spark"
+assert buddy_persona_for(profile(tutor="sparktest", temper="calm")) == "spark_fun"
 # Откат без деплоя — оба нрава на клиентского Декстера v3.5.
 os.environ["DEXTER_TEMPER"] = "off"
 assert buddy_persona_for(calm_p) == "dexter"
