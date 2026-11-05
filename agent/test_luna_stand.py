@@ -156,6 +156,14 @@ assert "«ты»" not in A.build_buddy_greeting(dexter), "у Декстера п
 assert "prefers «вы»" in build_buddy_instructions(profile(facts=["prefers вы"]), "luna")
 assert "prefers «вы»" not in build_buddy_instructions(returning, "luna")
 
+# Служебный факт не считается памятью: иначе Луна вспоминает то, чего не было.
+only_address = build_buddy_instructions(profile(facts=["prefers вы"]), "luna")
+assert "First call with this learner" in only_address
+assert "prefers вы" not in only_address.split("==== MEMORY")[1].split("====")[1]
+with_real_fact = build_buddy_instructions(profile(facts=["prefers вы", "works as a nurse"]), "luna")
+assert "works as a nurse" in with_real_fact
+assert "First call with this learner" not in with_real_fact
+
 # Пометка: вопрос задан, ученик ответил о своём. Ответил «на вы» или вопроса не было — пометки нет.
 asked = ("assistant", "[default] Hi, Dana. «Ты» or «вы»?")
 assert A.buddy_address_note([asked, ("user", "Hello. I am okay.")]), "вопрос без ответа"

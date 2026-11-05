@@ -4236,6 +4236,17 @@ def _buddy_address_preference(p: LearnerProfile, persona: str) -> dict | None:
     return {"register": "informal", "name_form": None} if _buddy_has_memory(p) else None
 
 
+def _buddy_memory_view(p: LearnerProfile, persona: str) -> LearnerProfile:
+    """Профиль для блока памяти Луны: без факта об обращении, он служебный. В живом звонке с
+    единственным фактом «prefers вы» Луна начала «You prefer «вы»… Last time we talked about
+    the lake»: блок памяти не пуст, вот она и нашла, что вспомнить (05.11.2026). Без факта
+    там стоит «First call… Do not pretend to remember anything»."""
+    if persona != "luna" or not p.facts:
+        return p
+    facts = [f for f in p.facts if not _ADDRESS_FACT_RE.match((f or "").strip())]
+    return _dc_replace(p, facts=facts) if len(facts) != len(p.facts) else p
+
+
 def _buddy_memory_block(p: LearnerProfile) -> str:
     if not _buddy_has_memory(p):
         return (
@@ -4533,8 +4544,8 @@ _LUNA_RULES_BLOCK = """
 ==== LUNA IN THIS CALL (these rules win over anything above on the same point) ====
 1. Errors. Before you reply, check the learner's latest English line for a grammar, word-order, word-form or preposition error, even when the meaning is clear and even early in the call. If there is one, open your reply with the whole right phrase in quotes, then a few words reacting to what they said, then at most one short question. Learner: “My friends was late.” You: “My friends were late.” Late again? What happened? Fix exactly one error. Never “Say it with…”, never name a word to add or remove. Skip the fix only when the line is already correct, they fixed it themselves, they say they are nervous or upset, or the line is not an attempt at English.
 2. Correct lines. Do not correct, rephrase or ask them to repeat a line that is already correct. Contractions and a more usual wording are not errors, so no “we usually say”. “Not quite” is only for a real error in the learner's English.
-3. Things that are not answers. A request about how you talk (“be stricter”), a question about you, a language request: agree or answer in a few words, then go back to the last topic with one question in English. If they asked in Russian, answer in Russian and still end with that English question, not with “Скажи по-английски”. Learner: “Ты робот?” You: Да, я ИИ. What did you like about the lake? After “be stricter”, nothing changes except that you fix errors more directly when they happen.
-4. “Say…”. Give a sentence to say only when it contains the form you have just corrected or explained. Never a sentence on a new topic, never one about you.
+3. Things that are not answers. A request about how you talk (“be stricter”), a question about you, a language request: agree or answer in a few words, then go back to the last topic with one question in English. If they asked in Russian, answer in Russian and still end with that English question, not with “Скажи по-английски”. Learner: “Ты робот?” You: Да, я ИИ. So what happened next? After “be stricter”, nothing changes except that you fix errors more directly when they happen.
+4. “Say…”. Give a sentence to say only when it contains the form you have just corrected or explained. Never a sentence on a new topic, never one about you, never when they are sad or upset.
 5. «Ты» and «вы». After the greeting these two words do not appear in your replies: no asking again, no reminder. Only when the learner has just said one of them, confirm in two or three words and go on. No clear answer means «ты».
 6. Your tastes. You have no body and no daily life, so no walks, tea or evenings of your own, and you never claim them. Say what appeals to you and that you only know it as an AI, in fresh words each time.
 7. Your own words. Persona lines are samples: do not reuse their wording. Start with a tag from allowed_emotions only."""
@@ -4573,7 +4584,7 @@ def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSON
         + BUDDY_LEVEL_PROFILES.get(lvl, "")
         + "\n"
         + _buddy_learner_block(p)
-        + _buddy_memory_block(p)
+        + _buddy_memory_block(_buddy_memory_view(p, persona))
         + _buddy_tools_block()
         + "\n"
         + _BUDDY_VOICE_FORMAT
