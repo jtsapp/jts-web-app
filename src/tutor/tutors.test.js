@@ -25,17 +25,19 @@ describe('PICK_TUTORS — карточки экрана выбора', () => {
     expect(PICK_TUTORS.map((t) => t.key)).toEqual(['dexter', 'luna', 'spark', 'aizere', 'jarvis', 'sparktest'])
   })
 
-  // «Спарк тест» — место для тестов эмоций: лицо, а не шар (face не задан),
-  // картинки Спарка, нрава 18+ нет.
-  it('dev-стенд: Спарк тест — с лицом и без нрава', async () => {
-    const { getTutor, temperFor } = await load(true)
+  // «Спарк тест» — лицо, а не шар (face не задан), картинки Спарка, два нрава:
+  // по умолчанию смешной, кнопка 18+ включает колкого.
+  it('dev-стенд: Спарк тест — с лицом и с кнопкой 18+', async () => {
+    const { getTutor, temperFor, AXIS_TUTOR_KEYS } = await load(true)
     const st = getTutor('sparktest')
     expect(st.key).toBe('sparktest')
     expect(st.face).toBeUndefined()
     expect(st.assistant).toBeFalsy()
     expect(st.avatar).toMatch(/^\/tutor\/.+\.webp$/)
     expect(st.figure).toMatch(/^\/tutor\/pick\/.+\.webp$/)
-    expect(temperFor('sparktest', 'harsh')).toBeNull()
+    expect(temperFor('sparktest', undefined)).toBe('calm')
+    expect(temperFor('sparktest', 'harsh')).toBe('harsh')
+    expect(AXIS_TUTOR_KEYS).toContain('sparktest')
   })
 
   // Айзере — полноценный тьютор и на проде, и на стенде: её можно выбрать,
