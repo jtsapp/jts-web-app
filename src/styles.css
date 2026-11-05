@@ -8560,6 +8560,14 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
    (lessonWorkspace.css, .lw-material-frame) — занять экран, а не стоять
    фиксированной карточкой; нижняя граница держит урок читаемым на ноутбуке. */
 .hw-frame { display: flex; flex-direction: column; gap: 8px; }
+.hw-frame__stage { position: relative; }
+.hw-frame__cover {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 14px;
+  background: #fff;
+}
 .hw-frame__iframe {
   display: block;
   width: 100%;
@@ -8621,6 +8629,8 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
   padding-top: max(10px, env(safe-area-inset-top));
   border-bottom: 1px solid #eeeeee;
 }
+.hw-frame--full .hw-frame__stage { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.hw-frame--full .hw-frame__cover { border-radius: 0; }
 .hw-frame--full .hw-frame__iframe {
   flex: 1;
   min-height: 0;
