@@ -11,8 +11,8 @@
 //            продукт, что у агента в _cascade_tts_gemini (Cloud TTS, НЕ
 //            Developer API с ai.google.dev).
 //   Dexter → ElevenLabs, ELEVENLABS_API_KEY + ELEVEN_VOICE_ID_DEXTER.
-//   Spark  → Soniox TTS (голос Owen), SONIOX_API_KEY. Soniox держит один тембр
-//            на kk и en.
+//   Spark  → Google Cloud TTS, голос Fenrir (с 07.11.2026; до того Soniox Owen —
+//            ради казахского, которого у нового Спарка нет). Откат — Soniox.
 //   Jarvis → ElevenLabs, клон 2ZqnRUaCU5IaXJ45uakV, модель eleven_v3 (казахский
 //            есть только у неё). Свой ключ — ELEVENLABS_API_KEY_JARVIS, если
 //            клон живёт в другом кабинете. Пути soniox/openai/fish рабочие:
@@ -32,7 +32,15 @@ import crypto from 'node:crypto'
 import { normalizeForSpeech, openaiInstructions, openaiSpeed } from '../tutor/openaiTtsStyle.js'
 
 // Gemini (Cloud TTS) voices per tutor key — mirror agent TUTOR_VOICE.
-const GEMINI_VOICE = { luna: 'Aoede', dexter: 'Puck' }
+// Спарк на Fenrir с 07.11.2026: живой Спарк стал тестовым из пакета (ru/en),
+// казахский Soniox ему больше не нужен. Стенд «Спарк тест» — так же.
+const GEMINI_VOICE = {
+  luna: 'Aoede',
+  dexter: 'Puck',
+  spark: 'Fenrir',
+  'spark-harsh': 'Fenrir',
+  sparktest: 'Fenrir',
+}
 const GEMINI_MODEL = process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-tts'
 const GEMINI_HOST = process.env.GEMINI_TTS_HOST || 'https://texttospeech.googleapis.com'
 
@@ -68,13 +76,13 @@ const DEFAULT_SONIOX_SPEED = 1.0
 export const TUTOR_PROVIDER = {
   luna: 'gemini',
   dexter: 'eleven',
-  spark: 'soniox',
+  spark: 'gemini', // Fenrir, как в звонке (BUDDY_STAND_TTS агента)
   jarvis: 'eleven', // KZ-стенд: клон ElevenLabs, казахский только на v3
   'dexter-harsh': 'eleven',
-  'spark-harsh': 'soniox',
+  'spark-harsh': 'gemini',
   'jarvis-harsh': 'eleven',
   aizere: 'eleven', // свой клон «zere», v4 Turbo
-  sparktest: 'soniox', // dev-стенд нового Спарка — голос живого Спарка
+  sparktest: 'gemini', // dev-стенд нового Спарка — Fenrir, как у живого
 }
 export const DEFAULT_PROVIDER = 'gemini'
 export const FALLBACK_PROVIDER = 'soniox'

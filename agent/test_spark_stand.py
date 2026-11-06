@@ -197,9 +197,9 @@ type(agent).session = property(lambda self: types.SimpleNamespace(tts=object()))
 seen = asyncio.run(_drive(agent, ["Hi there."]))
 assert fake.prompts == [] and "".join(seen[1:]) == "Hi there."
 del type(agent).session
-# Остальные — как были.
-luna = LearnerProfile(tutor="gentle")
-assert buddy_voice_profile(luna) is luna
+# Остальные — как были (Луна и Спарк с 07.11.2026 на пакете, см. test_live_spark_luna.py).
+aizere = LearnerProfile(tutor="aizere")
+assert buddy_voice_profile(aizere) is aizere
 kz_test = LearnerProfile(tutor="jarvis", lang="ru")
 assert buddy_voice_profile(kz_test).tutor == "gentle"
 os.environ["KZ_TEST_PROMPT"] = "legacy"
@@ -223,6 +223,6 @@ os.environ.pop("BRAIN_MODEL_BUDDY_SPARKTEST")
 assert session_brain_model(profile(mode="scenario", scenario_id="x")) == _brain_model_for("hype")
 assert buddy_guard_tutor(p) == "hype", "в канарейках секретов стенда нет — защиты живого Спарка"
 assert buddy_guard_tutor(kz_test) == "jarvis", "у KZ TEST канарейки свои"
-assert buddy_guard_tutor(luna) == "gentle"
+assert buddy_guard_tutor(LearnerProfile(tutor="gentle")) == "gentle"
 
 print("test_spark_stand: ok")

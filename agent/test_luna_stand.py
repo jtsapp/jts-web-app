@@ -59,9 +59,10 @@ assert buddy_test_on(p)
 assert buddy_persona_for(p) == "luna"
 assert not buddy_test_on(profile(mode="scenario", scenario_id="ordering-coffee"))
 assert not buddy_test_on(profile(mode="placement"))
-# Живая Луна — как была: пакет только у стенда.
+# Живая Луна с 07.11.2026 — та же сборка, что у стенда (test_live_spark_luna.py).
 luna = LearnerProfile(tutor="gentle", lang="ru")
-assert not buddy_test_on(luna) and buddy_voice_profile(luna) is luna
+assert buddy_test_on(luna) and buddy_persona_for(luna) == "luna"
+assert buddy_voice_profile(luna).tutor == "gentle"
 # Откат секретом — на прежнюю персону стенда, без деплоя.
 os.environ["KZ_TEST_PROMPT"] = "legacy"
 assert not buddy_test_on(p)
@@ -109,5 +110,72 @@ assert session_brain_model(p) == "gpt-6-sol", "откат мозга секре�
 os.environ.pop("BRAIN_MODEL_BUDDY_JARVIS")
 assert session_brain_model(profile(mode="scenario", scenario_id="x")) == _brain_model_for("jarvis")
 assert buddy_guard_tutor(p) == "jarvis", "SPEAKER_LOCK_TUTORS=jarvis и родня — канарейки стенда"
+
+# ── Правки 05.11.2026 — только у Луны ────────────────────────────────
+luna_text = build_buddy_instructions(p, "luna")
+assert "==== LUNA IN THIS CALL" in luna_text
+assert luna_text.index("==== LIMITS FOR EVERY REPLY") < luna_text.index("==== LUNA IN THIS CALL"), "последним: замер"
+dexter = LearnerProfile(tutor="bro", level="A2", lang="ru", explanation_lang="ru")
+assert "==== LUNA IN THIS CALL" not in build_buddy_instructions(dexter, buddy_persona_for(dexter))
+assert "==== LUNA IN THIS CALL" not in A.build_instructions(luna), "живая Луна — без правок стенда"
+# 06.11.2026: после поправки — просьба повторить и не больше двух на фразу (замер в шапке блока).
+rules = luna_text[luna_text.index("==== LUNA IN THIS CALL"):]
+assert "then ask them to say that phrase once" in rules and "2. Their try." in rules
+assert "Two requests for the same phrase are the limit" in rules
+assert "if your right phrase would be the same as their line" in rules, "без сравнения просила повторить верное"
+
+# Примеры, которые модель копировала, вырезаны, а черты персоны остались.
+persona_text = A._buddy_persona_text(p, "luna")
+for gone in ("Quiet things, mostly", "Nerves are normal here", "Not quite. Finish this"):
+    assert gone not in persona_text, gone
+    assert gone in BUDDY_PERSONAS["luna"], f"{gone}: файл клиента не трогаем"
+assert "evening walks, rain, tea" in persona_text
+
+# Новый тег не должен прозвучать вслух.
+assert A.parse_mood_tag("[firm] Okay, I'll be more direct.")[2] == "Okay, I'll be more direct."
+
+# «Ты/вы»: выбор ученика.
+for said, want in (
+    ("Давай на ты.", "ты"), ("Можно на вы, пожалуйста", "вы"), ("Вы", "вы"), ("ты!", "ты"),
+    ("На ты или на вы?", ""), ("На выходных гуляла", ""), ("Hi. I am good.", ""),
+    ("Поставила на тысячу", ""), ("Ты человек или робот?", ""),
+):
+    assert A.buddy_address_choice(said) == want, said
+
+# «Ты/вы»: что уходит в контекст. Первый звонок — null, и персона спрашивает.
+assert context_of(luna_text)["learner"]["address_preference"] is None
+informal = {"register": "informal", "name_form": None}
+assert A._buddy_address_preference(profile(facts=["prefers ты"]), "luna") == informal
+assert A._buddy_address_preference(profile(facts=["prefers вы"]), "luna")["register"] == "formal"
+assert A._buddy_address_preference(profile(facts=["prefers вы", "prefers ты"]), "luna")["register"] == "formal"
+assert A._buddy_address_preference(profile(topics=["Past Simple"]), "luna") == informal
+assert A._buddy_address_preference(profile(facts=["prefers вы"]), "dexter") is None
+
+# Вопрос убирает код: обращение известно — ни раздела в персоне, ни просьбы в приветствии.
+returning = profile(facts=["prefers ты"])
+assert "## Address: ask first" in A._buddy_persona_text(p, "luna")
+assert "## Address: ask first" not in A._buddy_persona_text(returning, "luna")
+assert "A1 first SESSION_START" not in A._buddy_persona_text(returning, "luna")
+assert "Ask whether they prefer" in A.build_buddy_greeting(p)
+assert "Do not ask about «ты»" in A.build_buddy_greeting(returning)
+assert "«ты»" not in A.build_buddy_greeting(dexter), "у Декстера приветствие прежнее"
+assert "prefers «вы»" in build_buddy_instructions(profile(facts=["prefers вы"]), "luna")
+assert "prefers «вы»" not in build_buddy_instructions(returning, "luna")
+
+# Служебный факт не считается памятью: иначе Луна вспоминает то, чего не было.
+only_address = build_buddy_instructions(profile(facts=["prefers вы"]), "luna")
+assert "First call with this learner" in only_address
+assert "prefers вы" not in only_address.split("==== MEMORY")[1].split("====")[1]
+with_real_fact = build_buddy_instructions(profile(facts=["prefers вы", "works as a nurse"]), "luna")
+assert "works as a nurse" in with_real_fact
+assert "First call with this learner" not in with_real_fact
+
+# Пометка: вопрос задан, ученик ответил о своём. Ответил «на вы» или вопроса не было — пометки нет.
+asked = ("assistant", "[default] Hi, Dana. «Ты» or «вы»?")
+assert A.buddy_address_note([asked, ("user", "Hello. I am okay.")]), "вопрос без ответа"
+assert A.buddy_address_note([asked, ("user", "Давай на вы.")]) == ""
+assert A.buddy_address_note([("assistant", "Hi, Dana."), ("user", "Hello.")]) == ""
+later = [asked, ("user", "Hello."), ("assistant", "Good. What did you do?"), ("user", "Maybe.")]
+assert A.buddy_address_note(later) == "", "только первый ответ: дальше пометка сама подсказывала тему"
 
 print("test_luna_stand: ok")
