@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { gateReply } from './helpers/login.js'
 import { FRESH_PROFILE } from './tour-helper.js'
 
 // Цель уровня на «Главной»: цель выбирают медалью (тур её больше не спрашивает —
@@ -17,6 +18,9 @@ async function setup(page) {
   const me = { userId: 7, name: 'Сакен', role: 'USER', languageLevel: 'A0', isDemoAccount: false }
   await page.route(/justtostudy\.kz/, (route) => {
     const url = route.request().url()
+    // Замки кабинета (документы, разделы тарифа) — иначе они встают поверх экрана (helpers/login.js).
+    const gate = gateReply(url)
+    if (gate) return route.fulfill(json(gate))
     if (url.includes('/user/language-level')) return route.fulfill(json({ languageLevel: 'A0' }))
     if (url.includes('/user/me')) return route.fulfill(json(me))
     if (url.includes('/mobile/level-progress')) {

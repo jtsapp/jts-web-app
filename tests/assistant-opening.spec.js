@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 
 // Первая реплика Луны: открыл окно — она сама говорит, что видит на экране и что
 // сделать дальше (lib/assistant/opening.js), голосом и с кнопкой «Открыть».
@@ -33,6 +34,8 @@ async function setup(page) {
     localStorage.setItem('jts_access_token', 'test-token')
     localStorage.setItem('lang', 'ru')
   })
+  // Замки кабинета (документы, разделы тарифа) — иначе они встают поверх экрана (helpers/login.js).
+  await mockGates(page)
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 7, name: 'Айгерім', role: 'STUDENT', phone: '77001234567', languageLevel: 'A2' } })),
   )

@@ -23,6 +23,7 @@ import { RECALL_MARK } from './tracker.js'
 import { answerDiffNote } from './answerDiff.js'
 import { PERSONAS, assistantPersona } from './persona.js'
 import { phraseLang } from './phraseLang.js'
+import { addressHint, questionHints } from './turnHints.js'
 import { REPORT_BUG_MARKER, createReportFilter, splitReport } from './report.js'
 
 export { REPORT_BUG_MARKER, createReportFilter, splitReport }
@@ -497,8 +498,16 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
   const diffNote = !opening && !wake && SHOWN_ANSWER.test(screen?.text || '') ? answerDiffNote(screen?.text) : null
   const askWithDiff = diffNote ? `${ask}\n\n${diffNote}` : ask
   const askItems = items && !opening ? `${askWithDiff}\n\n${ITEMS_HINTS[itemsMode] || ITEMS_HINTS.ask}` : askWithDiff
+  // Обращение и шаблоны учителя — тоже рядом с вопросом (turnHints.js: в RULES их модель
+  // пропускала, зонд 07.11.2026). На служебных ходах — только обращение.
+  const service = opening || wake || stuck
+  const hints = [
+    addressHint(qLang || lang),
+    ...(service ? [] : questionHints({ question: last.content, studentContext, unchecked })),
+  ].filter(Boolean)
+  const askHinted = hints.length ? `${askItems}\n\n${hints.join('\n')}` : askItems
   const context = focus.task || wake || stuck ? withoutAdvice(studentContext) : studentContext
-  last.content = `${buildContextBlock({ user, screen, lang, studentContext: context, errors, pageUrl, today, items })}\n\n${askItems}${voice ? `\n\n${VOICE_MARK}` : ''}`
+  last.content = `${buildContextBlock({ user, screen, lang, studentContext: context, errors, pageUrl, today, items })}\n\n${askHinted}${voice ? `\n\n${VOICE_MARK}` : ''}`
   return turns
 }
 
