@@ -48,9 +48,11 @@ os.environ["SPARK_TEMPER"] = "off"
 assert buddy_persona_for(profile("harsh")) == "spark", "откат секретом — клиентский Спарк"
 assert buddy_persona_for(profile("calm")) == "spark"
 del os.environ["SPARK_TEMPER"]
-# Живой Спарк нравов стенда не получает.
 assert buddy_persona_for(LearnerProfile(tutor="bro", temper="harsh")) == "dexter_hooligan"
-assert not A.buddy_test_on(LearnerProfile(tutor="hype", temper="harsh", mode="tutor"))
+# Живой Спарк с 07.11.2026 — те же два нрава (test_live_spark_luna.py).
+assert A.buddy_test_on(LearnerProfile(tutor="hype", temper="harsh", mode="tutor"))
+assert buddy_persona_for(LearnerProfile(tutor="hype", temper="harsh")) == "spark_sting"
+assert buddy_persona_for(LearnerProfile(tutor="hype", temper="calm")) == "spark_fun"
 
 # ── Файлы персон ─────────────────────────────────────────────────────────────
 for pid in ("spark_fun", "spark_sting"):
@@ -136,10 +138,12 @@ for temper in ("calm", "harsh"):
     assert general["domain"] == "online English lessons" and "register" not in general
 # Сценарий с карточки стенда — тоже без добавки: голос и слух у карточки одни.
 assert not A._stt_kazakh_session(buddy_voice_profile(profile("calm", scenario="x")))
-# Живой Спарк и Айзере казахскую добавку не теряют.
+# Айзере казахскую добавку не теряет. Живой Спарк с 07.11.2026 в разговоре — Спарк
+# пакета, без неё; в сценарии и проверке уровня у него прежняя персона, и добавка там есть.
 assert A._stt_kazakh_session(LearnerProfile(tutor="hype"))
 assert A._stt_kazakh_session(LearnerProfile(tutor="aizere"))
-assert A._stt_kazakh_session(buddy_voice_profile(LearnerProfile(tutor="hype")))
+assert not A._stt_kazakh_session(buddy_voice_profile(LearnerProfile(tutor="hype", mode="tutor")))
+assert A._stt_kazakh_session(buddy_voice_profile(LearnerProfile(tutor="hype", mode="placement")))
 
 # ── Голос по нраву ───────────────────────────────────────────────────────────
 fun = BUDDY_VOICE_STYLES[SPARK_TEST_STAND]
