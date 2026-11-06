@@ -94,13 +94,15 @@ export const DICT = {
       'Стенд новой Луны из пакета Speaking Buddy v3.4: спокойная и внимательная, говорит по-английски, по-русски и по-казахски, голосом живой Луны. В звонке видно лицо с эмоциями. Доступен только на тестовом стенде.',
     'tutor.jarvis.choose': 'Выбрать Луна тест',
     // «Спарк тест» — второе dev-only место для тестов Speaking Buddy (тот же
-    // JARVIS_ENABLED): новый Спарк из пакета v3.4 с лицом и эмоциями. Ключи во
+    // JARVIS_ENABLED): новый Спарк из пакета v3.5 с лицом и эмоциями. Ключи во
     // всех трёх языках по той же причине, что у Луна теста.
     'tutor.sparktest.trait1': 'Тестируется',
     'tutor.sparktest.trait2': 'Эмоции',
     'tutor.sparktest.trait3': 'Speaking Buddy',
     'tutor.sparktest.desc':
-      'Стенд нового Спарка из пакета Speaking Buddy v3.4: саркастичный, говорит по-английски, по-русски и по-казахски, голосом живого Спарка. В звонке видно лицо с эмоциями — для их проверки он и сделан. Доступен только на тестовом стенде.',
+      'Стенд нового Спарка: смешной и активный, шутит почти в каждой реплике, но не над тобой. Говорит по-английски и по-русски. Хочешь шуток про себя — включи 18+.',
+    'tutor.sparktest.desc18':
+      'Колкий Спарк: без мата и оскорблений, но с едкими шутками лично про тебя, твою лень и отговорки. На «не обижай» не сдаётся. Правда задел — скажи, шутки прекратятся.',
     'tutor.sparktest.choose': 'Выбрать Спарк тест',
 
     // Загрузка
@@ -534,7 +536,9 @@ export const DICT = {
     'tutor.sparktest.trait2': 'Эмоциялар',
     'tutor.sparktest.trait3': 'Speaking Buddy',
     'tutor.sparktest.desc':
-      'Speaking Buddy v3.4 пакетіндегі жаңа Спарктың стенді: сарказмы бар, ағылшынша, орысша және қазақша сөйлейді, тірі Спарктың дауысымен. Қоңырауда эмоциясы бар бет көрінеді — оны тексеру үшін жасалған. Тек сынақ стендінде қолжетімді.',
+      'Жаңа Спарктың стенді: көңілді әрі белсенді, әр сөзінде дерлік әзілдейді, бірақ сені мазақ етпейді. Ағылшынша және орысша сөйлейді. Әзіл өзіңе тисін десең, 18+ қос.',
+    'tutor.sparktest.desc18':
+      'Тілі ащы Спарк: боқтамайды, балағаттамайды, бірақ әзілі өзіңе, жалқаулығың мен сылтауларыңа тиеді. «Ренжітпе» десең де тоқтамайды. Шынымен көңіліңе тисе, айт, әзіл тоқтайды.',
     'tutor.sparktest.choose': 'Спарк тестті таңдау',
 
     'loading.heading': '{name} саған оқу\nжинап жатыр...',
@@ -946,7 +950,9 @@ export const DICT = {
     'tutor.sparktest.trait2': 'Emotions',
     'tutor.sparktest.trait3': 'Speaking Buddy',
     'tutor.sparktest.desc':
-      'Test stand for the new Spark from the Speaking Buddy v3.4 pack: sarcastic, speaks English, Russian and Kazakh, in the live Spark voice. The call shows a face with emotions — that is what it is here to test. Available on the test stand only.',
+      'Test stand for the new Spark: funny and active, jokes in almost every line, but never at your expense. Speaks English and Russian. Want the jokes aimed at you? Turn on 18+.',
+    'tutor.sparktest.desc18':
+      'Sharp-tongued Spark: no swearing, no insult words, just cutting jokes about you, your laziness and your excuses. Asking him to be nicer does not work. If it really hurts, say so and the jokes stop.',
     'tutor.sparktest.choose': 'Choose Spark test',
 
     'loading.heading': '{name} is putting\nyour lessons together...',

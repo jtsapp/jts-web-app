@@ -22,6 +22,7 @@ import asyncio
 import json
 import logging
 import os
+import random
 import time
 from dataclasses import dataclass, field, replace as _dc_replace
 from pathlib import Path
@@ -73,6 +74,20 @@ from dexter_tempers import (
     HOOLIGAN_MINOR_EXTRA,
     HOOLIGAN_TIER_BLOCK,
     patch_core,
+)
+# Ядро под колкий режим Спарка (18+, «Спарк тест»)
+from spark_tempers import (
+    SPARK_JAB_IN_ENGLISH,
+    SPARK_FUN_BLOCK,
+    SPARK_FUN_GREETING_ANGLES,
+    SPARK_JAB_IN_RUSSIAN,
+    SPARK_STING_CORE_PATCHES,
+    SPARK_STING_GREETING_ANGLES,
+    SPARK_STING_LINES_EN,
+    SPARK_STING_LINES_PER_CALL,
+    SPARK_STING_LINES_RU,
+    SPARK_STING_STRENGTH,
+    SPARK_STING_TIER_BLOCK,
 )
 
 # Cascade-stack plugins (VOICE_STACK=cascade). Optional imports so the default
@@ -859,6 +874,10 @@ class LearnerProfile:
     # звучал бы с казахским акцентом. Из metadata не приходит — ставит
     # buddy_voice_profile.
     tts_lang: str = ""
+    # Казахская добавка к контексту распознавания. «Спарк тест» берёт сессию живого Спарка,
+    # но сам по-казахски не говорит: контекст «уроки на казахском» тянул бы русскую речь его
+    # ученика в казахскую. Из metadata не приходит — ставит buddy_voice_profile.
+    stt_kk_context: bool = True
     # Провайдер синтеза, когда его задаёт стенд, а не тьютор, чей голос взят:
     # «Спарк тест» с пакета v3.5 говорит голосом Gemini Fenrir, а живой Спарк
     # остаётся на Soniox. Пусто → по тьютору (_tts_provider_for). Из metadata не
@@ -3638,6 +3657,8 @@ BUDDY_STAND_TTS: dict[str, str] = {SPARK_TEST_STAND: "gemini"}
 # стиль текстом (prompt), см. TutorAgent._apply_voice_style.
 BUDDY_VOICE_STYLE_FILES: dict[str, str] = {
     SPARK_TEST_STAND: "05_App_Settings/Spark_Voice_Fenrir.md",
+    # Ключ — персона, она важнее стенда: у колкого режима тот же голос, но другая подача.
+    "spark_sting": "05_App_Settings/Spark_Sting_Voice_Fenrir.md",
 }
 _BUDDY_DIR = "buddy-v3"
 _BUDDY_LEVELS = ("A0", "A1", "A2", "B1", "B2")
@@ -3649,6 +3670,10 @@ _BUDDY_PERSONA_FILES = {
     "dexter_hooligan": "Dexter_Hooligan.md",
     "luna": "Luna.md",
     "spark": "Spark.md",
+    # Два нрава «Спарк теста» (04.11.2026): смешной без кнопки 18+ и колкий с ней.
+    # Клиентский Spark.md v3.5 остаётся для отката SPARK_TEMPER.
+    "spark_fun": "Spark_Fun.md",
+    "spark_sting": "Spark_Sting.md",
     "aizere": "Aizere.md",
 }
 
@@ -3684,13 +3709,14 @@ for _pid, _fname in _BUDDY_PERSONA_FILES.items():
 _BUDDY_CORE_PATCHES = {
     "dexter_calm": CALM_CORE_PATCHES,
     "dexter_hooligan": HOOLIGAN_CORE_PATCHES,
+    "spark_sting": SPARK_STING_CORE_PATCHES,
 }
 BUDDY_CORE_VARIANTS: dict[str, str] = {}
 for _pid, _patches in _BUDDY_CORE_PATCHES.items():
     try:
         BUDDY_CORE_VARIANTS[_pid] = patch_core(BUDDY_CORE, _patches)
     except ValueError as _e:
-        logger.error("Dexter temper %s unavailable: %s", _pid, _e)
+        logger.error("Temper %s unavailable: %s", _pid, _e)
 
 
 def _buddy_core_for(persona: str) -> str:
@@ -3705,6 +3731,9 @@ class VoiceStyle:
 
     base: str
     by_tag: dict[str, str]
+    # База реплик без укола (тег default и sympathy) у персоны, чья основная база
+    # звучит насмешкой. Пусто — база одна на все теги, как у клиентского файла.
+    calm_base: str = ""
 
     def prompt(self, tag: str, russian: bool = False) -> str:
         """Стиль одной реплики. Клиент велит дописывать строку тега к базе как
@@ -3718,12 +3747,13 @@ class VoiceStyle:
         Русской реплике — только база. Её же замер: клиентская добавка «Speak
         natural, casual Russian…» — реплика дважды в 6 из 9, строка тега —
         в 3 из 24, одна база — 0 из 24. По-русски, значит, без оттенка эмоции."""
+        base = self.calm_base if self.calm_base and tag in ("default", "sympathy") else self.base
         if russian:
-            return self.base
+            return base
         line = (self.by_tag.get(tag) or self.by_tag.get("default", "")).strip().rstrip(".")
         if not line:
-            return self.base
-        return f"{self.base} For this line, sound {line[0].lower()}{line[1:]}."
+            return base
+        return f"{base} For this line, sound {line[0].lower()}{line[1:]}."
 
 
 def _parse_voice_style(text: str) -> VoiceStyle | None:
@@ -3734,9 +3764,11 @@ def _parse_voice_style(text: str) -> VoiceStyle | None:
     rows = dict(_re.findall(r'^\|\s*(\w+)\s*\|\s*"(.+?)"\s*\|\s*$', text, _re.M))
     if not base or "default" not in rows:
         return None
+    calm = _re.search(r"^## Calm style prompt.*?^> (.+?)$", text, _re.M | _re.S)
     return VoiceStyle(
         base=base.group(1).strip(),
         by_tag={k.lower(): v.strip() for k, v in rows.items()},
+        calm_base=calm.group(1).strip() if calm else "",
     )
 
 
@@ -3780,11 +3812,25 @@ def _dexter_temper_persona(temper: str) -> str:
     return BUDDY_TEST_PERSONA
 
 
+def _spark_temper_persona(temper: str) -> str:
+    """Персона «Спарк теста» по нраву звонка. Колкий — ТОЛЬКО по явному harsh (кнопка
+    18+), всё остальное — смешной, как и дефолт сайта (defaultTemper в src/tutor/tutors.js).
+    Секрет SPARK_TEMPER=off — оба нрава на клиентского Спарка v3.5, без деплоя.
+    Нрав, чьё ядро не собралось или файла нет, тоже уходит на v3.5."""
+    if (os.getenv("SPARK_TEMPER") or "").strip().lower() in ("off", "0", "false", "legacy"):
+        return "spark"
+    if (temper or "").strip().lower() == "harsh":
+        return "spark_sting" if "spark_sting" in BUDDY_PERSONAS and "spark_sting" in BUDDY_CORE_VARIANTS else "spark"
+    return "spark_fun" if "spark_fun" in BUDDY_PERSONAS else "spark"
+
+
 def buddy_persona_for(p: LearnerProfile) -> str:
-    """Персона пакета для звонка со стендом (у KZ TEST — Луна, у живого Декстера —
-    по нраву звонка)."""
+    """Персона пакета для звонка со стендом (у KZ TEST — Луна, у живого Декстера и
+    «Спарк теста» — по нраву звонка)."""
     if _stand_key(p) == BUDDY_VOICE_TUTOR:
         return _dexter_temper_persona(p.temper)
+    if _stand_key(p) == SPARK_TEST_STAND:
+        return _spark_temper_persona(p.temper)
     return BUDDY_STANDS.get(_stand_key(p), (BUDDY_TEST_PERSONA, ""))[0]
 
 
@@ -3846,6 +3892,7 @@ def buddy_voice_profile(p: LearnerProfile) -> LearnerProfile:
             if key in BUDDY_STAND_TTS
             else ""
         ),
+        stt_kk_context=key != SPARK_TEST_STAND,
     )
 
 
@@ -4211,6 +4258,26 @@ def _buddy_tier_block(p: LearnerProfile, persona: str) -> str:
             "\n\n==== YOUR WORD RATING IN THIS CALL (core section 11) ====\n"
             + HOOLIGAN_TIER_BLOCK + " " + extra
         )
+    # Колкий Спарк — одна ступень на всех и без мата. Язык укола по уровню (решение
+    # владельца 04.11.2026): до B1 русскоязычному по-русски, иначе шутка не дойдёт.
+    if persona == "spark_sting":
+        lvl = _buddy_profile_level(p.level)
+        russian = (
+            not p.english_only and _buddy_support_language(p, persona) == "ru" and lvl != "B2"
+        )
+        jab = SPARK_JAB_IN_RUSSIAN.format(level=lvl) if russian else SPARK_JAB_IN_ENGLISH
+        bank = SPARK_STING_LINES_RU if russian else SPARK_STING_LINES_EN
+        lines = " ".join(
+            line.replace("{level}", lvl) for line in random.sample(bank, SPARK_STING_LINES_PER_CALL)
+        )
+        return (
+            "\n\n==== YOUR WORD RATING IN THIS CALL (core section 11) ====\n"
+            + SPARK_STING_TIER_BLOCK + " " + jab + " " + SPARK_STING_STRENGTH.format(lines=lines)
+        )
+    # Смешному — не ступень, а напоминание последним словом: иначе на исправлениях и
+    # коротких ответах шутка пропадала (замер 04.11.2026), тон держит история звонка.
+    if persona == "spark_fun":
+        return "\n\n==== YOUR HUMOUR IN THIS CALL ====\n" + SPARK_FUN_BLOCK
     if not _buddy_has_profanity(persona):
         return ""
     group = _buddy_age_group(p)
@@ -4361,11 +4428,21 @@ def build_buddy_greeting(p: LearnerProfile) -> str:
         if buddy_persona_for(p) == "dexter_hooligan" and _buddy_age_group(p) != "adult"
         else ""
     )
+    angles = {"spark_fun": SPARK_FUN_GREETING_ANGLES, "spark_sting": SPARK_STING_GREETING_ANGLES}.get(
+        buddy_persona_for(p)
+    )
+    # «Только в приветствии»: без этого угол становился сквозной шуткой звонка («Agent», замер 05.11).
+    angle_rule = (
+        f"Angle for this greeting only, in your own words, dropped after it: {random.choice(angles)}. "
+        if angles
+        else ""
+    )
     return (
         "Trusted application event: SESSION_START. Follow core section 10: greet once, "
         "in character and in English, with one accessible invitation at the learner's level. "
         + name_rule
         + face_rule
+        + angle_rule
         + "MEMORY may give the invitation a concrete hook. "
         "Start with your emotion tag. Then stop and wait for the learner."
     )
@@ -6441,7 +6518,7 @@ def _stt_kazakh_session(profile: LearnerProfile) -> bool:
 
     SONIOX_STT_CONTEXT_KK=off — откат одной добавки секретом воркера: имя
     ученика и общий словарь при этом остаются."""
-    if profile.english_only:
+    if profile.english_only or not profile.stt_kk_context:
         return False
     if (os.getenv("SONIOX_STT_CONTEXT_KK") or "").strip().lower() in ("off", "0", "false", "no"):
         return False
@@ -7962,7 +8039,11 @@ async def entrypoint(ctx: JobContext):
         tag_history=is_buddy and not _brain_supports_prefill(session_brain_model(profile)),
         # Стиль голоса по тегу — только в разговоре с персоной: в сценарии
         # звучит роль из карточки, а не Спарк.
-        voice_style=BUDDY_VOICE_STYLES.get(_stand_key(profile)) if is_buddy else None,
+        voice_style=(
+            BUDDY_VOICE_STYLES.get(buddy_persona_for(profile)) or BUDDY_VOICE_STYLES.get(_stand_key(profile))
+            if is_buddy
+            else None
+        ),
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the

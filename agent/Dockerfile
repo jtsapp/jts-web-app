@@ -53,6 +53,8 @@ COPY noise_guard.py .
 COPY assistant_call.py .
 # Подмены ядра Speaking Buddy под нрав Декстера — agent.py импортирует на старте.
 COPY dexter_tempers.py .
+# Ядро Speaking Buddy под колкий режим Спарка (спека 2026-11-04-spark-two-tempers).
+COPY spark_tempers.py .
 
 # Pre-fetch the Silero VAD weights so the cold-start of the first call is
 # fast instead of stalling on a model download.
