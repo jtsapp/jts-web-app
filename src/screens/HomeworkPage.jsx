@@ -287,7 +287,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, initia
       //
       // Последовательно, как и загрузка файлов выше: каждый ответ возвращает
       // работу целиком, и параллельные затирали бы друг друга.
-      const pending = pendingAnswers(selected, loadAnswers(selected.id))
+      const pending = pendingAnswers(selected, draft.homeworkId === selected.id ? draft.answers : loadAnswers(selected.id))
       for (const { exercise, answer } of pending) {
         const { correct } = gradeQuestion(exercise.question, answer)
         await saveHomeworkAnswer(selected.id, exercise.id, token, answer, correct)

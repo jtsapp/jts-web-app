@@ -3,11 +3,12 @@ import PracticeBlock from '../workspace/blocks/PracticeBlock.jsx'
 import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
 import { getCourseCatalogLesson, saveHomeworkAnswer } from '../../api.js'
-import { batchFullyAnswered, exerciseBatches, exerciseBlock, homeworkTimeline, isAnswered, isUnitTestType, loadAnswers, revokedEverything, saveAnswers, serverAnswers } from './homeworkExercises.js'
+import { batchFullyAnswered, exerciseBatches, exerciseBlock, homeworkTimeline, isAnswered, isUnitTestType, revokedEverything, serverAnswers } from './homeworkExercises.js'
 import { groupByContext } from './exerciseContext.js'
 import { sanitizeHtml } from '../workspace/sanitizeHtml.js'
 import { canAttach } from './homeworkFormat.js'
 import HomeworkMaterialPart from './HomeworkMaterialPart.jsx'
+import useHomeworkDrafts from './useHomeworkDrafts.js'
 
 // Задания, которые преподаватель добавил с живого урока. Рисует их тот же
 // PracticeBlock, что и на уроке, — здесь только состояние ответов и отправка.
@@ -52,8 +53,8 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOp
   // Что уже сохранено на сервере, важнее черновика: ученик мог отвечать с другого
   // устройства, а преподаватель — сбросить ответ через меню упражнения.
   // Смену работы отрабатывает key на компоненте (см. HomeworkDetail), поэтому
-  // начальное состояние поднимается один раз и без эффекта.
-  const [answers, setAnswers] = useState(() => ({ ...loadAnswers(hw?.id), ...serverAnswers(hw) }))
+  // начальное состояние поднимается один раз; недосланные изменения сохраняет хук.
+  const { answers, onAnswer, draftStatus, retryDrafts } = useHomeworkDrafts(hw, token)
   const [checked, setChecked] = useState(() => new Set())
   const [failed, setFailed] = useState(() => new Set())
   // batch.key пакета, который сейчас уезжает по «Завершить тест» — кнопка
@@ -96,15 +97,6 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOp
   // обязан показывать ровно то, что видит преподаватель.
   const shown = useMemo(() => (editable ? answers : serverAnswers(hw)), [editable, answers, hw])
 
-  // Черновик закрытой работы не просто бесполезен — он всплывёт при следующем
-  // открытии и снова притворится сданным ответом. Стираем его пустой записью:
-  // отдельной чистилки в homeworkExercises.js нет, а saveAnswers уже переживает
-  // приватный режим и переполненное хранилище. Порядок безопасен: HomeworkPage
-  // дочитывает недосланное (pendingAnswers) синхронно, до смены статуса.
-  useEffect(() => {
-    if (!editable && hw?.id != null) saveAnswers(hw.id, {})
-  }, [editable, hw?.id])
-
   // Сколько заданий отвечено прямо сейчас — вместе с черновиком, который ещё не
   // уехал на сервер. По этому числу оживает «Отправить на проверку»: решённая
   // работа должна сдаваться, даже если ученик не жал «Проверить» у каждого
@@ -118,8 +110,8 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOp
     [batches, shown],
   )
   useEffect(() => {
-    onAnswered?.({ homeworkId: hw?.id, answered: answeredNow })
-  }, [onAnswered, hw?.id, answeredNow])
+    onAnswered?.({ homeworkId: hw?.id, answered: answeredNow, answers: shown })
+  }, [onAnswered, hw?.id, answeredNow, shown])
 
   // Ученик начал работать в рамке части — сдача оживает так же, как от черновика
   // ответов выше, и с тем же id работы: касание не должно оживить соседнюю.
@@ -127,15 +119,6 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOp
     (partId) => onPartTouched?.({ homeworkId: hw?.id, partId }),
     [onPartTouched, hw?.id],
   )
-
-  const onAnswer = (questionId, value) => {
-    if (!editable) return
-    setAnswers((prev) => {
-      const next = { ...prev, [questionId]: value }
-      if (hw?.id != null) saveAnswers(hw.id, next)
-      return next
-    })
-  }
 
   // «Проверить» — момент, когда ответ осмыслен: показываем разбор и отправляем
   // его преподавателю. Не сохранилось — говорим об этом, а не делаем вид, что
@@ -244,6 +227,12 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOp
 
   return (
     <>
+      {editable && draftStatus && (
+        <p className="hw__hint" role="status">
+          {t(`homework.draft.${draftStatus}`)}
+          {draftStatus === 'error' && <button type="button" onClick={retryDrafts}>{t('homework.draft.retry')}</button>}
+        </p>
+      )}
       {/* Отзыв мог забрать все вопросы, а часть-материал — остаться: лента ниже
           тогда не пуста, и хинт про отзыв стоит НАД ней, а не вместо неё. */}
       {revokedEverything(hw) && <p className="hw__hint hw__hint--revoked">{t('homework.revokedAll')}</p>}

@@ -398,6 +398,13 @@ export async function saveHomeworkAnswer(id, exerciseId, token, answer, correct)
   return authPut(`/admin/homework/${id}/exercises/${exerciseId}/answer`, token, { answer, correct })
 }
 
+// Черновик не оценивается и не сдаёт домашку. Небольшой запрос переживает закрытие вкладки.
+export function saveHomeworkDraft(id, exerciseId, token, answer) {
+  const body = { answer }
+  const keepalive = new TextEncoder().encode(JSON.stringify(body)).length <= 60000
+  return authPut(`/admin/homework/${id}/exercises/${exerciseId}/draft`, token, body, { keepalive })
+}
+
 // Задания с живых уроков: преподаватель назначает материал через админку
 // («задать как ДЗ», MaterialAssignment), ученик видит назначенное здесь же,
 // в «Домашней работе». Ничего нового на бэкенде — это тот же студенческий
