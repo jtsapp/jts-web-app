@@ -190,7 +190,7 @@ describe('профиль ученика для помощника', () => {
     const text = await loadStudentContext('tok', user, Date.parse('2026-10-15T12:00:00Z'))
     expect(text).toContain('Цель уровня, которую ученик выбрал: B1 (от A2).')
     expect(text).toContain('Последние 7 дней: дней с занятиями 1, заданий 10 (верно с первой попытки 80%)')
-    expect(text).toContain('давно не открывал — Чтение (15 дн. назад); недавно — Словарь (вчера)')
+    expect(text).toContain('давно не открыты — Чтение (15 дн. назад); недавно — Словарь (вчера)')
     expect(text).toContain('Ошибки из разговоров со Speaking Buddy, ещё не пройденные: «he go to school».')
   })
 
@@ -216,7 +216,7 @@ describe('профиль ученика для помощника', () => {
     loadEcosystemWeek.mockResolvedValue({ weekStart: '2026-09-21', weekEndExclusive: '2026-09-28', voiceSeconds: 0 })
     activity.extra = { voice: [{ day: '2026-09-22', seconds: 600 }, { day: '2026-09-23', seconds: 300 }, { day: '2026-09-15', seconds: 999 }] }
     const text = await loadStudentContext('tok', user, new Date('2026-09-23T12:00:00Z').getTime())
-    expect(text).toContain('Speaking Buddy: дневной лимит 20 мин, на этой неделе уже позанимался 15 мин.')
+    expect(text).toContain('Speaking Buddy: дневной лимит 20 мин, на этой неделе занятий 15 мин.')
   })
 
   it('фактические минуты по воркбукам/шэдоуингу/словарю — только измеряемые модули', async () => {

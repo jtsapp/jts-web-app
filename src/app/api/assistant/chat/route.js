@@ -158,7 +158,7 @@ export async function POST(request) {
 
   const modelAt = performance.now()
   const gen = chatStreamRich({
-    systemPrompt: buildSystemPrompt(assistantPersona(parsed.lang)),
+    systemPrompt: buildSystemPrompt(assistantPersona(parsed.lang), { rewards: parsed.rewards }),
     messages: buildTurns({
       ...parsed,
       user: auth.user,

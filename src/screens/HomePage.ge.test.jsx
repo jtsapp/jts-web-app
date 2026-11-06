@@ -230,7 +230,7 @@ describe('HomePage — тур общего курса', () => {
     expect(within(hello).getByText('Сакен')).toBeTruthy()
     fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
 
-    const first = await screen.findByRole('dialog', { name: 'Здесь виден ваш прогресс' })
+    const first = await screen.findByRole('dialog', { name: 'Здесь виден твой прогресс' })
     expect(first.querySelectorAll('.t-tour__dots i')).toHaveLength(3)
     next(first)
     next(await screen.findByRole('dialog', { name: 'Ближайшие уроки и домашка' }))
@@ -262,7 +262,7 @@ describe('HomePage — тур общего курса', () => {
         fireEvent.click(within(hello).getByRole('button', { name: 'Пропустить' }))
       } else {
         fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
-        await walkHints('Здесь будет ваш маршрут')
+        await walkHints('Здесь будет твой маршрут')
       }
       await waitFor(() => expect(onGeStart).toHaveBeenCalledTimes(1))
       // окно «Жёсткий режим» ждёт возвращения с пройденным тестом: поверх закрытого роадмапа его нет

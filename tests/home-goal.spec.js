@@ -46,7 +46,7 @@ test('первый заход: тур без вопроса о цели, цел�
   await page.locator('.t-tour__intro-go').click({ timeout: 20000 })
   const pop = page.locator('.t-tour__pop')
   await expect(pop).toBeVisible({ timeout: 20000 })
-  await expect(pop.locator('.t-tour__title')).toHaveText('Здесь виден ваш прогресс')
+  await expect(pop.locator('.t-tour__title')).toHaveText('Здесь виден твой прогресс')
   await expect(pop.getByRole('radio')).toHaveCount(0)
   await expect(pop.locator('.t-tour__ok')).toBeEnabled()
 

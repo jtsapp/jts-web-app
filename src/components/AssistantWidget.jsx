@@ -6,7 +6,7 @@ import { AssistantError, askAssistant } from '../lib/assistant/client.js'
 import { destinationName, destinationOf } from '../lib/assistant/destinations.js'
 import { isItemRef } from '../lib/assistant/items/refs.js'
 import { installErrorLog, recentErrors } from '../lib/assistant/errorLog.js'
-import { OPENING_MARK, WAKE_MARK, screenStateKey, stuckMark } from '../lib/assistant/opening.js'
+import { OPENING_MARK, WAKE_MARK, openingFocus, screenStateKey, stuckMark } from '../lib/assistant/opening.js'
 import { snapshotScreen, snapshotWithRefs } from '../lib/assistant/screenSnapshot.js'
 import { pressButton } from '../lib/assistant/clicker.js'
 import { playCue } from '../lib/assistant/cue.js'
@@ -24,6 +24,8 @@ import { timingParts, voiceTimingVisible } from '../lib/assistant/voiceTiming.js
 import { useWakeWord } from '../lib/assistant/wake/useWakeWord.js'
 import { isTtsActive, unlockSpeech } from '../lib/speech.js'
 import { useStuckWatch } from '../lib/assistant/useStuckWatch.js'
+import { assistantChips, chipScreenKind } from '../lib/assistant/chips.js'
+import { areRewardsEnabled } from '../config.js'
 
 // Помощник по сайту — Луна: плавающая кнопка и окно чата поверх любого экрана
 // ученика. Где он показывается — решает App (lib/assistant/visibility.js).
@@ -450,10 +452,12 @@ function RichText({ text }) {
 // enabled=false — экран, где помощника быть не должно (экзамен, живой урок):
 // окно закрывается и кнопка пропадает, но разговор остаётся и вернётся вместе
 // с кнопкой на следующем обычном экране.
-export default function AssistantWidget({ token, screen, enabled = true, greetOnOpen = false }) {
+export default function AssistantWidget({ token, screen, enabled = true, greetOnOpen = false, format = null }) {
   const { t, lang } = useI18n()
   const persona = assistantPersona(lang)
   const [open, setOpen] = useState(false)
+  // Что на экране — задание, тест или обычный раздел — смотрим по снимку, когда окно открыто.
+  const [chipKind, setChipKind] = useState('other')
   const [messages, setMessages] = useState([]) // {role, content, voice?, opening?, offtopic?, reported?, voiceFailed?}
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
@@ -587,6 +591,21 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     refsRef.current = snap.refs
     return snap.text
   }, [])
+
+  // Вид экрана для готовых вопросов. Тест — по метке data-assistant-test (как у «Подсказать?»),
+  // задание — по разметке снимка (openingFocus). Читаем в нажатии на кнопку Луны (первый кадр
+  // окна — уже с нужными вопросами) и ещё раз кадром позже, когда открыто окно или сменился
+  // экран: после перехода экран дорисовывается не сразу.
+  const readChipKind = useCallback(() => {
+    const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
+    const test = Boolean(root && (root.closest?.('[data-assistant-test]') || root.querySelector('[data-assistant-test]')))
+    return chipScreenKind({ screen, test, task: Boolean(root) && openingFocus(snapshotScreen(root)).task })
+  }, [screen])
+  useEffect(() => {
+    if (!open) return undefined
+    const id = requestAnimationFrame(() => setChipKind(readChipKind()))
+    return () => cancelAnimationFrame(id)
+  }, [open, readChipKind])
 
   // Нажать кнопку Луны. note — сказать в переписке, что кнопки нет (у облачка команды
   // свой ответ); refs — номера снимка, по которому отвечали (звонок держит свои).
@@ -1306,6 +1325,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   const openWindow = () => {
     unlockSpeech()
     showCmd(null)
+    setChipKind(readChipKind())
     setOpen(true)
     greet()
   }
@@ -1547,14 +1567,13 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     }
   }
 
-  const suggestions = [
-    { text: t('assistant.suggest.plan') },
-    { text: t('assistant.suggest.whyWrong') },
-    { text: t('assistant.suggest.rule') },
-    { text: t('assistant.suggest.page') },
-    { text: t('assistant.suggest.where') },
-    { text: t('assistant.suggest.bug'), bug: true },
-  ]
+  // Готовые вопросы — по экрану и формату ученика (chips.js): вопроса про то, чего у
+  // ученика нет (уроки у Self Study, токены на проде), под полем не бывает.
+  const suggestions = assistantChips({ kind: chipKind, format, rewards: areRewardsEnabled() }).map((s) => ({
+    label: t(s.key),
+    text: t(s.ask || s.key),
+    bug: s.bug,
+  }))
   const last = messages[messages.length - 1]
   // Подсказки-вопросы висят, пока ученик сам ничего не спросил: первая реплика
   // Луны — не его вопрос, и после неё они как раз к месту; нажатая, пока реплика
@@ -1860,13 +1879,13 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
               <div className="asst__chips">
                 {suggestions.map((s) => (
                   <button
-                    key={s.text}
+                    key={s.label}
                     type="button"
                     className={`asst__chip${s.bug ? ' asst__chip--bug' : ''}`}
                     disabled={voiceBusy}
                     onClick={() => sendTyped(s.text)}
                   >
-                    {s.text}
+                    {s.label}
                   </button>
                 ))}
               </div>
