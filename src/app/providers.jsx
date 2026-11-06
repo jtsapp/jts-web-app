@@ -6,6 +6,22 @@
 import { useEffect } from 'react'
 import { I18nProvider } from '../i18n.jsx'
 import { LanguageProvider } from '../i18n/LanguageContext.jsx'
+import { appTheme, createLessonFrameTheme } from '../lib/lessonFrameTheme.js'
+
+// Рамки живых уроков получают тему приложения: при старте по своему запросу и при каждом переключении.
+function LessonFrameThemeBridge() {
+  useEffect(() => {
+    const root = document.documentElement
+    const frames = createLessonFrameTheme(window, () => appTheme(root))
+    const observer = new MutationObserver(() => frames.themeChanged())
+    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => {
+      observer.disconnect()
+      frames.stop()
+    }
+  }, [])
+  return null
+}
 
 // Запрет копирования для обычного пользователя: правый клик, copy/cut,
 // перетаскивание картинок, выделение мышью. Не мешает вводу — внутри
@@ -60,6 +76,7 @@ export default function Providers({ children }) {
     <I18nProvider>
       <LanguageProvider>
         <NoCopyGuard />
+        <LessonFrameThemeBridge />
         {children}
       </LanguageProvider>
     </I18nProvider>
