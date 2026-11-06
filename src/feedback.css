@@ -156,6 +156,18 @@
 .hm-report__text b { font-size: 16px; }
 .hm-report__text span { font-size: 13px; opacity: .9; }
 .hm-report__go { font-weight: 800; white-space: nowrap; }
+/* Кабинет вешает группу «язык + колокольчик» абсолютом в правый верхний угол
+   (.learn__bell, styles.css), и карточка, вставшая первой, уходила под неё:
+   «Открыть →» лежало под RU и колокольчиком. Запас тот же, что у плашки
+   демо-доступа (demo.css): «?» тура + язык + колокольчик. Под плашкой демо
+   карточка уже не первая и в угол не попадает. На мобилке группа живёт в
+   MobileTopBar — там отступ не нужен. */
+@media (min-width: 761px) {
+  .hm > .hm-report:first-child {
+    width: auto;
+    margin-right: 222px;
+  }
+}
 
 @media (max-width: 560px) {
   .fbr { padding: 18px; border-radius: 16px; }
