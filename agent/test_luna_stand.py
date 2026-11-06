@@ -59,9 +59,10 @@ assert buddy_test_on(p)
 assert buddy_persona_for(p) == "luna"
 assert not buddy_test_on(profile(mode="scenario", scenario_id="ordering-coffee"))
 assert not buddy_test_on(profile(mode="placement"))
-# Живая Луна — как была: пакет только у стенда.
+# Живая Луна с 07.11.2026 — та же сборка, что у стенда (test_live_spark_luna.py).
 luna = LearnerProfile(tutor="gentle", lang="ru")
-assert not buddy_test_on(luna) and buddy_voice_profile(luna) is luna
+assert buddy_test_on(luna) and buddy_persona_for(luna) == "luna"
+assert buddy_voice_profile(luna).tutor == "gentle"
 # Откат секретом — на прежнюю персону стенда, без деплоя.
 os.environ["KZ_TEST_PROMPT"] = "legacy"
 assert not buddy_test_on(p)

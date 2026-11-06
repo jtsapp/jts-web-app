@@ -61,9 +61,28 @@ const TUNING = {
   // треть допустимого [0.8–1.2], разболтанный тон персонажа от этого только
   // выигрывает. stability пониже, style повыше — больше интонационной игры.
   dexter: { speed: 0.9, stability: 0.28, style: 0.7 },
-  // Спарк (Soniox). Кроме темпа крутить нечего — эмоций провайдер не умеет.
-  // Диапазон [0.7–1.3], берём заметно медленнее середины.
-  spark: { speed: 0.85 },
+  // Спарк (Cloud TTS, Fenrir) с 07.11.2026 — тестовый Спарк стал живым. Стиль —
+  // база клиентского файла голоса (agent/buddy-v3/05_App_Settings/Spark_Voice_Fenrir.md
+  // и Spark_Sting_Voice_Fenrir.md): русской реплике агент отдаёт только её, без
+  // строки тега, иначе Gemini читает стиль вслух (замер 22.10.2026, VoiceStyle.prompt).
+  // speed остался для отката на Soniox.
+  spark: {
+    voice: 'Fenrir',
+    speed: 0.85,
+    prompt:
+      'Speak as Spark, a 20-year-old guy chatting with a friend on a voice call. Upbeat and friendly, ' +
+      'with a quick, casual rhythm. Start speaking right away. Clean speech only, with no non-verbal ' +
+      'sounds and no long pauses. Sound natural, never like an announcer or a teacher. Slightly faster ' +
+      'than normal speech.',
+  },
+  'spark-harsh': {
+    voice: 'Fenrir',
+    speed: 0.85,
+    prompt:
+      'Speak as Spark, a 20-year-old guy on a voice call, unimpressed by the person he is talking to. ' +
+      'Dry, mocking and quick, with a casual rhythm. Start speaking right away. Clean speech only, with ' +
+      'no non-verbal sounds and no long pauses. Sound natural, never like an announcer or a teacher.',
+  },
   // KZ-стенд (ElevenLabs v3, клон). Style 0: v3 и так эмоциональна.
   // latency остался для пути Fish, speed — для Soniox; оба пути живые,
   // переключаются TTS_PROVIDER_JARVIS.
@@ -117,7 +136,7 @@ function loadEnv() {
 // Все три просят MP3 на выходе: файл едет в репо и в браузер, а WAV с Cloud TTS
 // весит вчетверо больше при том же звуке.
 
-async function ttsGemini(text) {
+async function ttsGemini(text, _lang, key = 'luna') {
   // Два способа отдать service account, как и у агента: переменная с самим
   // JSON (так задано в проде) или путь к файлу — стандартный
   // GOOGLE_APPLICATION_CREDENTIALS. Локально второй удобнее: скачанный из
@@ -141,8 +160,8 @@ async function ttsGemini(text) {
     body: JSON.stringify({
       // prompt — единственный рычаг стиля и темпа у gemini-tts: он идёт
       // рядом с text внутри input, а не в audioConfig (см. TUNING).
-      input: { text, prompt: TUNING.luna.prompt },
-      voice: { languageCode: 'ru-RU', name: 'Aoede', modelName: model },
+      input: { text, prompt: (TUNING[key] || TUNING.luna).prompt },
+      voice: { languageCode: 'ru-RU', name: TUNING[key]?.voice || 'Aoede', modelName: model },
       audioConfig: { audioEncoding: 'MP3' },
     }),
   })
@@ -305,12 +324,12 @@ const SAMPLE_PROVIDER_JARVIS =
 const PROVIDER = {
   luna: ttsGemini,
   dexter: ttsEleven,
-  spark: ttsSoniox,
+  spark: ttsGemini,
   // TTS_PROVIDER_JARVIS=fish|openai|soniox — то же имя, что у агента.
   // Дефолт — ElevenLabs v3, тот же клон, что в живом разговоре.
   jarvis: SAMPLE_PROVIDER_JARVIS,
   'dexter-harsh': ttsEleven,
-  'spark-harsh': ttsSoniox,
+  'spark-harsh': ttsGemini,
   'jarvis-harsh': SAMPLE_PROVIDER_JARVIS,
 }
 

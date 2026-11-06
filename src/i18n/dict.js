@@ -73,13 +73,13 @@ export const DICT = {
     'tutor.adultHint': 'Жёсткий характер включён: мат и наезды. Нажми, чтобы выключить',
     'tutor.adultHintOff': 'Включить жёсткий характер: мат и наезды',
     'tutor.temper': 'Характер',
-    'tutor.spark.trait1': 'Казахскоязычный',
+    'tutor.spark.trait1': 'Русскоязычный',
     'tutor.spark.trait2': 'Энергичный',
     'tutor.spark.trait3': 'Свой',
     'tutor.spark.desc':
-      'Тьютор специально для казахской аудитории. Объясняет по-казахски и свободно переключается между казахским и английским. Энергичный и свой в доску — подаёт английский через понятные примеры и заряжает «алға, сен істейсің!». С ним английский учится на родном языке.',
+      'Смешной и активный: шутит почти в каждой реплике, но не над тобой. Говорит по-английски и по-русски. Хочешь шуток про себя — включи 18+.',
     'tutor.spark.desc18':
-      'Тот же Спарк, только злой. Матерится по-казахски, орёт за халтуру и за отговорки, добрых слов не жди. По-русски всё так же не говорит — ругается тоже на казахском.',
+      'Колкий Спарк: без мата и оскорблений, но с едкими шутками лично про тебя, твою лень и отговорки. На «не обижай» не сдаётся. Для любого возраста, кто включил кнопку. Правда задел — скажи, шутки прекратятся.',
     'tutor.spark.listen': 'Послушать голос Спарка',
     'tutor.spark.choose': 'Выбрать Спарка',
     // «Луна тест» — dev-only место для тестов Speaking Buddy (JARVIS_ENABLED в
@@ -517,13 +517,13 @@ export const DICT = {
     'tutor.adultHint': 'Қатал мінез қосулы: боқтық пен айқай. Өшіру үшін бас',
     'tutor.adultHintOff': 'Қатал мінезді қосу: боқтық пен айқай',
     'tutor.temper': 'Мінез',
-    'tutor.spark.trait1': 'Қазақша',
+    'tutor.spark.trait1': 'Орысша',
     'tutor.spark.trait2': 'Жігерлі',
     'tutor.spark.trait3': 'Өзіміздікі',
     'tutor.spark.desc':
-      'Қазақ аудиториясына арнайы жасалған тьютор. Ағылшынды қазақша түсіндіреді, қазақша мен ағылшынның арасында еркін ауысады. Жігерлі әрі өзіміздікі — ағылшынды таныс мысалдармен береді және «алға, сен істейсің!» деп жігерлендіреді. Онымен ағылшын ана тіліңде үйреніледі.',
+      'Көңілді әрі белсенді: әр сөзінде дерлік әзілдейді, бірақ сені мазақ етпейді. Ағылшынша және орысша сөйлейді. Әзіл өзіңе тисін десең, 18+ қос.',
     'tutor.spark.desc18':
-      'Сол Спарк, бірақ ашулы. Қазақша боқтайды, салғырттық пен сылтау үшін айқайлайды, жылы сөз күтпе. Орысша бәрібір сөйлемейді — ұрысатыны да қазақша.',
+      'Тілі ащы Спарк: боқтамайды, балағаттамайды, бірақ әзілі өзіңе, жалқаулығың мен сылтауларыңа тиеді. «Ренжітпе» десең де тоқтамайды. Батырманы қосқан кез келген жасқа. Шынымен көңіліңе тисе, айт, әзіл тоқтайды.',
     'tutor.spark.listen': 'Спарк дауысын тыңдау',
     'tutor.spark.choose': 'Спарк таңдау',
     'tutor.jarvis.trait1': 'Сынақтан өтуде',
@@ -931,13 +931,13 @@ export const DICT = {
     'tutor.adultHint': 'Harsh mode on: swearing and shouting. Tap to turn it off',
     'tutor.adultHintOff': 'Turn on harsh mode: swearing and shouting',
     'tutor.temper': 'Character',
-    'tutor.spark.trait1': 'Kazakh-speaking',
+    'tutor.spark.trait1': 'Russian-speaking',
     'tutor.spark.trait2': 'Energetic',
     'tutor.spark.trait3': 'One of us',
     'tutor.spark.desc':
-      'A tutor built specifically for Kazakh learners. Explains English in Kazakh and switches freely between Kazakh and English. Energetic and down-to-earth, he teaches through familiar examples and cheers you on «алға, сен істейсің!». With him you learn English in your own language.',
+      'Funny and active: jokes in almost every line, but never at your expense. Speaks English and Russian. Want the jokes aimed at you? Turn on 18+.',
     'tutor.spark.desc18':
-      'The same Spark, angry. Swears in Kazakh, shouts at half-hearted answers and excuses, and hands out no kind words. He still refuses to speak Russian — even the swearing stays Kazakh.',
+      'Sharp-tongued Spark: no swearing, no insult words, just cutting jokes about you, your laziness and your excuses. Asking him to be nicer does not work. For any age, once the switch is on. If it really hurts, say so and the jokes stop.',
     'tutor.spark.listen': "Listen to Spark's voice",
     'tutor.spark.choose': 'Choose Spark',
     'tutor.jarvis.trait1': 'In testing',
