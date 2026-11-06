@@ -1707,6 +1707,14 @@ TUTOR_MOODS: dict[str, frozenset[str]] = {
     ),
 }
 
+# Эмоции живых Луны и Спарка в разговоре с персоной пакета (07.11.2026, они стали
+# тестовыми) — те же, что у их стендов. В сценарии и проверке уровня говорит прежняя
+# персона, и набор там прежний, по ключу из TUTOR_MOODS.
+BUDDY_LIVE_MOODS: dict[str, frozenset[str]] = {
+    "gentle": TUTOR_MOODS["jarvis"],
+    "hype": TUTOR_MOODS[SPARK_TEST_STAND],
+}
+
 # Префикс «mood:» необязателен: на живых прогонах модель писала тег и как
 # [mood:anger:2], и как [anger:2] — второй вариант регекс не ловил, и служебная
 # метка уезжала в озвучку и субтитры. Без префикса принимаем ТОЛЬКО известные
@@ -2550,8 +2558,12 @@ class TutorAgent(Agent):
         fallback_mood: tuple[str, int] | None = None,
         tag_history: bool = False,
         voice_style: "VoiceStyle | None" = None,
+        moods: frozenset[str] | None = None,
     ):
         super().__init__(instructions=instructions)
+        # Разрешённые эмоции: явный набор (BUDDY_LIVE_MOODS — живые Луна и Спарк с
+        # персоной пакета) или набор тьютора из TUTOR_MOODS.
+        self._moods = moods if moods is not None else TUTOR_MOODS.get((tutor or "").strip().lower())
         # Стиль голоса по тегу эмоции (см. _apply_voice_style). None — синтез
         # без стиля, как у всех тьюторов до «Спарк теста» на Gemini.
         self._voice_style = voice_style
@@ -2572,7 +2584,7 @@ class TutorAgent(Agent):
         # без префикса (GPT) его теряет. None — у тьютора фолбэка нет.
         self._fallback_mood = (
             fallback_mood
-            if fallback_mood and fallback_mood[0] in TUTOR_MOODS.get((tutor or "").strip().lower(), ())
+            if fallback_mood and fallback_mood[0] in (self._moods or ())
             else None
         )
         # Последняя эмоция, которую модель назвала сама в этом звонке; ("", 0) —
@@ -2731,7 +2743,7 @@ class TutorAgent(Agent):
         субтитров, И истории разговора, поэтому служебное вырезается один раз и
         не всплывает ни в голосе, ни в тексте на экране, ни в следующих ходах.
         """
-        allowed = TUTOR_MOODS.get(self._tutor) if self._moods_enabled else None
+        allowed = self._moods if self._moods_enabled else None
         cleaner = _SpeechCleaner(allowed)
         published = False
         # Префилл: только на реплику ученика. После тула модель вправе промолчать
@@ -3719,33 +3731,51 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 # вместо трёх, ребёнку тоже мягкий мат (см. _BUDDY_TIER_BLOCKS). «Спарк тест»
 # получил свой голос — Gemini Fenrir со стилем по тегу (BUDDY_STAND_TTS,
 # BUDDY_VOICE_STYLES).
+#
+# 07.11.2026 решение владельца: тестовые Спарк и Луна заменяют живых, как 14.10
+# Декстер. У hype — сборка «Спарк теста» (два нрава, Gemini Fenrir), у gentle —
+# «Луны теста» (правила _LUNA_RULES_BLOCK, «ты/вы» кодом). Агент один на дев и
+# прод, поэтому сразу везде. Тестовые карточки остаются стендами для следующих
+# правок. Откат на прежнюю персону — секреты SPARK_PROMPT=legacy и
+# LUNA_PROMPT=legacy, без деплоя.
 BUDDY_VOICE_TUTOR = "bro"
 BUDDY_TEST_PERSONA = "dexter"
+LIVE_SPARK = "hype"
+LIVE_LUNA = "gentle"
 # Ключ тьютора в звонке → (персона пакета, тьютор, чью сессию берёт звонок:
 # голос, распознавание, детектор конца речи, температура).
 BUDDY_STANDS: dict[str, tuple[str, str]] = {
-    KZ_DEV_STAND_PERSONA: ("luna", "gentle"),
-    SPARK_TEST_STAND: ("spark", "hype"),
+    KZ_DEV_STAND_PERSONA: ("luna", LIVE_LUNA),
+    SPARK_TEST_STAND: ("spark", LIVE_SPARK),
     BUDDY_VOICE_TUTOR: (BUDDY_TEST_PERSONA, BUDDY_VOICE_TUTOR),
+    LIVE_SPARK: ("spark", LIVE_SPARK),
+    LIVE_LUNA: ("luna", LIVE_LUNA),
 }
+# Ключи, у которых Спарк из пакета в двух нравах (_spark_temper_persona).
+SPARK_STANDS = frozenset({SPARK_TEST_STAND, LIVE_SPARK})
 # Секрет воркера, который возвращает ключ на прежнюю персону (у кого она есть).
 BUDDY_LEGACY_SWITCH: dict[str, str] = {
     KZ_DEV_STAND_PERSONA: "KZ_TEST_PROMPT",
     BUDDY_VOICE_TUTOR: "DEXTER_PROMPT",
+    LIVE_SPARK: "SPARK_PROMPT",
+    LIVE_LUNA: "LUNA_PROMPT",
 }
 # Голос стенда, когда он не совпадает с голосом живого тьютора сессии (ключ →
 # провайдер синтеза; голос — TUTOR_VOICE тьютора сессии, у hype это Fenrir).
 # 22.10.2026 «Спарк тест» перешёл на Gemini TTS (05_App_Settings пакета v3.5):
 # Soniox Спарку достался ради казахского, а новый Спарк казахский не говорит.
-# Живой Спарк остаётся на Soniox. Откат без деплоя — секрет
-# TTS_PROVIDER_SPARKTEST=soniox.
-BUDDY_STAND_TTS: dict[str, str] = {SPARK_TEST_STAND: "gemini"}
+# Откат без деплоя — секрет TTS_PROVIDER_SPARKTEST=soniox.
+# 07.11.2026 живой Спарк — тоже Fenrir, но только в разговоре с персоной пакета:
+# сценарии и проверка уровня у него на прежней персоне, она говорит по-казахски,
+# и голос там прежний (Soniox). Откат голоса — TTS_PROVIDER_HYPE=soniox.
+BUDDY_STAND_TTS: dict[str, str] = {SPARK_TEST_STAND: "gemini", LIVE_SPARK: "gemini"}
 # Стиль голоса по тегу эмоции (ключ стенда → файл пакета). Таблицу пишет клиент,
 # читаем её из файла — один источник правды, как числа уровня в
 # _buddy_level_param. Действует, только если синтез — Gemini: только он берёт
 # стиль текстом (prompt), см. TutorAgent._apply_voice_style.
 BUDDY_VOICE_STYLE_FILES: dict[str, str] = {
     SPARK_TEST_STAND: "05_App_Settings/Spark_Voice_Fenrir.md",
+    LIVE_SPARK: "05_App_Settings/Spark_Voice_Fenrir.md",
     # Ключ — персона, она важнее стенда: у колкого режима тот же голос, но другая подача.
     "spark_sting": "05_App_Settings/Spark_Sting_Voice_Fenrir.md",
 }
@@ -3914,11 +3944,11 @@ def _spark_temper_persona(temper: str) -> str:
 
 
 def buddy_persona_for(p: LearnerProfile) -> str:
-    """Персона пакета для звонка со стендом (у KZ TEST — Луна, у живого Декстера и
-    «Спарк теста» — по нраву звонка)."""
+    """Персона пакета для звонка со стендом (у Луны и KZ TEST — Луна, у Декстера,
+    Спарка и «Спарк теста» — по нраву звонка)."""
     if _stand_key(p) == BUDDY_VOICE_TUTOR:
         return _dexter_temper_persona(p.temper)
-    if _stand_key(p) == SPARK_TEST_STAND:
+    if _stand_key(p) in SPARK_STANDS:
         return _spark_temper_persona(p.temper)
     return BUDDY_STANDS.get(_stand_key(p), (BUDDY_TEST_PERSONA, ""))[0]
 
@@ -3981,7 +4011,9 @@ def buddy_voice_profile(p: LearnerProfile) -> LearnerProfile:
             if key in BUDDY_STAND_TTS
             else ""
         ),
-        stt_kk_context=key != SPARK_TEST_STAND,
+        # Казахская добавка контекста Soniox — не Спарку из пакета: он по-казахски
+        # не говорит (спека 2026-11-04-spark-two-tempers-design.md, «Слух»).
+        stt_kk_context=key not in SPARK_STANDS,
     )
 
 
@@ -6544,10 +6576,15 @@ BUDDY_BRAIN_MODEL = "gpt-6-sol"
 # Haiku 5.5 отвечает быстрее Sol (~0.5 с против ~1.0 с до первого слова).
 # BUDDY_BRAIN_MODEL (Sol) остался мозгом по умолчанию для нового стенда без
 # своей строки; откат «Спарк теста» — BRAIN_MODEL_BUDDY_SPARKTEST=gpt-6-sol.
+# 07.11.2026 живые Спарк и Луна стали тестовыми — мозг тоже их. Откат одного мозга —
+# BRAIN_MODEL_BUDDY_HYPE / BRAIN_MODEL_BUDDY_GENTLE (BRAIN_MODEL_HYPE/_GENTLE у пакета
+# не читаются: они про прежнюю персону).
 BUDDY_STAND_BRAIN_MODEL: dict[str, str] = {
     KZ_DEV_STAND_PERSONA: "claude-haiku-5-5",
     SPARK_TEST_STAND: "claude-haiku-5-5",
     BUDDY_VOICE_TUTOR: "claude-haiku-5-5",
+    LIVE_SPARK: "claude-haiku-5-5",
+    LIVE_LUNA: "claude-haiku-5-5",
 }
 
 
@@ -8239,6 +8276,7 @@ async def entrypoint(ctx: JobContext):
         # тьютора, здесь остаётся только режим.
         moods_enabled=bool(build_mood_block(profile.tutor))
         and not (is_scenario or is_placement or is_debate or is_standalone),
+        moods=BUDDY_LIVE_MOODS.get(_stand_key(profile)) if is_buddy else None,
         # Пусто → tts_node пропускает текст как есть (см. _pronunciation_lang:
         # гейт по провайдеру, чтобы не трогать живого Спарка на проде).
         speech_lang=_pronunciation_lang(buddy_voice_profile(profile)),
