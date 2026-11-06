@@ -1732,6 +1732,10 @@ MOOD_ALIASES: dict[str, tuple[str, int]] = {
     "excited": ("celebrate", 2),
     "default": ("", 0),
     "bored": ("", 0),
+    # Тоже не из списка пакета: Haiku 5.5 пишет его на «будь строже» (comfort=firm
+    # в Luna.md, 2 из 360, замер 05.11.2026). Эмоции в нём нет, но без алиаса слово
+    # ушло бы в озвучку.
+    "firm": ("", 0),
 }
 _MOOD_TAG_NAMES = MOOD_NAMES + tuple(MOOD_ALIASES)
 _MOOD_ALT = "|".join(_MOOD_TAG_NAMES)
@@ -1967,6 +1971,25 @@ class _ReasoningStripper:
 TAG_PREFILL = "["
 
 
+# Выбор «ты/вы» у Луны запоминает код, а не модель. Персона спрашивает, если в контексте
+# нет предпочтения, а мы его не передавали вовсе: замер 05.11.2026 — с фактом «prefers ты» в
+# памяти вопрос в начале звонка 23 из 24, и сама модель такой факт не пишет (log_fact 0 из
+# 24, даже с прямым правилом). То есть ученик слышал бы вопрос в каждом звонке.
+# Просмотр назад: «на выходных» не «на вы», «на тысячу» не «на ты».
+_ADDRESS_ON_RE = _re.compile(r"(?<![а-яё])на\s+(ты|вы)(?![а-яё])", _re.I)
+_ADDRESS_BARE_RE = _re.compile(r"^\W*(ты|вы)\W*$", _re.I)
+_ADDRESS_FACT_RE = _re.compile(r"^prefers (ты|вы)$", _re.I)
+
+
+def buddy_address_choice(text: str) -> str:
+    """Какое обращение выбрал ученик этой репликой: «ты», «вы» или пусто.
+    «На ты или на вы?» — не выбор, а вопрос."""
+    found = {m.lower() for m in _ADDRESS_ON_RE.findall(text or "")}
+    if not found:
+        found = {m.lower() for m in _ADDRESS_BARE_RE.findall(text or "")}
+    return found.pop() if len(found) == 1 else ""
+
+
 def _last_is_user_message(chat_ctx: Any) -> bool:
     """Последний элемент истории — реплика ученика (а не результат тула или
     системное событие вроде приветствия)."""
@@ -2067,6 +2090,51 @@ def _with_asr_note(chat_ctx: Any, words: list[str]) -> Any:
     items = list(ctx.items)
     last = items[-1]
     items[-1] = last.model_copy(update={"content": [*last.content, asr_note(words)]})
+    ctx.items = items
+    return ctx
+
+
+# Вопрос «ты/вы» задан, а ученик ответил о своём. Правило промпта тут ненадёжно: повторный
+# вопрос гулял от 4 до 12 разговоров из 24 от мелкой правки формулировки (замер 05.11.2026).
+# Поэтому пометка рядом с репликой — как asr_note, только в копии истории для мозга.
+_ADDRESS_ASKED_RE = _re.compile(r"«\s*(?:ты|вы)\s*»", _re.I)
+_ADDRESS_NOTE = (
+    "[app note: you already asked «ты» or «вы» and got no answer. "
+    "Use «ты». Do not ask again and do not mention it.]"
+)
+
+
+def buddy_address_note(history: list[tuple[str, str]]) -> str:
+    """Пометка к последней реплике ученика: история — пары (роль, текст) по порядку.
+    Только на первый ответ после вопроса: висящая на всех репликах, она сама подсказывала
+    тему, и на «Maybe.» Луна говорила «Okay, «ты» it is» в 13 разговорах из 24."""
+    replies = None
+    for role, text in history:
+        if role == "user":
+            if buddy_address_choice(text or ""):
+                return ""
+            if replies is not None:
+                replies += 1
+        elif role == "assistant" and replies is None and _ADDRESS_ASKED_RE.search(text or ""):
+            replies = 0
+    return _ADDRESS_NOTE if replies == 1 else ""
+
+
+def _with_address_note(chat_ctx: Any) -> Any:
+    if not _last_is_user_message(chat_ctx):
+        return chat_ctx
+    history = [
+        (it.role, it.text_content or "")
+        for it in chat_ctx.items
+        if getattr(it, "type", None) == "message"
+    ]
+    note = buddy_address_note(history)
+    if not note:
+        return chat_ctx
+    ctx = chat_ctx.copy()
+    items = list(ctx.items)
+    last = items[-1]
+    items[-1] = last.model_copy(update={"content": [*last.content, note]})
     ctx.items = items
     return ctx
 
@@ -2478,6 +2546,7 @@ class TutorAgent(Agent):
         skip_tools: frozenset[str] = frozenset(),
         due_items: tuple[str, ...] = (),
         prefill_tag: bool = False,
+        remember_address: bool = False,
         fallback_mood: tuple[str, int] | None = None,
         tag_history: bool = False,
         voice_style: "VoiceStyle | None" = None,
@@ -2495,6 +2564,9 @@ class TutorAgent(Agent):
         self._stt_guard = None
         # Начинать ли ответ модели с «[» (см. TAG_PREFILL).
         self._prefill_tag = prefill_tag
+        # Запоминать ли выбор «ты/вы» из реплик ученика (см. buddy_address_choice).
+        self._remember_address = remember_address
+        self._address_saved = ""
         # Эмоция реплики, которую модель оставила без тега (см. _reply_mood).
         # Только у Speaking Buddy: там тег обязателен в каждой реплике, а мозг
         # без префикса (GPT) его теряет. None — у тьютора фолбэка нет.
@@ -2668,9 +2740,12 @@ class TutorAgent(Agent):
         self._spoke = False
         self._shown_mood = None
         said: list[str] = []
+        await self._save_address_choice(chat_ctx)
         if self._tag_history:
             chat_ctx = _with_reply_tags(chat_ctx, self._reply_tags)
         chat_ctx = self._mark_uncertain(chat_ctx)
+        if self._remember_address:
+            chat_ctx = _with_address_note(chat_ctx)
         if self._stt_guard is not None:
             # Новый ответ — прежний несказанный (отменённая предварительная
             # генерация) в контекст распознавания уже не пойдёт.
@@ -2783,6 +2858,20 @@ class TutorAgent(Agent):
         tts_obj.update_options(prompt=self._voice_style.prompt(tag, russian))
         # Только имя тега и флаг языка — текст реплики это разговор ученика.
         logger.info("Voice style: tag=%s russian=%s (tutor=%s)", tag, russian, self._tutor or "<none>")
+
+    async def _save_address_choice(self, chat_ctx) -> None:
+        """Записать выбор «ты/вы» в память ученика. Звать можно на каждый заход мозга:
+        упреждающая генерация даёт два захода на реплику, а пишем только новый выбор.
+        Сам _post_json фоновый и ход не задерживает."""
+        if not self._remember_address or not _last_is_user_message(chat_ctx):
+            return
+        choice = buddy_address_choice(chat_ctx.items[-1].text_content or "")
+        if choice and choice != self._address_saved:
+            self._address_saved = choice
+            await self._post_json(
+                "/api/profile/facts",
+                {"deviceId": self._device_id, "items": [f"prefers {choice}"]},
+            )
 
     def _mark_uncertain(self, chat_ctx):
         """Копия истории с пометкой сомнительных слов к реплике ученика — или
@@ -3988,7 +4077,7 @@ def build_buddy_session_context(p: LearnerProfile, persona: str = BUDDY_TEST_PER
             "age_group": _buddy_age_group(p),
             "age_verified": False,
             "gender": p.gender or None,
-            "address_preference": None,
+            "address_preference": _buddy_address_preference(p, persona),
         },
         "selection": {"persona_id": persona, "practice_mode": "free_chat"},
         "language": {
@@ -4125,12 +4214,41 @@ def _buddy_learner_block(p: LearnerProfile) -> str:
     return "\n==== LEARNER ====\n" + "\n".join(lines) + "\n"
 
 
-def _buddy_memory_block(p: LearnerProfile) -> str:
-    has_memory = bool(
+def _buddy_has_memory(p: LearnerProfile) -> bool:
+    return bool(
         p.mistakes or p.topics or p.facts or p.due_reviews or p.due_vocab
         or p.passed_units or p.vocab or p.writing
     )
-    if not has_memory:
+
+
+def _buddy_address_preference(p: LearnerProfile, persona: str) -> dict | None:
+    """Что знаем об обращении ученика — только у Луны: остальные персоны пакета этого не
+    спрашивают, и их контекст обязан остаться прежним. Факты идут от новых к старым.
+    Ученик с памятью — уже не первый звонок: персона велит спрашивать только в первом,
+    а старый факт мог выпасть из десятка последних, поэтому по умолчанию «ты»."""
+    if persona != "luna":
+        return None
+    for fact in p.facts:
+        m = _ADDRESS_FACT_RE.match((fact or "").strip())
+        if m:
+            register = "informal" if m.group(1).lower() == "ты" else "formal"
+            return {"register": register, "name_form": None}
+    return {"register": "informal", "name_form": None} if _buddy_has_memory(p) else None
+
+
+def _buddy_memory_view(p: LearnerProfile, persona: str) -> LearnerProfile:
+    """Профиль для блока памяти Луны: без факта об обращении, он служебный. В живом звонке с
+    единственным фактом «prefers вы» Луна начала «You prefer «вы»… Last time we talked about
+    the lake»: блок памяти не пуст, вот она и нашла, что вспомнить (05.11.2026). Без факта
+    там стоит «First call… Do not pretend to remember anything»."""
+    if persona != "luna" or not p.facts:
+        return p
+    facts = [f for f in p.facts if not _ADDRESS_FACT_RE.match((f or "").strip())]
+    return _dc_replace(p, facts=facts) if len(facts) != len(p.facts) else p
+
+
+def _buddy_memory_block(p: LearnerProfile) -> str:
+    if not _buddy_has_memory(p):
         return (
             "\n==== MEMORY ====\n"
             "First call with this learner — nothing from before. Do not pretend to "
@@ -4304,10 +4422,51 @@ _UNDER_18_EXAMPLE_RE = _re.compile(r"under 18|unknown|any rating", _re.I)
 _ADULT_INLINE_RE = _re.compile(r"Adult: “[^”]*”\s*")
 _ADULT_ROTATION_RE = _re.compile(r"rotate [^()]+ \(adult\) or ([^()]+) \(under 18\)")
 
+# Примеры Luna.md, которые модель повторяла почти дословно (замер 05.11.2026, 24
+# разговора): «Quiet things, mostly: rain, tea…» — 21 из 24 на вопрос о вкусах,
+# «Nerves are normal» — 14 из 24 на волнение. Сами черты (вкусы, спокойствие при
+# волнении) остаются в тексте персоны выше примеров. Пример с comfort=firm у нас
+# не работает вовсе (comfort всегда standard) и только подсказывал «Not quite» на
+# реплику без ошибки. Файл клиента не трогаем: он один источник правды, фильтр — здесь.
+_LUNA_DROPPED_EXAMPLES = (
+    "B1 free chat; learner asks what Luna likes",
+    "A1; learner: “Sorry, my English very bad.”",
+    "A2, comfort=firm; learner:",
+)
+_LUNA_ADDRESS_SECTION_RE = _re.compile(r"^## Address: ask first\n.*?(?=^## )", _re.M | _re.S)
+_LUNA_ADDRESS_EXAMPLES = (
+    "A1 first SESSION_START",
+    "B1 first SESSION_START",
+)
+
+
+def _drop_persona_examples(text: str, prefixes: tuple[str, ...]) -> str:
+    """Убирает пары Context/Response по началу Context. Пример, которого в файле нет, значит
+    одно: клиент обновил пакет. Звонок из-за этого падать не должен, поэтому здесь только
+    лог, а ловит такое test_luna_stand.py при обновлении пакета."""
+    for prefix in prefixes:
+        text, hits = _re.subn(
+            rf"^Context: {_re.escape(prefix)}.*\nResponse: `[^`]*`\n*", "", text, flags=_re.M
+        )
+        if hits != 1:
+            logger.error("Luna.md: example found %d times: %s", hits, prefix)
+    return text
+
 
 def _buddy_persona_text(p: LearnerProfile, persona: str) -> str:
     """Файл персоны для этого звонка: ученику младше 18 — без взрослых примеров."""
     text = BUDDY_PERSONAS.get(persona, "")
+    if persona == "luna":
+        text = _drop_persona_examples(text, _LUNA_DROPPED_EXAMPLES)
+        # Обращение известно — вопроса в персоне быть не должно. Поля контекста мало: с
+        # address_preference в контексте и фактом в памяти Haiku 5.5 всё равно спрашивала
+        # в 22 из 24 приветствий (замер 05.11.2026), её вёл этот раздел и его примеры.
+        if _buddy_address_preference(p, persona):
+            text, hits = _LUNA_ADDRESS_SECTION_RE.subn("", text)
+            if hits != 1:
+                logger.error("Luna.md: address section found %d times", hits)
+            text = _drop_persona_examples(text, _LUNA_ADDRESS_EXAMPLES)
+        return text
     # Детский фильтр — только у персоны со ступенями по возрасту: у хулигана
     # ступень одна, и его примеры для всех.
     if (not _buddy_has_profanity(persona) or persona == "dexter_hooligan"
@@ -4371,6 +4530,52 @@ def _buddy_limits_block(lvl: str) -> str:
     )
 
 
+# Правила Луны поверх пакета — самым последним блоком, после лимитов: дальше от конца
+# промпта на 83 тыс. символов Haiku 5.5 их теряет. Сравнение с живой Луной 05.11.2026 (24
+# разговора × 15 реплик + 40 фраз с ошибкой и 24 верных × 3, судья Sonnet 5.5 вслепую): ядро
+# §8 разрешает «Zero corrections», и верная форма звучала на 41 из 118 ошибок против 113 из
+# 119 у живой. Блок перед лимитами давал 77–90 из 119, этот же блок в конце — 105. Без
+# правила 6 (убрали пример с чаем и дождём) Луна рассказывала о своих вечерах как человек
+# (18 из 24), с ним — 0 из 24. Ядро §5 требует приглашение к английскому в каждой реплике, и
+# модель вставляла «Скажи: “I like tea.”» даже в ответ на «ты робот?» (11 из 24). На
+# «будь строже» — «Not quite» без ошибки (8 из 24).
+#
+# Повтор после поправки (06.11.2026, отзыв владельца: «пусть после поправки даёт шанс повторить
+# правильно»): поправка теперь кончается просьбой сказать фразу, а не вопросом по теме (ядро §5
+# «Ask, then wait»), следующий ход — короткое «да» и тема. Замер (40 фраз с ошибкой × 3, 24 верных
+# × 6, судья Sonnet 5.5 вслепую): просьба повторить после поправки 47 из 103 → 98 из 110; верный
+# повтор — «да» и дальше по теме 93 из 95. Без «сравни свою фразу с его» Луна просила повторить и
+# ВЕРНУЮ фразу («Say it in English: …»): 12% верных строк против 3% у базы, со сравнением — 6%.
+# Пример с одним «Your turn.» уходил в речь дословно: в звонке с четырьмя ошибками он повторялся в
+# 21 из 24 звонков, со списком вариантов — в 15. После двух неудачных попыток подряд Луна всё ещё
+# просит в третий раз в 21% — правило «две просьбы — предел» этого не сдвинуло.
+_LUNA_RULES_BLOCK = """
+
+==== LUNA IN THIS CALL (these rules win over anything above on the same point) ====
+1. Errors. Before you reply, check the learner's latest English line for a grammar, word-order, word-form or preposition error, even when the meaning is clear and even early in the call. Compare first: if your right phrase would be the same as their line, there was no error, so quote nothing and ask them to say nothing. Only if there is one: open your reply with the whole right phrase in quotes, never cut off, then a few words reacting to what they said, then ask them to say that phrase once. Ask differently each time in this call: look at how you asked before and pick another way (“Try it?”, “Now you.”, “Say it once.”, “Go on, you say it.”, “Your turn.”, or your own). That request ends your reply: no question about the topic after it. Learner: “My friends was late.” You: “My friends were late.” Late again? Now you. Fix exactly one error. Never “Say it with…”, never name a word to add or remove. Skip the fix only when the line is already correct, they fixed it themselves, they say they are nervous or upset, or the line is not an attempt at English.
+2. Their try. When they have just tried the phrase you gave them: if it is right, say so in two or three fresh words and go back to the topic with one question. If it is still wrong, give the right phrase once more and let them try one last time. Two requests for the same phrase are the limit: after their second try, right or wrong, never ask a third time and do not announce moving on; if it is still wrong, say the right phrase once in passing, then go straight back to the topic with one question. If they skipped it and said something else, answer what they said and do not ask again.
+3. Correct lines. A line that is already correct gets nothing to say again: no phrase in quotes, no “say it”, no other wording to try, not even a nicer one. React to what they said and ask one question. Contractions and a more usual wording are not errors, so no “we usually say”. “Not quite” is only for a real error in the learner's English.
+4. Things that are not answers. A request about how you talk (“be stricter”), a question about you, a language request: agree or answer in a few words, then go back to the last topic with one question in English. If they asked in Russian, answer in Russian and still end with that English question, not with “Скажи по-английски”. Learner: “Ты робот?” You: Да, я ИИ. So what happened next? After “be stricter”, nothing changes except that you fix errors more directly when they happen.
+5. “Say…”. Give a sentence to say only when it contains the form you have just corrected or explained. Never a sentence on a new topic, never one about you, never when they are sad or upset.
+6. «Ты» and «вы». After the greeting these two words do not appear in your replies: no asking again, no reminder. Only when the learner has just said one of them, confirm in two or three words and go on. No clear answer means «ты».
+7. Your tastes. You have no body and no daily life, so no walks, tea or evenings of your own, and you never claim them. Say what appeals to you and that you only know it as an AI, in fresh words each time.
+8. Your own words. Persona lines are samples: do not reuse their wording. Start with a tag from allowed_emotions only."""
+
+
+def _buddy_persona_rules(p: LearnerProfile, persona: str) -> str:
+    if persona != "luna":
+        return ""
+    # Раздел об обращении из персоны убран, когда обращение известно: без этой строки
+    # ученику с «вы» она говорила «скажи» в 3 ответах из 24 (замер 05.11.2026).
+    preference = _buddy_address_preference(p, persona)
+    formal = (
+        "\nThis learner prefers «вы»: in Russian always address them as «вы», also in “Скажите по-английски”."
+        if preference and preference["register"] == "formal"
+        else ""
+    )
+    return _LUNA_RULES_BLOCK + formal
+
+
 def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSONA) -> str:
     """Промпт Speaking Buddy v3: ядро → уровень → обвязка → персона (последней).
 
@@ -4390,7 +4595,7 @@ def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSON
         + BUDDY_LEVEL_PROFILES.get(lvl, "")
         + "\n"
         + _buddy_learner_block(p)
-        + _buddy_memory_block(p)
+        + _buddy_memory_block(_buddy_memory_view(p, persona))
         + _buddy_tools_block()
         + "\n"
         + _BUDDY_VOICE_FORMAT
@@ -4401,6 +4606,7 @@ def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSON
         + _buddy_persona_text(p, persona)
         + _buddy_tier_block(p, persona)
         + _buddy_limits_block(lvl)
+        + _buddy_persona_rules(p, persona)
     ).strip()
 
 
@@ -4437,12 +4643,23 @@ def build_buddy_greeting(p: LearnerProfile) -> str:
         if angles
         else ""
     )
+    # Обращение решает код, а не модель: рядом с событием правило она слушает, а знание
+    # из контекста — нет (спрашивала в 22 из 24, когда ответ уже был, и пропускала вопрос
+    # в первом звонке в 6 из 24, замер 05.11.2026).
+    address_rule = ""
+    if buddy_persona_for(p) == "luna":
+        address_rule = (
+            "Do not ask about «ты» or «вы», it is settled. "
+            if _buddy_address_preference(p, "luna")
+            else "Ask whether they prefer «ты» or «вы» in Russian: that is the only question in this greeting. "
+        )
     return (
         "Trusted application event: SESSION_START. Follow core section 10: greet once, "
         "in character and in English, with one accessible invitation at the learner's level. "
         + name_rule
         + face_rule
         + angle_rule
+        + address_rule
         + "MEMORY may give the invitation a concrete hook. "
         "Start with your emotion tag. Then stop and wait for the learner."
     )
@@ -8032,6 +8249,7 @@ async def entrypoint(ctx: JobContext):
         # только мозг, который его умеет (_brain_supports_prefill): у OpenAI
         # хвостовая реплика читается как уже сказанная, Sonnet 5 отвечает 400.
         prefill_tag=is_buddy and _brain_supports_prefill(session_brain_model(profile)),
+        remember_address=is_buddy and buddy_persona_for(profile) == "luna",
         # Тег забыт — эмоция последней явной реплики или персоны (см. _reply_mood).
         fallback_mood=buddy_default_mood(buddy_persona_for(profile)) if is_buddy else None,
         # Тег прошлых реплик — обратно в историю для мозга (см. _with_reply_tags).
