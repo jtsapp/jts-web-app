@@ -5610,6 +5610,8 @@ const dict = {
     'ieltsMt.fresh.hint': "recent — added in the last {n} days",
     'ieltsMt.empty': 'No mocks published for this track yet.',
     'ieltsMt.more': 'Details',
+    'ieltsMt.prev': 'Previous tests',
+    'ieltsMt.next': 'Next tests',
     'ieltsMt.continue': 'Continue',
     'ieltsMt.history': 'Attempt history',
     'ieltsMt.col.test': 'Test',

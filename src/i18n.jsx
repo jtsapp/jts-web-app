@@ -5667,6 +5667,8 @@ const dict = {
     'ieltsMt.fresh.hint': "актуальные — добавлены за последние {n} дн.",
     'ieltsMt.empty': 'Для этого трека mock ещё не опубликованы.',
     'ieltsMt.more': 'Подробнее',
+    'ieltsMt.prev': 'Предыдущие тесты',
+    'ieltsMt.next': 'Следующие тесты',
     'ieltsMt.continue': 'Продолжить',
     'ieltsMt.history': 'История попыток',
     'ieltsMt.col.test': 'Тест',

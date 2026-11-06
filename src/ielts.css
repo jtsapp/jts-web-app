@@ -11876,10 +11876,98 @@
   font-size: 26px;
   font-weight: 800;
 }
+/* Доступные mock — лента (MockRow): карточки в строку, прокрутка колесом, полосой и перетаскиванием мышью */
+.ih-mtrow {
+  --mt-fade: #faf9fd; /* фон раздела (.ih) — в него уходит край ленты */
+  position: relative;
+}
 .ih-mt__cards {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
   gap: 16px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  padding-bottom: 10px;
+  cursor: grab;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ih-line) transparent;
+}
+.ih-mt__cards::-webkit-scrollbar {
+  height: 8px;
+}
+.ih-mt__cards::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: var(--ih-line);
+}
+.ih-mt__cards::-webkit-scrollbar-thumb:hover {
+  background: #cfc9e0;
+}
+.ih-mt__cards.is-drag {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  user-select: none;
+}
+.ih-mt__cards > .ih-mt__card {
+  flex: 0 0 min(400px, 85%);
+  scroll-snap-align: start;
+}
+/* край ленты: плавный переход из фона раздела в карточку; стрелка — только при наведении на этот край */
+.ih-mtrow__side {
+  position: absolute;
+  top: 0;
+  bottom: 10px; /* полоса прокрутки остаётся доступной */
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  width: 88px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s;
+}
+.ih-mtrow__side.is-prev {
+  left: 0;
+  justify-content: flex-start;
+  background: linear-gradient(to right, var(--mt-fade) 15%, transparent);
+}
+.ih-mtrow__side.is-next {
+  right: 0;
+  justify-content: flex-end;
+  background: linear-gradient(to left, var(--mt-fade) 15%, transparent);
+}
+.ih-mtrow.has-prev .ih-mtrow__side.is-prev,
+.ih-mtrow.has-next .ih-mtrow__side.is-next {
+  opacity: 1;
+  visibility: visible;
+}
+.ih-mtrow__arrow {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 4px;
+  border: 1px solid var(--ih-line);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ih-ink);
+  box-shadow: 0 4px 14px rgb(35 32 43 / 12%);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.ih-mtrow__side:hover .ih-mtrow__arrow,
+.ih-mtrow__arrow:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.ih-mtrow__arrow:hover {
+  color: var(--ih-violet);
+}
+/* без мыши наводить нечем: стрелок нет, лента листается пальцем */
+@media (hover: none) {
+  .ih-mtrow__arrow {
+    display: none;
+  }
 }
 .ih-mt__card {
   display: flex;
@@ -12582,7 +12670,6 @@
   }
 }
 @media (max-width: 760px) {
-  .ih-mt__cards,
   .ih-mres__grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -14274,6 +14361,10 @@
 }
 .ih-mt__card .ih-mtsec {
   flex-basis: 100%;
+}
+/* в карточке ленты секции — всегда сеткой 2×2 */
+.ih-mt__card .ih-mtsec ul {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .ih-mtsec__s {
   display: flex;
