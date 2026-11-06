@@ -103,7 +103,7 @@ describe('Цель уровня на «Главной»', () => {
 
     const hello = await screen.findByRole('dialog', { name: 'Добро пожаловать!' })
     fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
-    const step = await screen.findByRole('dialog', { name: 'Здесь виден ваш прогресс' })
+    const step = await screen.findByRole('dialog', { name: 'Здесь виден твой прогресс' })
     expect(within(step).queryAllByRole('radio')).toHaveLength(0)
     expect(screen.queryByRole('dialog', { name: 'Твоя цель' })).toBe(null)
     expect(goalPuts()).toEqual([])

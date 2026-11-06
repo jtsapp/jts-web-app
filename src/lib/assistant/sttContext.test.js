@@ -33,7 +33,7 @@ describe('контекст Soniox', () => {
   it('имена экранов разбиты по стрелке, без кавычек и скобок', () => {
     const { terms } = sttContext({})
     expect(terms).toContain('Шэдоуинг')
-    expect(terms).toContain('Профиль Вы')
+    expect(terms).toContain('Профиль')
     expect(terms.some((t) => /[→«»()]/.test(t))).toBe(false)
   })
 

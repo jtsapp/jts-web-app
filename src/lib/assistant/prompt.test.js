@@ -21,8 +21,14 @@ import {
   ITEMS_HINT,
   ITEMS_GUESS_HINT,
   ITEMS_FOLLOWUP_HINT,
+  questionLang,
 } from './prompt.js'
-import { KNOWLEDGE, KNOWLEDGE_MAX_CHARS, knowledgeText } from './knowledge.js'
+import { KNOWLEDGE, KNOWLEDGE_MAX_CHARS, articlesFor, knowledgeText } from './knowledge.js'
+import { PERSONAS } from './persona.js'
+import { addressHint } from './turnHints.js'
+
+// Обращение рядом с каждым ходом (turnHints.js, зонд 07.11.2026).
+const ADDR = addressHint('ru')
 
 const ask = (content, extra = {}) => ({ messages: [{ role: 'user', content }], ...extra })
 
@@ -179,7 +185,8 @@ describe('контекст вопроса', () => {
     })
     expect(turns[0].content).toBe('первый')
     expect(turns[1].content).toBe('ответ')
-    expect(turns[2].content).toMatch(/^<контекст>[\s\S]*<\/контекст>\n\nВопрос ученика: второй$/)
+    expect(turns[2].content).toMatch(/^<контекст>[\s\S]*<\/контекст>\n\nВопрос ученика: второй\n\n/)
+    expect(turns[2].content.endsWith(ADDR)).toBe(true)
   })
 
   it('не портит переданные сообщения', () => {
@@ -221,9 +228,38 @@ describe('системный промпт', () => {
     expect(buildSystemPrompt()).toBe(buildSystemPrompt())
   })
 
-  it('содержит всю базу знаний', () => {
+  it('содержит всю базу знаний стенда', () => {
     const prompt = buildSystemPrompt()
-    for (const article of KNOWLEDGE) expect(prompt).toContain(`### ${article.title}`)
+    for (const article of articlesFor({ rewards: false })) expect(prompt).toContain(`### ${article.title}`)
+    const withRewards = buildSystemPrompt(PERSONAS.luna, { rewards: true })
+    for (const article of articlesFor({ rewards: true })) expect(withRewards).toContain(`### ${article.title}`)
+  })
+
+  // Токены и призы на проде выключены (areRewardsEnabled): там Луна не зовёт в «Мои токены» (решение 07.11.2026).
+  it('статья о токенах — только где они включены, о монетах — только где выключены', () => {
+    expect(buildSystemPrompt()).not.toContain('### Токены и призы')
+    expect(buildSystemPrompt()).toContain('### Монеты и серия дней')
+    const withRewards = buildSystemPrompt(PERSONAS.luna, { rewards: true })
+    expect(withRewards).toContain('### Токены и призы')
+    expect(withRewards).not.toContain('### Монеты и серия дней')
+    expect(withRewards).toMatch(/ночью спишутся токены/)
+    expect(parseChatRequest(ask('где токены', { rewards: true })).rewards).toBe(true)
+    expect(parseChatRequest(ask('где токены', { rewards: 'yes' })).rewards).toBe(false)
+  })
+
+  // Аудит ТЗ v2.0 (06.11.2026): «на «ты»», жалобы — в Feedback, правила школы, шаблоны учителя.
+  it('правила ТЗ v2.0: «ты» без родовых форм, Feedback, правила школы, учитель английского', () => {
+    const rules = buildSystemPrompt()
+    expect(rules).toMatch(/Обращайся к ученику на «ты»/)
+    expect(rules).toMatch(/Пол ученика неизвестен/)
+    expect(rules).not.toMatch(/Обращайся на «вы»/)
+    expect(rules).toContain('[[OPEN feedback]]')
+    expect(rules).toMatch(/общий чат WhatsApp/)
+    expect(rules).toMatch(/не позднее чем за 3 часа/)
+    expect(rules).toMatch(/проверочный вопрос/)
+    expect(rules).toMatch(/было → стало → почему/)
+    expect(rules).toMatch(/1–2 альтернативы/)
+    expect(rules).toMatch(/не обещай «напомню»/)
   })
 
   it('знает метку нажатия кнопки и что жать нельзя', () => {
@@ -284,6 +320,19 @@ describe('база знаний', () => {
 
   // Цены приходят с бэкенда и меняются; устаревшая цифра в ответе помощника —
   // это обещание, которое школа не давала.
+  // support@justtostudy.kz у школы нет: модель называла его ученикам (аудит 06.11.2026).
+  it('не называет несуществующий адрес и знает официальные контакты', () => {
+    for (const rewards of [false, true]) {
+      const kb = knowledgeText(PERSONAS.luna, { rewards })
+      // Единственное упоминание — запрет: «адреса support@justtostudy.kz не существует».
+      expect(kb.split('support@justtostudy.kz')).toHaveLength(2)
+      expect(kb).toContain('адреса support@justtostudy.kz не существует')
+      expect(kb).toContain('justtostudy01@gmail.com')
+      expect(kb).toContain('### Feedback — отзывы и жалобы')
+      expect(kb).toContain('### Правила обучения школы: перенос, отмена, заморозка')
+    }
+  })
+
   it('не называет цен', () => {
     expect(knowledgeText()).not.toMatch(/\d[\d\s]*₸|тенге|\$\s?\d/)
   })
@@ -337,6 +386,8 @@ describe('голосовой вопрос', () => {
     const last = turns.at(-1).content
     expect(last.endsWith(`Вопрос ученика: где домашка
 
+${ADDR}
+
 ${VOICE_MARK}`)).toBe(true)
     expect(last.slice(0, last.indexOf('</контекст>'))).not.toContain(VOICE_MARK)
   })
@@ -370,6 +421,8 @@ describe('первая реплика: ученик открыл окно', () =
 ${OPENING_MARK}
 Язык ответа: русский
 Не больше 4 коротких предложений.
+
+${ADDR}
 
 ${VOICE_MARK}`)).toBe(true)
   })
@@ -410,7 +463,9 @@ ${VOICE_MARK}`)).toBe(true)
     expect(parsed.messages.map((m) => m.role)).toStrictEqual(['user', 'assistant', 'user'])
     const turns = buildTurns({ ...parsed, user: null })
     expect(turns[0].content).toBe(OPENING_MARK)
-    expect(turns.at(-1).content).toMatch(/Вопрос ученика: да$/)
+    expect(turns.at(-1).content.endsWith(`Вопрос ученика: да
+
+${ADDR}`)).toBe(true)
   })
 
   it('как отвечать на открытие — в правилах: экран, подсказка до проверки, совет с меткой', () => {
@@ -460,7 +515,11 @@ describe('ученик позвал голосом', () => {
     expect(last).not.toContain('Вопрос ученика:')
     expect(last).not.toContain('Совет сайта')
     expect(last).toContain(`</контекст>\n\n${WAKE_MARK}\nЯзык ответа: русский\nУченик сам позвал тебя голосом`)
-    expect(last).toMatch(/Не больше 3 коротких предложений\.\n\n\[голосом\]$/)
+    expect(last.endsWith(`Не больше 3 коротких предложений.
+
+${ADDR}
+
+[голосом]`)).toBe(true)
   })
 
   it('на непроверенном задании — и тут без оценки ответа', () => {
@@ -486,7 +545,11 @@ describe('ученик застрял и нажал «Подсказать?»', 
     expect(last).toContain(`</контекст>\n\n${STUCK_ERRORS_MARK}\nЯзык ответа: русский\nУченик застрял на задании на экране (две неверные проверки подряд)`)
     expect(last).toContain('Сайт уже показал верный ответ')
     expect(last).toContain('без метки')
-    expect(last).toMatch(/Не больше 4 коротких предложений\.\n\n\[голосом\]$/)
+    expect(last.endsWith(`Не больше 4 коротких предложений.
+
+${ADDR}
+
+[голосом]`)).toBe(true)
   })
 
   // Эталона нет — сайт даёт перепробовать: зонд 28.10 без этого указания 2 из 8 раз ловил «went».
@@ -533,5 +596,26 @@ describe('каталог «Что можно открыть»', () => {
     const rules = buildSystemPrompt()
     expect(rules).toContain('только когда в <контекст> есть список «Что можно открыть»')
     expect(rules).toContain('Пометка «закрыт» — не открывай')
+  })
+})
+
+describe('язык вопроса рядом с вопросом', () => {
+  it.each([
+    ['Where can I practise speaking?', 'en'],
+    ['ok', null],
+    ['yes please', null],
+    ['Маған бүгін не істеу керек?', 'kk'],
+    ['Проверь: Yesterday I have went to the cinema', 'ru'],
+    ['', null],
+  ])('%j → %s', (text, lang) => {
+    expect(questionLang(text)).toBe(lang)
+  })
+
+  // Аудит ТЗ v2.0: на английский вопрос при русском интерфейсе Луна отвечала по-русски.
+  it('вопрос на другом языке, чем интерфейс, — указание языка ответа', () => {
+    const last = buildTurns({ ...parseChatRequest(ask('Where can I practise speaking?')), user: null }).at(-1).content
+    expect(last.endsWith('Вопрос ученика: Where can I practise speaking?\n\nЯзык ответа: английский — на нём задан вопрос.')).toBe(true)
+    const same = buildTurns({ ...parseChatRequest(ask('где потренировать говорение?')), user: null }).at(-1).content
+    expect(same).not.toContain('Язык ответа')
   })
 })

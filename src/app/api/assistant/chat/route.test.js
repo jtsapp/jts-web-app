@@ -456,7 +456,8 @@ describe('POST /api/assistant/chat', () => {
       const last = calls[0].messages.at(-1).content
       expect(last).toMatch(/Сегодня: \d{4}-\d{2}-\d{2}/)
       expect(last).toMatch(/<\/контекст>\n\n\[ученик открыл окно\]\nЯзык ответа: русский\n/)
-      expect(last).toMatch(/Не больше 4 коротких предложений\.$/)
+      // Последней строкой — обращение (turnHints.js, зонд 07.11.2026).
+      expect(last).toMatch(/Не больше 4 коротких предложений\.\n\nОбращение — на «ты»/)
       expect(last).not.toContain('Вопрос ученика:')
     })
 
