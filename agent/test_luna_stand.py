@@ -117,6 +117,11 @@ assert luna_text.index("==== LIMITS FOR EVERY REPLY") < luna_text.index("==== LU
 dexter = LearnerProfile(tutor="bro", level="A2", lang="ru", explanation_lang="ru")
 assert "==== LUNA IN THIS CALL" not in build_buddy_instructions(dexter, buddy_persona_for(dexter))
 assert "==== LUNA IN THIS CALL" not in A.build_instructions(luna), "живая Луна — без правок стенда"
+# 06.11.2026: после поправки — просьба повторить и не больше двух на фразу (замер в шапке блока).
+rules = luna_text[luna_text.index("==== LUNA IN THIS CALL"):]
+assert "then ask them to say that phrase once" in rules and "2. Their try." in rules
+assert "Two requests for the same phrase are the limit" in rules
+assert "if your right phrase would be the same as their line" in rules, "без сравнения просила повторить верное"
 
 # Примеры, которые модель копировала, вырезаны, а черты персоны остались.
 persona_text = A._buddy_persona_text(p, "luna")
