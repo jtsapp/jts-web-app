@@ -185,3 +185,45 @@ describe('метка с адресом вещи', () => {
     expect(actionMarker(action)).toBe('[[OPEN course.B1.L2]]')
   })
 })
+
+// ТЗ v2.0, этап 1: жалоба со словами ученика — Feedback открывается с категорией и черновиком; отправляет ученик сам.
+describe('метка обращения в Feedback', () => {
+  const draft = 'Преподаватель опоздал на урок 5 ноября на 15 минут, урок начался позже.'
+
+  it('категория и черновик: метка вырезана целиком, даже кусками по символу', () => {
+    for (const size of [1, 3, 7, 1000]) {
+      const { out, action } = run(`Сочувствую. Это «Жалоба на преподавателя». Открыть с черновиком?\n[[FEEDBACK teacher | ${draft}]]`, size)
+      expect(out).toBe('Сочувствую. Это «Жалоба на преподавателя». Открыть с черновиком?\n')
+      expect(action).toEqual({ kind: 'open', target: 'feedback', now: false, feedback: { category: 'teacher', draft } })
+    }
+  })
+
+  it('_NOW, без черновика, регистр категории прощаем; чужая категория — не действие', () => {
+    expect(run('Открываю.\n[[FEEDBACK_NOW Platform]]').action).toEqual({ kind: 'open', target: 'feedback', now: true, feedback: { category: 'platform', draft: '' } })
+    const bad = run('Открыть?\n[[FEEDBACK boss | Плохо]]')
+    expect(bad.out).toBe('Открыть?\n[[FEEDBACK boss | Плохо]]')
+    expect(bad.action).toBe(null)
+  })
+
+  it('черновик чистится: одна строка, без «» и не длиннее 600 символов', () => {
+    const long = 'Менеджер «не отвечает»\n\nтри дня. '.repeat(40)
+    const { action } = run(`Понимаю.\n[[FEEDBACK manager | ${long}]]`, 50)
+    expect(action.feedback.category).toBe('manager')
+    expect(action.feedback.draft.length).toBe(600)
+    expect(action.feedback.draft).not.toMatch(/[«»\n]/)
+  })
+
+  it('хвост стрима кодирует черновик; клиент разбирает обратно; метка истории — в формате модели', () => {
+    const action = { kind: 'open', target: 'feedback', now: false, feedback: { category: 'review', draft: 'Спасибо за урок — было 100% понятно!' } }
+    const tail = actionTail(action)
+    expect(tail.startsWith('[[ASST_ACTION feedback review offer ')).toBe(true)
+    // Черновик в хвосте — без пробелов, скобок и «»: разбор хвоста не споткнётся.
+    expect(tail.slice(2, -2).split(' ')[4]).not.toMatch(/[\s[\]«»]/)
+    const f = createServiceTailFilter()
+    for (const ch of `Здорово! Открыть с черновиком?\n${tail}`) f.push(ch)
+    f.flush()
+    expect(f.action).toEqual(action)
+    expect(actionMarker(action)).toBe('[[FEEDBACK review | Спасибо за урок — было 100% понятно!]]')
+    expect(actionTail({ kind: 'open', target: 'feedback', now: true, feedback: { category: 'teacher', draft: '' } })).toBe('[[ASST_ACTION feedback teacher now]]')
+  })
+})

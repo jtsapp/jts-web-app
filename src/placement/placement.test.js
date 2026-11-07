@@ -4,7 +4,7 @@ import { envelopeSummary, levelFromEnvelope, validateEnvelope, MAX_ENVELOPE_BYTE
 import { geProfileBody, purposeFromGoals } from './geMapping.js'
 import { navForActivity, navForSection } from './activityRoutes.js'
 import { bandFor, pickTopic, topicById, TOPICS } from './speakingTopics.js'
-import { homeReport, reportView } from './reportModel.js'
+import { homeReport, reportView, withProfileGoal } from './reportModel.js'
 import { installBridge, readEnvelope } from './bridge.js'
 import { isExistingStudent } from './existingStudent.js'
 import { feedbackHtml, pickFeedback } from './speakingFeedback.js'
@@ -135,6 +135,20 @@ describe('reportModel', () => {
     expect(v.activities.length).toBeGreaterThan(0)
     expect(v.activities[0].nav).toEqual({ key: 'reading', payload: { level: 'b1' } })
     expect(v.completedAt).toBe('2026-10-14T10:00:00.000Z')
+  })
+
+  // ТЗ v2.0: цель B1 на баннере и B2 в блоке «Цель» отчёта. Цель профиля GE главнее предложенной тестом.
+  it('цель профиля GE заменяет цель теста; «уже достигнута» пересчитывается, чужое объяснение снимается', () => {
+    const v = reportView(env(), 'ru')
+    expect(v.target).toBe('B1')
+    expect(v.targetExplanation).not.toBe(null)
+    const up = withProfileGoal(v, 'B2')
+    expect(up).toMatchObject({ target: 'B2', targetAlreadyMet: false, targetExplanation: null })
+    expect(withProfileGoal(v, 'A2')).toMatchObject({ target: 'A2', targetAlreadyMet: true })
+    // Та же цель или цели нет — отчёт как есть.
+    expect(withProfileGoal(v, 'B1')).toBe(v)
+    expect(withProfileGoal(v, null)).toBe(v)
+    expect(withProfileGoal(null, 'B2')).toBe(null)
   })
 
   it('без конверта — нечего рисовать', () => {

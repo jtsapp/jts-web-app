@@ -88,6 +88,30 @@ describe('Луна открывает разделы', () => {
     expect(navigations).toEqual(['practice-speaking'])
   })
 
+  // ТЗ v2.0, этап 1: жалоба со словами ученика — кнопка открывает Feedback с категорией и черновиком.
+  it('Feedback с черновиком: кнопка ведёт в раздел с категорией и текстом, в истории — метка модели', async () => {
+    const draft = 'Преподаватель опоздал на урок на 15 минут.'
+    const payloads = []
+    const onPayload = (e) => payloads.push(e.detail.payload)
+    window.addEventListener(NAVIGATE_EVENT, onPayload)
+    fetchMock
+      .mockResolvedValueOnce(streamResponse(['Сочувствую. Это «Жалоба на преподавателя». Открыть с черновиком?\n', `[[ASST_ACTION feedback teacher offer ${encodeURIComponent(draft)}]]`]))
+      .mockResolvedValueOnce(streamResponse(['Хорошо.']))
+    renderWidget()
+    ask('преподаватель опоздал на 15 минут')
+    const btn = await screen.findByRole('button', { name: 'Открыть Feedback с черновиком' }, WAIT)
+    expect(screen.queryByText(/ASST_ACTION/)).toBeNull()
+    fireEvent.click(btn)
+    expect(navigations).toEqual(['feedback'])
+    expect(payloads).toEqual([{ category: 'teacher', draft }])
+    window.removeEventListener(NAVIGATE_EVENT, onPayload)
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'спасибо' } })
+    fireEvent.submit(screen.getByRole('textbox').closest('form'))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2), WAIT)
+    const sent = JSON.parse(fetchMock.mock.calls[1][1].body).messages
+    expect(sent[1].content).toBe(`Сочувствую. Это «Жалоба на преподавателя». Открыть с черновиком?\n[[FEEDBACK teacher | ${draft}]]`)
+  })
+
   it('«да» — модель видит, что предлагала, и раздел открывается сам', async () => {
     fetchMock
       .mockResolvedValueOnce(streamResponse(['Это в Словаре. Открыть?\n[[ASST_ACTION open vocab offer]]']))

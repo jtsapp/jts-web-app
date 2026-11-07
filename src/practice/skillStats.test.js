@@ -4,7 +4,7 @@
 // следующего, а неудача — вернуть чужие дельты в буфер (их отправили бы уже
 // под новым токеном).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { recordSkill, flushSkillStats, clearLocalSkillStats, readLocalSkillStats } from './skillStats.js'
+import { recordSkill, flushSkillStats, clearLocalSkillStats, readLocalSkillStats, readLocalLevelSkillStats, setSkillLevel, loadLevelSkillStatsRemote } from './skillStats.js'
 
 const TOKEN_KEY = 'jts_access_token'
 
@@ -191,5 +191,48 @@ describe('skillStats — забитое хранилище', () => {
     expect(readLocalSkillStats().grammar).toMatchObject({ done: 0 })
     flushSkillStats()
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+// ТЗ v2.0, 5.5: попытка помнит уровень задания — «Сильные и слабые стороны» считаются по текущему уровню.
+describe('skillStats — по уровню', () => {
+  it('уровень задания, иначе уровень ученика; без уровня — только общий итог', async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ stats: {} }) }))
+    vi.stubGlobal('fetch', fetchMock)
+    recordSkill('grammar', true)
+    setSkillLevel('a2')
+    recordSkill('grammar', false)
+    recordSkill('reading', true, 'B1')
+    expect(readLocalLevelSkillStats('A2').grammar).toEqual({ done: 1, firstTry: 0 })
+    expect(readLocalLevelSkillStats('B1').reading).toEqual({ done: 1, firstTry: 1 })
+    expect(readLocalSkillStats().grammar).toEqual({ done: 2, firstTry: 1 })
+    flushSkillStats()
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect(body.deltas.grammar).toEqual({ done: 2, firstTry: 1 })
+    expect(body.byLevel.A2.grammar).toEqual({ done: 1, firstTry: 0 })
+    expect(body.byLevel.B1.reading).toEqual({ done: 1, firstTry: 1 })
+  })
+
+  // Уровень ученика ставит App только при смене уровня: выход его не сбрасывает, иначе следующий вход с тем же
+  // уровнем писал бы попытки без уровня.
+  it('выход забывает навыки уровня, но не уровень ученика', () => {
+    setSkillLevel('B2')
+    recordSkill('vocab', true)
+    clearLocalSkillStats()
+    expect(readLocalLevelSkillStats('B2').vocab).toEqual({ done: 0, firstTry: 0 })
+    recordSkill('vocab', false)
+    expect(readLocalLevelSkillStats('B2').vocab).toEqual({ done: 1, firstTry: 0 })
+    setSkillLevel(null)
+  })
+
+  it('с сервера: навыки уровня в зеркало; не ответил — null', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => ({ ok: true, json: async () => ({ stats: {}, level: 'B1', levelStats: { listening: { done: 9, firstTry: 6 } }, url }) })))
+    const got = await loadLevelSkillStatsRemote('TOK-A', 'b1')
+    expect(fetch.mock.calls[0][0]).toBe('/api/skills?level=B1')
+    expect(got.listening).toEqual({ done: 9, firstTry: 6 })
+    expect(readLocalLevelSkillStats('B1').listening).toEqual({ done: 9, firstTry: 6 })
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false })))
+    expect(await loadLevelSkillStatsRemote('TOK-A', 'B1')).toBe(null)
+    expect(await loadLevelSkillStatsRemote('TOK-A', 'IELTS')).toBe(null)
   })
 })

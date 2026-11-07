@@ -32,7 +32,11 @@
 
 import { BACKEND_URL, profileIdForUser, fetchTutorLimitOverride } from '../auth-server.js'
 import { isDbConfigured } from '../db/sql.js'
-import { rankSkills, skillHighlights } from '../levelProgress.js'
+import { levelSkillHighlights, rankLevelSkills } from '../levelProgress.js'
+import { loadLevelSkillStats } from '../db/skillStats.js'
+import { skillLevel } from '../../practice/skillStatsCore.js'
+import { homeworkCards } from '../homeworkList.js'
+import { geGoalLine, gePlanToday, homeworkLine, lessonsPackageLine, tokensLine } from './contextLines.js'
 import { buildStudentAppActivity, loadStudentAppActivity } from '../db/studentActivity.js'
 import { loadAdviceNotes, loadTutorMistakes, loadTutorSessionsSince, markAdviceDone } from '../db/assistantTracker.js'
 import { listIeltsScores } from '../db/ielts.js'
@@ -66,41 +70,9 @@ async function authGetJson(path, token) {
 
 const settled = (r) => (r.status === 'fulfilled' ? r.value : null)
 
-const dueSoonMs = 4 * 24 * 60 * 60 * 1000 // домашка в горизонте плана «на неделю»
-const OPEN_HOMEWORK_DONE = new Set(['SUBMITTED', 'CHECKED', 'COMPLETED', 'GRADED'])
-
 function fmtDate(iso) {
   const d = new Date(iso)
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
-}
-
-const DAY_MS = 24 * 60 * 60 * 1000
-
-// Сколько дней до срока — считаем сами: с одной датой «Сегодня» Haiku называла
-// срок через два дня «завтра» или «уже просрочено» (замер 15.10.2026). Дни
-// календарные, по UTC, как и сами даты строки.
-function dueIn(iso, now) {
-  const due = fmtDate(iso)
-  if (!due) return ''
-  const days = Math.round((Date.parse(due) - Date.parse(new Date(now).toISOString().slice(0, 10))) / DAY_MS)
-  if (days < 0) return ' (просрочено)'
-  if (days === 0) return ' (сегодня)'
-  if (days === 1) return ' (завтра)'
-  return ` (через ${days} дн.)`
-}
-
-function homeworkLines(homework, now) {
-  const open = (Array.isArray(homework) ? homework : [])
-    .filter((h) => !OPEN_HOMEWORK_DONE.has(String(h?.status || '').toUpperCase()))
-    .filter((h) => {
-      const t = h?.dueDate ? new Date(h.dueDate).getTime() : NaN
-      return Number.isNaN(t) || t - now <= dueSoonMs
-    })
-  if (!open.length) return null
-  const items = open
-    .slice(0, 5)
-    .map((h) => `«${String(h.title || 'задание').slice(0, 80)}»${h.dueDate ? ` — до ${fmtDate(h.dueDate)}${dueIn(h.dueDate, now)}` : ' — без срока'}`)
-  return `Домашка (${open.length} к сроку на этой неделе): ${items.join('; ')}.`
 }
 
 function scheduleLines(occurrences, now) {
@@ -119,11 +91,13 @@ function scheduleLines(occurrences, now) {
   return `Ближайшие занятия: ${items.join('; ')}.`
 }
 
-function skillsLine(stats) {
-  const ranked = rankSkills(stats)
-  if (!ranked.length || ranked.every((r) => r.percent === 0)) return null
-  const named = ranked.map((r) => `${r.skill} ${r.percent}%`)
-  return `Точность по навыкам (первая попытка): ${named.join(', ')}.`
+// Навыки — по заданиям текущего уровня, той же формулой, что «Сильные и слабые стороны» на «Главной» и в Профиле
+// (levelShare; ТЗ v2.0, 5.5). «Мало данных» — меньше пяти заданий уровня: такой навык ни сильным, ни слабым не называть.
+function skillsLine(stats, level) {
+  const ranked = rankLevelSkills(stats)
+  if (!ranked.some((r) => r.done > 0)) return null
+  const named = ranked.map((r) => (r.percent == null ? `${r.skill} — мало данных (${r.done})` : `${r.skill} ${r.percent}% (${r.done})`))
+  return `Навыки (уровень ${level}, % верных с первой попытки в заданиях этого уровня, в скобках — число заданий): ${named.join(', ')}.`
 }
 
 function tutorLine(limit, ecosystemWeek) {
@@ -166,18 +140,22 @@ const ADVICE_REASONS = {
   'home.recommend.noLesson': () => 'больше двух недель без живого занятия',
 }
 
-// Что сделать сейчас — тем же правилом, что карточка «Рекомендация дня» на
-// «Главной» (recommend.js): Луна-преподаватель и карточка не должны советовать
-// разное. Строка несёт и метку раздела: без неё Haiku в первой реплике треть раз
-// советовала словами, а кнопку «Открыть» не ставила (замер 15.10.2026).
-export function adviceLine({ homework, occurrences, skillStats, now = Date.now() }) {
-  const summary = { weakest: skillStats ? skillHighlights(rankSkills(skillStats)).weakest : null }
+// Что сделать сейчас — тем же правилом, что карточка «Рекомендация дня» на «Главной» (recommend.js), но с планом дня.
+// Порядок: горящая домашка (просрочена или сдавать в ближайшие двое суток) → следующий шаг плана General English (тот
+// же, что в блоке «Сегодня», ТЗ v2.0: «следующий шаг = next_step») → остальные правила рекомендации. Домашки в плане
+// нет (решение владельца 07.11.2026: «Сегодня» без задач преподавателя), но и «сначала урок курса» при просрочке —
+// то самое «всё сделано», которое ТЗ запрещает. Строка несёт и метку раздела: без неё Haiku в первой реплике треть
+// раз советовала словами, а кнопку «Открыть» не ставила (замер 15.10.2026).
+export function adviceLine({ homework, occurrences, skillStats, planNext = null, now = Date.now() }) {
+  const summary = { weakest: skillStats ? levelSkillHighlights(rankLevelSkills(skillStats)).weakest : null }
   const rec = pickRecommendation({
     summary,
     homework: Array.isArray(homework) ? homework : [],
     occurrences: Array.isArray(occurrences) ? occurrences : [],
     now,
   })
+  const homeworkFirst = rec?.nav?.to === 'homework'
+  if (planNext && !homeworkFirst) return `Совет сайта, что сделать сейчас: ${planNext.name} — ${planNext.reason} (метка [[OPEN ${planNext.id}]]).`
   if (!rec) return null
   // nav карточки → раздел Луны: «Практика» с фильтром — свой раздел (grammar).
   const id = rec.nav.payload?.filter || rec.nav.to
@@ -207,40 +185,48 @@ async function loadTracker(profileId, now) {
  * собралось вообще ничего полезного — тогда помощник просто не получит этот
  * блок и останется без персонализации, а не с пустой строкой в промпте.
  */
-export async function loadStudentContext(token, user, now = Date.now()) {
+/**
+ * opts.rewards — токены и призы включены на стенде (окно шлёт areRewardsEnabled): тогда в профиле их баланс.
+ */
+export async function loadStudentContext(token, user, now = Date.now(), opts = {}) {
   if (!token || !user?.userId) return null
   const profileId = profileIdForUser(user.userId)
+  // Ключ кэша — с токенами или без: прогрев звонка (warmStudentContext) флага стенда не знает и не должен оставить
+  // в кэше профиль без строки токенов для чата, который её ждёт.
+  const key = opts.rewards ? `${profileId}|rewards` : profileId
 
-  const cached = cache.get(profileId)
+  const cached = cache.get(key)
   const age = cached ? now - cached.at : Infinity
   if (age < CONTEXT_TTL_MS) return cached.text
   if (age < CONTEXT_STALE_MS) {
-    refresh(token, profileId, now, user).catch(() => {})
+    refresh(token, profileId, now, user, opts, key).catch(() => {})
     return cached.text
   }
-  return refresh(token, profileId, now, user)
+  return refresh(token, profileId, now, user, opts, key)
 }
 
 /** Начать сборку профиля заранее и не ждать её (звонок Луне — при выдаче токена). */
-export function warmStudentContext(token, user) {
-  loadStudentContext(token, user).catch(() => {})
+export function warmStudentContext(token, user, opts = {}) {
+  loadStudentContext(token, user, Date.now(), opts).catch(() => {})
 }
 
-function refresh(token, profileId, now, user) {
-  let pending = inflight.get(profileId)
+function refresh(token, profileId, now, user, opts = {}, key = profileId) {
+  let pending = inflight.get(key)
   if (!pending) {
-    pending = buildStudentContext(token, profileId, now, user)
+    pending = buildStudentContext(token, profileId, now, user, opts)
       .then((text) => {
-        cache.set(profileId, { at: now, text })
+        cache.set(key, { at: now, text })
         return text
       })
-      .finally(() => inflight.delete(profileId))
-    inflight.set(profileId, pending)
+      .finally(() => inflight.delete(key))
+    inflight.set(key, pending)
   }
   return pending
 }
 
-async function buildStudentContext(token, profileId, now, user) {
+async function buildStudentContext(token, profileId, now, user, { rewards = false } = {}) {
+  // Уровень ученика — уровень аккаунта, как в меню и Профиле: по нему «Сильные и слабые стороны».
+  const level = skillLevel(user?.languageLevel)
   const results = await Promise.allSettled([
     authGetJson('/admin/homework/my', token),
     authGetJson('/admin/lessons/occurrences', token),
@@ -250,9 +236,23 @@ async function buildStudentContext(token, profileId, now, user) {
     isDbConfigured() ? listIeltsScores(profileId, IELTS_HISTORY_LIMIT) : Promise.resolve(null),
     // Формат — та же ручка, что у меню (format.js); демо уже известно из /user/me токена.
     user?.isDemoAccount ? Promise.resolve(null) : authGetJson('/cabinet/my-sections', token),
+    // Задания с урока — второй источник «Домашней работы» (lib/homeworkList.js), пакет уроков — итоги вкладки «Уроки»,
+    // план дня и цель — те же ручки, что у «Главной» (ТЗ v2.0, этап 1).
+    authGetJson('/student/assignments', token),
+    authGetJson('/admin/lessons/summary', token),
+    authGetJson('/mobile/ge/plan', token),
+    authGetJson('/mobile/ge/profile', token),
+    rewards ? authGetJson('/cabinet/my-tokens', token) : Promise.resolve(null),
+    isDbConfigured() && level ? loadLevelSkillStats(profileId, level) : Promise.resolve(null),
   ])
-  const [homework, occurrences, levelProgress, tutorLimit, tracker, ieltsScores, sections] = results.map(settled)
-  const skillStats = tracker?.raw?.stats || null
+  const [
+    homework, occurrences, levelProgress, tutorLimit, tracker, ieltsScores, sections,
+    assignments, lessonsSummary, gePlan, geProfile, tokens, levelStats,
+  ] = results.map(settled)
+  // null — работы не загрузились (не «домашки нет»); задания с урока — как в разделе: их сбой работы не прячет.
+  const homeworkList = Array.isArray(homework) ? homeworkCards(homework, Array.isArray(assignments) ? assignments : []) : null
+  const skillStats = levelStats || null
+  const plan = gePlanToday(gePlan, now)
   const weekModules = tracker?.activity?.week?.modules || null
 
   // Советы Луны сверяем с данными сайта здесь, когда домашка уже доехала:
@@ -262,7 +262,7 @@ async function buildStudentContext(token, profileId, now, user) {
     const checked = checkNotes(tracker.notes, {
       practice: tracker.activity?.practice ?? null,
       tutorSessions: tracker.tutorSessions,
-      homework: Array.isArray(homework) ? homework : null,
+      homework: homeworkList,
     })
     notes = checked.notes
     if (checked.updates.length) await markAdviceDone(checked.updates).catch(() => {})
@@ -271,25 +271,32 @@ async function buildStudentContext(token, profileId, now, user) {
   const lines = [
     formatLine({ demo: Boolean(user?.isDemoAccount), sections }),
     levelProgress?.level
-      ? `Уровень курса: ${levelProgress.level}${levelProgress.next ? `, цель ${levelProgress.next}` : ''}${
+      ? `Уровень курса: ${levelProgress.level}${levelProgress.next ? `, следующий уровень ${levelProgress.next}` : ''}${
           typeof levelProgress.percent === 'number' ? `, пройдено ${levelProgress.percent}%` : ''
         }.`
       : null,
-    goalLine(tracker?.activity?.goal),
-    skillStats ? skillsLine(skillStats) : null,
-    homeworkLines(homework, now),
+    // Цель — из профиля General English, как на баннере «Главной»; старая цель сайта (level_goal) — только если её нет.
+    geGoalLine(geProfile) || goalLine(tracker?.activity?.goal),
+    skillStats && level ? skillsLine(skillStats, level) : null,
+    homeworkLine(homeworkList, now),
     scheduleLines(occurrences, now),
+    lessonsPackageLine(lessonsSummary),
+    rewards ? tokensLine(tokens, now) : null,
+    ...plan.lines,
     tutorLine(tutorLimit, weekModules),
     weekModules ? ecosystemLine(weekModules) : null,
     tracker ? weekLine(tracker.activity?.days, now) : null,
     practiceLine(tracker?.activity?.practice, now),
     mistakesLine(tracker?.mistakes),
     ieltsLine(ieltsScores),
-    adviceLine({ homework, occurrences, skillStats, now }),
+    adviceLine({ homework: homeworkList, occurrences, skillStats, planNext: plan.next, now }),
     notesLines(notes, now),
   ].filter(Boolean)
 
-  return lines.length ? lines.join('\n') : null
+  // Не собралось ничего, кроме «домашку загрузить не удалось» (бэкенд лёг целиком), — профиля нет вовсе: модель так и
+  // скажет, что его не видит, вместо плана из одной строки о сбое.
+  const useful = lines.filter((l) => !l.startsWith('Домашку загрузить не удалось'))
+  return useful.length ? lines.join('\n') : null
 }
 
 /** Для тестов и на случай смены ученика на этой же вкладке процесса. */

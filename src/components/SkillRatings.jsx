@@ -4,7 +4,7 @@
 // в ProfilePage), чтобы не раздувать общий icons.jsx.
 
 import { useI18n } from '../i18n.jsx'
-import { SKILLS, skillBars } from '../practice/skillStatsCore.js'
+import { SKILLS, levelShare, shareBars } from '../practice/skillStatsCore.js'
 
 const TOTAL_SEGMENTS = 10
 
@@ -21,9 +21,11 @@ function Bars({ filled, muted }) {
 function SkillRow({ skill, stat, t }) {
   const done = stat?.done || 0
   const firstTry = stat?.firstTry || 0
-  const bars = skillBars({ done, firstTry })
+  // Та же формула, что «Сильные и слабые стороны» на «Главной» (levelShare): доля верных с первой попытки в заданиях
+  // текущего уровня; меньше пяти заданий — «мало данных» (ТЗ v2.0, 5.5).
+  const pct = levelShare({ done, firstTry })
+  const bars = shareBars(pct)
   const empty = done === 0
-  const pct = empty ? 0 : Math.round(Math.min(1, firstTry / done) * 100)
   return (
     <div className="pf-skill" data-skill={skill}>
       <span className="pf-skill__ic"><SkillIcon skill={skill} /></span>
@@ -31,20 +33,21 @@ function SkillRow({ skill, stat, t }) {
         <div className="pf-skill__top">
           <span className="pf-skill__name">{t('profile.skills.' + skill)}</span>
           <span className="pf-skill__meta">
-            {empty ? t('profile.skills.empty') : t('profile.skills.meta', { done, pct })}
+            {empty ? t('profile.skills.empty') : pct == null ? t('profile.skills.few', { done }) : t('profile.skills.meta', { done, pct })}
           </span>
         </div>
-        <Bars filled={bars} muted={empty} />
+        <Bars filled={bars} muted={pct == null} />
       </div>
     </div>
   )
 }
 
-export default function SkillRatings({ stats, loading }) {
+export default function SkillRatings({ stats, loading, level = null }) {
   const { t } = useI18n()
   return (
     <>
       <div className="pf-label">{t('profile.skills.title')}</div>
+      {level && <p className="pf-skills__src">{t('home.skills.source', { level })}</p>}
       <div className="pf-card pf-skills">
         {SKILLS.map((skill) => (
           <SkillRow

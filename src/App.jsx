@@ -67,7 +67,7 @@ import { practiceUnitTarget } from './lib/studentDeepLink.js'
 import { pushNav, popNav, readNavStack, writeNavStack, placeOf, setResume, resumeOf, isReturnable, backLabelKey } from './lib/navStack.js'
 import { restoreScroll } from './lib/scrollRestore.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
-import { flushSkillStats } from './practice/skillStats.js'
+import { flushSkillStats, setSkillLevel } from './practice/skillStats.js'
 import { clearAccountLeftovers, forgetExpiredSession } from './lib/accountLeftovers.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
 import { persistPlacementLevel, syncProfileLevel } from './lib/levelSave.js'
@@ -718,6 +718,8 @@ export default function App() {
   // управление/на дашборд, а не гоняют всю цепочку заново.
   const [tutorEditFrom, setTutorEditFrom] = useState(null)
   const [userLevel, setUserLevel] = useState('A1')
+  // Уровень ученика — для навыков по уровню (практика без своего уровня задания пишет попытку в него; ТЗ v2.0, 5.5).
+  useEffect(() => { setSkillLevel(userLevel) }, [userLevel])
   // Демо-статус текущего аккаунта — решает, показывать ли на экранах «лимит
   // исчерпан» демо-CTA со ссылкой на WhatsApp поддержки (см. src/lib/support.js)
   // или обычный текст. Саморегистрация всегда демо (см. RegistrationService на
@@ -867,6 +869,8 @@ export default function App() {
   // Урок, который тропа откроет сама по загрузке (Луна: «открой урок 5», lib/assistant/items/):
   // { code, at } — at различает две одинаковые просьбы подряд.
   const [courseLessonTarget, setCourseLessonTarget] = useState(null)
+  // Обращение, с которым Луна открывает Feedback: { category, draft } (lib/assistant/actions.js).
+  const [feedbackDraft, setFeedbackDraft] = useState(null)
   // Просмотр всего контента без гейтинга (?unlock=1, только dev) — см. эффект
   // диплинков ниже.
   const [devUnlock, setDevUnlock] = useState(false)
@@ -1833,7 +1837,11 @@ export default function App() {
     else if (key === 'minutes') setScreen('minutes')
     // Профиль из меню открывается своей кнопкой; сюда приходит от Луны (destinations.js).
     else if (key === 'profile') setScreen('profile')
-    else if (key === 'feedback') setScreen('feedback')
+    // Луна открывает Feedback с категорией и черновиком (ТЗ v2.0); переход из меню черновик сбрасывает.
+    else if (key === 'feedback') {
+      setFeedbackDraft(payload?.category ? { category: payload.category, draft: String(payload.draft || '') } : null)
+      setScreen('feedback')
+    }
     else if (key === 'tokens' || key === 'prizes') setScreen(key)
     else if (key === 'learning' || key === 'learn') setScreen('kingdom')
     // «Урок курса» из плана по дням — сразу в тропу уровня, который ученик проходит, а не на карту королевств
@@ -1958,7 +1966,7 @@ export default function App() {
   })
   useEffect(
     () =>
-      onAssistantNavigate((target) => {
+      onAssistantNavigate((target, payload) => {
         // Конкретная вещь по адресу (урок 5, тема, текст — lib/assistant/items/): экран
         // открывается заново с целью, даже если ученик уже на нём. Квота «Ситуаций» —
         // по уровням, уже открытым на этом устройстве (как у карточки Практики).
@@ -1972,12 +1980,14 @@ export default function App() {
         }
         const dest = destinationOf(target)
         if (!dest) return
+        // Своя цель перехода (Feedback с черновиком) — раздел открывается заново, даже если ученик уже в нём.
+        const to = payload || dest.payload
         if (dest.screen === screenRef.current) {
-          if (!dest.payload) return
+          if (!to) return
           setResume(null)
           setScreenNonce((n) => n + 1)
         }
-        handleNavRef.current?.(dest.nav, dest.payload)
+        handleNavRef.current?.(dest.nav, to)
       }),
     [],
   )
@@ -2551,7 +2561,7 @@ export default function App() {
     case 'teacher-pick':
       return <TeacherPickPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} />
     case 'feedback':
-      return <FeedbackCenter userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} token={token} onBack={() => goBack(() => setScreen('profile'))} />
+      return <FeedbackCenter initialCategory={feedbackDraft?.category} initialDraft={feedbackDraft?.draft} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} token={token} onBack={() => goBack(() => setScreen('profile'))} />
     case 'practice':
       return (
         <PracticePage

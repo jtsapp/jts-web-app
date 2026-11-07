@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 
 // Отчёты о прогрессе: ссылка из мессенджера без входа и вкладка «Отчёты» в
 // «Уроках». Бэкенда ручек ещё нет — отвечаем за него через page.route.
@@ -62,6 +63,8 @@ test('образец /report/sample рисуется без бэкенда', asy
 
 test('вкладка «Отчёты»: список → отчёт → «просмотрен»', async ({ page }) => {
   let seen = 0
+  // Окно «Документы платформы» перед кабинетом (LegalDocumentsGate) — согласие уже есть.
+  await mockGates(page)
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
   await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Айша', role: 'STUDENT', phone: '77001234567', languageLevel: 'A1' } })))
   await page.route('**/mobile/feedback-reports', (r) => r.fulfill(json([

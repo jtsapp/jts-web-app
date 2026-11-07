@@ -7,6 +7,9 @@
 //   29.10.2026): урок курса, тему, текст… Адрес сверяется с каталогом этого запроса
 //   (items/catalog.js) — подпись берётся оттуда, закрытый урок действием не становится;
 //   каталога нет (ученик ответил «да» на её «Открыть?») — адрес сверит роут (unresolved).
+//   [[FEEDBACK teacher | Преподаватель опоздал на 15 минут]] / [[FEEDBACK_NOW …]] — открыть
+//   Feedback с категорией (teacher | manager | platform | review) и черновиком обращения
+//   из слов ученика (ТЗ v2.0, этап 1). Отправляет ученик сам: окно только заполняет форму.
 //   [[CLICK 7]] / [[CLICK_NOW 7]] — нажать кнопку экрана с номером 7 из снимка
 //   (screenSnapshot.snapshotWithRefs; 21.10.2026). Номер сверяется со снимком этого
 //   же запроса, подпись берётся оттуда — окно по ней проверит, что жмёт ту же кнопку.
@@ -33,6 +36,34 @@ import { isItemRef } from './items/refs.js'
 const MODEL_MARK = /^\[\[(OPEN|TOUR|CLICK)(_NOW)?(?:\s+|\s*:\s*)(?:id\s*=\s*)?["'«#]?([A-Za-z0-9_.-]{1,56})["'»]?\s*\]\]$/
 // Длиннее этого метка модели не бывает: «[[» без закрытия дальше — просто текст.
 const MAX_MARK = 72
+
+// Обращение в Feedback: черновик — свободный текст, поэтому метка длиннее остальных. Квадратных скобок в черновике нет:
+// «]]» закрыл бы метку раньше времени.
+const FEEDBACK_MARK = /^\[\[FEEDBACK(_NOW)?\s+(teacher|manager|platform|review)\b\s*(?:\|\s*([^[\]]*?))?\s*\]\]$/i
+const FEEDBACK_HEAD = '[[FEEDBACK'
+// Держим до конца ответа (800 токенов модели): длинный черновик иначе вылез бы ученику текстом метки.
+const MAX_FEEDBACK_MARK = 2400
+export const FEEDBACK_CATEGORIES = ['teacher', 'manager', 'platform', 'review']
+// Поле формы — до 2000 символов; черновик Луны — несколько предложений, длиннее — уже пересказ разговора.
+const MAX_DRAFT = 600
+
+/** Черновик обращения: одна строка без служебных скобок, не длиннее MAX_DRAFT. */
+export function cleanDraft(text) {
+  return String(text ?? '')
+    .replace(/[[\]«»]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_DRAFT)
+}
+
+function feedbackAction(category, draft, now) {
+  const cat = String(category || '').toLowerCase()
+  if (!FEEDBACK_CATEGORIES.includes(cat)) return null
+  return { kind: 'open', target: 'feedback', now: Boolean(now), feedback: { category: cat, draft: cleanDraft(draft) } }
+}
+
+// Хвост обращения: черновик закодирован (encodeURIComponent не оставляет ни пробелов, ни скобок, ни «»).
+const FEEDBACK_TAIL = /\[\[ASST_ACTION feedback (teacher|manager|platform|review) (now|offer)(?: ([A-Za-z0-9%._~!*'()-]+))?\]\]/
 
 export const SERVICE_PREFIX = '[[ASST_'
 const ACTION_TAIL = /\[\[ASST_ACTION (open|click) ([A-Za-z0-9_.-]+) (now|offer)(?: «([^«»[\]]{1,80})»)?\]\]/
@@ -64,6 +95,10 @@ const tailLabel = (s) => String(s ?? '').replace(/[«»[\]]/g, '').slice(0, 80)
 /** Метка действия в формате модели — для истории разговора (см. AssistantWidget). */
 export function actionMarker(action) {
   if (!action) return ''
+  if (action.feedback) {
+    const { category, draft } = action.feedback
+    return `[[FEEDBACK${action.now ? '_NOW' : ''} ${category}${draft ? ` | ${draft}` : ''}]]`
+  }
   return `[[${action.kind.toUpperCase()}${action.now ? '_NOW' : ''} ${action.target}]]`
 }
 
@@ -71,6 +106,10 @@ export function actionMarker(action) {
 export function actionTail(action) {
   if (!action) return ''
   const mode = action.now ? 'now' : 'offer'
+  if (action.feedback) {
+    const draft = action.feedback.draft ? ` ${encodeURIComponent(action.feedback.draft)}` : ''
+    return `[[ASST_ACTION feedback ${action.feedback.category} ${mode}${draft}]]`
+  }
   return action.kind === 'click' || action.label
     ? `[[ASST_ACTION ${action.kind} ${action.target} ${mode} «${tailLabel(action.label)}»]]`
     : `[[ASST_ACTION ${action.kind} ${action.target} ${mode}]]`
@@ -110,7 +149,7 @@ export function createActionFilter({ screenText = '', items = null } = {}) {
         s = s.slice(i)
         const j = s.indexOf(']]', 2)
         if (j < 0) {
-          if (s.length < MAX_MARK) {
+          if (s.length < (s.startsWith(FEEDBACK_HEAD) ? MAX_FEEDBACK_MARK : MAX_MARK)) {
             hold = s
             return out
           }
@@ -120,6 +159,11 @@ export function createActionFilter({ screenText = '', items = null } = {}) {
         }
         const mark = s.slice(0, j + 2)
         s = s.slice(j + 2)
+        const fb = FEEDBACK_MARK.exec(mark)
+        if (fb) {
+          if (!action) action = feedbackAction(fb[2], fb[3], Boolean(fb[1]))
+          continue
+        }
         const m = MODEL_MARK.exec(mark)
         if (!m) {
           out += mark
@@ -161,6 +205,16 @@ export function createServiceTailFilter() {
       return tail().includes(REPORTED_STREAM_MARKER)
     },
     get action() {
+      const fb = FEEDBACK_TAIL.exec(tail())
+      if (fb) {
+        let draft = ''
+        try {
+          draft = fb[3] ? decodeURIComponent(fb[3]) : ''
+        } catch {
+          draft = ''
+        }
+        return feedbackAction(fb[1], draft, fb[2] === 'now')
+      }
       const m = ACTION_TAIL.exec(tail())
       if (!m) return null
       if (m[1] === 'click') return m[4] ? { kind: 'click', target: m[2], label: m[4], now: m[3] === 'now' } : null

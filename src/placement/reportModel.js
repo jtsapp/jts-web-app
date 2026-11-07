@@ -85,6 +85,24 @@ export function reportView(env, lang = 'ru') {
   }
 }
 
+/**
+ * Целевой уровень — из профиля General English, как на баннере «Главной» и у Луны (ТЗ v2.0, «данные расходятся»:
+ * на тестовом аккаунте баннер звал к B1, а блок «Цель» отчёта — к B2). v16 предлагает цель в момент теста, анкета
+ * кладёт её в профиль, а потом ученик меняет цель карандашом на баннере — отчёт же хранит прежнюю. Поэтому цель
+ * профиля главнее; объяснение v16 относится к его цели и при другой цели не показывается.
+ */
+export function withProfileGoal(view, targetLevel) {
+  const goal = cefr(targetLevel)
+  if (!view || !goal || goal === view.target) return view
+  const rank = (lv) => CEFR.indexOf(lv)
+  return {
+    ...view,
+    target: goal,
+    targetAlreadyMet: !!view.overall && rank(view.overall) >= rank(goal),
+    targetExplanation: null,
+  }
+}
+
 /** Отчёт для «Главной» или null — тест не пройден: попытки нет либо тест брошен раньше, чем v16 определил хоть что-то. */
 export function homeReport(env, lang = 'ru') {
   const view = reportView(env, lang)

@@ -298,6 +298,8 @@
 
 /* --- домашка --- */
 .hm-hw__empty { margin: 12px 0 0; font-size: 13px; color: #b3b1bd; }
+/* «Повторить» после сбоя загрузки домашки — ссылкой, не кнопкой: блок не должен кричать. */
+.hm-hw__retry { padding: 0; border: 0; background: none; font: inherit; color: var(--violet, #9047ff); text-decoration: underline; cursor: pointer; }
 .hm-hw__list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .hm-hw__item {
   width: 100%;
@@ -3472,3 +3474,7 @@ button.hm-level__goal:focus-visible {
     padding: 24px 28px 24px 0;
   }
 }
+
+/* Строка-источник «Сильных и слабых сторон» и «мало данных» вместо процента (ТЗ v2.0, 5.5). */
+.hm-skills__src { margin: 4px 0 0; font-size: 12px; line-height: 1.35; color: var(--hm-mut, #8e8e99); }
+.hm-skill__pct--few { font-size: 12px; font-weight: 500; color: var(--hm-mut, #8e8e99); }

@@ -633,6 +633,13 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       return press(action)
     }
     const cur = stateRef.current
+    // Feedback с категорией и черновиком обращения — форму заполняет раздел, отправляет ученик сам.
+    if (action?.kind === 'open' && action.feedback) {
+      if (!cur?.enabled) return
+      navigateTo('feedback', action.feedback)
+      if (isPhone()) setOpen(false)
+      return
+    }
     // Конкретная вещь по адресу (урок 5, тема) — переход строит App (items/refs.js).
     if (action?.kind === 'open' && isItemRef(action.target)) {
       if (!cur?.enabled) return
@@ -1858,7 +1865,9 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                     >
                       {m.action.kind === 'click'
                         ? t('assistant.action.click', { label: m.action.label })
-                        : t('assistant.action.open', { name: openName(m.action, lang) })}
+                        : m.action.feedback
+                          ? t('assistant.action.openFeedback')
+                          : t('assistant.action.open', { name: openName(m.action, lang) })}
                     </button>
                   )}
                   {m.reported && <p className="asst__reported">{t('assistant.reported')}</p>}

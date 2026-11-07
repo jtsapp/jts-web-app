@@ -28,7 +28,7 @@ vi.mock('../api.js', () => ({
   getLessonModules: vi.fn(async () => []),
   getLessonProgress: vi.fn(async () => ({ done: [] })),
 }))
-vi.mock('../practice/skillStats.js', () => ({ readLocalSkillStats: () => ({}), loadSkillStatsRemote: vi.fn(async () => null) }))
+vi.mock('../practice/skillStats.js', () => ({ readLocalSkillStats: () => ({}), loadSkillStatsRemote: vi.fn(async () => null), readLocalLevelSkillStats: () => ({}), loadLevelSkillStatsRemote: vi.fn(async () => null) }))
 globalThis.ResizeObserver ??= class {
   observe() {}
   disconnect() {}

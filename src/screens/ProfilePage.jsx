@@ -15,7 +15,8 @@ import {
 import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser, getIeltsMe, getIeltsProfile } from '../api.js'
 import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
-import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
+import { loadLevelSkillStatsRemote, readLocalLevelSkillStats } from '../practice/skillStats.js'
+import { skillLevel } from '../practice/skillStatsCore.js'
 import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from '../lib/profileAvatar.js'
 import { shrinkImage } from '../lib/shrinkImage.js'
 import { legalDocumentUrl } from '../lib/legalDocuments.js'
@@ -201,19 +202,20 @@ export default function ProfilePage({
     }
   }, [token, userLevel])
 
-  // Рейтинг навыков: сперва локальный мираж (мгновенно, работает и для гостя),
-  // затем серверные агрегаты для залогиненного (источник истины).
+  // Рейтинг навыков — по заданиям текущего уровня, как «Сильные и слабые стороны» на «Главной» (ТЗ v2.0, 5.5):
+  // сперва локальный мираж (мгновенно, работает и для гостя), затем сервер (источник истины).
+  const skillCode = skillLevel(userLevel)
   useEffect(() => {
-    setSkillStats(readLocalSkillStats())
-    if (!token) return
+    setSkillStats(skillCode ? readLocalLevelSkillStats(skillCode) : {})
+    if (!token || !skillCode) return
     let alive = true
-    loadSkillStatsRemote(token).then((s) => {
+    loadLevelSkillStatsRemote(token, skillCode).then((s) => {
       if (alive && s) setSkillStats(s)
     })
     return () => {
       alive = false
     }
-  }, [token])
+  }, [token, skillCode])
 
   function showToast(msg) {
     setToast(msg)
@@ -584,7 +586,7 @@ export default function ProfilePage({
         {/* Подбор учителя (ТЗ 08 §2.10): «Мой учитель», «Мои интересы», «Настройки обучения» — сразу после плиток */}
         {blocks}
 
-        <SkillRatings stats={skillStats} loading={skillStats === null} />
+        <SkillRatings stats={skillStats} loading={skillStats === null} level={skillCode} />
 
         {ieltsRows.length > 0 && (
           <>
