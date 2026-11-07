@@ -2667,11 +2667,12 @@ export async function getIeltsMe(token) {
 // Обновление профиля (PUT /user/update, Bearer). Тело — как UpdateUserRequest
 // мобилки: name обязателен, остальные поля шлём только если заданы, чтобы не
 // затирать то, что уже хранит бэкенд. Возвращает обновлённый UserInfo.
+// gender — 'MALE' | 'FEMALE' | '' (стереть); не передан — бэкенд пол не трогает (backend V542).
 export async function updateUser(token, { name, email, city, gender, birthDate, phone }) {
   const payload = { name }
   if (email) payload.email = email
   if (city) payload.city = city
-  if (gender) payload.gender = gender
+  if (gender != null) payload.gender = gender
   if (birthDate) payload.birthDate = birthDate
   if (phone) payload.phone = normalizePhone(phone)
   let res

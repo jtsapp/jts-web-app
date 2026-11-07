@@ -32,11 +32,15 @@ export function isTeacherTask(task) {
  * Куда ведёт «Начать»: ключ handleNav App и его payload; null — переходить некуда. Урок курса — в тропу уровня, который
  * ученик проходит.
  */
-export function taskRoute(task, level) {
+export function taskRoute(task, level, lesson = null) {
   switch (task?.kind) {
     case 'course':
       // урок, заданный преподавателем, — в тропу его уровня: ученик мог уже перейти на следующий
-      return { to: 'course', payload: { level: (isTeacherTask(task) && task.extra?.level) || level || null } }
+      if (isTeacherTask(task)) return { to: 'course', payload: { level: task.extra?.level || level || null } }
+      // свой урок плана — сразу сам урок (ТЗ v2.0, 5.3: «Начать» открывает конкретное, а не раздел целиком): код шага
+      // тропы даёт courseLessons, открывает его тропа тем же lessonTarget, что и Луна («открой урок 5»). Кода нет
+      // (тропа не загрузилась) — тропа уровня, как раньше.
+      return { to: 'course', payload: { level: level || null, ...(lesson ? { lesson } : {}) } }
     case 'live':
       return { to: 'lessons' }
     case 'homework':
@@ -65,10 +69,10 @@ export function taskRoute(task, level) {
  * Что делает кнопка задачи: переход ({ type: 'nav', to, payload }), отметка своего задания преподавателя ({ type: 'done' })
  * или ничего (null — кнопки нет). У выполненной задачи кнопки нет.
  */
-export function taskAction(task, level) {
+export function taskAction(task, level, lesson = null) {
   if (!task || task.status === 'completed') return null
   if (task.kind === 'custom') return isTeacherTask(task) ? { type: 'done' } : null
-  const r = taskRoute(task, level)
+  const r = taskRoute(task, level, lesson)
   return r ? { type: 'nav', ...r } : null
 }
 
@@ -121,7 +125,8 @@ const byDateThenId = (a, b) =>
  * урок. Выполненные задачи подписи по тропе не получают — их шаг уже позади.
  * @returns {Record<string, string>} id задачи → название шага
  */
-export function courseTitles(tasks, frontier) {
+/** id задачи урока курса → шаг тропы: k-я открытая задача ↔ k-й непройденный шаг (courseFrontier). */
+function courseNodes(tasks, frontier) {
   const out = {}
   if (!Array.isArray(frontier) || !frontier.length) return out
   let k = 0
@@ -130,9 +135,18 @@ export function courseTitles(tasks, frontier) {
     if (task.status === 'completed') continue
     const node = frontier[k++]
     if (!node) break
-    out[task.id] = node.title
+    out[task.id] = node
   }
   return out
+}
+
+export function courseTitles(tasks, frontier) {
+  return Object.fromEntries(Object.entries(courseNodes(tasks, frontier)).map(([id, node]) => [id, node.title]))
+}
+
+/** id задачи урока курса → код шага тропы: «Начать» открывает этот урок (taskRoute). */
+export function courseLessons(tasks, frontier) {
+  return Object.fromEntries(Object.entries(courseNodes(tasks, frontier)).map(([id, node]) => [id, node.code]))
 }
 
 // ---- даты: календарные 'YYYY-MM-DD' без времени, считаем в UTC — переход на летнее время не сдвигает день ----

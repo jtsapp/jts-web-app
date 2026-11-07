@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { ArrowForwardIcon } from '../../ielts/icons.jsx'
 import GeTaskRow from '../../ge/plan/GeTaskRow.jsx'
-import { courseTitles, todayView } from '../../ge/plan/planModel.js'
+import { courseLessons, courseTitles, todayView } from '../../ge/plan/planModel.js'
 import { useGeTaskStart } from '../../ge/plan/useGeTaskStart.js'
 import { taskTokenPoints, useStudentTokens } from '../../practice/practiceTokens.js'
 
@@ -16,9 +16,10 @@ import { taskTokenPoints, useStudentTokens } from '../../practice/practiceTokens
 export default function GeTodayCard({ plan, frontier, level, token, onReload, onNav }) {
   const { t } = useI18n()
   const titles = useMemo(() => courseTitles(plan.tasks, frontier), [plan.tasks, frontier])
+  const lessons = useMemo(() => courseLessons(plan.tasks, frontier), [plan.tasks, frontier])
   const { tasks, ahead } = todayView(plan)
   const firstOpen = tasks.findIndex((x) => x.status !== 'completed')
-  const { start, markFailed } = useGeTaskStart({ token, level, onNav, reload: onReload })
+  const { start, markFailed } = useGeTaskStart({ token, level, onNav, reload: onReload, lessons })
   // «+N токенов» у задач дня (разговор и т. п.) — как в макете кабинета студента
   const tokenData = useStudentTokens(token)
   return (

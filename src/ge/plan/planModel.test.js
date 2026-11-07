@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  courseTitles, dayMinutes, dayStatus, isTeacherTask, minutesLabel, monthGrid, mondayOf, plateOf, roadWeek, shiftMonth, taskAction,
+  courseLessons, courseTitles, dayMinutes, dayStatus, isTeacherTask, minutesLabel, monthGrid, mondayOf, plateOf, roadWeek, shiftMonth, taskAction,
   taskRoute, taskTitle, todayView, weekNumber,
 } from './planModel.js'
 import { openNodes } from './courseFrontier.js'
@@ -12,6 +12,20 @@ const t = (key, vars) => (vars ? `${key}:${JSON.stringify(vars)}` : key)
 const task = (id, date, extra = {}) => ({ id, date, kind: 'practice', module: 'ai_tutor', minutes: 15, got: 0, status: 'planned', overdue: false, ...extra })
 
 describe('куда ведёт «Начать»', () => {
+  // ТЗ v2.0, 5.3: свой урок курса — сразу сам урок (код шага тропы), а не тропа уровня.
+  it('урок курса с кодом шага — сам урок; без кода и у преподавателя — тропа', () => {
+    expect(taskRoute({ kind: 'course' }, 'B1', 'L7')).toEqual({ to: 'course', payload: { level: 'B1', lesson: 'L7' } })
+    expect(taskRoute({ kind: 'course', origin: 'teacher', extra: { level: 'A2' } }, 'B1', 'L7')).toEqual({ to: 'course', payload: { level: 'A2' } })
+    const tasks = [
+      { id: 1, date: '2026-10-12', kind: 'course', status: 'completed' },
+      { id: 2, date: '2026-10-13', kind: 'course', status: 'available' },
+      { id: 3, date: '2026-10-14', kind: 'course', status: 'planned' },
+    ]
+    const frontier = [{ code: 'L5', title: 'Shopping' }, { code: 'T2', title: 'Тест юнита' }]
+    expect(courseLessons(tasks, frontier)).toEqual({ 2: 'L5', 3: 'T2' })
+    expect(courseTitles(tasks, frontier)).toEqual({ 2: 'Shopping', 3: 'Тест юнита' })
+  })
+
   it('по виду и разделу', () => {
     expect(taskRoute({ kind: 'course' }, 'B1')).toEqual({ to: 'course', payload: { level: 'B1' } })
     expect(taskRoute({ kind: 'live' })).toEqual({ to: 'lessons' })

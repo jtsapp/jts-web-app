@@ -125,6 +125,15 @@ export default function ProfilePhone(p) {
             <span>{t('profile.m.email')}</span>
             <input className="pfm-input" type="email" value={p.edit.form.email} placeholder={t('profile.editEmailHint')} onChange={(e) => p.edit.setForm((f) => ({ ...f, email: e.target.value }))} />
           </label>
+          <label className="pfm-field">
+            <span>{t('profile.editGender')}</span>
+            <select className="pfm-input" value={p.edit.form.gender ?? ''} onChange={(e) => p.edit.setForm((f) => ({ ...f, gender: e.target.value }))}>
+              <option value="">{t('profile.gender.none')}</option>
+              <option value="FEMALE">{t('profile.gender.female')}</option>
+              <option value="MALE">{t('profile.gender.male')}</option>
+            </select>
+            <small>{t('profile.genderNote')}</small>
+          </label>
           {p.phone && (
             <div className="pfm-field">
               <span>{t('profile.editPhone')}</span>

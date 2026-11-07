@@ -148,7 +148,8 @@ export default function ProfilePage({
   // Форма редактирования профиля
   // Пола в форме нет намеренно: у бэкенда нет такого поля ни в /user/me, ни в
   // UpdateUserRequest — выбор молча выбрасывался, а тост писал «Сохранено».
-  const [form, setForm] = useState({ name: '', email: '', city: '', birthDate: '' })
+  // gender: null — ещё не пришёл из /user/me (тогда не шлём и бэкенд его не трогает), '' — «не указан».
+  const [form, setForm] = useState({ name: '', email: '', city: '', birthDate: '', gender: null })
   const [saving, setSaving] = useState(false)
   const [editErr, setEditErr] = useState('')
 
@@ -272,7 +273,7 @@ export default function ProfilePage({
 
   function openEdit() {
     setEditErr('')
-    setForm({ name: name || '', email: '', city: '', birthDate: '' })
+    setForm({ name: name || '', email: '', city: '', birthDate: '', gender: null })
     setEditOpen(true)
     // Сохранённое подтягиваем из профиля: пустое поле читалось бы как «не
     // указано» — ученик вводил email заново, думая, что он пропал. Уже
@@ -287,6 +288,8 @@ export default function ProfilePage({
             email: f.email || me.email || '',
             city: f.city || me.city || '',
             birthDate: f.birthDate || (me.birthDate ? String(me.birthDate).slice(0, 10) : ''),
+            // ключа нет — бэкенд без поля (до V542): пол не показываем выбранным и не шлём
+            gender: f.gender ?? ('gender' in me ? (me.gender === 'MALE' || me.gender === 'FEMALE' ? me.gender : '') : null),
           }))
         })
         .catch(() => {})
@@ -316,6 +319,8 @@ export default function ProfilePage({
         email: form.email.trim(),
         city: form.city.trim(),
         birthDate: form.birthDate,
+        // пол — для обращения помощника (Луна / Айзере): «ты выбрал» / «ты выбрала»; null — не загрузился, не трогаем
+        ...(form.gender != null ? { gender: form.gender } : {}),
       })
       setName(trimmed)
       onUpdateName?.(trimmed)
@@ -716,6 +721,19 @@ export default function ProfilePage({
               onChange={(v) => setForm((f) => ({ ...f, birthDate: v }))}
             />
           </div>
+          <label className="pf-field">
+            <span>{t('profile.editGender')}</span>
+            <select
+              className="pf-input"
+              value={form.gender ?? ''}
+              onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
+            >
+              <option value="">{t('profile.gender.none')}</option>
+              <option value="FEMALE">{t('profile.gender.female')}</option>
+              <option value="MALE">{t('profile.gender.male')}</option>
+            </select>
+            <small className="pf-field__note">{t('profile.genderNote')}</small>
+          </label>
           <label className="pf-field">
             <span>{t('profile.editCity')}</span>
             <input

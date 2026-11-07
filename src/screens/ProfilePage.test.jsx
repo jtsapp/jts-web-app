@@ -51,11 +51,24 @@ describe('ProfilePage — форма редактирования', () => {
     expect(screen.getByDisplayValue('Алматы')).toBeTruthy()
   })
 
-  it('не предлагает выбрать пол — сохранить его бэкенду некуда', async () => {
+  // Пол хранит бэкенд с V542 (решение владельца 07.11.2026): по нему помощник обращается с родом.
+  it('пол выбирается и уходит в сохранение', async () => {
+    me.value = { ...me.value, gender: null }
     renderProfile()
     fireEvent.click(screen.getByText('Редактировать профиль'))
     await waitFor(() => expect(screen.getByDisplayValue('saken@example.kz')).toBeTruthy())
-    expect(document.querySelector('.pf-seg')).toBeNull()
+    const select = screen.getByDisplayValue('Не указан')
+    fireEvent.change(select, { target: { value: 'FEMALE' } })
+    fireEvent.click(screen.getByText('Сохранить'))
+    await waitFor(() => expect(updateUser).toHaveBeenCalled())
+    expect(updateUser.mock.calls[0][1]).toMatchObject({ gender: 'FEMALE' })
+  })
+
+  it('сохранённый пол подставляется', async () => {
+    me.value = { ...me.value, gender: 'MALE' }
+    renderProfile()
+    fireEvent.click(screen.getByText('Редактировать профиль'))
+    await waitFor(() => expect(screen.getByDisplayValue('Мужской')).toBeTruthy())
   })
 
   it('сохраняет подставленные значения, а не пустые', async () => {
@@ -66,6 +79,7 @@ describe('ProfilePage — форма редактирования', () => {
     await waitFor(() => expect(updateUser).toHaveBeenCalled())
     const body = updateUser.mock.calls[0][1]
     expect(body).toMatchObject({ email: 'saken@example.kz', city: 'Алматы' })
+    // бэкенд без поля (до V542): пол не шлём, чтобы не стереть и не уронить запрос
     expect(body).not.toHaveProperty('gender')
   })
 })

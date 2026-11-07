@@ -10,6 +10,15 @@ describe('указания рядом с вопросом (turnHints.js)', () =>
     expect(addressHint('en')).toBe('')
   })
 
+  // Решение владельца 07.11.2026: род — по полу из Профиля, не по имени; не указан — без рода.
+  it('обращение: пол из Профиля задаёт род; казахскому и английскому он не нужен', () => {
+    expect(addressHint('ru', 'FEMALE')).toMatch(/женский пол.*«ты выбрала»/)
+    expect(addressHint('ru', 'MALE')).toMatch(/мужской пол.*«ты выбрал»/)
+    expect(addressHint('ru', null)).toMatch(/без рода/)
+    expect(addressHint('kk', 'FEMALE')).toMatch(/на «сен»/)
+    expect(addressHint('en', 'MALE')).toBe('')
+  })
+
   it('шаблоны учителя: правило, перевод, проверка текста', () => {
     expect(hintsFor('Present Perfect и Past Simple — в чём разница?')).toMatch(/частая ошибка .*проверочный вопрос/)
     expect(hintsFor('Переведи: Мне нужно перенести урок на завтра')).toMatch(/1–2 альтернативы/)
