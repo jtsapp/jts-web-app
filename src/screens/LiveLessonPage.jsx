@@ -40,7 +40,7 @@ import { useLessonTimer } from './live/useLessonTimer.js'
 import LessonDictionary from './live/LessonDictionary.jsx'
 import { playCue } from '../lib/notifySound.js'
 import { knowsFocusTarget, sectionWithMaterial } from './live/followFocus.js'
-import { isAudioBatch, isPointerBatch, nextFollow } from './live/liveFollow.js'
+import { isAudioBatch, isLessonClosed, isPointerBatch, nextFollow } from './live/liveFollow.js'
 import { createSnapshotQueue } from './live/snapshotQueue.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
@@ -363,6 +363,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     setFollowMode(false)
     followModeRef.current = false
     pendingFocusStepRef.current = null
+    pendingPresentRef.current = []
     followRef.current = { ...followRef.current, following: false }
     setFollowTeacher(false)
     setClassStage(NO_CLASS_STAGE)
@@ -628,6 +629,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // позиции нет — она вернётся сообщением `stage` от рамки, как и при переходе
   // кнопками внутри самого файла.
   function selectFileStage(id) {
+    if (!isStaff) leaveClass()
     materialFrameRef.current?.gotoStage?.(Number(id))
   }
 
@@ -870,6 +872,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     const explicit = prev !== null && next.focusSeq > local.focusSeq
     const { following, focusSeq, go } = nextFollow(local, prev, next)
     followRef.current = { following, focusSeq }
+    if (isLessonClosed(next.status)) {
+      leaveClass()
+      return
+    }
     setClassStage(following ? classStageOf(next) : NO_CLASS_STAGE)
     // Долг снимается, когда ученик не следует, класс ушёл с материала, к доске
     // или его отпустили, — и при явной указке: она сама перезагружает рамку, а
@@ -1085,7 +1091,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // Общий показ и адресный ответ на мою просьбу догнать класс (present/{self})
     // приходят сюда одинаково — и одинаково ждут рамку.
     onPresent: (evt, { catchUp: catchUpReply = false } = {}) => {
-      if (isStaff) return
+      if (isStaff || isLessonClosed(liveState?.status ?? lesson?.status)) return
       const events = evt.events || []
       // Указка «Перенести ученика сюда» — адресное «смотри сюда», а не показ
       // класса: доходит до каждого, следует он за классом или нет.
@@ -1993,7 +1999,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                   {/* Следовать за преподавателем или смотреть своё. Раньше выбора
                       не было вовсе: экран ученика переносило за преподавателем
                       всегда, и вернуться к своему заданию было нечем. */}
-                  {!isStaff && (
+                  {!isStaff && !isLessonClosed(status) && (
                     <button
                       type="button"
                       className={`ls-follow ${followTeacher ? 'is-on' : ''}`}

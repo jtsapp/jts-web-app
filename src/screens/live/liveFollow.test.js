@@ -24,6 +24,13 @@ const base = {
 const state = (patch = {}) => ({ ...base, ...patch })
 
 describe('nextFollow — таблица §4.3', () => {
+  it('завершённый урок игнорирует и старое ведение, и новую указку', () => {
+    const ended = state({ status: 'COMPLETED', focusSeq: 6 })
+    const result = { following: false, focusSeq: 6, go: false }
+    expect(nextFollow({ following: false, focusSeq: null }, null, ended)).toEqual(result)
+    expect(nextFollow({ following: true, focusSeq: 5 }, state(), ended)).toEqual(result)
+  })
+
   // 1. Вход: следует тот, кого застали за ведением, — и сразу идёт к классу.
   it('первый снимок при ведении: следует и идёт', () => {
     expect(nextFollow({ following: false, focusSeq: null }, null, state()))
