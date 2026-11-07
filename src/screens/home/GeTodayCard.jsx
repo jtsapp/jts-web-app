@@ -10,7 +10,8 @@ import { taskTokenPoints, useStudentTokens } from '../../practice/practiceTokens
  * «Сегодня» на «Главной» общего курса (спека 2026-10-13, секция 4): задачи дня из плана бэкенда вместо прежней
  * «Что сделать сегодня». Сверху — просроченное этой недели; открытого нет — «на сегодня всё» и две ближайшие задачи.
  * «Весь план» — экран «План». Плашка «запишитесь на занятия» — группе и индивидуальным без занятий в расписании.
- * token и onReload — для «Отметить выполненным» у своего задания преподавателя (часть 3).
+ * Только свои задачи плана (todayView): занятия, домашка и задачи преподавателя — в «Весь план», в расписании и
+ * домашке рядом (ТЗ v2.0 9.1). token и onReload — для «Начать» и сбоя отметки.
  */
 export default function GeTodayCard({ plan, frontier, level, token, onReload, onNav }) {
   const { t } = useI18n()
@@ -18,7 +19,7 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
   const { tasks, ahead } = todayView(plan)
   const firstOpen = tasks.findIndex((x) => x.status !== 'completed')
   const { start, markFailed } = useGeTaskStart({ token, level, onNav, reload: onReload })
-  // «+N токенов» у задач дня: урок с преподавателем, домашка, разговор — как в макете кабинета студента
+  // «+N токенов» у задач дня (разговор и т. п.) — как в макете кабинета студента
   const tokenData = useStudentTokens(token)
   return (
     <section className="hm-card ge-today ge-skin" aria-labelledby="ge-today-title">

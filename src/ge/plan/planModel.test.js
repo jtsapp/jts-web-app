@@ -70,6 +70,26 @@ describe('«Сегодня»', () => {
     expect(v.ahead).toEqual([])
   })
 
+  it('только свои задачи: занятия, домашка и задачи преподавателя — не в «Сегодня» (ТЗ v2.0 9.1)', () => {
+    const plan = {
+      today,
+      tasks: [
+        task('live:1', today, { kind: 'live' }),
+        task('hw:2', today, { kind: 'homework' }),
+        task(3, today, { kind: 'custom', origin: 'teacher' }),
+        task(4, today, { origin: 'teacher' }), // практика, которую поставил преподаватель
+        task(5, today, { kind: 'course' }),
+        task(6, today),
+        task('hw:7', '2026-10-15', { kind: 'homework' }),
+        task(8, '2026-10-16'),
+      ],
+    }
+    expect(todayView(plan).tasks.map((x) => x.id)).toEqual([5, 6])
+    const done = { ...plan, tasks: plan.tasks.map((x) => (x.id === 5 || x.id === 6 ? { ...x, status: 'completed' } : x)) }
+    // «дальше по плану» тоже без домашки
+    expect(todayView(done).ahead.map((x) => x.id)).toEqual([8])
+  })
+
   it('всё сделано — «дальше по плану» из двух ближайших', () => {
     const plan = { today, tasks: [task(2, today, { status: 'completed' }), task(3, '2026-10-15'), task(4, '2026-10-16'), task(5, '2026-10-19')] }
     const v = todayView(plan)

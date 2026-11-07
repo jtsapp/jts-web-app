@@ -22,4 +22,17 @@ describe('SkillRatings', () => {
     expect(container.querySelectorAll('[data-skill="reading"] .is-on').length).toBe(8)
     expect(container.querySelectorAll('[data-skill="writing"] .is-on').length).toBe(0)
   })
+
+  // Решение владельца 07.11.2026: процент по всем прошлым заданиям, пока заданий уровня меньше пяти, — так и подписан.
+  it('процент по прошлым заданиям помечен в подписи', () => {
+    const { container } = render(
+      <I18nProvider>
+        <SkillRatings level="B1" stats={{ reading: { done: 40, firstTry: 30, estimate: true } }} />
+      </I18nProvider>,
+    )
+    expect(container.querySelector('.pf-skills__src').textContent).toBe(
+      'Уровень B1 · % верных с первой попытки в заданиях уровня B1; где их пока меньше пяти — по всем прошлым заданиям',
+    )
+    expect(container.querySelector('[data-skill="reading"] .pf-skill__meta').textContent).toContain('75')
+  })
 })

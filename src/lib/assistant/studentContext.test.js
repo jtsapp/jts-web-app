@@ -250,7 +250,16 @@ describe('профиль ученика для помощника', () => {
     })
     const text = await loadStudentContext('tok', { ...user, languageLevel: 'A2' })
     expect(loadLevelSkillStats).toHaveBeenCalledWith('user-42', 'A2')
-    expect(text).toContain('Навыки (уровень A2, % верных с первой попытки в заданиях этого уровня, в скобках — число заданий): listening 80% (10), writing 30% (10), speaking — мало данных (3)')
+    expect(text).toContain('Навыки (уровень A2, % верных с первой попытки в заданиях этого уровня; пока их меньше пяти — по всем прошлым заданиям навыка; в скобках — число заданий): listening 80% (10), writing 30% (10), speaking — мало данных (3)')
+  })
+
+  // Решение владельца 07.11.2026: пока заданий уровня меньше пяти — общий итог навыка, как на «Главной».
+  it('навыки: где заданий уровня мало — по всем прошлым заданиям, с пометкой', async () => {
+    loadLevelSkillStats.mockResolvedValue({ listening: { done: 10, firstTry: 8 }, reading: { done: 2, firstTry: 2 } })
+    loadSkillStats.mockResolvedValue({ listening: { done: 30, firstTry: 20 }, reading: { done: 40, firstTry: 10 }, vocab: { done: 2, firstTry: 2 } })
+    const text = await loadStudentContext('tok', { ...user, languageLevel: 'A2' })
+    expect(text).toContain('listening 80% (10), reading 25% (40, по всем прошлым заданиям), speaking — мало данных (0)')
+    expect(text).toContain('vocab — мало данных (0)')
   })
 
   // Трекер (tracker.js): цель, две недели, разделы, ошибки из звонков и прошлые советы Луны.

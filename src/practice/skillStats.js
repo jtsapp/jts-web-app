@@ -6,7 +6,7 @@
 
 import { loadToken } from '../lib/session.js'
 import { userIdFromToken } from '../lib/jwt.js'
-import { addDelta, addLevelDelta, mergeDeltas, mergeLevelDeltas, emptyStats, skillLevel, SKILLS } from './skillStatsCore.js'
+import { addDelta, addLevelDelta, mergeDeltas, mergeLevelDeltas, emptyStats, skillLevel, withStartEstimate, SKILLS } from './skillStatsCore.js'
 
 const MIRROR_KEY = 'jts_skill_stats'
 const PENDING_KEY = 'jts_skill_stats_pending'
@@ -70,12 +70,15 @@ export function readLocalSkillStats() {
   return m && typeof m === 'object' ? { ...emptyStats(), ...m } : emptyStats()
 }
 
-/** Навыки уровня на этом устройстве (гость и до ответа сервера). */
+/**
+ * Навыки уровня на этом устройстве (гость и до ответа сервера) — со стартом от общего итога, где заданий уровня
+ * меньше пяти (withStartEstimate): так же, как ответ сервера ниже.
+ */
 export function readLocalLevelSkillStats(level) {
   const code = skillLevel(level)
   const all = levelMirrorMem || readJson(LEVEL_MIRROR_KEY, null)
   const m = code && all && typeof all === 'object' ? all[code] : null
-  return m && typeof m === 'object' ? { ...emptyStats(), ...m } : emptyStats()
+  return withStartEstimate(m && typeof m === 'object' ? m : null, readLocalSkillStats())
 }
 
 let timer = null
@@ -193,7 +196,8 @@ export async function loadSkillStatsRemote(token) {
 }
 
 /**
- * Навыки текущего уровня с сервера (GET /api/skills?level=…) — то, что показывают «Главная» и Профиль.
+ * Навыки текущего уровня с сервера (GET /api/skills?level=…) — то, что показывают «Главная» и Профиль. Где заданий
+ * уровня меньше пяти — общий итог навыка из того же ответа (withStartEstimate, решение владельца 07.11.2026).
  * null — сервер не ответил (тогда экран берёт то, что есть на устройстве).
  */
 export async function loadLevelSkillStatsRemote(token, level) {
@@ -206,7 +210,8 @@ export async function loadLevelSkillStatsRemote(token, level) {
     if (data?.levelStats && typeof data.levelStats === 'object') {
       const all = levelMirrorMem || readJson(LEVEL_MIRROR_KEY, {}) || {}
       setLevelMirror({ ...all, [code]: data.levelStats })
-      return { ...emptyStats(), ...data.levelStats }
+      if (data.stats && typeof data.stats === 'object') setMirror(data.stats)
+      return withStartEstimate(data.levelStats, data.stats || readLocalSkillStats())
     }
   } catch (e) {
     console.warn('[skill.sync] level load failed', e)

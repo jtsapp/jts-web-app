@@ -1,10 +1,31 @@
 import { describe, expect, it } from 'vitest'
-import { addLevelDelta, emptyStats, levelShare, MIN_LEVEL_TASKS, mergeLevelDeltas, shareBars, skillLevel } from './skillStatsCore.js'
+import { addLevelDelta, emptyStats, levelShare, MIN_LEVEL_TASKS, mergeLevelDeltas, shareBars, skillLevel, withStartEstimate } from './skillStatsCore.js'
 import { validateByLevel } from '../lib/skillContract.js'
 import { levelSkillHighlights, rankLevelSkills } from '../lib/levelProgress.js'
 
 // ТЗ v2.0, 5.5: «Сильные и слабые стороны» — доля верных с первой попытки в заданиях ТЕКУЩЕГО уровня, одна формула
 // на «Главной», в Профиле и у Луны. Раньше у одного ученика чтение было 32% на «Главной» и 73% в Профиле.
+// Решение владельца 07.11.2026: пока заданий уровня меньше пяти — общий итог навыка как стартовая оценка.
+describe('старт от прошлых заданий', () => {
+  it('мало заданий уровня — общий итог с пометкой; пять и больше — только уровень', () => {
+    const level = { reading: { done: 2, firstTry: 2 }, grammar: { done: 5, firstTry: 2 } }
+    const total = { reading: { done: 40, firstTry: 30 }, grammar: { done: 90, firstTry: 80 }, vocab: { done: 3, firstTry: 3 } }
+    const got = withStartEstimate(level, total)
+    expect(got.reading).toEqual({ done: 40, firstTry: 30, estimate: true })
+    expect(levelShare(got.reading)).toBe(75)
+    expect(got.grammar).toEqual({ done: 5, firstTry: 2 })
+    // в общем итоге тоже меньше пяти — «мало данных», как без старта
+    expect(got.vocab).toEqual({ done: 0, firstTry: 0 })
+    expect(levelShare(got.vocab)).toBe(null)
+  })
+
+  it('нет ни уровня, ни итога — все навыки пустые', () => {
+    const got = withStartEstimate(null, undefined)
+    expect(Object.values(got).every((s) => s.done === 0 && !s.estimate)).toBe(true)
+    expect(withStartEstimate(null, { listening: { done: 7, firstTry: 7 } }).listening).toEqual({ done: 7, firstTry: 7, estimate: true })
+  })
+})
+
 describe('навыки по уровню', () => {
   it('доля с первой попытки; меньше пяти заданий — «мало данных»', () => {
     expect(MIN_LEVEL_TASKS).toBe(5)

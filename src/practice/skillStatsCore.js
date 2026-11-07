@@ -33,6 +33,25 @@ export function levelShare({ done = 0, firstTry = 0 } = {}) {
   return Math.round(Math.min(1, firstTry / done) * 100)
 }
 
+// Старт от прошлых заданий (решение владельца 07.11.2026). Задания по уровню копятся только с этапа 1 (skill_level_stat),
+// и без старта у всех учеников после выката был бы «мало данных». Поэтому, пока заданий текущего уровня меньше
+// MIN_LEVEL_TASKS, навык считается по общему итогу (skill_stat: все уровни, новые задания уровня — в нём же, двойного
+// счёта нет) и помечается estimate; набралось пять заданий уровня — только уровень. Мало и того, и другого — «мало данных».
+/** { skill: { done, firstTry, estimate? } } — навыки уровня, где их мало, — общим итогом. */
+export function withStartEstimate(levelStats, totalStats) {
+  const out = {}
+  for (const skill of SKILLS) {
+    const lv = levelStats?.[skill] || {}
+    const total = totalStats?.[skill] || {}
+    const lvDone = Number(lv.done) || 0
+    const totalDone = Number(total.done) || 0
+    out[skill] = lvDone < MIN_LEVEL_TASKS && totalDone >= MIN_LEVEL_TASKS
+      ? { done: totalDone, firstTry: Number(total.firstTry) || 0, estimate: true }
+      : { done: lvDone, firstTry: Number(lv.firstTry) || 0 }
+  }
+  return out
+}
+
 /** 2..10 полосок по доле (levelShare); нет доли — 2, как у пустого навыка. */
 export function shareBars(percent) {
   if (percent == null) return 2

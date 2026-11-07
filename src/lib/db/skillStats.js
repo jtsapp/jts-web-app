@@ -53,6 +53,43 @@ export async function loadLevelSkillStats(profileId, level, sql = getSql()) {
   return out
 }
 
+/**
+ * Навыки уровня последних заданий ученика — для карточки преподавателя. Своего уровня ученика у неё нет: web-admin
+ * спрашивает бэкенд и кабинет параллельно. Задания без своего уровня пишутся в уровень ученика (practice/skillStats.js),
+ * поэтому свежая строка — обычно его текущий уровень; исключение — раздел со своим уровнем (воркбук A1 у ученика B1),
+ * решённый последним. Один запрос: у карточки бюджет запросов (studentActivity.js). Таблицы нет — { level: null }.
+ */
+export async function loadRecentLevelSkillStats(profileId, sql = getSql()) {
+  if (!sql) return { level: null, stats: null }
+  try {
+    const rows = await sql`
+      select skill, level, tasks_done, first_try_correct, updated_at
+      from skill_level_stat where profile_id = ${profileId}
+    `
+    let level = null
+    let latest = -Infinity
+    for (const r of rows) {
+      const code = skillLevel(r.level)
+      const at = new Date(r.updated_at).getTime()
+      if (code && Number.isFinite(at) && at > latest) {
+        latest = at
+        level = code
+      }
+    }
+    if (!level) return { level: null, stats: null }
+    const stats = emptyStats()
+    for (const r of rows) {
+      if (skillLevel(r.level) === level && SKILLS.includes(r.skill)) {
+        stats[r.skill] = { done: Number(r.tasks_done) || 0, firstTry: Number(r.first_try_correct) || 0 }
+      }
+    }
+    return { level, stats }
+  } catch (err) {
+    console.error('[skillStats] skill_level_stat read failed', err?.message || err)
+    return { level: null, stats: null }
+  }
+}
+
 export async function applySkillDeltas(profileId, deltas, sql = getSql(), byLevel = {}) {
   if (!sql) return
   const entries = []

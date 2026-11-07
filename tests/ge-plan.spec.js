@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 
 // План по дням общего курса (спека 2026-10-13): «Сегодня» на «Главной» по плану бэкенда → «Весь план» → неделя →
 // перенос своей задачи. Бэкенд подменён — проверяем экраны и запрос переноса. GE_SHOTS=<папка> — снять скриншоты.
@@ -89,6 +90,8 @@ async function setup(page) {
   })
   await page.route('**/api/auth/me', (route) => route.fulfill(json({ user: me })))
   await page.route('**/api/profile/level-goal', (route) => route.fulfill(json({ configured: true, goal: null })))
+  // после общего маршрута бэкенда: окно «Документы платформы» иначе закрывало «Главную» (его ответ — {})
+  await mockGates(page)
   return state
 }
 
@@ -106,7 +109,9 @@ test('«Сегодня» на «Главной» по плану → весь п
   // урок курса подписан по тропе: L1, L2 пройдены — следующий шаг A2 — третий урок курса
   await expect(card.locator('.ge-task.is-course')).toContainText('Урок:')
   await expect(card).toContainText('6 / 15 мин')
-  await expect(card).toContainText('Unit 3 · Past Simple')
+  // домашка и задачи преподавателя — не в «Сегодня» (ТЗ v2.0 9.1): они в полном плане и в блоках расписания и домашки
+  await expect(card).not.toContainText('Unit 3 · Past Simple')
+  await expect(card).not.toContainText('Посмотри серию')
   await expect(page.locator('.hm-recommend')).toHaveCount(0)
   await shot(page, `home-${info.project.name}`)
 
@@ -138,11 +143,12 @@ test('без ручки плана (старый бэкенд отвечает {
   await expect(page.locator('.ge-today')).toHaveCount(0)
 })
 
-test('задача преподавателя: метка, комментарий и «Отметить выполненным»', async ({ page }) => {
+test('задача преподавателя в полном плане: метка, комментарий и «Отметить выполненным»', async ({ page }) => {
   test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
   const state = await setup(page)
-  await page.goto('/?screen=home')
-  const row = page.locator('.ge-today .ge-task.is-teacher')
+  // в «Сегодня» на «Главной» задач преподавателя нет (ТЗ v2.0 9.1) — отмечает он их в «Моём плане»
+  await page.goto('/?screen=ge-plan')
+  const row = page.getByRole('complementary', { name: 'Задачи дня' }).locator('.ge-task.is-teacher')
   await expect(row).toBeVisible({ timeout: 20000 })
   await expect(row).toContainText('Посмотри серию')
   await expect(row).toContainText('Добавлено преподавателем')

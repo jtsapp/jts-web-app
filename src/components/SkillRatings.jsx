@@ -47,7 +47,11 @@ export default function SkillRatings({ stats, loading, level = null }) {
   return (
     <>
       <div className="pf-label">{t('profile.skills.title')}</div>
-      {level && <p className="pf-skills__src">{t('home.skills.source', { level })}</p>}
+      {level && (
+        <p className="pf-skills__src">
+          {t(SKILLS.some((s) => stats?.[s]?.estimate) ? 'home.skills.sourceEstimate' : 'home.skills.source', { level })}
+        </p>
+      )}
       <div className="pf-card pf-skills">
         {SKILLS.map((skill) => (
           <SkillRow

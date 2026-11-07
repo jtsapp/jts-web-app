@@ -998,8 +998,13 @@ function SkillsCard({ t, summary, hasData, levelUnknown, onTest }) {
   return (
     <section className={`hm-card hm-skills${!hasData && !levelUnknown ? ' hm-skills--empty' : ''}`}>
       <h2 className="hm-card__title">{t('home.skills.title')}</h2>
-      {/* Откуда цифры — одной строкой (ТЗ 5.5): тот же расчёт, что в Профиле. */}
-      {summary.level && <p className="hm-skills__src">{t('home.skills.source', { level: summary.level })}</p>}
+      {/* Откуда цифры — одной строкой (ТЗ 5.5): тот же расчёт, что в Профиле. Где заданий уровня меньше пяти, процент — по
+          всем прошлым заданиям навыка (withStartEstimate), и подпись это говорит. */}
+      {summary.level && (
+        <p className="hm-skills__src">
+          {t(summary.ranked?.some((r) => r.estimate) ? 'home.skills.sourceEstimate' : 'home.skills.source', { level: summary.level })}
+        </p>
+      )}
       <div className="hm-skills__list">
         {rows.map(({ skill, percent }) => (
           <div className="hm-skill" key={skill}>

@@ -225,6 +225,19 @@ describe('skillStats — по уровню', () => {
     setSkillLevel(null)
   })
 
+  it('заданий уровня меньше пяти — общий итог навыка как оценка (и на устройстве, и с сервера)', async () => {
+    setSkillLevel('A2')
+    for (let i = 0; i < 6; i++) recordSkill('grammar', i > 0)
+    // все шесть ответов и есть задания A2 — набралось, оценки нет
+    expect(readLocalLevelSkillStats('A2').grammar).toEqual({ done: 6, firstTry: 5 })
+    // на B1 по грамматике ничего — показывает общий итог
+    expect(readLocalLevelSkillStats('B1').grammar).toEqual({ done: 6, firstTry: 5, estimate: true })
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ stats: { reading: { done: 30, firstTry: 21 } }, level: 'B1', levelStats: { reading: { done: 1, firstTry: 0 } } }) })))
+    const got = await loadLevelSkillStatsRemote('TOK-A', 'B1')
+    expect(got.reading).toEqual({ done: 30, firstTry: 21, estimate: true })
+    setSkillLevel(null)
+  })
+
   it('с сервера: навыки уровня в зеркало; не ответил — null', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url) => ({ ok: true, json: async () => ({ stats: {}, level: 'B1', levelStats: { listening: { done: 9, firstTry: 6 } }, url }) })))
     const got = await loadLevelSkillStatsRemote('TOK-A', 'b1')

@@ -61,12 +61,16 @@ export function skillHighlights(ranked) {
 // Навыки текущего уровня: формула — levelShare (practice/skillStatsCore.js), одна на «Главной», в Профиле и у Луны.
 export const levelSkillPercent = levelShare
 
-/** [{ skill, percent, done }] — от сильного к слабому, «мало данных» в конце в порядке SKILLS. */
+/**
+ * [{ skill, percent, done, estimate }] — от сильного к слабому, «мало данных» в конце в порядке SKILLS. estimate — процент
+ * по всем прошлым заданиям, пока заданий уровня меньше пяти (withStartEstimate).
+ */
 export function rankLevelSkills(stats) {
   return SKILLS.map((skill) => ({
     skill,
     percent: levelSkillPercent(stats?.[skill]),
     done: Number(stats?.[skill]?.done) || 0,
+    estimate: Boolean(stats?.[skill]?.estimate),
   })).sort((a, b) => {
     if (a.percent == null || b.percent == null) return (a.percent == null) - (b.percent == null) || SKILLS.indexOf(a.skill) - SKILLS.indexOf(b.skill)
     return b.percent - a.percent || SKILLS.indexOf(a.skill) - SKILLS.indexOf(b.skill)

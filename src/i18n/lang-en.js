@@ -108,6 +108,7 @@ const dict = {
     'home.practice.many': '{n} practices',
     'home.skills.title': 'Strengths and weak spots',
     'home.skills.source': 'Level {level} · % correct on the first try in level {level} tasks',
+    'home.skills.sourceEstimate': 'Level {level} · % correct on the first try in level {level} tasks; where there are fewer than five yet — across all past tasks',
     'home.skills.few': 'not enough data',
     'home.skills.best': 'Strongest — {skill}',
     'home.skills.worst': 'Worth working on — {skill}',

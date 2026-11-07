@@ -97,7 +97,7 @@ async function finishTestThroughBridge(page) {
   const f = await (await frame.elementHandle()).contentFrame()
   // Страница теста загрузилась и мост поставил крючки
   await f.waitForFunction(() => typeof window.JTSPlacementConfig?.openLearning === 'function', null, { timeout: 30000 })
-  await expect(page.frameLocator('.pl-page__frame').getByText('Давайте определим')).toBeVisible()
+  await expect(page.frameLocator('.pl-page__frame').getByText('Давай определим')).toBeVisible()
   return f.evaluate((env) => window.JTSPlacementConfig.openLearning(env, { intent: 'open_existing_roadmap' }), ENVELOPE)
 }
 

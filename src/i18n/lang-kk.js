@@ -108,6 +108,7 @@ const dict = {
     'home.practice.many': '{n} тәжірибе',
     'home.skills.title': 'Күшті және әлсіз жақтар',
     'home.skills.source': '{level} деңгейі · {level} деңгейіндегі тапсырмалардағы бірінші әрекеттен дұрыс жауаптар үлесі',
+    'home.skills.sourceEstimate': '{level} деңгейі · {level} деңгейіндегі тапсырмалардағы бірінші әрекеттен дұрыс жауаптар үлесі; олар әзірге бестен аз болса — бұрынғы барлық тапсырмалар бойынша',
     'home.skills.few': 'дерек аз',
     'home.skills.best': 'Ең күштісі — {skill}',
     'home.skills.worst': 'Жетілдіру керек — {skill}',

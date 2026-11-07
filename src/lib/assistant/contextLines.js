@@ -7,6 +7,7 @@
 // Домашка — тем же правилом статусов, что раздел (lib/homeworkList.js): Луна видела одну работу
 // из трёх (аудит 06.11.2026, вопрос 6) — фильтр «срок ≤ 4 дней, не больше 5».
 
+import { isOwnTask } from '../../ge/plan/ownTasks.js'
 import { withStates } from '../homeworkList.js'
 import { destinationName, destinationOf } from './destinations.js'
 
@@ -121,9 +122,8 @@ const MODULE_WORDS = {
   vocabulary_sr: ['слова в «Словаре»', 'vocab'],
 }
 const taskWords = (task) => (task.kind === 'course' ? ['урок курса', 'learning'] : MODULE_WORDS[task.module] || ['практика', 'practice'])
-// Свои задачи плана — урок курса и практика. Занятия и домашка преподавателя в «Сегодня» не входят (ТЗ 9.1,
-// решение владельца 07.11.2026): у них свои строки профиля.
-const isOwn = (task) => (task?.kind === 'course' || task?.kind === 'practice') && task?.origin !== 'teacher'
+// Свои задачи плана — то же правило, что у блока «Сегодня» (isOwnTask): у занятий и домашки свои строки профиля.
+const isOwn = isOwnTask
 const STALE_DAYS = 14
 
 function taskState(task) {

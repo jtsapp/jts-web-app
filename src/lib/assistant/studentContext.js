@@ -34,7 +34,7 @@ import { BACKEND_URL, profileIdForUser, fetchTutorLimitOverride } from '../auth-
 import { isDbConfigured } from '../db/sql.js'
 import { levelSkillHighlights, rankLevelSkills } from '../levelProgress.js'
 import { loadLevelSkillStats } from '../db/skillStats.js'
-import { skillLevel } from '../../practice/skillStatsCore.js'
+import { skillLevel, withStartEstimate } from '../../practice/skillStatsCore.js'
 import { homeworkCards } from '../homeworkList.js'
 import { geGoalLine, gePlanToday, homeworkLine, lessonsPackageLine, tokensLine } from './contextLines.js'
 import { buildStudentAppActivity, loadStudentAppActivity } from '../db/studentActivity.js'
@@ -92,12 +92,16 @@ function scheduleLines(occurrences, now) {
 }
 
 // Навыки — по заданиям текущего уровня, той же формулой, что «Сильные и слабые стороны» на «Главной» и в Профиле
-// (levelShare; ТЗ v2.0, 5.5). «Мало данных» — меньше пяти заданий уровня: такой навык ни сильным, ни слабым не называть.
+// (levelShare; ТЗ v2.0, 5.5). Где заданий уровня меньше пяти — по всем прошлым заданиям навыка (withStartEstimate,
+// решение владельца 07.11.2026), как и на экранах. «Мало данных» — мало и тех: такой навык ни сильным, ни слабым не называть.
 function skillsLine(stats, level) {
   const ranked = rankLevelSkills(stats)
   if (!ranked.some((r) => r.done > 0)) return null
-  const named = ranked.map((r) => (r.percent == null ? `${r.skill} — мало данных (${r.done})` : `${r.skill} ${r.percent}% (${r.done})`))
-  return `Навыки (уровень ${level}, % верных с первой попытки в заданиях этого уровня, в скобках — число заданий): ${named.join(', ')}.`
+  const named = ranked.map((r) => {
+    if (r.percent == null) return `${r.skill} — мало данных (${r.done})`
+    return `${r.skill} ${r.percent}% (${r.done}${r.estimate ? ', по всем прошлым заданиям' : ''})`
+  })
+  return `Навыки (уровень ${level}, % верных с первой попытки в заданиях этого уровня; пока их меньше пяти — по всем прошлым заданиям навыка; в скобках — число заданий): ${named.join(', ')}.`
 }
 
 function tutorLine(limit, ecosystemWeek) {
@@ -251,7 +255,8 @@ async function buildStudentContext(token, profileId, now, user, { rewards = fals
   ] = results.map(settled)
   // null — работы не загрузились (не «домашки нет»); задания с урока — как в разделе: их сбой работы не прячет.
   const homeworkList = Array.isArray(homework) ? homeworkCards(homework, Array.isArray(assignments) ? assignments : []) : null
-  const skillStats = levelStats || null
+  // общий итог навыков — из той же сборки, что карточка преподавателя (raw.stats): старт, пока заданий уровня мало
+  const skillStats = levelStats ? withStartEstimate(levelStats, tracker?.raw?.stats) : null
   const plan = gePlanToday(gePlan, now)
   const weekModules = tracker?.activity?.week?.modules || null
 

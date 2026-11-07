@@ -206,6 +206,17 @@ describe('Главная демо-аккаунта', () => {
     expect(rows.at(-1)).toEqual(['Чтение', 'мало данных'])
   })
 
+  // Решение владельца 07.11.2026: пока заданий уровня меньше пяти, процент — по всем прошлым заданиям, и подпись это говорит.
+  it('процент по прошлым заданиям помечен в подписи', () => {
+    localStats.value = { ...FULL_STATS, reading: { done: 40, firstTry: 30, estimate: true } }
+    const { container } = renderHome()
+    expect(container.querySelector('.hm-skills__src').textContent).toBe(
+      'Уровень B1 · % верных с первой попытки в заданиях уровня B1; где их пока меньше пяти — по всем прошлым заданиям',
+    )
+    const reading = [...container.querySelectorAll('.hm-skill')].find((r) => r.querySelector('.hm-skill__name').textContent === 'Чтение')
+    expect(reading.querySelector('.hm-skill__pct').textContent).toBe('75%')
+  })
+
   it('навыки идут от сильного к слабому', () => {
     const { container } = renderHome()
     const names = [...container.querySelectorAll('.hm-skill__name')].map((n) => n.textContent)

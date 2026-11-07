@@ -10,6 +10,7 @@
 // практика, материал Практики (kind unit) и своё задание (kind custom). Подписи у них свои, из extra.
 
 import { practiceNavTarget } from '../../lib/practiceTarget.js'
+import { isOwnTask } from './ownTasks.js'
 
 export const MODULES = ['ai_tutor', 'workbooks', 'shadowing', 'media_practice', 'vocabulary_sr']
 
@@ -211,14 +212,15 @@ export function roadWeek(tasks, monday, today) {
 /**
  * «Сегодня» на «Главной»: просроченное этой недели (до трёх — после недели отпуска список не должен заваливать экран)
  * и задачи дня. Открытого нет (выходной, всё сделано) — ahead: две ближайшие следующие, чтобы «Сегодня» не врало
- * «пусто» посреди недели.
+ * «пусто» посреди недели. Только свои задачи плана (isOwnTask): занятия, домашка и задачи преподавателя остаются в
+ * полном плане и в расписании и домашке на «Главной» (ТЗ v2.0 9.1, решение владельца 07.11.2026).
  */
 export function todayView(plan, maxOverdue = 3) {
   const today = plan?.today
   if (!today) return { tasks: [], ahead: [] }
   const monday = mondayOf(today)
   // только по дате: sort стабилен, и порядок бэкенда внутри дня (занятие, ДЗ, урок, практика) сохраняется
-  const tasks = [...(plan?.tasks || [])].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+  const tasks = (plan?.tasks || []).filter(isOwnTask).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
   const overdue = tasks.filter((x) => x.date < today && x.date >= monday && x.overdue && x.status !== 'completed').slice(0, maxOverdue)
   const list = [...overdue, ...tasks.filter((x) => x.date === today)]
   if (list.some((x) => x.status !== 'completed')) return { tasks: list, ahead: [] }
