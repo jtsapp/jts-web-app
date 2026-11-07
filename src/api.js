@@ -785,6 +785,14 @@ export function markGeTaskDone(token, id, done) {
   return authPut(`/mobile/ge/plan/tasks/${encodeURIComponent(id)}/done`, token, { done: !!done })
 }
 
+/**
+ * «У меня мало времени» (ТЗ v2.0, 5.2): сегодняшний день плана под minutes (5–180; экран даёт 10/20/30), null —
+ * обычный план. Ответ — план, как у getGePlan, плюс replan { minutes, kept, moved } (backend docs/ge/PLAN.md).
+ */
+export async function replanGeDay(token, minutes) {
+  return gePlanShape(await authPost('/mobile/ge/plan/replan', token, { minutes: minutes || null }))
+}
+
 // Работа ученика в самостоятельном уроке: ответы, проверенные карточки и
 // последний открытый шаг. Отдельной ручкой, а не полем дерева: дерево читается
 // на открытие раздела целиком, и таскать в нём работу по всем урокам ради
@@ -2667,11 +2675,12 @@ export async function getIeltsMe(token) {
 // Обновление профиля (PUT /user/update, Bearer). Тело — как UpdateUserRequest
 // мобилки: name обязателен, остальные поля шлём только если заданы, чтобы не
 // затирать то, что уже хранит бэкенд. Возвращает обновлённый UserInfo.
+// gender — 'MALE' | 'FEMALE' | '' (стереть); не передан — бэкенд пол не трогает (backend V542).
 export async function updateUser(token, { name, email, city, gender, birthDate, phone }) {
   const payload = { name }
   if (email) payload.email = email
   if (city) payload.city = city
-  if (gender) payload.gender = gender
+  if (gender != null) payload.gender = gender
   if (birthDate) payload.birthDate = birthDate
   if (phone) payload.phone = normalizePhone(phone)
   let res

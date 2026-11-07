@@ -99,7 +99,7 @@ describe('первая реплика Луны при открытии окна'
     expect(body.screen.text).toContain('Главная')
     // Пометку ученик не видит; вопросы-подсказки после реплики на месте — он сам ещё ничего не спросил.
     expect(screen.queryByText(OPENING_MARK)).toBeNull()
-    expect(screen.getByRole('button', { name: 'Почему мой ответ неверный?' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Что мне делать сегодня?' })).toBeTruthy()
     // Озвучено то, что написано.
     await waitFor(() => expect(queue.said.join(' ')).toContain('С неё и стоит начать'), WAIT)
   })
@@ -243,7 +243,7 @@ describe('первая реплика Луны при открытии окна'
     fetchMock.mockImplementationOnce(async () => streamResponse(['План такой.']))
     fireEvent.click(screen.getByRole('button', { name: 'Дай план на неделю' }))
     await screen.findByText('План такой.', {}, WAIT)
-    expect(screen.queryByRole('button', { name: 'Почему мой ответ неверный?' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Что мне делать сегодня?' })).toBeNull()
   })
 
   it('без greetOnOpen окно молчит до вопроса — как раньше', async () => {

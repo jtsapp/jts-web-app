@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 
 // План по дням общего курса (спека 2026-10-13): «Сегодня» на «Главной» по плану бэкенда → «Весь план» → неделя →
 // перенос своей задачи. Бэкенд подменён — проверяем экраны и запрос переноса. GE_SHOTS=<папка> — снять скриншоты.
@@ -25,8 +26,9 @@ const profile = {
   journey: { start: 'A2', current: { level: 'A2', percent: 40 }, target: 'B2', reached: false },
 }
 
-function planWith(tasks) {
+function planWith(tasks, shortDay = null) {
   return {
+    shortDay,
     today,
     state: 'ready',
     route: 'self_study',
@@ -43,6 +45,8 @@ async function setup(page) {
   const state = {
     moves: [],
     dones: [],
+    replans: [],
+    shortDay: null,
     tasks: [
       { id: 1, date: today, kind: 'course', module: null, minutes: 30, got: 0, status: 'available', overdue: false, movable: true },
       { id: 2, date: today, kind: 'practice', module: 'ai_tutor', minutes: 15, got: 6, status: 'in_progress', overdue: false, movable: true },
@@ -75,7 +79,16 @@ async function setup(page) {
       state.tasks = state.tasks.map((x) => (String(x.id) === marked[1] ? { ...x, status: done ? 'completed' : 'available', got: done ? 1 : 0 } : x))
       return route.fulfill(json({ id: Number(marked[1]), status: done ? 'completed' : 'available' }))
     }
-    if (url.includes('/mobile/ge/plan')) return route.fulfill(json(planWith(state.tasks)))
+    // «У меня мало времени» (ТЗ v2.0, 5.2): 20 минут — урок курса уходит на завтра, null — день как был
+    if (/\/mobile\/ge\/plan\/replan/.test(url) && req.method() === 'POST') {
+      const { minutes } = JSON.parse(req.postData())
+      state.replans.push(minutes)
+      state.shortDay = minutes ? { minutes } : null
+      state.tasks = state.tasks.map((x) =>
+        x.id === 1 ? (minutes ? { ...x, date: add(1), originalDate: today, status: 'planned', deferred: true } : { ...x, date: today, status: 'available', deferred: false }) : x)
+      return route.fulfill(json({ ...planWith(state.tasks, state.shortDay), replan: { minutes, kept: 1, moved: minutes ? 1 : 0 } }))
+    }
+    if (url.includes('/mobile/ge/plan')) return route.fulfill(json(planWith(state.tasks, state.shortDay)))
     if (url.includes('/mobile/ge/profile')) return route.fulfill(json(profile))
     if (url.includes('/user/language-level')) return route.fulfill(json({ languageLevel: 'A2' }))
     if (url.includes('/user/me')) return route.fulfill(json(me))
@@ -89,6 +102,8 @@ async function setup(page) {
   })
   await page.route('**/api/auth/me', (route) => route.fulfill(json({ user: me })))
   await page.route('**/api/profile/level-goal', (route) => route.fulfill(json({ configured: true, goal: null })))
+  // после общего маршрута бэкенда: окно «Документы платформы» иначе закрывало «Главную» (его ответ — {})
+  await mockGates(page)
   return state
 }
 
@@ -106,7 +121,9 @@ test('«Сегодня» на «Главной» по плану → весь п
   // урок курса подписан по тропе: L1, L2 пройдены — следующий шаг A2 — третий урок курса
   await expect(card.locator('.ge-task.is-course')).toContainText('Урок:')
   await expect(card).toContainText('6 / 15 мин')
-  await expect(card).toContainText('Unit 3 · Past Simple')
+  // домашка и задачи преподавателя — не в «Сегодня» (ТЗ v2.0 9.1): они в полном плане и в блоках расписания и домашки
+  await expect(card).not.toContainText('Unit 3 · Past Simple')
+  await expect(card).not.toContainText('Посмотри серию')
   await expect(page.locator('.hm-recommend')).toHaveCount(0)
   await shot(page, `home-${info.project.name}`)
 
@@ -129,6 +146,26 @@ test('«Сегодня» на «Главной» по плану → весь п
   await shot(page, `plan-month-${info.project.name}`)
 })
 
+test('«У меня мало времени»: 20 минут — урок на завтра строкой «Перенесено», и обратно', async ({ page }, info) => {
+  test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
+  const state = await setup(page)
+  await page.goto('/?screen=home')
+  const card = page.locator('.ge-today')
+  await expect(card).toBeVisible({ timeout: 20000 })
+  await card.getByRole('button', { name: 'У меня мало времени' }).click()
+  await card.getByRole('group', { name: 'Сколько времени сегодня?' }).getByRole('button', { name: '20 мин' }).click()
+  await expect.poll(() => state.replans).toEqual([20])
+  await expect(card).toContainText('План на сегодня — 20 мин')
+  await expect(card.getByRole('heading', { name: 'Перенесено на другой день' })).toBeVisible()
+  await expect(card.locator('.ge-task.is-course .ge-task__chip.is-moved')).toContainText('перенесено с')
+  await shot(page, `home-low-time-${info.project.name}`)
+
+  await card.getByRole('button', { name: 'Вернуть обычный план' }).click()
+  await expect.poll(() => state.replans).toEqual([20, null])
+  await expect(card.getByRole('button', { name: 'У меня мало времени' })).toBeVisible()
+  await expect(card.getByRole('heading', { name: 'Перенесено на другой день' })).toHaveCount(0)
+})
+
 test('без ручки плана (старый бэкенд отвечает {}) — прежняя «Что сделать сегодня»', async ({ page }) => {
   test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
   await setup(page)
@@ -138,11 +175,12 @@ test('без ручки плана (старый бэкенд отвечает {
   await expect(page.locator('.ge-today')).toHaveCount(0)
 })
 
-test('задача преподавателя: метка, комментарий и «Отметить выполненным»', async ({ page }) => {
+test('задача преподавателя в полном плане: метка, комментарий и «Отметить выполненным»', async ({ page }) => {
   test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
   const state = await setup(page)
-  await page.goto('/?screen=home')
-  const row = page.locator('.ge-today .ge-task.is-teacher')
+  // в «Сегодня» на «Главной» задач преподавателя нет (ТЗ v2.0 9.1) — отмечает он их в «Моём плане»
+  await page.goto('/?screen=ge-plan')
+  const row = page.getByRole('complementary', { name: 'Задачи дня' }).locator('.ge-task.is-teacher')
   await expect(row).toBeVisible({ timeout: 20000 })
   await expect(row).toContainText('Посмотри серию')
   await expect(row).toContainText('Добавлено преподавателем')

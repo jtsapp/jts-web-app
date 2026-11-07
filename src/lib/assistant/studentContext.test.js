@@ -12,7 +12,7 @@ vi.mock('../auth-server.js', () => ({
   fetchTutorLimitOverride: vi.fn(async () => null),
 }))
 vi.mock('../db/sql.js', () => ({ isDbConfigured: () => true }))
-vi.mock('../db/skillStats.js', () => ({ loadSkillStats: vi.fn(async () => null) }))
+vi.mock('../db/skillStats.js', () => ({ loadSkillStats: vi.fn(async () => null), loadLevelSkillStats: vi.fn(async () => null) }))
 vi.mock('../db/ecosystem.js', async () => {
   const actual = await vi.importActual('../db/ecosystem.js')
   return { ...actual, loadEcosystemWeek: vi.fn(async () => null) }
@@ -56,7 +56,7 @@ const {
   CONTEXT_STALE_MS,
 } = await import('./studentContext.js')
 const { fetchTutorLimitOverride } = await import('../auth-server.js')
-const { loadSkillStats } = await import('../db/skillStats.js')
+const { loadSkillStats, loadLevelSkillStats } = await import('../db/skillStats.js')
 const { loadEcosystemWeek } = await import('../db/ecosystem.js')
 const { listIeltsScores } = await import('../db/ielts.js')
 const { loadAdviceNotes, loadTutorSessionsSince, loadTutorMistakes, markAdviceDone } = await import('../db/assistantTracker.js')
@@ -73,6 +73,7 @@ describe('профиль ученика для помощника', () => {
     fetchImpl.value = async () => new Response(null, { status: 404 })
     fetchTutorLimitOverride.mockResolvedValue(null)
     loadSkillStats.mockResolvedValue(null)
+    loadLevelSkillStats.mockResolvedValue(null)
     loadEcosystemWeek.mockResolvedValue(null)
     listIeltsScores.mockResolvedValue([])
     activity.extra = {}
@@ -91,24 +92,97 @@ describe('профиль ученика для помощника', () => {
     expect(await loadStudentContext('tok', user)).toBeNull()
   })
 
-  it('складывает домашку, срок которой в пределах недели, в одну строку', async () => {
+  // Аудит ТЗ v2.0 (06.11.2026): Луна видела одну работу из трёх — фильтр «срок ≤ 4 дней, не больше 5» и без заданий с
+  // урока. Теперь вся домашка раздела со статусами — тем же правилом, что бейджи «Домашней работы».
+  it('вся домашка раздела со статусами: работы и задания с урока, просроченное первым', async () => {
     fetchImpl.value = async (url) => {
       if (backendPath(url) === '/admin/homework/my') {
         return jsonRes([
-          { title: 'Эссе про путешествие', status: 'ASSIGNED', dueDate: '2026-09-25T00:00:00Z' },
-          { title: 'Проверено давно', status: 'GRADED', dueDate: '2026-09-01T00:00:00Z' },
-          { title: 'Через месяц', status: 'ASSIGNED', dueDate: '2026-11-01T00:00:00Z' },
+          { id: 1, title: 'Эссе про путешествие', status: 'ASSIGNED', dueDate: '2026-09-25', exercises: [{}, {}, {}] },
+          { id: 2, title: 'Проверено давно', status: 'COMPLETED', dueDate: '2026-09-01' },
+          { id: 3, title: 'Через месяц', status: 'ASSIGNED', dueDate: '2026-11-01' },
+          { id: 4, title: 'Сдано', status: 'SUBMITTED', dueDate: '2026-09-20' },
+        ])
+      }
+      if (backendPath(url) === '/student/assignments') {
+        return jsonRes([
+          { id: 9, materialTitle: 'Unit 4. Past Simple', status: 'ASSIGNED', isOverdue: true, dueDate: '2026-09-10' },
+          { id: 10, materialTitle: 'Внутри работы', status: 'ASSIGNED', homeworkAssignmentId: 1 },
         ])
       }
       return new Response(null, { status: 404 })
     }
     const text = await loadStudentContext('tok', user, new Date('2026-09-23T00:00:00Z').getTime())
-    expect(text).toContain('Домашка (1 к сроку на этой неделе)')
-    expect(text).toContain('Эссе про путешествие')
-    // Сколько дней до срока считает код: с одной датой «Сегодня» модель путала «завтра» и «через два дня».
-    expect(text).toContain('«Эссе про путешествие» — до 2026-09-25 (через 2 дн.)')
-    expect(text).not.toContain('Проверено давно')
-    expect(text).not.toContain('Через месяц')
+    expect(text).toContain(
+      'Домашка от преподавателя (все работы раздела «Домашняя работа»), открыто 3: «Unit 4. Past Simple» — просрочено, срок был 2026-09-10; «Эссе про путешествие» — задано, до 2026-09-25 (через 2 дн.), заданий 3; «Через месяц» — задано, до 2026-11-01 (через 39 дн.). Кроме того: на проверке 1, проверено 1.',
+    )
+    // Выдача внутри своей работы — не отдельная работа (как в разделе).
+    expect(text).not.toContain('Внутри работы')
+  })
+
+  it('домашка не загрузилась — так и сказано, а не «работ нет»', async () => {
+    fetchImpl.value = async (url) => {
+      if (backendPath(url) === '/admin/homework/my') return new Response(null, { status: 502 })
+      if (backendPath(url) === '/mobile/level-progress') return jsonRes({ level: 'A2' })
+      return new Response(null, { status: 404 })
+    }
+    const text = await loadStudentContext('tok', user)
+    expect(text).toContain('Домашку загрузить не удалось — не говори, что её нет')
+  })
+
+  it('пакет уроков и план дня General English: следующий шаг плана — «Совет сайта»', async () => {
+    fetchImpl.value = async (url) => {
+      const p = backendPath(url)
+      if (p === '/admin/homework/my') return jsonRes([])
+      if (p === '/admin/lessons/summary') return jsonRes({ conducted: 15, remaining: 1, cancelled: 0, rescheduled: 2 })
+      if (p === '/mobile/ge/profile') return jsonRes({ targetLevel: 'B1', deadline: { date: '2027-01-21' } })
+      if (p === '/mobile/ge/plan') {
+        return jsonRes({
+          state: 'ready',
+          today: '2026-11-07',
+          tasks: [
+            { id: 'c1', date: '2026-11-07', kind: 'course', status: 'available', minutes: 30 },
+            { id: 'p1', date: '2026-11-07', kind: 'practice', module: 'ai_tutor', status: 'in_progress', minutes: 15, got: 6 },
+            { id: 'h1', date: '2026-11-07', kind: 'homework', status: 'available', title: 'Unit 5' },
+            { id: 't1', date: '2026-11-07', kind: 'practice', module: 'vocabulary_sr', origin: 'teacher', status: 'available', minutes: 10 },
+          ],
+        })
+      }
+      return new Response(null, { status: 404 })
+    }
+    const text = await loadStudentContext('tok', user, Date.parse('2026-11-07T08:00:00Z'))
+    expect(text).toContain('Уроки с преподавателем по пакету: проведено 15, осталось 1 (перенесено 2). Пакет заканчивается')
+    expect(text).toContain('Цель ученика (профиль General English, как на баннере Главной): B1, срок 2027-01-21.')
+    // В «Сегодня» — только свои задачи плана (ТЗ 9.1): без домашки и задачи преподавателя.
+    expect(text).toContain('План на сегодня (тот же, что блок «Сегодня» на Главной; занятия и домашка преподавателя — не в нём): урок курса — 30 мин, не начато; разговор со Speaking Buddy — 15 мин, начато, 6 из 15 мин. Сделано 6 из 45 мин.')
+    expect(text).toContain('Совет сайта, что сделать сейчас: Повторение (карта курса) — следующий шаг плана на сегодня (урок курса) (метка [[OPEN learning]]).')
+  })
+
+  // Домашки в плане нет (решение владельца), но «сначала урок курса» при просрочке — то «всё сделано», что ТЗ запрещает.
+  it('просроченная домашка в «Совете сайта» раньше шага плана', async () => {
+    fetchImpl.value = async (url) => {
+      const p = backendPath(url)
+      if (p === '/admin/homework/my') return jsonRes([{ id: 1, title: 'Unit 4', status: 'ASSIGNED', dueDate: '2026-10-13' }])
+      if (p === '/mobile/ge/plan') {
+        return jsonRes({ state: 'ready', today: '2026-11-07', tasks: [{ id: 'c1', date: '2026-11-07', kind: 'course', status: 'available', minutes: 30 }] })
+      }
+      return new Response(null, { status: 404 })
+    }
+    const text = await loadStudentContext('tok', user, Date.parse('2026-11-07T08:00:00Z'))
+    expect(text).toContain('Совет сайта, что сделать сейчас: Домашняя работа — срок домашки уже прошёл (метка [[OPEN homework]]).')
+    expect(text).toContain('План на сегодня')
+  })
+
+  it('токены — только где они включены на стенде', async () => {
+    fetchImpl.value = async (url) =>
+      backendPath(url) === '/cabinet/my-tokens'
+        ? jsonRes({ period: { balance: 120, endsOn: '2026-11-30', daysLeft: 23, idlePoints: 10 }, prizes: [{ name: 'Стикеры', costTokens: 100 }, { name: 'Кружка', costTokens: 300 }] })
+        : new Response(null, { status: 404 })
+    const on = await loadStudentContext('tok', user, Date.parse('2026-11-06T08:00:00Z'), { rewards: true })
+    expect(on).toContain('Токены: баланс 120; период до 2026-11-30 (осталось 23 дн.); ближайший приз «Кружка» — 300 токенов, не хватает 180; в будний день без активности ночью спишется 10 — сегодня будний.')
+    clearStudentContextCache()
+    const off = await loadStudentContext('tok', user, Date.parse('2026-11-06T08:00:00Z'))
+    expect(off || '').not.toContain('Токены')
   })
 
   // Первая реплика Луны советует то же, что карточка «Рекомендация дня» на «Главной», — с меткой раздела.
@@ -126,15 +200,15 @@ describe('профиль ученика для помощника', () => {
   const allSkills = (percentOf) =>
     Object.fromEntries(['listening', 'reading', 'writing', 'speaking', 'grammar', 'vocab'].map((k) => [k, { done: 30, firstTry: percentOf(k) }]))
 
-  it('совет сайта без горящей домашки — слабый навык, тренажёр этого навыка', async () => {
-    loadSkillStats.mockResolvedValue(allSkills((k) => (k === 'listening' ? 6 : 27)))
-    const text = await loadStudentContext('tok', user)
+  it('совет сайта без горящей домашки — слабый навык уровня, тренажёр этого навыка', async () => {
+    loadLevelSkillStats.mockResolvedValue(allSkills((k) => (k === 'listening' ? 6 : 27)))
+    const text = await loadStudentContext('tok', { ...user, languageLevel: 'A2' })
     expect(text).toMatch(/Совет сайта, что сделать сейчас: .+ — самый слабый навык — listening \(метка \[\[OPEN listening\]\]\)\./)
   })
 
   it('сигнала нет — и совета нет: выдумывать его Луне не из чего', async () => {
-    loadSkillStats.mockResolvedValue(allSkills(() => 27))
-    const text = await loadStudentContext('tok', user)
+    loadLevelSkillStats.mockResolvedValue(allSkills(() => 27))
+    const text = await loadStudentContext('tok', { ...user, languageLevel: 'A2' })
     expect(text).not.toContain('Совет сайта')
   })
 
@@ -163,20 +237,29 @@ describe('профиль ученика для помощника', () => {
     expect(text).toContain('Ближайших занятий в расписании нет.')
   })
 
-  it('навыки — все шесть с процентами, нули не считаются сигналом', async () => {
-    loadSkillStats.mockResolvedValue({
+  // ТЗ v2.0, 5.5: доля верных с первой попытки в заданиях ТЕКУЩЕГО уровня — та же формула, что «Главная» и Профиль;
+  // меньше пяти заданий — «мало данных», а не процент.
+  it('навыки — по заданиям уровня ученика, доля с первой попытки, «мало данных» до пяти заданий', async () => {
+    loadLevelSkillStats.mockResolvedValue({
       listening: { done: 10, firstTry: 8 },
       writing: { done: 10, firstTry: 3 },
-      speaking: { done: 0, firstTry: 0 },
+      speaking: { done: 3, firstTry: 3 },
       reading: { done: 0, firstTry: 0 },
       grammar: { done: 0, firstTry: 0 },
       vocab: { done: 0, firstTry: 0 },
     })
-    const text = await loadStudentContext('tok', user)
-    // skillPercent() взвешивает точность объёмом попыток (CONF_FULL=25) —
-    // 10 попыток дают уверенность 0.4, а не «сырую» долю верных.
-    expect(text).toContain('listening 32%')
-    expect(text).toContain('writing 12%')
+    const text = await loadStudentContext('tok', { ...user, languageLevel: 'A2' })
+    expect(loadLevelSkillStats).toHaveBeenCalledWith('user-42', 'A2')
+    expect(text).toContain('Навыки (уровень A2, % верных с первой попытки в заданиях этого уровня; пока их меньше пяти — по всем прошлым заданиям навыка; в скобках — число заданий): listening 80% (10), writing 30% (10), speaking — мало данных (3)')
+  })
+
+  // Решение владельца 07.11.2026: пока заданий уровня меньше пяти — общий итог навыка, как на «Главной».
+  it('навыки: где заданий уровня мало — по всем прошлым заданиям, с пометкой', async () => {
+    loadLevelSkillStats.mockResolvedValue({ listening: { done: 10, firstTry: 8 }, reading: { done: 2, firstTry: 2 } })
+    loadSkillStats.mockResolvedValue({ listening: { done: 30, firstTry: 20 }, reading: { done: 40, firstTry: 10 }, vocab: { done: 2, firstTry: 2 } })
+    const text = await loadStudentContext('tok', { ...user, languageLevel: 'A2' })
+    expect(text).toContain('listening 80% (10), reading 25% (40, по всем прошлым заданиям), speaking — мало данных (0)')
+    expect(text).toContain('vocab — мало данных (0)')
   })
 
   // Трекер (tracker.js): цель, две недели, разделы, ошибки из звонков и прошлые советы Луны.
@@ -190,7 +273,7 @@ describe('профиль ученика для помощника', () => {
     const text = await loadStudentContext('tok', user, Date.parse('2026-10-15T12:00:00Z'))
     expect(text).toContain('Цель уровня, которую ученик выбрал: B1 (от A2).')
     expect(text).toContain('Последние 7 дней: дней с занятиями 1, заданий 10 (верно с первой попытки 80%)')
-    expect(text).toContain('давно не открывал — Чтение (15 дн. назад); недавно — Словарь (вчера)')
+    expect(text).toContain('давно не открыты — Чтение (15 дн. назад); недавно — Словарь (вчера)')
     expect(text).toContain('Ошибки из разговоров со Speaking Buddy, ещё не пройденные: «he go to school».')
   })
 
@@ -216,7 +299,7 @@ describe('профиль ученика для помощника', () => {
     loadEcosystemWeek.mockResolvedValue({ weekStart: '2026-09-21', weekEndExclusive: '2026-09-28', voiceSeconds: 0 })
     activity.extra = { voice: [{ day: '2026-09-22', seconds: 600 }, { day: '2026-09-23', seconds: 300 }, { day: '2026-09-15', seconds: 999 }] }
     const text = await loadStudentContext('tok', user, new Date('2026-09-23T12:00:00Z').getTime())
-    expect(text).toContain('Speaking Buddy: дневной лимит 20 мин, на этой неделе уже позанимался 15 мин.')
+    expect(text).toContain('Speaking Buddy: дневной лимит 20 мин, на этой неделе занятий 15 мин.')
   })
 
   it('фактические минуты по воркбукам/шэдоуингу/словарю — только измеряемые модули', async () => {
@@ -242,7 +325,7 @@ describe('профиль ученика для помощника', () => {
       return new Response(null, { status: 404 })
     }
     const text = await loadStudentContext('tok', user)
-    expect(text).toContain('Уровень курса: B1, цель B2, пройдено 40%.')
+    expect(text).toContain('Уровень курса: B1, следующий уровень B2, пройдено 40%.')
   })
 
   it('кэширует на CONTEXT_TTL_MS — второй вызов в окне не бьёт по сети', async () => {

@@ -330,6 +330,7 @@ export const FEEDBACK_TEXTS = {
   "Что понравилось?": ["Сізге не ұнады?", "What did you like?"],
   "Что случилось?": ["Не болды?", "What happened?"],
   "Напишите пару предложений": ["Бірнеше сөйлем жазыңыз", "Write a few sentences"],
+  "Черновик подготовил помощник по вашим словам — проверьте его и отправьте сами.": ["Жобаны көмекші сіздің сөздеріңіз бойынша дайындады — тексеріп, өзіңіз жіберіңіз.", "The assistant drafted this from your words — check it and send it yourself."],
   "Скриншот или файл": ["Скриншот немесе файл", "Screenshot or file"],
   "JPG, PNG или PDF · до 10 МБ · до 5 файлов": ["JPG, PNG немесе PDF · 10 МБ дейін · 5 файлға дейін", "JPG, PNG or PDF · up to 10 MB · up to 5 files"],
   "Удалить файл {name}": ["{name} файлын жою", "Remove file {name}"],

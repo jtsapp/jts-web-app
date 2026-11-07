@@ -6,7 +6,7 @@ import { AssistantError, askAssistant } from '../lib/assistant/client.js'
 import { destinationName, destinationOf } from '../lib/assistant/destinations.js'
 import { isItemRef } from '../lib/assistant/items/refs.js'
 import { installErrorLog, recentErrors } from '../lib/assistant/errorLog.js'
-import { OPENING_MARK, WAKE_MARK, screenStateKey, stuckMark } from '../lib/assistant/opening.js'
+import { OPENING_MARK, WAKE_MARK, openingFocus, screenStateKey, stuckMark } from '../lib/assistant/opening.js'
 import { snapshotScreen, snapshotWithRefs } from '../lib/assistant/screenSnapshot.js'
 import { pressButton } from '../lib/assistant/clicker.js'
 import { playCue } from '../lib/assistant/cue.js'
@@ -24,6 +24,9 @@ import { timingParts, voiceTimingVisible } from '../lib/assistant/voiceTiming.js
 import { useWakeWord } from '../lib/assistant/wake/useWakeWord.js'
 import { isTtsActive, unlockSpeech } from '../lib/speech.js'
 import { useStuckWatch } from '../lib/assistant/useStuckWatch.js'
+import { assistantChips, chipScreenKind } from '../lib/assistant/chips.js'
+import { areRewardsEnabled } from '../config.js'
+import { replanSummary, replanToday } from '../ge/plan/replan.js'
 
 // Помощник по сайту — Луна: плавающая кнопка и окно чата поверх любого экрана
 // ученика. Где он показывается — решает App (lib/assistant/visibility.js).
@@ -276,8 +279,14 @@ const viewportNow = () => ({ w: window.innerWidth, h: window.innerHeight })
 
 // Подпись действия, когда в ответе нет своего текста (и для озвучки).
 function actionCaption(action, lang, t) {
+  if (action.kind === 'replan') return replanLabel(action, t)
   if (action.kind === 'click') return t(action.now ? 'assistant.action.clicking' : 'assistant.action.offerClick', { label: action.label })
   return t(action.now ? 'assistant.action.opening' : 'assistant.action.offerOpen', { name: openName(action, lang) })
+}
+
+// «Мало времени»: «Пересобрать план на 20 мин» / «Вернуть обычный план».
+function replanLabel(action, t) {
+  return action.minutes ? t('assistant.action.replan', { n: String(action.minutes) }) : t('assistant.action.replanReset')
 }
 
 // Что открываем — словами: у раздела имя из destinations.js, у конкретной вещи (урок 5,
@@ -450,10 +459,12 @@ function RichText({ text }) {
 // enabled=false — экран, где помощника быть не должно (экзамен, живой урок):
 // окно закрывается и кнопка пропадает, но разговор остаётся и вернётся вместе
 // с кнопкой на следующем обычном экране.
-export default function AssistantWidget({ token, screen, enabled = true, greetOnOpen = false }) {
+export default function AssistantWidget({ token, screen, enabled = true, greetOnOpen = false, format = null }) {
   const { t, lang } = useI18n()
   const persona = assistantPersona(lang)
   const [open, setOpen] = useState(false)
+  // Что на экране — задание, тест или обычный раздел — смотрим по снимку, когда окно открыто.
+  const [chipKind, setChipKind] = useState('other')
   const [messages, setMessages] = useState([]) // {role, content, voice?, opening?, offtopic?, reported?, voiceFailed?}
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
@@ -588,6 +599,21 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     return snap.text
   }, [])
 
+  // Вид экрана для готовых вопросов. Тест — по метке data-assistant-test (как у «Подсказать?»),
+  // задание — по разметке снимка (openingFocus). Читаем в нажатии на кнопку Луны (первый кадр
+  // окна — уже с нужными вопросами) и ещё раз кадром позже, когда открыто окно или сменился
+  // экран: после перехода экран дорисовывается не сразу.
+  const readChipKind = useCallback(() => {
+    const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
+    const test = Boolean(root && (root.closest?.('[data-assistant-test]') || root.querySelector('[data-assistant-test]')))
+    return chipScreenKind({ screen, test, task: Boolean(root) && openingFocus(snapshotScreen(root)).task })
+  }, [screen])
+  useEffect(() => {
+    if (!open) return undefined
+    const id = requestAnimationFrame(() => setChipKind(readChipKind()))
+    return () => cancelAnimationFrame(id)
+  }, [open, readChipKind])
+
   // Нажать кнопку Луны. note — сказать в переписке, что кнопки нет (у облачка команды
   // свой ответ); refs — номера снимка, по которому отвечали (звонок держит свои).
   const press = useCallback((action, { note = true, refs = null } = {}) => {
@@ -614,6 +640,23 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       return press(action)
     }
     const cur = stateRef.current
+    // «Мало времени» — план пересобирает бэкенд, итог пишет окно по его ответу (replanSummary): модель отвечала раньше,
+    // чем день пересобран, и сама его не видит. «Главная» перечитает план по событию replanToday.
+    if (action?.kind === 'replan') {
+      if (!cur?.enabled || !cur.token) return
+      const say = (content) => mountedRef.current && setMessages((prev) => [...prev, { role: 'assistant', content, local: true }])
+      replanToday(cur.token, action.minutes)
+        .then((plan) => say(replanSummary(cur.t, cur.lang, plan)))
+        .catch(() => say(cur.t('assistant.replan.fail')))
+      return
+    }
+    // Feedback с категорией и черновиком обращения — форму заполняет раздел, отправляет ученик сам.
+    if (action?.kind === 'open' && action.feedback) {
+      if (!cur?.enabled) return
+      navigateTo('feedback', action.feedback)
+      if (isPhone()) setOpen(false)
+      return
+    }
     // Конкретная вещь по адресу (урок 5, тема) — переход строит App (items/refs.js).
     if (action?.kind === 'open' && isItemRef(action.target)) {
       if (!cur?.enabled) return
@@ -857,7 +900,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         // где можно (экзамен), или вышел из аккаунта — не ведём никуда.
         if (action.now && mountedRef.current && stateRef.current?.enabled) {
           // Нажатие — сразу (см. шапку); переход и тур — когда Луна договорит.
-          if (action.kind === 'click') clicked = perform(action)
+          // «Мало времени» — тоже сразу: с экрана не уводит, а итог пересчёта нужен, пока ученик ещё в окне
+          if (action.kind === 'click' || action.kind === 'replan') clicked = perform(action)
           else if (speaker && voiceRef.current === speaker) {
             dropDeferred()
             deferredRef.current = { action, owner: speaker, timer: setTimeout(() => runDeferred(speaker), ACTION_WAIT_MAX_MS) }
@@ -871,7 +915,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           showCmd(clicked === 'pressed' ? 'pressed' : 'missing', { label: action.label, ms: CMD_SHOW_MS })
         } else {
           showCmd(null)
-          if (!action?.now) setOpen(true)
+          // итог «мало времени» — сообщением в окне: голосовой команде его иначе не увидеть
+          if (!action?.now || action.kind === 'replan') setOpen(true)
         }
       }
       if (reply.offtopic) {
@@ -1306,6 +1351,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   const openWindow = () => {
     unlockSpeech()
     showCmd(null)
+    setChipKind(readChipKind())
     setOpen(true)
     greet()
   }
@@ -1547,14 +1593,13 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     }
   }
 
-  const suggestions = [
-    { text: t('assistant.suggest.plan') },
-    { text: t('assistant.suggest.whyWrong') },
-    { text: t('assistant.suggest.rule') },
-    { text: t('assistant.suggest.page') },
-    { text: t('assistant.suggest.where') },
-    { text: t('assistant.suggest.bug'), bug: true },
-  ]
+  // Готовые вопросы — по экрану и формату ученика (chips.js): вопроса про то, чего у
+  // ученика нет (уроки у Self Study, токены на проде), под полем не бывает.
+  const suggestions = assistantChips({ kind: chipKind, format, rewards: areRewardsEnabled() }).map((s) => ({
+    label: t(s.key),
+    text: t(s.ask || s.key),
+    bug: s.bug,
+  }))
   const last = messages[messages.length - 1]
   // Подсказки-вопросы висят, пока ученик сам ничего не спросил: первая реплика
   // Луны — не его вопрос, и после неё они как раз к месту; нажатая, пока реплика
@@ -1837,9 +1882,13 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                       disabled={voiceBusy}
                       onClick={() => perform(m.action, { gesture: true })}
                     >
-                      {m.action.kind === 'click'
+                      {m.action.kind === 'replan'
+                        ? replanLabel(m.action, t)
+                        : m.action.kind === 'click'
                         ? t('assistant.action.click', { label: m.action.label })
-                        : t('assistant.action.open', { name: openName(m.action, lang) })}
+                        : m.action.feedback
+                          ? t('assistant.action.openFeedback')
+                          : t('assistant.action.open', { name: openName(m.action, lang) })}
                     </button>
                   )}
                   {m.reported && <p className="asst__reported">{t('assistant.reported')}</p>}
@@ -1860,13 +1909,13 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
               <div className="asst__chips">
                 {suggestions.map((s) => (
                   <button
-                    key={s.text}
+                    key={s.label}
                     type="button"
                     className={`asst__chip${s.bug ? ' asst__chip--bug' : ''}`}
                     disabled={voiceBusy}
                     onClick={() => sendTyped(s.text)}
                   >
-                    {s.text}
+                    {s.label}
                   </button>
                 ))}
               </div>

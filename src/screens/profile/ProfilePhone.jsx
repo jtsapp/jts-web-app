@@ -4,7 +4,7 @@ import AssetImage from '../../components/AssetImage.jsx'
 import { UserIcon } from '../../components/icons.jsx'
 import { useI18n, LANGS } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
-import { SKILLS, skillBars } from '../../practice/skillStatsCore.js'
+import { SKILLS, levelShare, shareBars } from '../../practice/skillStatsCore.js'
 import DeleteAccount from './DeleteAccount.jsx'
 import { MaskIcon } from './MaskIcon.jsx'
 
@@ -124,6 +124,15 @@ export default function ProfilePhone(p) {
           <label className="pfm-field">
             <span>{t('profile.m.email')}</span>
             <input className="pfm-input" type="email" value={p.edit.form.email} placeholder={t('profile.editEmailHint')} onChange={(e) => p.edit.setForm((f) => ({ ...f, email: e.target.value }))} />
+          </label>
+          <label className="pfm-field">
+            <span>{t('profile.editGender')}</span>
+            <select className="pfm-input" value={p.edit.form.gender ?? ''} onChange={(e) => p.edit.setForm((f) => ({ ...f, gender: e.target.value }))}>
+              <option value="">{t('profile.gender.none')}</option>
+              <option value="FEMALE">{t('profile.gender.female')}</option>
+              <option value="MALE">{t('profile.gender.male')}</option>
+            </select>
+            <small>{t('profile.genderNote')}</small>
           </label>
           {p.phone && (
             <div className="pfm-field">
@@ -392,18 +401,19 @@ function SkillsCard({ stats, t }) {
         const done = stat?.done || 0
         const firstTry = stat?.firstTry || 0
         const empty = done === 0
-        const filled = skillBars({ done, firstTry })
-        const pct = empty ? 0 : Math.round(Math.min(1, firstTry / done) * 100)
+        // Формула — как на «Главной» и в Профиле компьютера (levelShare, задания текущего уровня).
+        const pct = levelShare({ done, firstTry })
+        const filled = shareBars(pct)
         const [ico, tone] = SKILL_ICO[skill]
         return (
           <div key={skill} className={`pfm-skill ${empty ? '' : 'is-on'}`} data-skill={skill}>
             <Plate ico={ico} tone={tone} />
             <span className="pfm-skill__t">
               <b>{t('profile.skills.' + skill)}</b>
-              <span>{empty ? t('profile.skills.empty') : t('profile.skills.meta', { done, pct })}</span>
+              <span>{empty ? t('profile.skills.empty') : pct == null ? t('profile.skills.few', { done }) : t('profile.skills.meta', { done, pct })}</span>
               <span className="pfm-skill__segs" aria-hidden="true">
                 {Array.from({ length: SEGMENTS }, (_, i) => (
-                  <i key={i} className={!empty && i < filled ? 'is-on' : ''} />
+                  <i key={i} className={pct != null && i < filled ? 'is-on' : ''} />
                 ))}
               </span>
             </span>
