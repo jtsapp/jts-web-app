@@ -1,7 +1,8 @@
 import { useI18n } from '../../i18n.jsx'
 import { formatDate } from '../../ielts/format.js'
 import {
-  CheckCircleIcon, EditIcon, FlagIcon, MenuBookIcon, MicIcon, QuizIcon, SchoolIcon, TaskAltIcon, TranslateIcon, VideoIcon, VolumeIcon,
+  CheckCircleIcon, CheckIcon, DescriptionIcon, EditIcon, FlagIcon, HeadphonesIcon, MenuBookIcon, MicIcon, QuizIcon, SchoolIcon, TaskAltIcon,
+  TranslateIcon, VideoIcon, VolumeIcon,
 } from '../../ielts/icons.jsx'
 import { plural } from '../../lib/plural.js'
 import { isTeacherTask, minutesLabel, movedFrom, plateOf, taskAction, taskTitle } from './planModel.js'
@@ -9,6 +10,8 @@ import { isTeacherTask, minutesLabel, movedFrom, plateOf, taskAction, taskTitle 
 // Строка задачи плана — общая для «Сегодня» на «Главной» и панели дня экрана «План»: значок раздела, название, минуты
 // (у начатой практики — «6 / 15 мин»), срок ДЗ или время занятия, «Начать» или «Выполнено». У задачи преподавателя —
 // синяя метка «Добавлено преподавателем», его комментарий и, у своего задания, «Отметить выполненным».
+// «Сегодня» (ТЗ v2.0, 5.2–5.3) передаёт сверх этого навык шага (тип перед минутами), метку уровня, строку «Зачем: …»
+// у текущего шага и «Откроется: …» — куда ведёт «Начать». Экран «План» их не передаёт и выглядит по-прежнему.
 
 const ICON = {
   course: SchoolIcon,
@@ -21,10 +24,15 @@ const ICON = {
   shadowing: VolumeIcon,
   media_practice: MenuBookIcon,
   vocabulary_sr: TranslateIcon,
+  // плитки «По навыкам»: у аудирования и письма своего раздела плана нет, «все задачи навыка сделаны» — галочка
+  listening: HeadphonesIcon,
+  writing: DescriptionIcon,
+  done: CheckIcon,
 }
 
-export function GePlate({ task, size = 44 }) {
-  const key = plateOf(task)
+/** Плашка раздела: по задаче (plateOf) или прямо ключом plate — для плиток навыков. */
+export function GePlate({ task, plate = null, size = 44 }) {
+  const key = plate || plateOf(task)
   const Ic = ICON[key] || MenuBookIcon
   return (
     <span className={`ge-plate ge-plate--${key}`} style={{ width: size, height: size }} aria-hidden="true">
@@ -52,14 +60,20 @@ export function taskMeta(t, lang, task, { showDate = false } = {}) {
   return parts.join(' · ')
 }
 
-/** Подпись кнопки: отметка своего задания, «Продолжить» начатого, «Открыть» занятия и ДЗ, иначе «Начать». */
-export function startLabel(t, task, action) {
+/**
+ * Подпись кнопки: отметка своего задания, «Продолжить» начатого, «Открыть» занятия и ДЗ, иначе «Начать». started —
+ * материал цели уже начат (урок воркбука, текст), хотя минут сегодня ещё нет: кнопка ведёт его продолжать (ТЗ 5.3).
+ */
+export function startLabel(t, task, action, started = false) {
   if (action?.type === 'done') return t('gePlan.markDone')
-  if (task.status === 'in_progress') return t('gePlan.continue')
+  if (task.status === 'in_progress' || started) return t('gePlan.continue')
   return task.kind === 'live' || task.kind === 'homework' ? t('gePlan.open') : t('gePlan.start')
 }
 
-export default function GeTaskRow({ task, title, primary = false, showDate = false, tokens = 0, onStart }) {
+export default function GeTaskRow({
+  task, title, primary = false, showDate = false, tokens = 0, onStart,
+  skill = null, badge = null, why = '', opens = '', started = false,
+}) {
   const { t, lang } = useI18n()
   const done = task.status === 'completed'
   const teacher = isTeacherTask(task)
@@ -71,7 +85,8 @@ export default function GeTaskRow({ task, title, primary = false, showDate = fal
       <div className="ge-task__body">
         <b>{taskTitle(t, task, title)}</b>
         <span className="ge-task__meta">
-          {taskMeta(t, lang, task, { showDate })}
+          {[skill ? t(`gePlan.skill.${skill}`) : '', taskMeta(t, lang, task, { showDate })].filter(Boolean).join(' · ')}
+          {badge && <span className="ge-task__lv">{badge}</span>}
           {teacher && (
             <span className="ge-task__chip is-teacher" title={task.extra?.createdByName || undefined}>
               {t('gePlan.origin.teacher')}
@@ -87,14 +102,26 @@ export default function GeTaskRow({ task, title, primary = false, showDate = fal
           )}
         </span>
         {teacher && task.extra?.note && <span className="ge-task__note">{task.extra.note}</span>}
+        {why && !done && (
+          <span className="ge-task__why">
+            <b>{t('gePlan.why')}</b> {why}
+          </span>
+        )}
+        {opens && !done && action && <span className="ge-task__opens">{t('gePlan.opens', { path: opens })}</span>}
       </div>
       {done ? (
         <span className="ge-task__done">
-          <CheckCircleIcon size={18} /> {t('gePlan.done')}
+          <CheckCircleIcon size={18} />{' '}
+          {/* «готово · +N токенов» (ТЗ 5.2) — только где шаг даёт токены; tokens приходит нулём, где наград нет */}
+          {tokens > 0 ? (
+            <span data-testid="task-done-tokens">{t('gePlan.doneTokens', { tokens: plural(t, lang, 'practice.tokenBadge', tokens) })}</span>
+          ) : (
+            t('gePlan.done')
+          )}
         </span>
       ) : action ? (
         <button type="button" className={`ih-btn2 ${primary ? 'ih-btn2--primary' : 'ih-btn2--outline'}`} onClick={() => onStart?.(task)}>
-          {startLabel(t, task, action)}
+          {startLabel(t, task, action, started)}
         </button>
       ) : null}
     </li>

@@ -24289,8 +24289,73 @@ html[data-theme="dark"] .ge-today__note {
 html[data-theme="dark"] .ge-today__rest {
     color: var(--ih-ink)
 }
+html[data-theme="dark"] .ge-today__low {
+    color: var(--ih-ink-2)
+}
 html[data-theme="dark"] .ge-today__ahead {
     color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ge-today__mins {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ge-today__view {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ge-today__view button {
+    border: 0;
+    background: none;
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ge-today__view button[aria-pressed='true'] {
+    background: var(--dk-card);
+    color: var(--ih-violet);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24)
+}
+html[data-theme="dark"] .ge-today__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ge-today__bar i {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ge-task__lv {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ge-task__why {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ge-task__body .ge-task__why b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ge-task__opens {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ge-sk__tile {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: inherit
+}
+html[data-theme="dark"] .ge-sk__tile[aria-expanded='true'] {
+    border-color: var(--ih-violet);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .ge-sk__tile b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ge-sk__meta {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ge-sk__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ge-sk__bar i {
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .ge-sk__open {
+    border-top: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ge-sk__open h3 {
+    color: var(--ih-ink)
 }
 html[data-theme="dark"] .ge-task {
     border: 1px solid var(--ih-line);
@@ -24373,6 +24438,18 @@ html[data-theme="dark"] .ge-plate--media_practice {
 html[data-theme="dark"] .ge-plate--vocabulary_sr {
     background: var(--dk-acc-tint);
     color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ge-plate--listening {
+    background: var(--dk-blue-tint);
+    color: var(--dk-blue)
+}
+html[data-theme="dark"] .ge-plate--writing {
+    background: var(--dk-page);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .ge-plate--done {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
 }
 html[data-theme="dark"] .ge-skel {
     background: linear-gradient(100deg, var(--dk-page) 30%, var(--dk-acc-tint) 50%, var(--dk-page) 70%) 0 0 / 200% 100%

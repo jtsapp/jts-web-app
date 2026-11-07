@@ -11,6 +11,7 @@
 
 import { practiceNavTarget } from '../../lib/practiceTarget.js'
 import { isOwnTask } from './ownTasks.js'
+import { workbookLevel } from './taskTargets.js'
 
 export const MODULES = ['ai_tutor', 'workbooks', 'shadowing', 'media_practice', 'vocabulary_sr']
 
@@ -60,7 +61,12 @@ export function taskRoute(task, level, lesson = null) {
     case 'custom':
       return null
     default:
-      if (task?.module === 'workbooks') return { to: 'workbook', payload: level ? { level: String(level).toLowerCase() } : null }
+      if (task?.module === 'workbooks') {
+        // воркбуки есть A0–B2: у C1 экран воркбука открылся бы с ошибкой загрузки — ведём во вкладку «Письмо» Практики,
+        // где они лежат
+        if (level && !workbookLevel(level)) return { to: 'practice', payload: { skill: 'writing' } }
+        return { to: 'workbook', payload: level ? { level: String(level).toLowerCase() } : null }
+      }
       return MODULE_ROUTE[task?.module] || { to: 'practice' }
   }
 }
@@ -142,6 +148,11 @@ function courseNodes(tasks, frontier) {
 
 export function courseTitles(tasks, frontier) {
   return Object.fromEntries(Object.entries(courseNodes(tasks, frontier)).map(([id, node]) => [id, node.title]))
+}
+
+/** id задачи урока курса → шаг тропы целиком ({ code, title, unit, … }): строка «Откроется» у «Сегодня» (taskTargets). */
+export function courseSteps(tasks, frontier) {
+  return courseNodes(tasks, frontier)
 }
 
 /** id задачи урока курса → код шага тропы: «Начать» открывает этот урок (taskRoute). */

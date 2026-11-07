@@ -2578,7 +2578,9 @@ button.hm-level__goal:focus-visible {
   color: var(--ih-ink-2);
 }
 .ge-today__all {
-  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .ge-today__note {
   margin: 0 0 12px;
@@ -2621,6 +2623,161 @@ button.hm-level__goal:focus-visible {
   font-size: 14px;
   font-weight: 700;
   color: var(--ih-ink-2);
+}
+/* «Сегодня» по ТЗ v2.0, 5.2 (прототип «JTS Главная с Луной»): «N из M мин» и полоса дня, переключатель «По порядку /
+   По навыкам» справа в шапке, подвал «Весь план →» · «У меня мало времени». */
+.ge-today__mins {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ih-ink-2);
+}
+.ge-today__view {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: auto;
+  padding: 3px;
+  border-radius: 999px;
+  background: #f3f0fa;
+}
+.ge-today__view button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ih-ink-2);
+  cursor: pointer;
+}
+.ge-today__view button[aria-pressed='true'] {
+  background: #fff;
+  color: var(--ih-violet);
+  box-shadow: 0 1px 4px rgba(23, 19, 38, 0.12);
+}
+.ge-today__bar {
+  height: 6px;
+  margin: -4px 0 14px;
+  border-radius: 999px;
+  background: #f1eef8;
+  overflow: hidden;
+}
+.ge-today__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ih-violet);
+  transition: width 0.4s;
+}
+.ge-today__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  margin-top: 14px;
+}
+.ge-today__foot .ge-today__low {
+  margin-top: 0;
+}
+/* строка шага: метка уровня, «Зачем» у текущего шага и «Откроется» — куда ведёт «Начать» (ТЗ 5.3) */
+.ge-task__lv {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #f1eaff;
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 800;
+}
+.ge-task__why {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ih-ink-2);
+  overflow-wrap: break-word;
+}
+.ge-task__body .ge-task__why b {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-ink);
+}
+.ge-task__opens {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--ih-violet);
+  overflow-wrap: break-word;
+}
+/* «По навыкам»: плитки в сетку от 150px, раскрытая — сиреневая, задачи навыка — списком под плитками */
+.ge-sk {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.ge-sk__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.ge-sk__tile[aria-expanded='true'] {
+  border-color: var(--ih-violet);
+  background: #f4f0ff;
+}
+.ge-sk__tile.is-done {
+  opacity: 0.65;
+}
+.ge-sk__tile b {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ih-ink);
+  overflow-wrap: break-word;
+}
+.ge-sk__meta {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ge-sk__bar {
+  display: block;
+  align-self: stretch;
+  height: 5px;
+  border-radius: 999px;
+  background: #f1eef8;
+  overflow: hidden;
+}
+.ge-sk__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #31b423;
+}
+.ge-sk__open {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ih-line);
+}
+.ge-sk__open h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ih-ink);
+}
+.ge-sk__open h3 .ih-link {
+  margin-left: auto;
+  font-size: 13px;
 }
 .ge-tasks {
   list-style: none;
@@ -2755,6 +2912,19 @@ button.hm-level__goal:focus-visible {
 .ge-plate--vocabulary_sr {
   background: #eef0ff;
   color: #4f5bd5;
+}
+/* плитки «По навыкам»: у аудирования и письма своего раздела плана нет; навык сделан целиком — зелёная галочка */
+.ge-plate--listening {
+  background: #e7f0ff;
+  color: #2f6fde;
+}
+.ge-plate--writing {
+  background: #fdf0e6;
+  color: #c2560a;
+}
+.ge-plate--done {
+  background: #e3f6ea;
+  color: #22a55b;
 }
 /* заглушка верхнего блока «Главной», пока профиль анкеты в пути: высота — как у блока цели, чтобы экран не прыгал */
 .ge-skel {
