@@ -8,6 +8,7 @@
 // из трёх (аудит 06.11.2026, вопрос 6) — фильтр «срок ≤ 4 дней, не больше 5».
 
 import { canReplan, isOwnTask } from '../../ge/plan/ownTasks.js'
+import { STOP_OFF, canStopDay } from './dayControl.js'
 import { withStates } from '../homeworkList.js'
 import { destinationName, destinationOf } from './destinations.js'
 
@@ -159,6 +160,11 @@ export function gePlanToday(plan, now = Date.now()) {
   ]
   // прежний бэкенд без пересчёта: по этой строке указание «мало времени» метку не даст (turnHints.js)
   if (!canReplan(plan)) lines.push(REPLAN_OFF)
+  // «На сегодня всё» (метка [[STOP_DAY]]): прежний бэкенд без ручки — строка, по которой turnHints метку не даёт
+  if (!canStopDay(plan)) lines.push(STOP_OFF)
+  if (plan.stopDay) {
+    lines.push('Сегодня ученик уже закончил день кнопкой «На сегодня всё»: сделанное засчитано, остальное перенесено на следующий учебный день. Вернуть обычный день — метка [[REPLAN_NOW 0]].')
+  }
   if (moved.length) {
     lines.push(`Перенесено с прошлых дней (не «просрочено» — без упрёка): ${moved.map((x) => `${taskWords(x)[0]} (с ${x.date})`).join('; ')}.`)
   }

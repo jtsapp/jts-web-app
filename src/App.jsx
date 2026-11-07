@@ -53,7 +53,7 @@ import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
 import { screenNeedsLogin } from './lib/guestLogin.js'
 import { isTeacher, userIdFromToken } from './lib/jwt.js'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
-import { onAssistantNavigate } from './lib/assistant/assistantBus.js'
+import { APP_NAV, onAssistantNavigate } from './lib/assistant/assistantBus.js'
 import { destinationOf } from './lib/assistant/destinations.js'
 import { isItemRef, itemNav } from './lib/assistant/items/refs.js'
 import { readSituationsDone } from './practice/situations/situationsProgress.js'
@@ -93,6 +93,8 @@ const MatchingPopups = lazyScreen(() => import('./matching/MatchingPopups.jsx'))
 const LessonFeedbackPrompt = lazyScreen(() => import('./components/LessonFeedbackPrompt.jsx'))
 const PurchaseSuccessModal = lazyScreen(() => import('./components/PurchaseSuccessModal.jsx'))
 const DemoSubscriptionModal = lazyScreen(() => import('./components/DemoSubscriptionModal.jsx'))
+// Куда окно Луны ведёт кнопкой (assistantBus.APP_NAV): шаги своего плана дня (planModel.taskRoute) и экран «План».
+const APP_NAV_KEYS = new Set(['course', 'tutor', 'practice', 'vocab', 'workbook', 'ge-plan', 'home'])
 
 const loadCatalogLesson = (...args) =>
   import('./screens/workspace/loadCatalogLesson.js').then(
@@ -1967,6 +1969,15 @@ export default function App() {
   useEffect(
     () =>
       onAssistantNavigate((target, payload) => {
+        // Кнопка окна Луны «Начать: урок курса» / «Показать план» (assistantBus.APP_NAV): шаг плана — тем же путём, что
+        // кнопка задачи в «Сегодня». Ключи — только из списка: payload собирает окно, но адрес задачи приходит с бэкенда.
+        if (target === APP_NAV) {
+          if (!APP_NAV_KEYS.has(payload?.to)) return
+          setResume(null)
+          setScreenNonce((n) => n + 1)
+          handleNavRef.current?.(payload.to, payload.payload || undefined)
+          return
+        }
         // Конкретная вещь по адресу (урок 5, тема, текст — lib/assistant/items/): экран
         // открывается заново с целью, даже если ученик уже на нём. Квота «Ситуаций» —
         // по уровням, уже открытым на этом устройстве (как у карточки Практики).
@@ -2194,7 +2205,7 @@ export default function App() {
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && <LessonFeedbackPrompt key={userIdFromToken(token)} token={token} enabled={isLegalDocumentsScreen(view) && !['live-lesson', 'lesson-workspace'].includes(view)} />}</OptionalPart>
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && !isStudentSectionHidden('my-teacher') && <MatchingPopups token={token} screen={view} onNav={handleNav} />}</OptionalPart>
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && (
-        <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen format={learnerFormat({ demo: isDemoAccount, sections: sectionAccess?.status === 'ready' ? sectionAccess : null })} />
+        <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen proactive level={needsLevelTest ? null : userLevel} format={learnerFormat({ demo: isDemoAccount, sections: sectionAccess?.status === 'ready' ? sectionAccess : null })} />
       )}</OptionalPart>
     </MobileTabContext.Provider>
     </LegalDocumentsGate>

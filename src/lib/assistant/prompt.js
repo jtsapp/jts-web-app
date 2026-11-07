@@ -25,9 +25,11 @@ import { PERSONAS, assistantPersona } from './persona.js'
 import { phraseLang } from './phraseLang.js'
 import { addressHint, questionHints } from './turnHints.js'
 import { REPORT_BUG_MARKER, createReportFilter, splitReport } from './report.js'
+import { eventHint, parseEventMark } from './events.js'
 
 export { REPORT_BUG_MARKER, createReportFilter, splitReport }
 export { OPENING_MARK, STUCK_ERRORS_MARK, STUCK_IDLE_MARK, WAKE_MARK, isOpeningTurn, isWakeTurn, openingFocus, stuckReason }
+export { parseEventMark }
 
 // Ограничения запроса. Длинный разговор помощнику не нужен — это не тьютор, а
 // справка, — а каждый лишний ход оплачивается на каждом следующем вопросе.
@@ -450,6 +452,9 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
   // «Подсказать?» (stuck.js): ученик застрял и сам нажал облачко — Луна сразу о задании.
   // Указание рядом с пометкой, как у открытия окна, и по той же причине.
   const stuck = stuckReason(last.content)
+  // Событие трекера (events.js, «Луна пишет первой»): что сказать, решил код — указание рядом с пометкой, по той же
+  // причине, что у открытия окна. Проактивное сообщение — на языке интерфейса (промт ТЗ, раздел 2).
+  const event = parseEventMark(last.content)
   const answerLang = `Язык ответа: ${LANG_NAMES[lang] || LANG_NAMES.ru}`
   // Обычный вопрос на непроверенном задании — то же указание рядом с вопросом: на
   // «проверь» Haiku 5.5 сама оценивала выбор ученика и называла верный вариант («задание
@@ -485,6 +490,13 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
           ...(focus.unchecked ? ['Задание ещё не проверено: не оценивай введённый ответ и не называй правильный.'] : []),
           'Не больше 3 коротких предложений.',
         ].join('\n')
+      : event
+        ? [
+            last.content.trim(),
+            answerLang,
+            eventHint(event, lang, user?.gender),
+            ...(focus.unchecked ? ['Задание на экране ещё не проверено: не оценивай введённый ответ и не называй правильный.'] : []),
+          ].join('\n')
       : opening
         ? [
             OPENING_MARK,

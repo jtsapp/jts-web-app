@@ -97,3 +97,28 @@ describe('мало времени', () => {
     expect(hint('верни обычный план', 'Формат обучения: Self Study.')).toBe(null)
   })
 })
+
+// ТЗ v2.0, 7.2 и 7.4: перерыв и «На сегодня всё» — указанием у вопроса, как «мало времени».
+describe('перерыв и «На сегодня всё»', () => {
+  const PLAN = 'План на сегодня (тот же, что блок «Сегодня» на Главной…): урок курса — 30 мин, не начато.'
+  it('устал / перерыв — [[BREAK 10]], просит прямо — _NOW', () => {
+    const h = hintsFor('я устала, хочу перерыв', { studentContext: PLAN })
+    expect(h).toMatch(/\[\[BREAK 10\]\]/)
+    expect(h).toMatch(/\[\[BREAK_NOW N\]\]/)
+    expect(h).toMatch(/пока сайт открыт/)
+  })
+
+  it('«на сегодня всё» — [[STOP_DAY_NOW]], если план есть и бэкенд умеет; иначе — без метки', () => {
+    expect(hintsFor('на сегодня всё', { studentContext: PLAN })).toMatch(/\[\[STOP_DAY_NOW\]\]/)
+    expect(hintsFor('на сегодня всё', { studentContext: PLAN + '\nЗакончить день кнопкой «На сегодня всё» сейчас нельзя.' })).toMatch(/метку \[\[STOP_DAY…\]\] не ставь/)
+    expect(hintsFor('бүгінге жетеді', { studentContext: PLAN, answerLang: 'kk' })).toMatch(/по-казахски/)
+    // «мало времени» тогда не подмешивается
+    expect(hintsFor('на сегодня всё, нет времени', { studentContext: PLAN })).not.toMatch(/REPLAN/)
+  })
+
+  it('«да» на её «Перерыв?» — та же метка с _NOW', () => {
+    expect(hintsFor('да', { studentContext: PLAN, previous: 'Сделаем паузу?\n[[BREAK 10]]' })).toMatch(/\[\[BREAK_NOW N\]\] с теми же минутами/)
+    expect(hintsFor('давай', { studentContext: PLAN, previous: 'Закончим?\n[[STOP_DAY]]' })).toMatch(/\[\[STOP_DAY_NOW\]\]/)
+    expect(hintsFor('да', { studentContext: PLAN, previous: 'Открыть?\n[[OPEN vocab]]' })).not.toMatch(/BREAK|STOP_DAY/)
+  })
+})

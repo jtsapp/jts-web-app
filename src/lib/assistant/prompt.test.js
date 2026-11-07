@@ -639,3 +639,19 @@ describe('язык вопроса рядом с вопросом', () => {
     expect(same).not.toContain('Язык ответа')
   })
 })
+
+// «Луна пишет первой» (ТЗ v2.0, 7.1–7.4): событие — служебный ход, указание — рядом с пометкой.
+describe('событие трекера в ходе', () => {
+  it('указание события и язык — у пометки, «Вопрос ученика» не пишется, обращение — да', async () => {
+    const { eventMark } = await import('./events.js')
+    const { isOpeningTurn } = await import('./opening.js')
+    const mark = eventMark('step_completed', { step: 'course', next: 'ai_tutor', left: 2, min: 25, plan: 'ready' })
+    const last = buildTurns({ messages: [{ role: 'user', content: mark }], user: { name: 'Айгерим' }, screen: { id: 'home', text: 'Главная' }, lang: 'kk' }).at(-1).content
+    expect(last).toContain(mark)
+    expect(last).toMatch(/Ты пишешь первой/)
+    expect(last).toMatch(/Пиши по-казахски/)
+    expect(last).not.toMatch(/Вопрос ученика/)
+    expect(last).toContain(addressHint('kk'))
+    expect(isOpeningTurn(mark)).toBe(true)
+  })
+})

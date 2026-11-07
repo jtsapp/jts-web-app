@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { REPLAN_OFF, dueWords, geGoalLine, gePlanToday, homeworkLine, lessonsPackageLine, tokensLine } from './contextLines.js'
+import { STOP_OFF } from './dayControl.js'
 
 // Строки профиля Луны (этап 1 ТЗ v2.0): данные те же, что у «Главной» и разделов. Слова строк — то, что видит модель.
 const NOW = Date.parse('2026-11-07T08:00:00Z')
@@ -68,8 +69,8 @@ describe('tokensLine', () => {
 })
 
 describe('gePlanToday', () => {
-  // shortDay: null — план нового бэкенда (с пересчётом «мало времени»), как на стенде
-  const plan = (tasks) => ({ state: 'ready', today: '2026-11-07', shortDay: null, tasks })
+  // shortDay и stopDay: null — план нового бэкенда (с «мало времени» и «На сегодня всё»), как на стенде
+  const plan = (tasks) => ({ state: 'ready', today: '2026-11-07', shortDay: null, stopDay: null, tasks })
 
   it('план не собран — строк нет', () => {
     expect(gePlanToday(null, NOW)).toEqual({ lines: [], next: null })
@@ -128,6 +129,14 @@ describe('gePlanToday: «мало времени»', () => {
     }, NOW)
     expect(r.lines).toContain('Сегодня выбрано «У меня мало времени»: план дня собран на 20 мин; перенесено на другой день: урок курса (на 2026-11-09). Вернуть обычный план — метка [[REPLAN_NOW 0]].')
     expect(r.lines).not.toContain(REPLAN_OFF)
+  })
+
+  it('«На сегодня всё»: прежний бэкенд — нельзя, так и сказано; день остановлен — строка и как вернуть', () => {
+    const task = { id: 1, date: '2026-11-07', kind: 'course', status: 'available', minutes: 30 }
+    expect(gePlanToday({ state: 'ready', today: '2026-11-07', shortDay: null, tasks: [task] }, NOW).lines).toContain(STOP_OFF)
+    const stopped = gePlanToday({ state: 'ready', today: '2026-11-07', shortDay: null, stopDay: { moved: 1 }, tasks: [task] }, NOW).lines
+    expect(stopped).not.toContain(STOP_OFF)
+    expect(stopped.join('\n')).toMatch(/закончил день кнопкой «На сегодня всё».*\[\[REPLAN_NOW 0\]\]/)
   })
 
   it('прежний бэкенд (плана без shortDay) — пересчитать нельзя, так и сказано', () => {

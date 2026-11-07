@@ -619,6 +619,21 @@
     width: 16px;
     height: 16px;
   }
+  /* «Подсказки Луны»: под названием выбора — что он значит; ниже — что выбор на этом устройстве. */
+  .pfm-luna__note {
+    display: block;
+    margin-top: 2px;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 400;
+    color: #5a5a66;
+  }
+  .pfm-luna__device {
+    margin: 12px 4px 0;
+    font-size: 13px;
+    line-height: 18px;
+    color: #5a5a66;
+  }
 
   /* ---------- Удаление: содержимое общее с окном десктопа (.pfd в styles.css), кнопки — у низа экрана ---------- */
   .pfm .pfd {

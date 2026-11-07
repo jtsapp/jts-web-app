@@ -12,6 +12,8 @@
 // Отдельным модулем, а не в prompt.js: виджету нужна только пометка, а prompt.js
 // тянет за собой базу знаний — в браузерный бандл ей незачем.
 
+import { isEventTurn } from './events.js'
+
 export const OPENING_MARK = '[ученик открыл окно]'
 
 // Ученик позвал Луну голосом («Луна», «Привет, Луна», lib/assistant/wake/). Тоже служебный
@@ -38,12 +40,13 @@ export function stuckReason(content) {
 export const stuckMark = (reason) => (reason === 'idle' ? STUCK_IDLE_MARK : STUCK_ERRORS_MARK)
 
 /**
- * Служебный ход — «ученик открыл окно», «позвал голосом» или «застрял», а не вопрос,
- * набранный учеником. На все действуют одни защиты: ни паузы «не по теме», ни отчёта о поломке.
+ * Служебный ход — «ученик открыл окно», «позвал голосом», «застрял» или событие трекера
+ * («[событие: day_start]», events.js), а не вопрос, набранный учеником. На все действуют одни
+ * защиты: ни паузы «не по теме», ни отчёта о поломке.
  */
 export const isOpeningTurn = (content) => {
   const text = String(content ?? '').trim()
-  return text === OPENING_MARK || text === WAKE_MARK || stuckReason(text) != null
+  return text === OPENING_MARK || text === WAKE_MARK || stuckReason(text) != null || isEventTurn(text)
 }
 
 // Что на экране, решает код, а не модель. Правила «посреди задания — только о
