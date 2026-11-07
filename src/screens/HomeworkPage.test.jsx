@@ -34,6 +34,7 @@ vi.mock('../api.js', () => ({
   attachHomeworkAnswer: vi.fn(async () => withAnswer),
   removeHomeworkAnswer: vi.fn(async () => ASSIGNMENT),
   submitHomework: vi.fn(async () => ({ ...withAnswer, status: 'SUBMITTED' })),
+  saveHomeworkDraft: vi.fn(async () => null),
   saveHomeworkAnswer: vi.fn(async () => ASSIGNMENT),
   // Задания с живых уроков (назначенные материалы) — по умолчанию их нет.
   getMyMaterialAssignments: vi.fn(async () => []),

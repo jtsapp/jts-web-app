@@ -5,6 +5,7 @@ import { I18nProvider } from '../../i18n.jsx'
 import HomeworkExercises from './HomeworkExercises.jsx'
 
 vi.mock('../../api.js', () => ({
+  saveHomeworkDraft: vi.fn(async () => null),
   saveHomeworkAnswer: vi.fn(() => Promise.resolve({})),
   uploadMedia: vi.fn(),
   attachMaterialAnswer: vi.fn(),
@@ -468,3 +469,15 @@ describe('HomeworkExercises — части-материалы в общей ле
   })
 })
 
+describe('HomeworkExercises: продолжить несданную домашку', () => {
+  beforeEach(() => { localStorage.clear(); saveHomeworkAnswer.mockClear() })
+
+  it('восстанавливает серверный черновик без локального хранилища и без проверки ответа', () => {
+    show({ id: 91, exercises: [
+      { id: 911, question: question('draft-gap', 'gap', { gapBefore: 'I', gapAfter: 'coffee', answers: ['like'] }), draftAnswer: 'li' },
+    ] })
+    expect(screen.getByRole('textbox').value).toBe('li')
+    expect(screen.getByRole('textbox').disabled).toBe(false)
+    expect(saveHomeworkAnswer).not.toHaveBeenCalled()
+  })
+})

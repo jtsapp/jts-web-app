@@ -5,6 +5,7 @@ import { I18nProvider } from '../../i18n.jsx'
 import HomeworkExercises from './HomeworkExercises.jsx'
 
 vi.mock('../../api.js', () => ({
+  saveHomeworkDraft: vi.fn(async () => null),
   saveHomeworkAnswer: vi.fn(() => Promise.resolve({})),
   getCourseCatalogLesson: vi.fn(() => Promise.resolve({ type: 'LESSON' })),
 }))

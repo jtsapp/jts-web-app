@@ -5,10 +5,8 @@
 // нет своего движка: вопрос заворачивается в practice-блок и отдаётся тому же
 // PracticeBlock, что и на уроке. Все семь типов работают без единой правки.
 //
-// Ответы уходят на сервер по «Проверить» — там их видит преподаватель. До этого
-// момента введённое лежит в localStorage: черновик не должен теряться при
-// перезагрузке, а слать на сервер каждое нажатие клавиши незачем. Ключ — работа,
-// чтобы две разные домашки не путались между собой.
+// Незавершённые ответы автоматически сохраняются на сервер отдельно от проверки.
+// localStorage — быстрый снимок и очередь недосланного, а не единственное хранилище.
 const KEY_PREFIX = 'hw-answers'
 
 /**
@@ -99,6 +97,15 @@ export function serverAnswers(hw) {
   const out = {}
   for (const e of lessonExercises(hw)) {
     if (e.studentAnswer != null) out[e.question.id] = e.studentAnswer
+  }
+  return out
+}
+
+/** Незавершённые ответы с сервера не являются проверенными попытками. */
+export function serverDraftAnswers(hw) {
+  const out = {}
+  for (const e of lessonExercises(hw)) {
+    if (e.draftAnswer != null) out[e.question.id] = e.draftAnswer
   }
   return out
 }
@@ -226,9 +233,10 @@ export function batchFullyAnswered(batch) {
  */
 export function pendingAnswers(hw, draft) {
   const out = []
+  const answers = { ...serverDraftAnswers(hw), ...draft }
   for (const exercise of lessonExercises(hw)) {
-    if (exercise.studentAnswer != null) continue
-    const answer = draft?.[exercise.question.id]
+    const answer = answers[exercise.question.id]
+    if (exercise.studentAnswer != null && JSON.stringify(exercise.studentAnswer) === JSON.stringify(answer)) continue
     if (isAnswered(answer)) out.push({ exercise, answer })
   }
   return out

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { saveHomeworkFeedback, submitHomework } from '../../api.js'
+import { saveHomeworkDraft, saveHomeworkFeedback, submitHomework } from '../../api.js'
 
 /**
  * Отказ сервера в сдаче объясняет сам себя: GlobalExceptionHandler отдаёт
@@ -41,5 +41,17 @@ describe('authPut: текст отказа сервера', () => {
     const пустое = await submitHomework('TOK', 7).catch((err) => err)
     expect(пустое.status).toBe(410)
     expect(пустое.serverMessage).toBeNull()
+  })
+})
+
+
+describe('автосохранение обычного ответа', () => {
+  it('отправляет черновик отдельно от проверки, с keepalive и ответом 204', async () => {
+    global.fetch = vi.fn(async () => new Response(null, { status: 204 }))
+    expect(await saveHomeworkDraft(7, 71, 'TOK', 'unfinished')).toBeNull()
+    const [url, request] = global.fetch.mock.calls[0]
+    expect(url).toMatch(/\/admin\/homework\/7\/exercises\/71\/draft$/)
+    expect(request).toMatchObject({ method: 'PUT', keepalive: true })
+    expect(JSON.parse(request.body)).toEqual({ answer: 'unfinished' })
   })
 })
