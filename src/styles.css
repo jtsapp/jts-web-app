@@ -6067,6 +6067,8 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
   font-weight: 700;
   color: #181818;
 }
+/* Откуда проценты навыков — та же строка, что на «Главной» (ТЗ v2.0, 5.5). */
+.pf-skills__src { margin: -4px 0 10px; font-size: 12px; line-height: 1.35; color: var(--muted, #8e8e99); }
 .pf-card {
   background: #fff;
   border-radius: 16px;
@@ -6478,6 +6480,14 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
   font-weight: 700;
   letter-spacing: 0.6px;
   text-transform: uppercase;
+  color: #a6a5b2;
+}
+/* подпись под полем «Пол»: зачем он нужен (обращение помощника) */
+.pf-field__note {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 16px;
   color: #a6a5b2;
 }
 .pf-input {

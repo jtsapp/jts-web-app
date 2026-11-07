@@ -115,6 +115,9 @@ export async function verifyTokenStatus(token) {
         boothAccount: !!user.boothAccount,
         languageLevel: user.languageLevel ?? null,
         birthDate: user.birthDate ?? null,
+        // Пол из Профиля (backend V542) — для обращения помощника: «ты выбрал» / «ты выбрала». Только два значения:
+        // что-то другое (или старый бэкенд без поля) — null, и помощник говорит без рода.
+        gender: user.gender === 'MALE' || user.gender === 'FEMALE' ? user.gender : null,
       },
     }
   } catch (err) {

@@ -217,7 +217,7 @@ describe('голос в помощнике', () => {
     voice.state = 'starting'
     renderWidget()
     openPanel()
-    expect(screen.getByRole('button', { name: 'Дай план на неделю' }).disabled).toBe(true)
+    expect(screen.getByRole('button', { name: 'Что мне делать сегодня?' }).disabled).toBe(true)
     expect(screen.getByRole('button', { name: 'Спросить голосом' }).disabled).toBe(true)
   })
 

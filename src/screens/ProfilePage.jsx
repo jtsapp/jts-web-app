@@ -15,7 +15,8 @@ import {
 import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser, getIeltsMe, getIeltsProfile } from '../api.js'
 import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
-import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
+import { loadLevelSkillStatsRemote, readLocalLevelSkillStats } from '../practice/skillStats.js'
+import { skillLevel } from '../practice/skillStatsCore.js'
 import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from '../lib/profileAvatar.js'
 import { shrinkImage } from '../lib/shrinkImage.js'
 import { legalDocumentUrl } from '../lib/legalDocuments.js'
@@ -147,7 +148,8 @@ export default function ProfilePage({
   // Форма редактирования профиля
   // Пола в форме нет намеренно: у бэкенда нет такого поля ни в /user/me, ни в
   // UpdateUserRequest — выбор молча выбрасывался, а тост писал «Сохранено».
-  const [form, setForm] = useState({ name: '', email: '', city: '', birthDate: '' })
+  // gender: null — ещё не пришёл из /user/me (тогда не шлём и бэкенд его не трогает), '' — «не указан».
+  const [form, setForm] = useState({ name: '', email: '', city: '', birthDate: '', gender: null })
   const [saving, setSaving] = useState(false)
   const [editErr, setEditErr] = useState('')
 
@@ -201,19 +203,20 @@ export default function ProfilePage({
     }
   }, [token, userLevel])
 
-  // Рейтинг навыков: сперва локальный мираж (мгновенно, работает и для гостя),
-  // затем серверные агрегаты для залогиненного (источник истины).
+  // Рейтинг навыков — по заданиям текущего уровня, как «Сильные и слабые стороны» на «Главной» (ТЗ v2.0, 5.5):
+  // сперва локальный мираж (мгновенно, работает и для гостя), затем сервер (источник истины).
+  const skillCode = skillLevel(userLevel)
   useEffect(() => {
-    setSkillStats(readLocalSkillStats())
-    if (!token) return
+    setSkillStats(skillCode ? readLocalLevelSkillStats(skillCode) : {})
+    if (!token || !skillCode) return
     let alive = true
-    loadSkillStatsRemote(token).then((s) => {
+    loadLevelSkillStatsRemote(token, skillCode).then((s) => {
       if (alive && s) setSkillStats(s)
     })
     return () => {
       alive = false
     }
-  }, [token])
+  }, [token, skillCode])
 
   function showToast(msg) {
     setToast(msg)
@@ -270,7 +273,7 @@ export default function ProfilePage({
 
   function openEdit() {
     setEditErr('')
-    setForm({ name: name || '', email: '', city: '', birthDate: '' })
+    setForm({ name: name || '', email: '', city: '', birthDate: '', gender: null })
     setEditOpen(true)
     // Сохранённое подтягиваем из профиля: пустое поле читалось бы как «не
     // указано» — ученик вводил email заново, думая, что он пропал. Уже
@@ -285,6 +288,8 @@ export default function ProfilePage({
             email: f.email || me.email || '',
             city: f.city || me.city || '',
             birthDate: f.birthDate || (me.birthDate ? String(me.birthDate).slice(0, 10) : ''),
+            // ключа нет — бэкенд без поля (до V542): пол не показываем выбранным и не шлём
+            gender: f.gender ?? ('gender' in me ? (me.gender === 'MALE' || me.gender === 'FEMALE' ? me.gender : '') : null),
           }))
         })
         .catch(() => {})
@@ -314,6 +319,8 @@ export default function ProfilePage({
         email: form.email.trim(),
         city: form.city.trim(),
         birthDate: form.birthDate,
+        // пол — для обращения помощника (Луна / Айзере): «ты выбрал» / «ты выбрала»; null — не загрузился, не трогаем
+        ...(form.gender != null ? { gender: form.gender } : {}),
       })
       setName(trimmed)
       onUpdateName?.(trimmed)
@@ -388,9 +395,10 @@ export default function ProfilePage({
     { key: 'custom', icon: <PfGiftIcon />, title: t('profile.customization'), onClick: () => setCustomOpen(true) },
   ]
 
-  const openSupport = () => {
-    window.location.href = 'mailto:support@justtostudy.kz'
-  }
+  // «Служба поддержки» — страница «Контакты и реквизиты» (почта, телефон, WhatsApp школы). Раньше здесь было
+  // письмо на support@justtostudy.kz, а такого адреса у школы нет (аудит ТЗ v2.0, 06.11.2026). Жалобы — в Feedback.
+  // Адрес — как у infoUrl (landing/info.js), без импорта: модуль тянет тексты всех страниц покупателя (30 КБ).
+  const openSupport = () => window.open(`/info/contacts${lang === 'kk' ? '?lang=kz' : ''}`, '_blank', 'noopener')
   const openDoc = (kind) => window.open(legalDocumentUrl(kind, lang), '_blank')
 
   const settings = [
@@ -583,7 +591,7 @@ export default function ProfilePage({
         {/* Подбор учителя (ТЗ 08 §2.10): «Мой учитель», «Мои интересы», «Настройки обучения» — сразу после плиток */}
         {blocks}
 
-        <SkillRatings stats={skillStats} loading={skillStats === null} />
+        <SkillRatings stats={skillStats} loading={skillStats === null} level={skillCode} />
 
         {ieltsRows.length > 0 && (
           <>
@@ -713,6 +721,19 @@ export default function ProfilePage({
               onChange={(v) => setForm((f) => ({ ...f, birthDate: v }))}
             />
           </div>
+          <label className="pf-field">
+            <span>{t('profile.editGender')}</span>
+            <select
+              className="pf-input"
+              value={form.gender ?? ''}
+              onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
+            >
+              <option value="">{t('profile.gender.none')}</option>
+              <option value="FEMALE">{t('profile.gender.female')}</option>
+              <option value="MALE">{t('profile.gender.male')}</option>
+            </select>
+            <small className="pf-field__note">{t('profile.genderNote')}</small>
+          </label>
           <label className="pf-field">
             <span>{t('profile.editCity')}</span>
             <input

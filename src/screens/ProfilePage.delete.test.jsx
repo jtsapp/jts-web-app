@@ -21,7 +21,7 @@ vi.mock('../api.js', () => ({
 
 vi.mock('../practice/skillStats.js', () => ({
   readLocalSkillStats: () => null,
-  loadSkillStatsRemote: vi.fn(async () => null),
+  loadSkillStatsRemote: vi.fn(async () => null), readLocalLevelSkillStats: () => null, loadLevelSkillStatsRemote: vi.fn(async () => null),
 }))
 
 import ProfilePage from './ProfilePage.jsx'

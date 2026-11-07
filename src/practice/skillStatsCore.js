@@ -21,6 +21,43 @@ export function skillBars({ done = 0, firstTry = 0 } = {}) {
   return Math.max(2, Math.min(10, bars))
 }
 
+// «Сильные и слабые стороны» ученика — одна формула на «Главной», в Профиле и у Луны (ТЗ v2.0, 5.5; решение школы
+// 06.11.2026): доля заданий текущего уровня, решённых верно с первой попытки. skillBars выше зажимал долю «объёмом»
+// (до 25 заданий меньше), а цифра рядом была чистой долей — у одного ученика чтение 32% на «Главной» и 73% в Профиле.
+// Меньше MIN_LEVEL_TASKS заданий — «мало данных» (null): два-три ответа — ещё не навык.
+export const MIN_LEVEL_TASKS = 5
+
+/** Доля верных с первой попытки, %; меньше MIN_LEVEL_TASKS заданий — null («мало данных»). */
+export function levelShare({ done = 0, firstTry = 0 } = {}) {
+  if (!Number.isFinite(done) || done < MIN_LEVEL_TASKS) return null
+  return Math.round(Math.min(1, firstTry / done) * 100)
+}
+
+// Старт от прошлых заданий (решение владельца 07.11.2026). Задания по уровню копятся только с этапа 1 (skill_level_stat),
+// и без старта у всех учеников после выката был бы «мало данных». Поэтому, пока заданий текущего уровня меньше
+// MIN_LEVEL_TASKS, навык считается по общему итогу (skill_stat: все уровни, новые задания уровня — в нём же, двойного
+// счёта нет) и помечается estimate; набралось пять заданий уровня — только уровень. Мало и того, и другого — «мало данных».
+/** { skill: { done, firstTry, estimate? } } — навыки уровня, где их мало, — общим итогом. */
+export function withStartEstimate(levelStats, totalStats) {
+  const out = {}
+  for (const skill of SKILLS) {
+    const lv = levelStats?.[skill] || {}
+    const total = totalStats?.[skill] || {}
+    const lvDone = Number(lv.done) || 0
+    const totalDone = Number(total.done) || 0
+    out[skill] = lvDone < MIN_LEVEL_TASKS && totalDone >= MIN_LEVEL_TASKS
+      ? { done: totalDone, firstTry: Number(total.firstTry) || 0, estimate: true }
+      : { done: lvDone, firstTry: Number(lv.firstTry) || 0 }
+  }
+  return out
+}
+
+/** 2..10 полосок по доле (levelShare); нет доли — 2, как у пустого навыка. */
+export function shareBars(percent) {
+  if (percent == null) return 2
+  return Math.max(2, Math.min(10, 2 + Math.round((8 * percent) / 100)))
+}
+
 // Иммутабельно прибавляет одну попытку к навыку. Неизвестный навык — no-op.
 export function addDelta(map, skill, correct) {
   if (!SKILLS.includes(skill)) return map
@@ -29,6 +66,33 @@ export function addDelta(map, skill, correct) {
     ...map,
     [skill]: { done: cur.done + 1, firstTry: cur.firstTry + (correct ? 1 : 0) },
   }
+}
+
+// Уровни, по которым копятся навыки (ТЗ v2.0, 5.5: «Сильные и слабые стороны» — по заданиям текущего уровня;
+// таблица skill_level_stat, миграция 0021). Чужое значение — не уровень: задание идёт только в общий итог.
+export const SKILL_LEVELS = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+
+/** Уровень CEFR в виде ключа ('b1' → 'B1'); не уровень — null. */
+export function skillLevel(level) {
+  const code = String(level ?? '').trim().toUpperCase()
+  return SKILL_LEVELS.includes(code) ? code : null
+}
+
+/** То же, что addDelta, но в наборе по уровням { A2: { skill: {done, firstTry} } }. */
+export function addLevelDelta(byLevel, level, skill, correct) {
+  const code = skillLevel(level)
+  if (!code || !SKILLS.includes(skill)) return byLevel
+  return { ...byLevel, [code]: addDelta(byLevel?.[code] || emptyStats(), skill, correct) }
+}
+
+/** Склейка двух наборов по уровням. */
+export function mergeLevelDeltas(a, b) {
+  const out = { ...(a || {}) }
+  for (const code of Object.keys(b || {})) {
+    if (!skillLevel(code)) continue
+    out[code] = mergeDeltas(out[code] || emptyStats(), b[code])
+  }
+  return out
 }
 
 // Суммирует два набора дельт по навыкам (для склейки буфера).

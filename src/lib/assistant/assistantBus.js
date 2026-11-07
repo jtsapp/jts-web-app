@@ -42,15 +42,16 @@ export function openAssistant({ prompt } = {}) {
 // Переход делает App — только он знает, как открыть экран (handleNav).
 export const NAVIGATE_EVENT = 'jts:assistant-navigate'
 
-export function navigateTo(target) {
+// payload — что передать разделу (Feedback: категория и черновик обращения; actions.js).
+export function navigateTo(target, payload = null) {
   if (typeof window === 'undefined') return
-  window.dispatchEvent(new CustomEvent(NAVIGATE_EVENT, { detail: { target } }))
+  window.dispatchEvent(new CustomEvent(NAVIGATE_EVENT, { detail: { target, payload } }))
 }
 
 /** Подписка App на переходы, которые просит Луна. */
 export function onAssistantNavigate(fn) {
   if (typeof window === 'undefined') return () => {}
-  const handler = (e) => fn(e.detail?.target)
+  const handler = (e) => fn(e.detail?.target, e.detail?.payload || null)
   window.addEventListener(NAVIGATE_EVENT, handler)
   return () => window.removeEventListener(NAVIGATE_EVENT, handler)
 }

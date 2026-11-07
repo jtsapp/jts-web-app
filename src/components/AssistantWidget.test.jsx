@@ -39,7 +39,7 @@ const renderApp = ({ enabled = true, token = 'tok' } = {}) =>
 // ожидание кончается, как только элемент появился.
 const WAIT = { timeout: 5000 }
 // Окно по умолчанию компактное — подсказка в поле короткая (placement.js).
-const PLACEHOLDER = 'Спросите Луну…'
+const PLACEHOLDER = 'Спроси Луну…'
 
 describe('помощник по сайту', () => {
   let fetchMock
@@ -63,11 +63,11 @@ describe('помощник по сайту', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
     expect(screen.getByRole('dialog', { name: 'Луна' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Почему мой ответ неверный?' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Дай план на неделю' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Почему неверно?' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Подсказать?' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'На сайте ошибка' })).toBeTruthy()
     expect(screen.getByPlaceholderText(PLACEHOLDER)).toBeTruthy()
-    expect(screen.getByText(/напишите, если что-то сломалось/)).toBeTruthy()
+    expect(screen.getByText(/напиши, если что-то сломалось/)).toBeTruthy()
   })
 
   it('отправляет вопрос со снимком экрана и стримит ответ', async () => {
@@ -99,7 +99,7 @@ describe('помощник по сайту', () => {
   it('второй вопрос несёт историю разговора', async () => {
     renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Почему мой ответ неверный?' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Почему неверно?' }))
     await screen.findByText('Опечатка: «Cleare» → «Clare».', {}, WAIT)
     fireEvent.change(screen.getByPlaceholderText(PLACEHOLDER), { target: { value: 'а правило?' } })
     fireEvent.keyDown(screen.getByPlaceholderText(PLACEHOLDER), { key: 'Enter' })
@@ -147,7 +147,7 @@ describe('помощник по сайту', () => {
     )
     renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Почему мой ответ неверный?' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Почему неверно?' }))
     expect(await screen.findByRole('alert', {}, WAIT)).toBeTruthy()
     expect(screen.getByRole('alert').textContent).toContain('через 3 мин')
 
@@ -182,7 +182,7 @@ describe('помощник по сайту', () => {
     )
     renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Почему мой ответ неверный?' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Почему неверно?' }))
     const alert = await screen.findByRole('alert', {}, WAIT)
     expect(alert.textContent).toContain('через 29 мин')
     expect(alert.textContent).toContain('не по теме')
@@ -195,7 +195,7 @@ describe('помощник по сайту', () => {
     )
     renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Объясни правило этого задания' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Объясни правило' }))
     const bold = await screen.findByText('Порядок слов', {}, WAIT)
     expect(bold.tagName).toBe('B')
     const items = screen.getByRole('dialog').querySelectorAll('li')
@@ -207,7 +207,7 @@ describe('помощник по сайту', () => {
   it('смена ученика стирает разговор', async () => {
     const { rerender } = renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Почему мой ответ неверный?' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Почему неверно?' }))
     await screen.findByText('Опечатка: «Cleare» → «Clare».', {}, WAIT)
     rerender(
       <I18nProvider>

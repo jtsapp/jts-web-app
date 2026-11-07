@@ -7,13 +7,14 @@ import OnboardingTour, { isTourSeen, useScreenTour } from '../tutor/OnboardingTo
 import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
 import { sectionTokenPoints, taskTokenPoints, useStudentTokens } from '../practice/practiceTokens.js'
-import { goalOptions, levelSummary, levelTrack, sanitizeGoal, touchWeeklySnapshot } from '../lib/levelProgress.js'
+import { goalOptions, levelSkillHighlights, levelSummary, levelTrack, rankLevelSkills, sanitizeGoal, touchWeeklySnapshot } from '../lib/levelProgress.js'
 import { loadLevelGoal, readCachedGoal, saveLevelGoal } from '../lib/levelGoal.js'
 import { GoalDialog } from './home/GoalPicker.jsx'
 import IeltsHomeCard from './home/IeltsHomeCard.jsx'
 import GeGoalBanner from './home/GeGoalBanner.jsx'
 import GeStartHero, { GeFinishHero, StartHereCard } from './home/GeStartHero.jsx'
 import { PlacementNext, PlacementResults, usePlacementReport } from './home/PlacementReport.jsx'
+import { withProfileGoal } from '../placement/reportModel.js'
 import { placementCollapseKey } from './home/placementCollapse.js'
 import GeTodayCard from './home/GeTodayCard.jsx'
 import TourSections from './home/TourSections.jsx'
@@ -24,8 +25,10 @@ import TokenBlocks from '../components/TokenBlocks.jsx'
 import { useGePlan } from '../ge/plan/useGePlan.js'
 import { homeTopState } from '../ge/homeState.js'
 import { routeOptions } from '../ge/route.js'
-import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
-import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMyHomework, getLevelProgress, getIeltsPlan } from '../api.js'
+import { loadLevelSkillStatsRemote, loadSkillStatsRemote, readLocalLevelSkillStats, readLocalSkillStats } from '../practice/skillStats.js'
+import { skillLevel } from '../practice/skillStatsCore.js'
+import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMyHomework, getMyMaterialAssignments, getLevelProgress, getIeltsPlan } from '../api.js'
+import { homeworkCards, openHomework } from '../lib/homeworkList.js'
 import { ieltsHomeworkCards } from './homework/ieltsHomework.js'
 import { pickRecommendation } from '../lib/assistant/recommend.js'
 import { pickFeaturedOccurrence } from './schedule/liveNow.js'
@@ -113,6 +116,27 @@ export default function HomePage({
 
   const summary = useMemo(() => levelSummary(userLevel, stats, progress), [userLevel, stats, progress])
 
+  // «Сильные и слабые стороны» — по заданиям текущего уровня, одной формулой с Профилем (ТЗ v2.0, 5.5; решение школы
+  // 06.11.2026): доля верных с первой попытки, меньше 5 заданий — «мало данных». Раньше карточка считала все уровни и
+  // умножала долю на «объём», а Профиль показывал чистую долю: чтение 32% здесь и 73% там у одного ученика.
+  const skillCode = skillLevel(userLevel)
+  const [levelStats, setLevelStats] = useState(null)
+  useEffect(() => {
+    setLevelStats(skillCode ? readLocalLevelSkillStats(skillCode) : null)
+    if (!token || !skillCode) return
+    let alive = true
+    loadLevelSkillStatsRemote(token, skillCode).then((remote) => {
+      if (alive && remote) setLevelStats(remote)
+    })
+    return () => {
+      alive = false
+    }
+  }, [token, skillCode])
+  const levelSkills = useMemo(() => {
+    const ranked = rankLevelSkills(levelStats)
+    return { ranked, ...levelSkillHighlights(ranked), level: skillCode }
+  }, [levelStats, skillCode])
+
   // Цель ученика — до какого уровня он идёт. Кэш сразу, сервер следом (см.
   // lib/levelGoal.js). Выбор, сделанный до ответа сервера, ответом не
   // перетираем: GET мог уйти раньше клика и принести старую цель.
@@ -165,7 +189,9 @@ export default function HomePage({
   const gePlan = useGePlan(token, { enabled: geTop === 'goal', level: summary.level || userLevel })
   const geToday = gePlan.status === 'ready' && gePlan.plan?.state === 'ready'
   // Отчёт теста уровня — одни данные на две карточки: «Результаты теста уровня» в колонке и «Что делать дальше» внизу.
-  const report = usePlacementReport(ieltsAccount ? null : token, placementVersion)
+  const placement = usePlacementReport(ieltsAccount ? null : token, placementVersion)
+  // Цель в блоке «Что делать дальше» — та же, что на баннере (профиль GE), а не предложенная тестом в день прохождения.
+  const report = geTarget ? { ...placement, view: withProfileGoal(placement.view, geTarget) } : placement
   // Срок выбранного формата — для реплики маскота («идём по плану» / «не успеваем»). Та же формула, что на маршруте.
   // Без useMemo: три вызова калькулятора дешевле, а ручную мемоизацию React Compiler здесь сохранить не может.
   const geCur = geProfile?.journey?.current || {}
@@ -278,20 +304,44 @@ export default function HomePage({
   const [nextLesson, setNextLesson] = useState(null)
   const [occurrences, setOccurrences] = useState([])
   const [homework, setHomework] = useState([])
+  // 'loading' | 'ready' | 'error' — ошибка запроса не «всё сделано» (аудит ТЗ v2.0: блок то показывал просрочку,
+  // то «Заданий нет — всё сделано» на разных загрузках одной страницы).
+  const [homeworkState, setHomeworkState] = useState('loading')
+  const [homeworkTry, setHomeworkTry] = useState(0)
   const [sending, setSending] = useState(false)
   const [failed, setFailed] = useState(false)
+
+  // Домашка — из тех же источников, что раздел «Домашняя работа» (lib/homeworkList.js): работы, задания с урока и
+  // домашние задания IELTS (живут в плане IELTS, а не в /admin/homework/my). Раньше «Главная» не грузила задания с
+  // урока и писала «Заданий нет» при просроченном. Задания с урока и IELTS — как в разделе: их сбой работы не прячет.
+  useEffect(() => {
+    if (!token) return
+    let alive = true
+    // Каждый вызов — внутри цепочки: синхронный сбой (ручки нет в моке теста) становится отказом, а не падением экрана.
+    const call = (fn) => Promise.resolve().then(fn)
+    Promise.all([
+      call(() => getMyHomework(token)),
+      call(() => getMyMaterialAssignments(token)).catch(() => []),
+      ieltsAccount ? call(() => getIeltsPlan(token)).then(ieltsHomeworkCards).catch(() => []) : Promise.resolve([]),
+    ])
+      .then(([hw, assignments, ielts]) => {
+        if (!alive) return
+        setHomework([...homeworkCards(hw, assignments), ...ielts])
+        setHomeworkState('ready')
+      })
+      .catch(() => { if (alive) setHomeworkState('error') })
+    return () => { alive = false }
+  }, [token, ieltsAccount, homeworkTry])
+  const retryHomework = () => {
+    setHomeworkState('loading')
+    setHomeworkTry((n) => n + 1)
+  }
 
   useEffect(() => {
     if (!token) return
     let alive = true
     // Ни один из запросов не критичен: не ответил — соответствующая карточка
     // показывает «пусто», а экран остаётся целым. Это честнее пустого места.
-    // Домашние задания IELTS (преподаватель задаёт их в web-admin) живут в плане IELTS, а не в /admin/homework/my —
-    // у ученика IELTS «Главная» иначе писала бы «Заданий нет» при открытом задании (то же, что в «Домашней работе»).
-    Promise.all([
-      getMyHomework(token).then((hw) => (Array.isArray(hw) ? hw : [])).catch(() => []),
-      ieltsAccount ? getIeltsPlan(token).then(ieltsHomeworkCards).catch(() => []) : Promise.resolve([]),
-    ]).then(([hw, ielts]) => { if (alive) setHomework([...hw, ...ielts]) })
     getMyLessonOccurrences(token)
       .then((occ) => {
         if (!alive) return
@@ -357,7 +407,7 @@ export default function HomePage({
               level: summary.next,
             })
 
-  const hasData = summary.ranked.some((r) => r.percent > 0)
+  const hasData = levelSkills.ranked.some((r) => r.done > 0)
   const levelName = t(`cefr.${summary.level}`)
 
   // Карточка уровня. На компьютере — только у прежней «Главной» с известным уровнем. На телефоне (дизайн приложения,
@@ -541,7 +591,7 @@ export default function HomePage({
             ) : !geLoaded || (geTop === 'goal' && gePlan.status === 'loading') ? null : geMode && geTop !== 'goal' ? (
               <StartHereCard state={geTop} onStart={onGeStart} onTest={onGeTest} onRoute={onGeRoute} />
             ) : isDemoAccount ? null : (
-              <RecommendCard t={t} summary={summary} homework={homework} occurrences={occurrences} onNav={onNav} />
+              <RecommendCard t={t} summary={levelSkills} homework={homework} occurrences={occurrences} onNav={onNav} />
             )}
             <PracticeToday t={t} lang={lang} token={token} onNav={onNav} />
             {/* Отчёт теста уровня v16; теста нет — тот же блок пустым и зовёт на тест (решение владельца 21.10.2026). */}
@@ -565,13 +615,13 @@ export default function HomePage({
             ) : (
               <>
                 <ScheduleCard t={t} lang={lang} occurrences={occurrences} onOpenLesson={onOpenLesson} onNav={onNav} />
-                <HomeworkCard t={t} lang={lang} items={homework} onNav={onNav} />
+                <HomeworkCard t={t} lang={lang} items={homework} state={token ? homeworkState : 'ready'} onRetry={retryHomework} onNav={onNav} />
               </>
             )}
             {!ieltsAccount && (
               <SkillsCard
                 t={t}
-                summary={summary}
+                summary={levelSkills}
                 hasData={hasData}
                 levelUnknown={levelUnknown}
                 onTest={geMode ? onGeStart : onStartLevelTest}
@@ -822,27 +872,14 @@ function ScheduleCard({ t, lang, occurrences, onOpenLesson, onNav }) {
   )
 }
 
-// Срок задания для сортировки; нет срока или он нечитаем — «когда-нибудь».
-function dueTime(h) {
-  const t = h.dueDate ? new Date(h.dueDate).getTime() : NaN
-  return Number.isNaN(t) ? Infinity : t
-}
-
-/** Незакрытые домашние задания: сначала те, у которых срок ближе. */
-function HomeworkCard({ t, lang, items, onNav }) {
+/**
+ * Незакрытые домашние задания: сначала те, у которых срок ближе. Что открыто, решает то же правило, что бейджи
+ * раздела (homeworkStateKey в lib/homeworkList.js): сданные, проверенные и закрытые сюда не идут — «Главная» про то,
+ * что ещё нужно сделать. Без срока — в конец. state: 'loading' | 'ready' | 'error'.
+ */
+function HomeworkCard({ t, lang, items, state = 'ready', onRetry, onNav }) {
   const locale = lang === 'kk' ? 'kk-KZ' : 'ru-RU'
-  const open = useMemo(() => {
-    // Проверенные и сданные сюда не идут: «Главная» — про то, что ещё нужно
-    // сделать, а история заданий живёт в своём разделе.
-    const done = new Set(['SUBMITTED', 'CHECKED', 'COMPLETED', 'GRADED'])
-    return (items || [])
-      .filter((h) => !done.has(String(h.status || '').toUpperCase()))
-      // Без срока — в конец. Раньше пустой срок читался как 0, то есть как
-      // 1970 год, и бессрочные задания вытесняли из тройки то, что сдавать
-      // завтра.
-      .sort((a, b) => dueTime(a) - dueTime(b))
-      .slice(0, 3)
-  }, [items])
+  const open = useMemo(() => openHomework(items).slice(0, 3), [items])
 
   return (
     <section className="hm-card hm-hw">
@@ -851,7 +888,19 @@ function HomeworkCard({ t, lang, items, onNav }) {
       <button type="button" className="hm-card__all" onClick={() => onNav?.('homework')}>
         {t('home.homework.all')}
       </button>
-      {open.length === 0 ? (
+      {state === 'error' ? (
+        // Не «Заданий нет — всё сделано»: список не загрузился, и сделано ли всё — неизвестно.
+        <p className="hm-hw__empty" role="status">
+          {t('home.homework.error')}{' '}
+          {onRetry && (
+            <button type="button" className="hm-hw__retry" onClick={onRetry}>
+              {t('home.homework.retry')}
+            </button>
+          )}
+        </p>
+      ) : state === 'loading' ? (
+        <p className="hm-hw__empty">{t('home.homework.loading')}</p>
+      ) : open.length === 0 ? (
         <p className="hm-hw__empty">{t('home.homework.empty')}</p>
       ) : (
         <ul className="hm-hw__list">
@@ -944,9 +993,18 @@ const SKILL_ROWS = ['speaking', 'listening', 'vocab', 'grammar', 'writing']
  */
 function SkillsCard({ t, summary, hasData, levelUnknown, onTest }) {
   const rows = hasData ? summary.ranked : SKILL_ROWS.map((skill) => ({ skill, percent: null }))
+  // Задания уровня по навыку есть, но меньше пяти — «мало данных», а не «???» (тот — у ученика без теста).
+  const few = (percent) => hasData && percent == null
   return (
     <section className={`hm-card hm-skills${!hasData && !levelUnknown ? ' hm-skills--empty' : ''}`}>
       <h2 className="hm-card__title">{t('home.skills.title')}</h2>
+      {/* Откуда цифры — одной строкой (ТЗ 5.5): тот же расчёт, что в Профиле. Где заданий уровня меньше пяти, процент — по
+          всем прошлым заданиям навыка (withStartEstimate), и подпись это говорит. */}
+      {summary.level && (
+        <p className="hm-skills__src">
+          {t(summary.ranked?.some((r) => r.estimate) ? 'home.skills.sourceEstimate' : 'home.skills.source', { level: summary.level })}
+        </p>
+      )}
       <div className="hm-skills__list">
         {rows.map(({ skill, percent }) => (
           <div className="hm-skill" key={skill}>
@@ -956,7 +1014,7 @@ function SkillsCard({ t, summary, hasData, levelUnknown, onTest }) {
                 <TrendIcon up={percent >= 60} size={18} />
               </span>
             )}
-            <span className="hm-skill__pct">{percent != null ? `${percent}%` : '???'}</span>
+            <span className={`hm-skill__pct${few(percent) ? ' hm-skill__pct--few' : ''}`}>{percent != null ? `${percent}%` : few(percent) ? t('home.skills.few') : '???'}</span>
             <div className="hm-skill__bar">
               {percent != null && (
                 <i

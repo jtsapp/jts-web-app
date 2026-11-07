@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 
 // Луна нажимает кнопки (21.10.2026): быстрая команда позывного — без сервера, команда
 // словами — через модель (подменена), опасная кнопка — никогда. «Ухо» подменено
@@ -17,6 +18,8 @@ async function setup(page, { reply = () => 'Хорошо.', stt = 'Луна, н�
     localStorage.setItem('jts_luna_wake', '1')
     window.__jtsFakeWakeEar = true
   })
+  // Замки кабинета (документы, разделы тарифа) — иначе они встают поверх экрана (helpers/login.js).
+  await mockGates(page)
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 7, name: 'Айгерім', role: 'STUDENT', phone: '77001234567', languageLevel: 'A2' } })),
   )

@@ -30,7 +30,7 @@ vi.mock('../api.js', () => ({
 
 vi.mock('../practice/skillStats.js', () => ({
   readLocalSkillStats: () => ({}),
-  loadSkillStatsRemote: vi.fn(async () => null),
+  loadSkillStatsRemote: vi.fn(async () => null), readLocalLevelSkillStats: () => ({}), loadLevelSkillStatsRemote: vi.fn(async () => null),
 }))
 
 // Тур меряет подсветку ResizeObserver'ом и скроллит к ней — в jsdom нет ни того, ни другого.
@@ -103,7 +103,7 @@ describe('Цель уровня на «Главной»', () => {
 
     const hello = await screen.findByRole('dialog', { name: 'Добро пожаловать!' })
     fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
-    const step = await screen.findByRole('dialog', { name: 'Здесь виден ваш прогресс' })
+    const step = await screen.findByRole('dialog', { name: 'Здесь виден твой прогресс' })
     expect(within(step).queryAllByRole('radio')).toHaveLength(0)
     expect(screen.queryByRole('dialog', { name: 'Твоя цель' })).toBe(null)
     expect(goalPuts()).toEqual([])

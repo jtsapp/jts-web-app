@@ -10,6 +10,7 @@
 // практика, материал Практики (kind unit) и своё задание (kind custom). Подписи у них свои, из extra.
 
 import { practiceNavTarget } from '../../lib/practiceTarget.js'
+import { isOwnTask } from './ownTasks.js'
 
 export const MODULES = ['ai_tutor', 'workbooks', 'shadowing', 'media_practice', 'vocabulary_sr']
 
@@ -31,11 +32,15 @@ export function isTeacherTask(task) {
  * Куда ведёт «Начать»: ключ handleNav App и его payload; null — переходить некуда. Урок курса — в тропу уровня, который
  * ученик проходит.
  */
-export function taskRoute(task, level) {
+export function taskRoute(task, level, lesson = null) {
   switch (task?.kind) {
     case 'course':
       // урок, заданный преподавателем, — в тропу его уровня: ученик мог уже перейти на следующий
-      return { to: 'course', payload: { level: (isTeacherTask(task) && task.extra?.level) || level || null } }
+      if (isTeacherTask(task)) return { to: 'course', payload: { level: task.extra?.level || level || null } }
+      // свой урок плана — сразу сам урок (ТЗ v2.0, 5.3: «Начать» открывает конкретное, а не раздел целиком): код шага
+      // тропы даёт courseLessons, открывает его тропа тем же lessonTarget, что и Луна («открой урок 5»). Кода нет
+      // (тропа не загрузилась) — тропа уровня, как раньше.
+      return { to: 'course', payload: { level: level || null, ...(lesson ? { lesson } : {}) } }
     case 'live':
       return { to: 'lessons' }
     case 'homework':
@@ -64,10 +69,10 @@ export function taskRoute(task, level) {
  * Что делает кнопка задачи: переход ({ type: 'nav', to, payload }), отметка своего задания преподавателя ({ type: 'done' })
  * или ничего (null — кнопки нет). У выполненной задачи кнопки нет.
  */
-export function taskAction(task, level) {
+export function taskAction(task, level, lesson = null) {
   if (!task || task.status === 'completed') return null
   if (task.kind === 'custom') return isTeacherTask(task) ? { type: 'done' } : null
-  const r = taskRoute(task, level)
+  const r = taskRoute(task, level, lesson)
   return r ? { type: 'nav', ...r } : null
 }
 
@@ -120,7 +125,8 @@ const byDateThenId = (a, b) =>
  * урок. Выполненные задачи подписи по тропе не получают — их шаг уже позади.
  * @returns {Record<string, string>} id задачи → название шага
  */
-export function courseTitles(tasks, frontier) {
+/** id задачи урока курса → шаг тропы: k-я открытая задача ↔ k-й непройденный шаг (courseFrontier). */
+function courseNodes(tasks, frontier) {
   const out = {}
   if (!Array.isArray(frontier) || !frontier.length) return out
   let k = 0
@@ -129,9 +135,18 @@ export function courseTitles(tasks, frontier) {
     if (task.status === 'completed') continue
     const node = frontier[k++]
     if (!node) break
-    out[task.id] = node.title
+    out[task.id] = node
   }
   return out
+}
+
+export function courseTitles(tasks, frontier) {
+  return Object.fromEntries(Object.entries(courseNodes(tasks, frontier)).map(([id, node]) => [id, node.title]))
+}
+
+/** id задачи урока курса → код шага тропы: «Начать» открывает этот урок (taskRoute). */
+export function courseLessons(tasks, frontier) {
+  return Object.fromEntries(Object.entries(courseNodes(tasks, frontier)).map(([id, node]) => [id, node.code]))
 }
 
 // ---- даты: календарные 'YYYY-MM-DD' без времени, считаем в UTC — переход на летнее время не сдвигает день ----
@@ -211,16 +226,28 @@ export function roadWeek(tasks, monday, today) {
 /**
  * «Сегодня» на «Главной»: просроченное этой недели (до трёх — после недели отпуска список не должен заваливать экран)
  * и задачи дня. Открытого нет (выходной, всё сделано) — ahead: две ближайшие следующие, чтобы «Сегодня» не врало
- * «пусто» посреди недели.
+ * «пусто» посреди недели. Только свои задачи плана (isOwnTask): занятия, домашка и задачи преподавателя остаются в
+ * полном плане и в расписании и домашке на «Главной» (ТЗ v2.0 9.1, решение владельца 07.11.2026).
  */
 export function todayView(plan, maxOverdue = 3) {
   const today = plan?.today
-  if (!today) return { tasks: [], ahead: [] }
+  if (!today) return { tasks: [], ahead: [], deferred: [] }
   const monday = mondayOf(today)
   // только по дате: sort стабилен, и порядок бэкенда внутри дня (занятие, ДЗ, урок, практика) сохраняется
-  const tasks = [...(plan?.tasks || [])].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+  const tasks = (plan?.tasks || []).filter(isOwnTask).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
   const overdue = tasks.filter((x) => x.date < today && x.date >= monday && x.overdue && x.status !== 'completed').slice(0, maxOverdue)
   const list = [...overdue, ...tasks.filter((x) => x.date === today)]
-  if (list.some((x) => x.status !== 'completed')) return { tasks: list, ahead: [] }
-  return { tasks: list, ahead: tasks.filter((x) => x.date > today && x.status !== 'completed').slice(0, 2) }
+  // ушло с сегодня по «мало времени» (бэкенд ставит deferred) — своей строкой «Перенесено», не в «Дальше по плану»
+  const deferred = tasks.filter((x) => x.deferred && x.status !== 'completed')
+  if (list.some((x) => x.status !== 'completed')) return { tasks: list, ahead: [], deferred }
+  return { tasks: list, ahead: tasks.filter((x) => x.date > today && x.status !== 'completed' && !x.deferred).slice(0, 2), deferred }
+}
+
+/**
+ * День, с которого своя задача перенесена (ручной перенос или «мало времени»), или null. Метка «перенесено с …»
+ * вместо «Просрочено» (ТЗ v2.0, 5.2): задача не пропущена, её подвинули.
+ */
+export function movedFrom(task) {
+  if (!isOwnTask(task) || !task.originalDate || !task.date || task.status === 'completed') return null
+  return task.originalDate < task.date ? task.originalDate : null
 }

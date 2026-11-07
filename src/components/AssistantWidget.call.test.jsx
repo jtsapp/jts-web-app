@@ -282,7 +282,7 @@ describe('звонок Луне', () => {
     await waitFor(() => expect(room.props).not.toBeNull(), WAIT)
     const s = sender()
     await act(async () => room.props.onAsk({ id: '9', text: '', opening: true, sender: s }))
-    expect(s.phrases).toEqual(['Я на связи — слушаю вас.'])
+    expect(s.phrases).toEqual(['Я на связи — слушаю тебя.'])
     expect(s.ended).toBe(1)
     expect(chatBodies()).toHaveLength(1)
   })
@@ -309,7 +309,7 @@ describe('звонок Луне', () => {
     const s = sender()
     await act(async () => room.props.onAsk({ id: '6', text: '', opening: true, sender: s }))
     await waitFor(() => expect(s.ended).toBe(1), WAIT)
-    expect(s.phrases).toEqual(['Я на связи — слушаю вас.'])
+    expect(s.phrases).toEqual(['Я на связи — слушаю тебя.'])
   })
 
   it('звонок уже идёт в другой вкладке — 409 и понятная строка', async () => {

@@ -97,7 +97,7 @@ async function finishTestThroughBridge(page) {
   const f = await (await frame.elementHandle()).contentFrame()
   // Страница теста загрузилась и мост поставил крючки
   await f.waitForFunction(() => typeof window.JTSPlacementConfig?.openLearning === 'function', null, { timeout: 30000 })
-  await expect(page.frameLocator('.pl-page__frame').getByText('Давайте определим')).toBeVisible()
+  await expect(page.frameLocator('.pl-page__frame').getByText('Давай определим')).toBeVisible()
   return f.evaluate((env) => window.JTSPlacementConfig.openLearning(env, { intent: 'open_existing_roadmap' }), ENVELOPE)
 }
 
@@ -411,7 +411,7 @@ test.describe('тур', () => {
     await page.goto('/?screen=home')
     await expect(page.locator('.t-tour__intro')).toContainText('Сакен', { timeout: 20000 })
     await page.locator('.t-tour__intro-go').click()
-    await expect(page.locator('.t-tour__title')).toHaveText('Здесь будет ваш маршрут')
+    await expect(page.locator('.t-tour__title')).toHaveText('Здесь будет твой маршрут')
     await page.locator('.t-tour__skip').click()
     await expect(page.locator('.t-tour__pop')).toHaveCount(0)
     await expect(page.locator('.pl-page__frame')).toBeVisible({ timeout: 20000 })
