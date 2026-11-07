@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import HomePage from './HomePage.jsx'
@@ -15,6 +15,9 @@ const homework = { value: [] }
 const materials = { value: [] }
 // Прогресс по уровню считает сервер — здесь отдаём его готовым.
 const levelProgress = { value: { level: 'B1', next: 'B2', percent: 45, done: 9, total: 20, remaining: 11 } }
+// Абонемент ученика (/cabinet/my-sections): по нему «Главная», как меню и Луна, решает, есть ли уроки с преподавателем.
+// Снимок разделов общий на вкладку и кэшируется по владельцу токена — тестам с абонементом свои токены.
+const mySections = { value: { known: false, allowed: [] } }
 
 vi.mock('../api.js', () => ({
   // Карточка «Новый отчёт о прогрессе» спрашивает список отчётов.
@@ -32,6 +35,8 @@ vi.mock('../api.js', () => ({
   getMyMaterialAssignments: vi.fn(async () => materials.value),
   requestTrialLesson: vi.fn(async () => ({ requested: true, managerAssigned: false })),
   getLevelProgress: vi.fn(async () => levelProgress.value),
+  getMySections: vi.fn(async () => mySections.value),
+  getLessonsSummary: vi.fn(async () => ({ conducted: 7, remaining: 9, cancelled: 0, rescheduled: 0 })),
 }))
 
 // Рейтинг навыков: локальное зеркало отдаём готовым, сеть не трогаем — экран
@@ -77,6 +82,22 @@ beforeEach(() => {
   localStats.value = FULL_STATS
   levelProgress.value = { level: 'B1', next: 'B2', percent: 45, done: 9, total: 20, remaining: 11 }
 })
+
+// Ширина телефона (≤560): «Главная» рисует там свои карточки расписания, домашки и пробного урока по макету приложения
+// (usePhoneWidth). В jsdom matchMedia нет — без подмены экран считает себя компьютером.
+function phoneWidth() {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', (q) => ({
+      matches: /max-width:\s*560px/.test(q),
+      media: q,
+      addEventListener() {},
+      removeEventListener() {},
+    }))
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+}
 
 describe('Главная демо-аккаунта', () => {
   it('уровень с названием и целью — следующая ступень CEFR', () => {
@@ -178,15 +199,17 @@ describe('Главная демо-аккаунта', () => {
     expect(onStartLevelTest).toHaveBeenCalledTimes(1)
   })
 
-  it('у демо на месте расписания и домашки — пробный урок, практика остаётся', () => {
-    // Так на макете демо-доступа: расписания и домашки у демо нет, а входы в
-    // практику — есть (кадр «новый ученик» макета «Главная · редизайн»).
+  it('у демо на месте расписания и домашки — «Ближайшее» с пробным уроком, практика остаётся', () => {
+    // ТЗ v2.0, 5.4: у демо справа «Ближайшее» (неделя и пробный урок), уроков с преподавателем нет; входы в практику
+    // — «Свободная практика».
     const { container } = renderHome()
 
     expect(container.querySelector('.hm-sched')).toBeNull()
     expect(container.querySelector('.hm-hw')).toBeNull()
-    expect(screen.getByText('Ваша практика на сегодня')).toBeTruthy()
-    expect(container.querySelector('.hm-trial')).not.toBeNull()
+    expect(container.querySelector('.hm-tl')).toBeNull()
+    expect(screen.getByText('Свободная практика')).toBeTruthy()
+    expect(container.querySelector('.hm-near .hm-near__trial')).not.toBeNull()
+    expect(container.querySelectorAll('.hm-near .hm-week__day')).toHaveLength(7)
   })
 
   it('сильная и слабая стороны названы', () => {
@@ -351,9 +374,8 @@ describe('Карточка пробного урока', () => {
     const { onOpenLesson } = renderHome({ token: 'T' })
 
     expect(await screen.findByText('Урок назначен')).toBeTruthy()
-    // Ищем внутри самой карточки: то же занятие теперь стоит и в расписании
-    // рядом — как «Мой график» и календарь на экране «Уроки».
-    const card = document.querySelector('.hm-trial')
+    // Ищем внутри строки пробного урока в «Ближайшем».
+    const card = document.querySelector('.hm-near__trial')
     expect(card.textContent).toContain('Айгерим')
     fireEvent.click(screen.getByText('Перейти к уроку'))
     expect(onOpenLesson).toHaveBeenCalledWith(42)
@@ -376,7 +398,8 @@ describe('Карточка пробного урока', () => {
   })
 })
 
-describe('Карточка домашки у ученика', () => {
+describe('Карточка домашки у ученика (телефон)', () => {
+  phoneWidth()
   beforeEach(() => {
     homework.value = []
   })
@@ -444,6 +467,76 @@ describe('Карточка домашки у ученика', () => {
     expect(container.querySelector('.hm-hw__item i')).toBeNull()
   })
 })
+// ТЗ v2.0, 5.4: у формата с преподавателем справа один блок — неделя, следующий урок, остаток и домашка от
+// преподавателя со статусами цветом; на пункте меню «Домашняя работа» — число просроченных и заданных.
+describe('«Уроки с преподавателем» (компьютер)', () => {
+  const tomorrowAt = () => {
+    const d = new Date(Date.now() + 86400000)
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T10:00:00`
+  }
+  beforeEach(() => {
+    mySections.value = { known: true, format: 'GROUP', allowed: ['lessons', 'homework', 'practice', 'speaking', 'vocabulary', 'review'] }
+    occurrences.value = [{ lessonId: 7, teacherName: 'Айгерим', durationMinutes: 60, lessonStatus: 'SCHEDULED', scheduledAt: tomorrowAt() }]
+    homework.value = [
+      { id: 1, title: 'Проверенная', status: 'COMPLETED', grade: 5 },
+      { id: 2, title: 'На проверке', status: 'SUBMITTED' },
+      { id: 3, title: 'Заданная', status: 'ASSIGNED', dueDate: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10) },
+      { id: 4, title: 'Просроченная', status: 'ASSIGNED', dueDate: '2026-08-18' },
+    ]
+  })
+  afterEach(() => {
+    mySections.value = { known: false, allowed: [] }
+    occurrences.value = []
+    homework.value = []
+  })
+
+  it('неделя, следующий урок, остаток и до трёх работ со статусом; «Открыть» у ждущих ученика', async () => {
+    const onNav = vi.fn()
+    const { container, onOpenLesson } = renderHome({ token: 'T-group-1', isDemoAccount: false, onNav })
+    await waitFor(() => expect(container.querySelector('.hm-tl')).not.toBeNull())
+    const block = container.querySelector('.hm-tl')
+    expect(container.querySelector('.hm-near')).toBeNull()
+    expect(container.querySelector('.hm-sched')).toBeNull()
+    await waitFor(() => expect(block.querySelectorAll('.hm-week__day.has-lesson')).toHaveLength(1))
+    expect(block.querySelectorAll('.hm-week__day')[0].classList.contains('is-today')).toBe(true)
+    fireEvent.click(within(block).getByRole('button', { name: 'Подключиться' }))
+    expect(onOpenLesson).toHaveBeenCalledWith(7)
+    expect(await within(block).findByText('Осталось уроков: 9')).toBeTruthy()
+    await waitFor(() => expect(block.querySelectorAll('.hm-blk__row')).toHaveLength(3))
+    const rows = [...block.querySelectorAll('.hm-blk__row')]
+    expect(rows.map((r) => r.querySelector('.hm-blk__rowTitle').textContent)).toEqual(['Просроченная', 'Заданная', 'На проверке'])
+    expect(rows.map((r) => r.querySelector('.hm-blk__st').className)).toEqual([
+      'hm-blk__st hm-blk__st--late',
+      'hm-blk__st hm-blk__st--todo',
+      'hm-blk__st hm-blk__st--check',
+    ])
+    expect(within(block).getAllByRole('button', { name: 'Открыть' })).toHaveLength(2)
+    fireEvent.click(within(rows[0]).getByRole('button', { name: 'Открыть' }))
+    expect(onNav).toHaveBeenLastCalledWith('homework', { id: 4 })
+    fireEvent.click(within(block).getByRole('button', { name: 'Все →' }))
+    expect(onNav).toHaveBeenLastCalledWith('homework')
+    fireEvent.click(within(block).getByRole('button', { name: 'Расписание →' }))
+    expect(onNav).toHaveBeenLastCalledWith('lessons')
+  })
+
+  it('на пункте меню «Домашняя работа» — число просроченных и заданных', async () => {
+    const { container } = renderHome({ token: 'T-group-2', isDemoAccount: false })
+    await waitFor(() => expect(container.querySelector('.sb [data-nav="homework"] .sb__badge')?.textContent).toBe('2'))
+  })
+
+  it('Self Study — «Ближайшее» без строк «Нет уроков»', async () => {
+    mySections.value = { known: true, format: 'SELF', allowed: ['practice', 'speaking', 'vocabulary', 'review'] }
+    occurrences.value = []
+    homework.value = []
+    const { container } = renderHome({ token: 'T-self-1', isDemoAccount: false })
+    await waitFor(() => expect(container.querySelector('.hm-near')).not.toBeNull())
+    expect(container.querySelector('.hm-tl')).toBeNull()
+    expect(screen.getByText('Ближайших событий нет — продолжай по плану «Сегодня».')).toBeTruthy()
+    expect(screen.queryByText('Нет уроков')).toBeNull()
+  })
+})
+
 // «Что сделать сегодня»: рекомендация по реальным данным экрана, без сети и
 // без вызова помощника (см. lib/assistant/recommend.js).
 describe('Карточка «Что сделать сегодня»', () => {
@@ -507,6 +600,7 @@ describe('Карточка «Что сделать сегодня»', () => {
 
 // Телефон по дизайну приложения (спека 2026-10-26): разметка общая с компьютером, телефонные элементы скрыты CSS.
 describe('«Главная» телефона', () => {
+  phoneWidth()
   it('без теста — карточка уровня телефона с «?» и кнопкой теста', () => {
     const onStartLevelTest = vi.fn()
     const { container } = renderHome({ levelUnknown: true, onStartLevelTest })

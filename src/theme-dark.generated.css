@@ -24517,6 +24517,126 @@ html[data-theme="dark"] .hm-skills__cta {
     background: var(--dk-acc);
     color: var(--dk-on-acc)
 }
+/* «Главная» по ТЗ v2.0 «Луна-трекер» (07.11.2026): блоки справа, полоса недели, ссылка на отчёт теста */
+html[data-theme="dark"] .hm-blk__more, html[data-theme="dark"] .hm-blk__link {
+    border: 0;
+    background: none;
+    color: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-blk__btn {
+    border: 1px solid var(--hm-ac, #9047ff);
+    background: var(--hm-card, #ffffff);
+    color: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-blk__btn.is-fill {
+    background: var(--hm-ac, #9047ff);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .hm-blk__more:focus-visible, html[data-theme="dark"] .hm-blk__link:focus-visible, html[data-theme="dark"] .hm-blk__btn:focus-visible, html[data-theme="dark"] .hm-skills__results:focus-visible, html[data-theme="dark"] .pl-results__back:focus-visible {
+    outline: 2px solid var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-blk__plate {
+    background: var(--hm-lav, #efe7ff);
+    color: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-blk__plate::after {
+    background: currentColor
+}
+html[data-theme="dark"] .hm-blk__plate--late, html[data-theme="dark"] .hm-blk__plate--orange {
+    background: var(--hm-down-bg, #fff0dd);
+    color: var(--hm-down, #e57a12)
+}
+html[data-theme="dark"] .hm-blk__plate--check {
+    background: var(--hm-tile, #f8f8f8);
+    color: var(--hm-mut, #8e8e99)
+}
+html[data-theme="dark"] .hm-blk__plate--ok {
+    background: var(--hm-up-bg, #e3f6ea);
+    color: var(--hm-up, #1f9d55)
+}
+html[data-theme="dark"] .hm-blk__row {
+    border-top: 1px solid var(--hm-line, #e8e8ee)
+}
+html[data-theme="dark"] .hm-blk__rowTitle {
+    color: var(--hm-ink, #181818)
+}
+html[data-theme="dark"] .hm-blk__rowSub {
+    color: var(--hm-sec, #5a5a66)
+}
+html[data-theme="dark"] .hm-blk__st--late {
+    color: var(--hm-down, #e57a12)
+}
+html[data-theme="dark"] .hm-blk__st--todo {
+    color: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-blk__st--check {
+    color: var(--hm-mut, #8e8e99)
+}
+html[data-theme="dark"] .hm-blk__st--ok {
+    color: var(--hm-up, #1f9d55)
+}
+html[data-theme="dark"] .hm-week__day b {
+    color: var(--hm-ink, #181818)
+}
+html[data-theme="dark"] .hm-week__day small {
+    color: var(--hm-mut, #8e8e99)
+}
+html[data-theme="dark"] .hm-week__day::after {
+    background: transparent
+}
+html[data-theme="dark"] .hm-week__day.has-lesson::after {
+    background: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-week__day.is-today {
+    background: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-week__day.is-today b, html[data-theme="dark"] .hm-week__day.is-today small {
+    color: #ffffff
+}
+html[data-theme="dark"] .hm-week__day.is-today.has-lesson::after {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .hm-tl__next {
+    background: var(--hm-lav2, #f6f1ff)
+}
+html[data-theme="dark"] .hm-tl__label {
+    color: var(--hm-sec, #5a5a66)
+}
+html[data-theme="dark"] .hm-tl__live {
+    background: var(--hm-up-bg, #e3f6ea);
+    color: var(--hm-up, #1f9d55)
+}
+html[data-theme="dark"] .hm-tl__topic {
+    color: var(--hm-ink, #181818)
+}
+html[data-theme="dark"] .hm-tl__when {
+    color: var(--hm-sec, #5a5a66)
+}
+html[data-theme="dark"] .hm-tl__none {
+    color: var(--hm-sec, #5a5a66)
+}
+html[data-theme="dark"] .hm-tl__pack {
+    color: var(--hm-sec, #5a5a66)
+}
+html[data-theme="dark"] .hm-tl__h3 {
+    color: var(--hm-ink, #181818)
+}
+html[data-theme="dark"] .hm-near__error {
+    color: var(--hm-down, #e57a12)
+}
+html[data-theme="dark"] .hm-skills__results {
+    border: 0;
+    background: none;
+    color: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .pl-results__back {
+    border: 0;
+    background: none;
+    color: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .pl-results__note {
+    color: var(--hm-sec, #5a5a66)
+}
 @media (min-width: 561px) {
     html[data-theme="dark"] .hm--v2 .hm-card {
         border: 1px solid var(--hm-line);
