@@ -227,3 +227,31 @@ describe('метка обращения в Feedback', () => {
     expect(actionTail({ kind: 'open', target: 'feedback', now: true, feedback: { category: 'teacher', draft: '' } })).toBe('[[ASST_ACTION feedback teacher now]]')
   })
 })
+
+// ТЗ v2.0, 5.2: «У меня мало времени» — пересобрать сегодняшний план под минуты.
+describe('метка «мало времени»', () => {
+  it('минуты числом, «мин» после числа прощаем; 0 — обычный план; вне 5–180 — не действие', () => {
+    for (const size of [1, 4, 1000]) {
+      const { out, action } = run('Пересобираю план на 20 минут.\n[[REPLAN_NOW 20]]', size)
+      expect(out).toBe('Пересобираю план на 20 минут.\n')
+      expect(action).toEqual({ kind: 'replan', target: 'plan', minutes: 20, now: true })
+    }
+    expect(run('Могу пересобрать.\n[[REPLAN 15 мин]]').action).toEqual({ kind: 'replan', target: 'plan', minutes: 15, now: false })
+    expect(run('Возвращаю.\n[[REPLAN_NOW 0]]').action).toEqual({ kind: 'replan', target: 'plan', minutes: 0, now: true })
+    for (const bad of ['[[REPLAN_NOW 2]]', '[[REPLAN_NOW 500]]']) {
+      const r = run(`Ок.\n${bad}`)
+      expect(r.out).toBe('Ок.\n')
+      expect(r.action).toBe(null)
+    }
+  })
+
+  it('хвост стрима и метка истории — туда и обратно', () => {
+    const action = { kind: 'replan', target: 'plan', minutes: 30, now: true }
+    expect(actionTail(action)).toBe('[[ASST_ACTION replan 30 now]]')
+    expect(actionMarker(action)).toBe('[[REPLAN_NOW 30]]')
+    const f = createServiceTailFilter()
+    for (const ch of `Пересобираю.\n${actionTail(action)}`) f.push(ch)
+    f.flush()
+    expect(f.action).toEqual(action)
+  })
+})

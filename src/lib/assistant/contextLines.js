@@ -7,7 +7,7 @@
 // Домашка — тем же правилом статусов, что раздел (lib/homeworkList.js): Луна видела одну работу
 // из трёх (аудит 06.11.2026, вопрос 6) — фильтр «срок ≤ 4 дней, не больше 5».
 
-import { isOwnTask } from '../../ge/plan/ownTasks.js'
+import { canReplan, isOwnTask } from '../../ge/plan/ownTasks.js'
 import { withStates } from '../homeworkList.js'
 import { destinationName, destinationOf } from './destinations.js'
 
@@ -122,6 +122,9 @@ const MODULE_WORDS = {
   vocabulary_sr: ['слова в «Словаре»', 'vocab'],
 }
 const taskWords = (task) => (task.kind === 'course' ? ['урок курса', 'learning'] : MODULE_WORDS[task.module] || ['практика', 'practice'])
+/** Строка профиля, когда пересчитать день нельзя: по ней turnHints не даёт метку [[REPLAN …]]. Текст — тот же, что там. */
+export const REPLAN_OFF = 'Пересчитать день под «мало времени» сейчас нельзя.'
+
 // Свои задачи плана — то же правило, что у блока «Сегодня» (isOwnTask): у занятий и домашки свои строки профиля.
 const isOwn = isOwnTask
 const STALE_DAYS = 14
@@ -154,8 +157,17 @@ export function gePlanToday(plan, now = Date.now()) {
   const lines = [
     `План на сегодня (тот же, что блок «Сегодня» на Главной; занятия и домашка преподавателя — не в нём): ${items.join('; ') || 'своих задач нет'}. Сделано ${doneMin} из ${sum(todays)} мин.`,
   ]
+  // прежний бэкенд без пересчёта: по этой строке указание «мало времени» метку не даст (turnHints.js)
+  if (!canReplan(plan)) lines.push(REPLAN_OFF)
   if (moved.length) {
     lines.push(`Перенесено с прошлых дней (не «просрочено» — без упрёка): ${moved.map((x) => `${taskWords(x)[0]} (с ${x.date})`).join('; ')}.`)
+  }
+  // «У меня мало времени» выбрано сегодня — день уже собран под эти минуты (ТЗ v2.0, 5.2)
+  if (plan.shortDay?.minutes) {
+    const away = own.filter((x) => x.deferred && x.status !== 'completed')
+    lines.push(
+      `Сегодня выбрано «У меня мало времени»: план дня собран на ${plan.shortDay.minutes} мин${away.length ? `; перенесено на другой день: ${away.map((x) => `${taskWords(x)[0]} (на ${x.date})`).join('; ')}` : ''}. Вернуть обычный план — метка [[REPLAN_NOW 0]].`,
+    )
   }
   // Следующий шаг: сначала перенесённое, затем сегодняшнее по порядку плана.
   const first = [...moved, ...todays].find((x) => x.status !== 'completed')

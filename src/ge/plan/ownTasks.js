@@ -8,3 +8,12 @@
 export function isOwnTask(task) {
   return (task?.kind === 'course' || task?.kind === 'practice') && task?.origin !== 'teacher'
 }
+
+/**
+ * Бэкенд умеет «У меня мало времени» (ТЗ v2.0, 5.2): новый план всегда отдаёт поле shortDay (null — не выбрано). Без
+ * поля бэкенд прежний и ручки пересчёта нет — кнопку не показываем и Луне метку не даём, иначе ученик получал бы «не
+ * удалось» на каждое нажатие. Здесь, а не в replan.js: его тянет серверный contextLines, а replan.js импортирует api.js.
+ */
+export function canReplan(plan) {
+  return Boolean(plan && plan.state === 'ready' && Object.prototype.hasOwnProperty.call(plan, 'shortDay'))
+}

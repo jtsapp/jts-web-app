@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dueWords, geGoalLine, gePlanToday, homeworkLine, lessonsPackageLine, tokensLine } from './contextLines.js'
+import { REPLAN_OFF, dueWords, geGoalLine, gePlanToday, homeworkLine, lessonsPackageLine, tokensLine } from './contextLines.js'
 
 // Строки профиля Луны (этап 1 ТЗ v2.0): данные те же, что у «Главной» и разделов. Слова строк — то, что видит модель.
 const NOW = Date.parse('2026-11-07T08:00:00Z')
@@ -68,7 +68,8 @@ describe('tokensLine', () => {
 })
 
 describe('gePlanToday', () => {
-  const plan = (tasks) => ({ state: 'ready', today: '2026-11-07', tasks })
+  // shortDay: null — план нового бэкенда (с пересчётом «мало времени»), как на стенде
+  const plan = (tasks) => ({ state: 'ready', today: '2026-11-07', shortDay: null, tasks })
 
   it('план не собран — строк нет', () => {
     expect(gePlanToday(null, NOW)).toEqual({ lines: [], next: null })
@@ -110,5 +111,27 @@ describe('geGoalLine', () => {
     )
     expect(geGoalLine({ targetLevel: 'B2' })).toBe('Цель ученика (профиль General English, как на баннере Главной): B2.')
     expect(geGoalLine({})).toBe(null)
+  })
+})
+
+// ТЗ v2.0, 5.2: Луна знает, что день уже собран под «мало времени», и что ушло.
+describe('gePlanToday: «мало времени»', () => {
+  it('строка о выбранных минутах и перенесённом', () => {
+    const r = gePlanToday({
+      state: 'ready',
+      today: '2026-11-07',
+      shortDay: { minutes: 20 },
+      tasks: [
+        { id: 1, date: '2026-11-07', kind: 'practice', module: 'ai_tutor', status: 'available', minutes: 15 },
+        { id: 2, date: '2026-11-09', kind: 'course', status: 'planned', minutes: 30, deferred: true },
+      ],
+    }, NOW)
+    expect(r.lines).toContain('Сегодня выбрано «У меня мало времени»: план дня собран на 20 мин; перенесено на другой день: урок курса (на 2026-11-09). Вернуть обычный план — метка [[REPLAN_NOW 0]].')
+    expect(r.lines).not.toContain(REPLAN_OFF)
+  })
+
+  it('прежний бэкенд (плана без shortDay) — пересчитать нельзя, так и сказано', () => {
+    const r = gePlanToday({ state: 'ready', today: '2026-11-07', tasks: [{ id: 1, date: '2026-11-07', kind: 'course', status: 'available', minutes: 30 }] }, NOW)
+    expect(r.lines).toContain(REPLAN_OFF)
   })
 })

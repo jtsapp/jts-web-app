@@ -62,3 +62,38 @@ describe('указания рядом с вопросом (turnHints.js)', () =>
     expect(hintsFor('Как перенести урок?', { studentContext: teacher })).toBe('')
   })
 })
+
+// ТЗ v2.0, 5.2 и событие short_on_time: «мало времени» — пересчёт плана меткой, если план по дням есть.
+describe('мало времени', () => {
+  const withPlan = 'План на сегодня (тот же, что блок «Сегодня» на Главной; …): воркбук — 15 мин, не начато.'
+  const hint = (question, studentContext = withPlan, previous = '') =>
+    questionHints({ question, studentContext, previous }).find((h) => /мало времени|обычный план/.test(h)) || null
+
+  it('минуты названы или нет — указание с меткой пересчёта; без плана — короткий шаг без метки', () => {
+    for (const q of ['у меня 15 минут', 'есть всего 10 минут', 'спешу, что успею?', 'мало времени сегодня', 'уақытым аз', "I'm short on time"]) {
+      expect(hint(q)).toMatch(/\[\[REPLAN_NOW N\]\]/)
+    }
+    expect(hint('у меня 15 минут', 'Формат обучения: Self Study.')).toMatch(/плана по дням у него нет/)
+    // прежний бэкенд без ручки пересчёта — как без плана
+    expect(hint('у меня 15 минут', `${withPlan}\nПересчитать день под «мало времени» сейчас нельзя.`)).toMatch(/плана по дням у него нет/)
+    expect(hint('сколько минут длится урок с преподавателем?')).toBe(null)
+  })
+
+  it('число в ответ на её «сколько минут?» — то же указание; без её вопроса — нет', () => {
+    expect(hint('20', withPlan, 'Сколько у тебя есть: 10, 20 или 30 минут?')).toMatch(/REPLAN_NOW N/)
+    expect(hint('минут 15', withPlan, 'Сколько минут есть сегодня?')).toMatch(/REPLAN_NOW N/)
+    expect(hint('20', withPlan, 'Отлично, ответ верный!')).toBe(null)
+  })
+
+  // Зонд 07.11.2026: русское указание у казахского вопроса тянуло ответ на русский (17 из 20) — язык и образец явно.
+  it('казахский ответ — с казахским образцом фразы', () => {
+    const kk = questionHints({ question: 'Бүгін уақытым аз, 10 минут қана бар', studentContext: withPlan, answerLang: 'kk' })
+    expect(kk.some((h) => /REPLAN_NOW N/.test(h) && /по-казахски.*қайта құрамын/.test(h))).toBe(true)
+    expect(hint('у меня 15 минут')).not.toMatch(/по-казахски/)
+  })
+
+  it('«верни обычный план» — метка с нулём', () => {
+    expect(hint('верни обычный план')).toMatch(/\[\[REPLAN_NOW 0\]\]/)
+    expect(hint('верни обычный план', 'Формат обучения: Self Study.')).toBe(null)
+  })
+})

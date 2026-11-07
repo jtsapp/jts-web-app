@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  courseLessons, courseTitles, dayMinutes, dayStatus, isTeacherTask, minutesLabel, monthGrid, mondayOf, plateOf, roadWeek, shiftMonth, taskAction,
+  courseLessons, courseTitles, dayMinutes, dayStatus, isTeacherTask, minutesLabel, monthGrid, mondayOf, movedFrom, plateOf, roadWeek, shiftMonth, taskAction,
   taskRoute, taskTitle, todayView, weekNumber,
 } from './planModel.js'
 import { openNodes } from './courseFrontier.js'
@@ -184,5 +184,33 @@ describe('задачи преподавателя', () => {
       { id: 3, kind: 'course', date: '2026-10-14', status: 'available' },
     ]
     expect(courseTitles(tasks, [{ title: 'A' }, { title: 'B' }])).toEqual({ 1: 'A', 3: 'B' })
+  })
+})
+
+// ТЗ v2.0, 5.2: «У меня мало времени» — ушедшее с сегодня строкой «Перенесено», у перенесённой задачи — «перенесено с …».
+describe('«мало времени» в «Сегодня»', () => {
+  const plan = {
+    today: '2026-10-14',
+    shortDay: { minutes: 20 },
+    tasks: [
+      { id: 1, date: '2026-10-14', originalDate: '2026-10-14', kind: 'practice', module: 'ai_tutor', status: 'available', minutes: 15 },
+      { id: 2, date: '2026-10-15', originalDate: '2026-10-14', kind: 'course', status: 'planned', minutes: 30, deferred: true },
+      { id: 3, date: '2026-10-16', originalDate: '2026-10-16', kind: 'practice', module: 'workbooks', status: 'planned', minutes: 15 },
+      { id: 4, date: '2026-10-15', originalDate: '2026-10-14', kind: 'practice', module: 'vocabulary_sr', status: 'completed', minutes: 10, deferred: true },
+    ],
+  }
+
+  it('ушедшее — отдельным списком, не в «Дальше по плану»', () => {
+    expect(todayView(plan).deferred.map((x) => x.id)).toEqual([2])
+    const allDone = { ...plan, tasks: plan.tasks.map((x) => (x.id === 1 ? { ...x, status: 'completed' } : x)) }
+    expect(todayView(allDone).ahead.map((x) => x.id)).toEqual([3])
+    expect(todayView({}).deferred).toEqual([])
+  })
+
+  it('«перенесено с» — у своей открытой задачи с более ранним исходным днём', () => {
+    expect(movedFrom(plan.tasks[1])).toBe('2026-10-14')
+    expect(movedFrom(plan.tasks[0])).toBe(null)
+    expect(movedFrom(plan.tasks[3])).toBe(null)
+    expect(movedFrom({ ...plan.tasks[1], origin: 'teacher' })).toBe(null)
   })
 })

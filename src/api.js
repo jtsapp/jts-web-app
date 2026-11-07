@@ -785,6 +785,14 @@ export function markGeTaskDone(token, id, done) {
   return authPut(`/mobile/ge/plan/tasks/${encodeURIComponent(id)}/done`, token, { done: !!done })
 }
 
+/**
+ * «У меня мало времени» (ТЗ v2.0, 5.2): сегодняшний день плана под minutes (5–180; экран даёт 10/20/30), null —
+ * обычный план. Ответ — план, как у getGePlan, плюс replan { minutes, kept, moved } (backend docs/ge/PLAN.md).
+ */
+export async function replanGeDay(token, minutes) {
+  return gePlanShape(await authPost('/mobile/ge/plan/replan', token, { minutes: minutes || null }))
+}
+
 // Работа ученика в самостоятельном уроке: ответы, проверенные карточки и
 // последний открытый шаг. Отдельной ручкой, а не полем дерева: дерево читается
 // на открытие раздела целиком, и таскать в нём работу по всем урокам ради

@@ -231,12 +231,23 @@ export function roadWeek(tasks, monday, today) {
  */
 export function todayView(plan, maxOverdue = 3) {
   const today = plan?.today
-  if (!today) return { tasks: [], ahead: [] }
+  if (!today) return { tasks: [], ahead: [], deferred: [] }
   const monday = mondayOf(today)
   // только по дате: sort стабилен, и порядок бэкенда внутри дня (занятие, ДЗ, урок, практика) сохраняется
   const tasks = (plan?.tasks || []).filter(isOwnTask).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
   const overdue = tasks.filter((x) => x.date < today && x.date >= monday && x.overdue && x.status !== 'completed').slice(0, maxOverdue)
   const list = [...overdue, ...tasks.filter((x) => x.date === today)]
-  if (list.some((x) => x.status !== 'completed')) return { tasks: list, ahead: [] }
-  return { tasks: list, ahead: tasks.filter((x) => x.date > today && x.status !== 'completed').slice(0, 2) }
+  // ушло с сегодня по «мало времени» (бэкенд ставит deferred) — своей строкой «Перенесено», не в «Дальше по плану»
+  const deferred = tasks.filter((x) => x.deferred && x.status !== 'completed')
+  if (list.some((x) => x.status !== 'completed')) return { tasks: list, ahead: [], deferred }
+  return { tasks: list, ahead: tasks.filter((x) => x.date > today && x.status !== 'completed' && !x.deferred).slice(0, 2), deferred }
+}
+
+/**
+ * День, с которого своя задача перенесена (ручной перенос или «мало времени»), или null. Метка «перенесено с …»
+ * вместо «Просрочено» (ТЗ v2.0, 5.2): задача не пропущена, её подвинули.
+ */
+export function movedFrom(task) {
+  if (!isOwnTask(task) || !task.originalDate || !task.date || task.status === 'completed') return null
+  return task.originalDate < task.date ? task.originalDate : null
 }

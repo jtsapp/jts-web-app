@@ -112,6 +112,44 @@ describe('Луна открывает разделы', () => {
     expect(sent[1].content).toBe(`Сочувствую. Это «Жалоба на преподавателя». Открыть с черновиком?\n[[FEEDBACK teacher | ${draft}]]`)
   })
 
+  // ТЗ v2.0, 5.2: «у меня 20 минут» — окно само пересобирает план и пишет итог по ответу сервера, а не по модели.
+  it('«мало времени»: план пересобирается сразу, итог — из ответа сервера, «Главная» узнаёт событием', async () => {
+    let changed = 0
+    const onChanged = () => changed++
+    window.addEventListener('jts:ge-plan-changed', onChanged)
+    const plan = {
+      state: 'ready',
+      today: '2026-11-07',
+      shortDay: { minutes: 20 },
+      tasks: [
+        { id: 1, date: '2026-11-07', kind: 'practice', module: 'workbooks', status: 'available', minutes: 20 },
+        { id: 2, date: '2026-11-09', kind: 'course', status: 'planned', minutes: 30, deferred: true },
+      ],
+      replan: { minutes: 20, kept: 1, moved: 1 },
+    }
+    fetchMock
+      .mockResolvedValueOnce(streamResponse(['Пересобираю план на 20 минут.\n', '[[ASST_ACTION replan 20 now]]']))
+      .mockResolvedValueOnce(new Response(JSON.stringify(plan), { status: 200, headers: { 'content-type': 'application/json' } }))
+    renderWidget()
+    ask('у меня 20 минут')
+    expect(await screen.findByText('Готово, план на сегодня — 20 мин. Осталось: Воркбук (20 мин). Ещё 1 задача — на следующий учебный день.', {}, WAIT)).toBeTruthy()
+    const [url, init] = fetchMock.mock.calls[1]
+    expect(String(url)).toMatch(/\/mobile\/ge\/plan\/replan/)
+    expect(JSON.parse(init.body)).toEqual({ minutes: 20 })
+    expect(changed).toBe(1)
+    expect(navigations).toEqual([])
+    window.removeEventListener('jts:ge-plan-changed', onChanged)
+  })
+
+  it('«мало времени» не вышло — так и сказано', async () => {
+    fetchMock
+      .mockResolvedValueOnce(streamResponse(['Пересобираю.\n[[ASST_ACTION replan 10 now]]']))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ message: 'Плана нет' }), { status: 400, headers: { 'content-type': 'application/json' } }))
+    renderWidget()
+    ask('у меня 10 минут')
+    expect(await screen.findByText(/Не получилось пересобрать план/, {}, WAIT)).toBeTruthy()
+  })
+
   it('«да» — модель видит, что предлагала, и раздел открывается сам', async () => {
     fetchMock
       .mockResolvedValueOnce(streamResponse(['Это в Словаре. Открыть?\n[[ASST_ACTION open vocab offer]]']))

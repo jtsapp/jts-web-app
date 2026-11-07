@@ -4,7 +4,7 @@ import {
   CheckCircleIcon, EditIcon, FlagIcon, MenuBookIcon, MicIcon, QuizIcon, SchoolIcon, TaskAltIcon, TranslateIcon, VideoIcon, VolumeIcon,
 } from '../../ielts/icons.jsx'
 import { plural } from '../../lib/plural.js'
-import { isTeacherTask, minutesLabel, plateOf, taskAction, taskTitle } from './planModel.js'
+import { isTeacherTask, minutesLabel, movedFrom, plateOf, taskAction, taskTitle } from './planModel.js'
 
 // Строка задачи плана — общая для «Сегодня» на «Главной» и панели дня экрана «План»: значок раздела, название, минуты
 // (у начатой практики — «6 / 15 мин»), срок ДЗ или время занятия, «Начать» или «Выполнено». У задачи преподавателя —
@@ -78,6 +78,10 @@ export default function GeTaskRow({ task, title, primary = false, showDate = fal
             </span>
           )}
           {task.overdue && !done && <span className="ge-task__chip is-late">{t('gePlan.overdue')}</span>}
+          {/* оранжевая, как «Просрочено», — классом is-late: светлая, тёмная и телефонная раскладки у неё уже есть */}
+          {!task.overdue && movedFrom(task) && (
+            <span className="ge-task__chip is-late is-moved">{t('gePlan.movedFrom', { date: formatDate(`${movedFrom(task)}T00:00:00`, lang, true) })}</span>
+          )}
           {tokens > 0 && !done && (
             <span className="ge-task__chip is-tokens" data-testid="task-tokens">{plural(t, lang, 'practice.tokenBadge', tokens)}</span>
           )}

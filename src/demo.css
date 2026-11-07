@@ -2595,6 +2595,27 @@ button.hm-level__goal:focus-visible {
   font-weight: 600;
   color: var(--ih-ink);
 }
+/* «У меня мало времени» (ТЗ v2.0, 5.2): ссылка, выбор 10/20/30 и «План на сегодня — 20 мин» */
+.ge-today__low {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ih-ink-2);
+}
+/* пока ручка отвечает — выбор погашен: второе нажатие пересобрало бы день ещё раз */
+.ge-today__low .ih-link:disabled,
+.ge-today__min:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ge-today__low .ge-move__error {
+  flex-basis: 100%;
+  margin: 0;
+}
 .ge-today__ahead {
   margin: 14px 0 8px;
   font-size: 14px;
