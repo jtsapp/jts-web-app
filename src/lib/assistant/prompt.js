@@ -352,11 +352,22 @@ export function parseChatRequest(body) {
 // Нужен рядом с вопросом: правило «язык ответа — язык вопроса» в RULES Haiku держала
 // не всегда — на «Where can I practise speaking?» при русском интерфейсе отвечала
 // по-русски (аудит ТЗ v2.0, 06.11.2026; зонд 07.11 — 19 из 20).
+// Цитату («…», "…") для языка не берём: в «How do I say «Приятного аппетита» in English?» вопрос английский, а в
+// кавычках — что перевести; кириллица же без казахских букв ещё не русский: «Take care» деген не? — казахский вопрос,
+// и при казахском интерфейсе рядом с ним вставало «Язык ответа: русский». Русским считаем, только когда видно русское
+// служебное слово, иначе язык неясен — отвечать на языке интерфейса (эталонный набор 07.11.2026: t24–t26 — 0 из 9).
+const QUOTED = /«[^»]*»|"[^"]*"|“[^”]*”/g
+const RU_WORDS = /(^|[^а-яёәғқңөұүһі])(что|как|это|где|почему|зачем|когда|сколько|какой|какая|какое|какие|мне|меня|мой|моя|мои|можно|нужно|надо|хочу|сегодня|нет|уже|ещё|очень|или|если|для|про|чем|ли|и|в|на|с|у|я|ты|мы|по|правильно|переведи|перевести|объясни|проверь|скажи|помоги)(?=[^а-яёәғқңөұүһі]|$)/i
 export function questionLang(text) {
-  const t = String(text ?? '').trim()
-  if (!t) return null
-  if (!/[а-яёәғқңөұүһі]/i.test(t)) return (t.match(/[a-z]{2,}/gi) || []).length >= 3 ? 'en' : null
-  return phraseLang(t)
+  const full = String(text ?? '').trim()
+  if (!full) return null
+  const t = full.replace(QUOTED, ' ').trim() || full
+  // Без цитаты слов может не хватить («Can I say "When I will finish…"?» → «Can I say ?»): кириллицы нет и во всём
+  // вопросе — считаем латиницу по нему целиком.
+  const latin = (s) => (s.match(/[a-z]{2,}/gi) || []).length >= 3
+  if (!/[а-яёәғқңөұүһі]/i.test(t)) return latin(t) || (!/[а-яёәғқңөұүһі]/i.test(full) && latin(full)) ? 'en' : null
+  const lang = phraseLang(t)
+  return lang === 'ru' && !RU_WORDS.test(t) ? null : lang
 }
 
 /**
@@ -458,7 +469,9 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
   const unchecked = !opening && !wake && openingFocus(screen?.text).unchecked
   // Вопрос на другом языке, чем интерфейс, — язык ответа рядом с вопросом (см. questionLang).
   const qLang = opening || wake || stuck ? null : questionLang(last.content)
-  const langHint = qLang && qLang !== lang ? `\n\nЯзык ответа: ${LANG_NAMES[qLang]} — на нём задан вопрос.` : ''
+  // Не русский — и тогда, когда совпал с интерфейсом: правила, база знаний и профиль русские и тянут ответ на русский
+  // («What should I do today?» при английском интерфейсе — по-русски, эталонный набор Луны 07.11.2026).
+  const langHint = qLang && (qLang !== lang || qLang !== 'ru') ? `\n\nЯзык ответа: ${LANG_NAMES[qLang]} — на нём задан вопрос.` : ''
   const ask = stuck
     ? [
         last.content.trim(),
