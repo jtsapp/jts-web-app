@@ -286,7 +286,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         pdfRef.current.goToPage(index, { own: true })
         return
       }
-      if (stageReportedRef.current && (lessonNoRef.current == null || settledRef.current)) {
+      if (!replayRef.current.busy && stageReportedRef.current && (lessonNoRef.current == null || settledRef.current)) {
         sendGoto(index, true)
       } else {
         pendingOwnGotoRef.current = index
@@ -441,15 +441,23 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       // не сообщил стадию. Ждавший переход уходит всегда, без сверки.
       if (lessonNo != null) {
         stageReportedRef.current = true
-        const pendingOwnGoto = pendingOwnGotoRef.current
-        pendingOwnGotoRef.current = null
-        if (pendingOwnGoto != null) sendGoto(pendingOwnGoto, true)
+        flushOwnGoto()
       }
       if (snapshotRequestedRef.current) {
         snapshotRequestedRef.current = false
         post({ type: 'request-snapshot' })
       }
     }, settleMs)
+  }
+
+  // Saved clicks can still move the frame while answers are being restored. The latest
+  // manual choice runs after the replay, when those clicks can no longer override it.
+  function flushOwnGoto() {
+    if (replayRef.current.busy || !stageReportedRef.current
+      || (lessonNoRef.current != null && !settledRef.current)) return
+    const index = pendingOwnGotoRef.current
+    pendingOwnGotoRef.current = null
+    if (index != null) sendGoto(index, true)
   }
 
   useEffect(() => {
@@ -486,19 +494,17 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         stageReportedRef.current = true
         // Отчёт урока по умолчанию до goto-lesson — ещё не готовность: переход
         // ждёт осадки (handleLoad).
-        if (lessonNoRef.current != null && !settledRef.current) return
-        const pendingOwnGoto = pendingOwnGotoRef.current
-        pendingOwnGotoRef.current = null
-        if (pendingOwnGoto != null) sendGoto(pendingOwnGoto, true)
+        flushOwnGoto()
         return
       }
       if (!data || data.source !== BRIDGE) return
       if (data.type === 'replay') {
         handleReplayState(data)
         const deferred = deferredStageRef.current
-        if (!data.busy && deferred) {
+        if (!data.busy) {
           deferredStageRef.current = null
-          onStage?.(deferred, { own: false })
+          if (pendingOwnGotoRef.current == null && deferred) onStage?.(deferred, { own: false })
+          flushOwnGoto()
         }
         return
       }

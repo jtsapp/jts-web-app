@@ -771,6 +771,32 @@ describe('SectionMaterialFrame — стадии под лоадером', () => 
   const replayState = (busy, size) => message({ source: 'jts-bridge', type: 'replay', busy, size })
   const stage = (index) => message({ source: 'jts-lesson', type: 'stage', index, total: 7 })
 
+  it('применяет последнюю выбранную тему после восстановления старых кликов', async () => {
+    vi.useFakeTimers()
+    const onStage = vi.fn()
+    const { ref, iframe } = renderFrame({ onStage })
+    await settle(iframe)
+    await stage(0)
+    onStage.mockClear()
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    await replayState(true, -1)
+
+    act(() => {
+      ref.current.gotoStage(1)
+      ref.current.gotoStage(2)
+    })
+    await stage(1)
+    expect(post).not.toHaveBeenCalled()
+    expect(onStage).not.toHaveBeenCalled()
+
+    await replayState(false, 0)
+    expect(post).toHaveBeenCalledTimes(1)
+    expect(post).toHaveBeenCalledWith({ source: 'jts-workspace', type: 'goto-stage', index: 2 }, '*')
+    expect(onStage).not.toHaveBeenCalled()
+    await stage(2)
+    expect(onStage).toHaveBeenCalledWith({ index: 2, total: 7 }, { own: true })
+  })
+
   it('проигрывание пачки — наверх только последняя стадия, когда лоадер ушёл', async () => {
     vi.useFakeTimers()
     const onStage = vi.fn()

@@ -38,6 +38,7 @@ export function positionChanged(prev, next) {
  */
 export function nextFollow(local, prev, next) {
   const focusSeq = next.focusSeq
+  if (isLessonClosed(next.status)) return { following: false, focusSeq, go: false }
   if (prev === null) {
     const following = Boolean(next.leading)
     return { following, focusSeq, go: following }
@@ -46,6 +47,10 @@ export function nextFollow(local, prev, next) {
   if (!next.leading) return { following: false, focusSeq, go: false }
   if (local.following && positionChanged(prev, next)) return { following: true, focusSeq, go: true }
   return { following: local.following, focusSeq, go: false }
+}
+
+export function isLessonClosed(status) {
+  return status === 'COMPLETED' || status === 'CANCELLED'
 }
 
 /**
