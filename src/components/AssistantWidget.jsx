@@ -40,6 +40,7 @@ import { stopSummary, stopToday } from '../lib/assistant/stopDay.js'
 import { installMicArbiter } from '../lib/assistant/wake/micArbiter.js'
 import { hintMark, hintState, isHintAsk, keyAllowed, nextHintStep, noteWrong, recordHint } from '../lib/assistant/hintSteps.js'
 import { hintTask, keyFor } from '../lib/assistant/hintTask.js'
+import { reportHomeworkHint } from '../lib/assistant/homeworkHints.js'
 
 // Помощник по сайту — Луна: плавающая кнопка и окно чата поверх любого экрана
 // ученика. Где он показывается — решает App (lib/assistant/visibility.js).
@@ -2014,6 +2015,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       return true
     }
     recordHint(task.id, step)
+    // Домашка: ступень — преподавателю сразу (homeworkHints.js); не дошла — уйдёт со сдачей.
+    if (task.mode === 'homework') reportHomeworkHint(task.id, step, cur.token)
     const hintKey = keyAllowed(task.mode, step) ? keyFor(task.id) : null
     send(hintMark({ step, mode: task.mode, reason }), { voice: speak, opening: true, hintKey })
     return true

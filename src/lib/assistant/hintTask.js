@@ -13,6 +13,12 @@ let current = null // { id, mode, getKey? }
 /** id задания домашки — один на окно Луны и на сохранение ответа (там ступень уходит преподавателю). */
 export const homeworkHintId = (homeworkId, exerciseId) => `hw:${homeworkId}:${exerciseId}`
 
+/** Обратно: { homeworkId, exerciseId } из id задания домашки или null (задание не из домашки). */
+export function parseHomeworkHintId(id) {
+  const m = /^hw:([^:]+):([^:]+)$/.exec(String(id ?? ''))
+  return m ? { homeworkId: m[1], exerciseId: m[2] } : null
+}
+
 /** Раздел сообщает активное задание. getKey — только для practice. */
 export function setHintTask({ id, mode, getKey = null }) {
   if (!id || !mode) return

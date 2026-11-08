@@ -4,7 +4,6 @@ import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
 import { getCourseCatalogLesson, saveHomeworkAnswer } from '../../api.js'
 import { clearHintTask, hintTask, homeworkHintId, setHintTask } from '../../lib/assistant/hintTask.js'
-import { hintStepFor } from '../../lib/assistant/hintSteps.js'
 import { batchFullyAnswered, exerciseBatches, exerciseBlock, homeworkTimeline, isAnswered, isUnitTestType, revokedEverything, serverAnswers } from './homeworkExercises.js'
 import { groupByContext } from './exerciseContext.js'
 import { sanitizeHtml } from '../workspace/sanitizeHtml.js'
@@ -145,8 +144,7 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOp
     if (!isAnswered(answer)) return
 
     const { correct } = gradeQuestion(exercise.question, answer)
-    // Ступень подсказки Луны на этом задании (ТЗ v2.0, 7.2б) — преподаватель увидит её в проверке; штрафа нет.
-    saveHomeworkAnswer(hw.id, exercise.id, token, answer, correct, hintStepFor(homeworkHintId(hw.id, exercise.id)))
+    saveHomeworkAnswer(hw.id, exercise.id, token, answer, correct)
       .then((saved) => {
         setFailed((prev) => {
           const next = new Set(prev)
@@ -179,7 +177,7 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOp
     Promise.all(toSave.map((e) => {
       const answer = shown[e.question.id]
       const { correct } = gradeQuestion(e.question, answer)
-      return saveHomeworkAnswer(hw.id, e.id, token, answer, correct, hintStepFor(homeworkHintId(hw.id, e.id)))
+      return saveHomeworkAnswer(hw.id, e.id, token, answer, correct)
         .then((saved) => ({ ok: true, id: e.id, saved }))
         .catch(() => ({ ok: false, id: e.id }))
     })).then((results) => {

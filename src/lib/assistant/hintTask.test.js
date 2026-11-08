@@ -1,6 +1,6 @@
 // Активное задание для ступеней подсказки: ключ — только у практики и только у текущего задания.
 import { describe, it, expect, afterEach } from 'vitest'
-import { clearHintTask, hintTask, homeworkHintId, keyFor, setHintTask } from './hintTask.js'
+import { clearHintTask, hintTask, homeworkHintId, keyFor, parseHomeworkHintId, setHintTask } from './hintTask.js'
 
 describe('hintTask', () => {
   afterEach(() => clearHintTask())
@@ -19,6 +19,13 @@ describe('hintTask', () => {
     expect(keyFor('hw:9:e1')).toBe(null)
     setHintTask({ id: 'exam', mode: 'test', getKey: () => 'went' })
     expect(keyFor('exam')).toBe(null)
+  })
+
+  it('id задания домашки — туда и обратно; чужие id — null', () => {
+    expect(parseHomeworkHintId(homeworkHintId(7, 12))).toEqual({ homeworkId: '7', exerciseId: '12' })
+    expect(parseHomeworkHintId('course:L5:3')).toBe(null)
+    expect(parseHomeworkHintId('hw:7')).toBe(null)
+    expect(parseHomeworkHintId(null)).toBe(null)
   })
 
   it('уходящий экран не снимает пришедшее следом задание', () => {

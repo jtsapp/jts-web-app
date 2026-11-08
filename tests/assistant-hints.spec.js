@@ -4,7 +4,8 @@ import { unlockStep } from './helpers/course-steps.js'
 
 // Ступени подсказки (ТЗ v2.0, 7.2б; lib/assistant/hintSteps.js, hintTask.js) на настоящих экранах. Какая ступень,
 // решает окно, модель подменена — проверяем, что уходит в чат: пометка ступени, ключ задания только на 3-й ступени
-// практики, в домашке не больше двух ступеней и ступень уходит преподавателю вместе с ответом.
+// практики, в домашке не больше двух ступеней и ступень уходит преподавателю — сразу ручкой …/hint и со сдачей
+// (контракт homework-hint-contract.md, backend V543).
 
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
@@ -104,7 +105,7 @@ test('урок курса: «подскажи» текстом — та же с�
   expect(hintTurns(chat)).toHaveLength(1)
 })
 
-test('домашка: две ступени, третьей нет; ступень уходит с ответом преподавателю', async ({ page }) => {
+test('домашка: две ступени, третьей нет; ступень уходит преподавателю сразу и со сдачей', async ({ page }) => {
   test.setTimeout(90_000)
   const chat = await mockLuna(page)
   const work = {
@@ -115,6 +116,8 @@ test('домашка: две ступени, третьей нет; ступен
     })),
   }
   const answers = {}
+  const hints = []
+  let submitBody = null
   await page.route('https://dev-server.justtostudy.kz/**', (r) => r.fulfill(json({})))
   await page.route('**/api/profile?*', (r) => r.fulfill(json({ profile: null })))
   await page.route('**/cabinet/my-sections', (r) => r.fulfill(json({ known: true, allowed: ['homework'] })))
@@ -132,7 +135,12 @@ test('домашка: две ступени, третьей нет; ступен
     work.exercises.find((e) => e.id === id).studentAnswer = answers[id].answer
     await r.fulfill(json(work))
   })
+  await page.route('**/admin/homework/7/exercises/*/hint', async (r) => {
+    hints.push({ id: Number(r.request().url().match(/exercises\/(\d+)/)[1]), ...r.request().postDataJSON() })
+    await r.fulfill({ status: 204 })
+  })
   await page.route('**/admin/homework/7/submit', async (r) => {
+    submitBody = r.request().postDataJSON()
     work.status = 'SUBMITTED'
     await r.fulfill(json(work))
   })
@@ -151,6 +159,8 @@ test('домашка: две ступени, третьей нет; ступен
     await expect.poll(() => hintTurns(chat).length).toBe(step)
   }
   expect(hintTurns(chat)).toEqual(['[подсказка: ступень 1; домашка; сам попросил]', '[подсказка: ступень 2; домашка; сам попросил]'])
+  // Ступень — преподавателю сразу, как Луна её дала.
+  await expect.poll(() => hints).toEqual([{ id: 1, hintLevel: 1 }, { id: 1, hintLevel: 2 }])
   for (const c of chat) expect(c.hintKey).toBeUndefined()
   // Третьей нет: окно отвечает само, без модели.
   const before = chat.length
@@ -164,6 +174,7 @@ test('домашка: две ступени, третьей нет; ступен
   await fields.nth(1).fill('like')
   await page.getByRole('button', { name: 'Отправить на проверку', exact: true }).click()
   await expect(page.getByText('Работа у преподавателя — ждём проверки')).toBeVisible()
-  expect(answers[1]).toMatchObject({ answer: 'like', hintStep: 2 })
-  expect(answers[2].hintStep).toBeUndefined()
+  // Ответ ступени не несёт; сдача — ещё раз всё, что накопилось (на случай, если …/hint не дошла).
+  expect(answers[1]).toEqual({ answer: 'like', correct: true })
+  expect(submitBody).toEqual({ hintLevels: { 1: 2 } })
 })

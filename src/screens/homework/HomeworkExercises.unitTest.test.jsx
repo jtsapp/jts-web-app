@@ -92,8 +92,8 @@ describe('HomeworkExercises — юнит-тест на дом', () => {
     fireEvent.click(screen.getByRole('button', { name: /Завершить тест/i }))
 
     await waitFor(() => expect(saveHomeworkAnswer).toHaveBeenCalledTimes(2))
-    expect(saveHomeworkAnswer).toHaveBeenCalledWith(2, 11, 'jwt', 'a', true, 0)
-    expect(saveHomeworkAnswer).toHaveBeenCalledWith(2, 12, 'jwt', 'a', true, 0)
+    expect(saveHomeworkAnswer).toHaveBeenCalledWith(2, 11, 'jwt', 'a', true)
+    expect(saveHomeworkAnswer).toHaveBeenCalledWith(2, 12, 'jwt', 'a', true)
   })
 
   it('уже сданный пакет (studentAnswer на каждом вопросе) открыт сразу — без кнопки, эталоны видны', async () => {
