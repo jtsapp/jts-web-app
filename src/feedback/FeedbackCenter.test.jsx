@@ -138,4 +138,21 @@ describe('Student Feedback prototype', () => {
     language.value = lang; mount(); fireEvent.click(screen.getByRole('button', { name: card }))
     expect(await screen.findByText('Teacher Name')).toBeTruthy(); expect(screen.getByRole('textbox').closest('label').textContent).toContain(question)
   })
+  // ТЗ v2.0, этап 1: Луна открывает раздел с категорией и черновиком из слов ученика — отправляет он сам.
+  it('opens with the assistant draft in the chosen category; switching the card clears it', async () => {
+    render(<FeedbackCenter token="token" userName="Student Name" userLevel="A2" onNav={() => {}} onProfile={() => {}} initialCategory="teacher" initialDraft="Преподаватель опоздал на 15 минут." />)
+    const form = await screen.findByRole('form', { name: 'Новое обращение' })
+    expect(screen.getByRole('button', { name: 'Жалоба на преподавателя', exact: true }).getAttribute('aria-pressed')).toBe('true')
+    expect(within(form).getByRole('textbox').value).toBe('Преподаватель опоздал на 15 минут.')
+    expect(screen.getByText(/Черновик подготовил помощник/)).toBeTruthy()
+    expect(api.submitCabinetFeedback).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Жалоба на платформу', exact: true }))
+    expect(within(screen.getByRole('form', { name: 'Новое обращение' })).getByRole('textbox').value).toBe('')
+    expect(screen.queryByText(/Черновик подготовил помощник/)).toBeNull()
+  })
+  it('ignores an unknown assistant category', async () => {
+    render(<FeedbackCenter token="token" userName="Student Name" userLevel="A2" onNav={() => {}} onProfile={() => {}} initialCategory="boss" initialDraft="Текст" />)
+    await waitFor(() => expect(screen.queryByText('Загружаем…')).toBeNull())
+    expect(screen.queryByRole('form')).toBeNull()
+  })
 })

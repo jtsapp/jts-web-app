@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import HomePage from './HomePage.jsx'
+import { getMyHomework } from '../api.js'
 
 // Пробный урок: состояние заявки и расписание отдаём готовыми. Обе величины
 // в изменяемых переменных — vi.mock поднимается наверх файла, и подменить его
@@ -10,6 +11,8 @@ import HomePage from './HomePage.jsx'
 const trialState = { value: { requested: false, managerAssigned: false } }
 const occurrences = { value: [] }
 const homework = { value: [] }
+// Задания, выданные с урока (/student/assignments) — второй источник раздела «Домашняя работа».
+const materials = { value: [] }
 // Прогресс по уровню считает сервер — здесь отдаём его готовым.
 const levelProgress = { value: { level: 'B1', next: 'B2', percent: 45, done: 9, total: 20, remaining: 11 } }
 
@@ -26,6 +29,7 @@ vi.mock('../api.js', () => ({
   getTrialRequestState: vi.fn(async () => trialState.value),
   getMyLessonOccurrences: vi.fn(async () => occurrences.value),
   getMyHomework: vi.fn(async () => homework.value),
+  getMyMaterialAssignments: vi.fn(async () => materials.value),
   requestTrialLesson: vi.fn(async () => ({ requested: true, managerAssigned: false })),
   getLevelProgress: vi.fn(async () => levelProgress.value),
 }))
@@ -45,7 +49,7 @@ const localStats = { value: FULL_STATS }
 
 vi.mock('../practice/skillStats.js', () => ({
   readLocalSkillStats: () => localStats.value,
-  loadSkillStatsRemote: vi.fn(async () => null),
+  loadSkillStatsRemote: vi.fn(async () => null), readLocalLevelSkillStats: () => localStats.value, loadLevelSkillStatsRemote: vi.fn(async () => null),
 }))
 
 function renderHome(props = {}) {
@@ -189,6 +193,28 @@ describe('Главная демо-аккаунта', () => {
     const { container } = renderHome()
     expect(container.querySelector('.hm-tag--up').textContent).toBe('Сильнее всегоГоворение')
     expect(container.querySelector('.hm-tag--down').textContent).toBe('Стоит подтянутьПисьмо')
+  })
+
+  // ТЗ v2.0, 5.5: доля верных с первой попытки в заданиях уровня; меньше пяти заданий — «мало данных», не процент.
+  it('навыки — доля по заданиям уровня с подписью источника; меньше пяти заданий — «мало данных»', () => {
+    localStats.value = { ...FULL_STATS, reading: { done: 3, firstTry: 3 } }
+    const { container } = renderHome()
+    expect(container.querySelector('.hm-skills__src').textContent).toBe('Уровень B1 · % верных с первой попытки в заданиях уровня B1')
+    const rows = [...container.querySelectorAll('.hm-skill')].map((r) => [r.querySelector('.hm-skill__name').textContent, r.querySelector('.hm-skill__pct').textContent])
+    // 21 из 25 — 84%: чистая доля, без «уверенности объёмом».
+    expect(rows[0]).toEqual(['Говорение', '84%'])
+    expect(rows.at(-1)).toEqual(['Чтение', 'мало данных'])
+  })
+
+  // Решение владельца 07.11.2026: пока заданий уровня меньше пяти, процент — по всем прошлым заданиям, и подпись это говорит.
+  it('процент по прошлым заданиям помечен в подписи', () => {
+    localStats.value = { ...FULL_STATS, reading: { done: 40, firstTry: 30, estimate: true } }
+    const { container } = renderHome()
+    expect(container.querySelector('.hm-skills__src').textContent).toBe(
+      'Уровень B1 · % верных с первой попытки в заданиях уровня B1; где их пока меньше пяти — по всем прошлым заданиям',
+    )
+    const reading = [...container.querySelectorAll('.hm-skill')].find((r) => r.querySelector('.hm-skill__name').textContent === 'Чтение')
+    expect(reading.querySelector('.hm-skill__pct').textContent).toBe('75%')
   })
 
   it('навыки идут от сильного к слабому', () => {
@@ -386,6 +412,28 @@ describe('Карточка домашки у ученика', () => {
     renderHome({ token: 'T', isDemoAccount: false })
 
     expect(await screen.findByText('5 заданий')).toBeTruthy()
+  })
+
+  // Аудит ТЗ v2.0 (06.11.2026): «Главная» не видела заданий с урока и писала «всё сделано» при просроченном материале;
+  // на сбое запроса — тоже «всё сделано». Теперь источник тот же, что у раздела, а сбой — «Не загрузилось».
+  it('задание с урока — в карточке домашки, просроченное первым', async () => {
+    homework.value = [{ id: 1, title: 'Эссе', status: 'ASSIGNED', dueDate: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10) }]
+    materials.value = [{ id: 7, materialTitle: 'Unit 4. Past Simple', status: 'ASSIGNED', isOverdue: true, dueDate: '2026-09-01' }]
+    const { container } = renderHome({ token: 'T', isDemoAccount: false })
+    await screen.findByText('Unit 4. Past Simple')
+    const titles = [...container.querySelectorAll('.hm-hw__item b')].map((b) => b.textContent)
+    expect(titles).toEqual(['Unit 4. Past Simple', 'Эссе'])
+    materials.value = []
+  })
+
+  it('домашка не загрузилась — «Не загрузилось» и «Повторить», а не «всё сделано»', async () => {
+    getMyHomework.mockRejectedValueOnce(new Error('502'))
+    homework.value = [{ id: 1, title: 'После повтора', status: 'ASSIGNED' }]
+    renderHome({ token: 'T', isDemoAccount: false })
+    expect(await screen.findByText('Не загрузилось.')).toBeTruthy()
+    expect(screen.queryByText(/всё сделано/i)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }))
+    expect(await screen.findByText('После повтора')).toBeTruthy()
   })
 
   it('без упражнений и частей строка «N заданий» не рисуется вовсе', async () => {

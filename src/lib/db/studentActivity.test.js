@@ -8,7 +8,8 @@ import {
   buildStudentAppActivity,
 } from './studentActivity.js'
 import { PRACTICE_MODULES } from '../practiceContract.js'
-import { levelSummary } from '../levelProgress.js'
+import { levelSkillHighlights, rankLevelSkills } from '../levelProgress.js'
+import { withStartEstimate } from '../../practice/skillStatsCore.js'
 
 // Поддельный sql-тег: запоминает тексты и отвечает по началу запроса. Точность
 // SQL — на Postgres; здесь контракт: узкие колонки, ключ ученика, окно в 182 суток.
@@ -32,11 +33,12 @@ function makeFakeSql(rowsByPrefix = {}) {
 // когда применилась 0016 (учёт по суткам); null — миграции нет.
 const TRACKED_SINCE = new Date('2026-09-01T06:00:00Z')
 
-function makeTableSql({ stat = [], goal = [], voice = [], trainer = [], tasks = [], practice = [], since = TRACKED_SINCE }) {
+function makeTableSql({ stat = [], levelStat = [], goal = [], voice = [], trainer = [], tasks = [], practice = [], since = TRACKED_SINCE }) {
   return async (strings) => {
     const q = strings.join('?').replace(/\s+/g, ' ').toLowerCase()
     const daily = q.includes('to_char')
     if (q.includes('from schema_migrations')) return since ? [{ applied_at: since }] : []
+    if (q.includes('from skill_level_stat')) return levelStat
     if (q.includes('from skill_stat')) return stat
     if (q.includes('from level_goal')) return goal
     if (daily && q.includes('from voice_usage')) return typeof voice === 'function' ? voice(q) : voice
@@ -164,8 +166,9 @@ describe('loadStudentAppActivity', () => {
     }
     await loadStudentAppActivity('user-141', new Date('2026-10-08T03:00:00Z'), sql)
 
-    // Десять запросов — бюджет из spec §6; тест не должен проходить вхолостую.
-    expect(total).toBe(10)
+    // Десять запросов — бюджет из spec §6, одиннадцатый — навыки уровня (ТЗ v2.0, 5.5; одно чтение на всю таблицу).
+    // Тест не должен проходить вхолостую.
+    expect(total).toBe(11)
     expect(peak).toBeLessThanOrEqual(3)
   })
 
@@ -178,6 +181,41 @@ describe('loadStudentAppActivity', () => {
     expect(log.some((e) => e.q.includes('from skill_day'))).toBe(false)
     expect(raw.tasks).toEqual([])
     expect(buildStudentAppActivity(raw).practiceTrackedSince).toBeNull()
+  })
+
+  // Уровня ученика у карточки нет: задания без своего уровня пишутся в уровень ученика, поэтому свежая строка — его уровень.
+  it('навыки — по уровню последних заданий, где их меньше пяти — по всем прошлым', async () => {
+    const sql = makeTableSql({
+      stat: [
+        { skill: 'grammar', tasks_done: 80, first_try_correct: 60 },
+        { skill: 'reading', tasks_done: 40, first_try_correct: 10 },
+      ],
+      levelStat: [
+        { skill: 'grammar', level: 'A2', tasks_done: 30, first_try_correct: 30, updated_at: '2026-10-01T10:00:00Z' },
+        { skill: 'grammar', level: 'B1', tasks_done: 10, first_try_correct: 7, updated_at: '2026-10-07T10:00:00Z' },
+        { skill: 'reading', level: 'B1', tasks_done: 2, first_try_correct: 2, updated_at: '2026-10-06T10:00:00Z' },
+      ],
+    })
+    const out = buildStudentAppActivity(await loadStudentAppActivity('user-141', new Date('2026-10-08T03:00:00Z'), sql))
+    expect(out.skillsLevel).toBe('B1')
+    const by = Object.fromEntries(out.skills.map((s) => [s.skill, s]))
+    expect(by.grammar).toEqual({ skill: 'grammar', percent: 70, done: 10, estimate: false })
+    // на B1 по чтению два задания — общий итог 10 из 40
+    expect(by.reading).toEqual({ skill: 'reading', percent: 25, done: 40, estimate: true })
+    expect(by.vocab).toEqual({ skill: 'vocab', percent: null, done: 0, estimate: false })
+    expect(out.strongest).toBe('grammar')
+    expect(out.weakest).toBe('reading')
+  })
+
+  it('таблицы навыков по уровню нет (0021 не доехала) — общий итог, карточка не падает', async () => {
+    const base = makeTableSql({ stat: [{ skill: 'grammar', tasks_done: 20, first_try_correct: 15 }] })
+    const sql = async (strings, ...vals) => {
+      if (strings.join('?').includes('from skill_level_stat')) throw new Error('relation skill_level_stat does not exist')
+      return base(strings, ...vals)
+    }
+    const out = buildStudentAppActivity(await loadStudentAppActivity('user-141', new Date('2026-10-08T03:00:00Z'), sql))
+    expect(out.skillsLevel).toBe(null)
+    expect(out.skills.find((s) => s.skill === 'grammar')).toEqual({ skill: 'grammar', percent: 75, done: 20, estimate: true })
   })
 
   it('учёт по суткам начат — момент уходит в ответ ISO-строкой', async () => {
@@ -256,50 +294,51 @@ describe('buildStudentAppActivity', () => {
     activitySeconds: { workbooks: 1200 },
   }
 
-  it('навыки — тем же рейтингом, что у «Главной», с объёмом', () => {
+  it('навыки — той же формулой, что у «Главной», с объёмом', () => {
     const out = buildStudentAppActivity({
       stats: { grammar: { done: 50, firstTry: 45 }, listening: { done: 30, firstTry: 9 } },
       week,
     })
     expect(out.configured).toBe(true)
     expect(out.skills).toHaveLength(6)
-    expect(out.skills[0]).toEqual({ skill: 'grammar', percent: 90, done: 50 })
+    // заданий уровня нет — по всем прошлым заданиям (estimate)
+    expect(out.skills[0]).toEqual({ skill: 'grammar', percent: 90, done: 50, estimate: true })
     expect(out.strongest).toBe('grammar')
-    expect(out.weakest).not.toBe(null)
+    expect(out.weakest).toBe('listening')
   })
 
-  it('у новичка нет ни сильной, ни слабой стороны', () => {
+  it('у новичка нет ни сильной, ни слабой стороны, проценты — «мало данных»', () => {
     const out = buildStudentAppActivity({ stats: null, week })
     expect(out.strongest).toBe(null)
     expect(out.weakest).toBe(null)
-    expect(out.skills.every((s) => s.percent === 0 && s.done === 0)).toBe(true)
+    expect(out.skills.every((s) => s.percent === null && s.done === 0)).toBe(true)
   })
 
-  it('сильная и слабая сторона — те же, что у «Главной» ученика', () => {
+  it('проценты, сильная и слабая сторона — те же, что у «Главной» ученика', () => {
     const cases = [
-      { grammar: { done: 50, firstTry: 45 }, listening: { done: 30, firstTry: 9 } },
-      { vocab: { done: 3, firstTry: 3 } }, // заданий мало — процент придержан объёмом
-      { reading: { done: 10, firstTry: 0 }, writing: { done: 40, firstTry: 40 } },
-      { speaking: { done: 25, firstTry: 25 }, listening: { done: 25, firstTry: 25 } }, // ничья
-      {},
+      [null, { grammar: { done: 50, firstTry: 45 }, listening: { done: 30, firstTry: 9 } }],
+      [null, { vocab: { done: 3, firstTry: 3 } }], // заданий мало — «мало данных»
+      [{ reading: { done: 6, firstTry: 0 } }, { reading: { done: 10, firstTry: 5 }, writing: { done: 40, firstTry: 40 } }],
+      [{ speaking: { done: 25, firstTry: 25 }, listening: { done: 25, firstTry: 25 } }, {}], // ничья
+      [null, {}],
     ]
-    for (const stats of cases) {
-      const home = levelSummary('A1', stats)
-      const out = buildStudentAppActivity({ stats, week })
-      expect(out.skills.map(({ skill, percent }) => ({ skill, percent }))).toEqual(home.ranked)
+    for (const [levelStats, stats] of cases) {
+      const ranked = rankLevelSkills(withStartEstimate(levelStats, stats))
+      const home = levelSkillHighlights(ranked)
+      const out = buildStudentAppActivity({ levelStats, stats, week })
+      expect(out.skills).toEqual(ranked.map(({ skill, percent, done, estimate }) => ({ skill, percent, done, estimate })))
       expect(out.strongest).toBe(home.strongest ? home.strongest.skill : null)
       expect(out.weakest).toBe(home.weakest ? home.weakest.skill : null)
     }
   })
 
-  it('слабой может оказаться ещё не тренированный навык — как на «Главной»', () => {
-    // На «Главной» так и показывается; здесь это повторяем, а не обходим: две
-    // карточки об одном ученике не должны спорить, что ему подтянуть.
+  it('нетренированный навык слабым не называется — у него «мало данных», как на «Главной»', () => {
     const out = buildStudentAppActivity({
       stats: { grammar: { done: 50, firstTry: 45 }, listening: { done: 30, firstTry: 9 } },
       week,
     })
-    expect(out.weakest).toBe('vocab')
+    expect(out.weakest).toBe('listening')
+    expect(out.skills.find((s) => s.skill === 'vocab').percent).toBe(null)
   })
 
   it('неделя: тьютор — из суточных строк, остальные модули — из сводки помощника, целей нет', () => {
@@ -422,10 +461,10 @@ describe('buildStudentAppActivity', () => {
   it('без данных отдаёт полный каркас ответа, а не пропущенные поля', () => {
     const out = buildStudentAppActivity({})
     expect(Object.keys(out).sort()).toEqual(
-      ['configured', 'days', 'goal', 'practice', 'practiceTrackedSince', 'skills', 'strongest', 'weakest', 'week'],
+      ['configured', 'days', 'goal', 'practice', 'practiceTrackedSince', 'skills', 'skillsLevel', 'strongest', 'weakest', 'week'],
     )
     expect(out).toMatchObject({
-      configured: true, strongest: null, weakest: null, goal: null, week: null, days: [], practice: [], practiceTrackedSince: null,
+      configured: true, strongest: null, weakest: null, goal: null, week: null, days: [], practice: [], practiceTrackedSince: null, skillsLevel: null,
     })
     expect(out.skills).toHaveLength(6)
   })

@@ -30,7 +30,7 @@ vi.mock('../api.js', () => ({
 
 vi.mock('../practice/skillStats.js', () => ({
   readLocalSkillStats: () => ({}),
-  loadSkillStatsRemote: vi.fn(async () => null),
+  loadSkillStatsRemote: vi.fn(async () => null), readLocalLevelSkillStats: () => ({}), loadLevelSkillStatsRemote: vi.fn(async () => null),
 }))
 
 // Тур меряет подсветку ResizeObserver'ом и скроллит к ней — в jsdom нет ни того, ни другого.

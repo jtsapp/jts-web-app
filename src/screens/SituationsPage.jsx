@@ -90,7 +90,7 @@ export default function SituationsPage({ userName, userLevel, token, initialTarg
       // «ответил верно» (так же считает дочитанная книга в BookDetail).
       // Оценивать нечем: разбор платный и необязательный — студент может
       // записаться и уйти, и трактовать это как ошибку было бы враньём.
-      recordSkill('speaking', true)
+      recordSkill('speaking', true, level)
       setDone(readDoneItems(level))
     },
     [level, items],

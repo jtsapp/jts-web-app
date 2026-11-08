@@ -118,6 +118,26 @@ describe('разбор запроса', () => {
 })
 
 describe('контекст вопроса', () => {
+  // Решение владельца 07.11.2026: род к ученику — по полу из Профиля, не указан — без рода.
+  it('обращение по полу из Профиля рядом с вопросом', () => {
+    const turn = (user) => buildTurns({ messages: [{ role: 'user', content: 'что мне делать?' }], user, screen: { id: 'home', text: '' }, lang: 'ru' }).at(-1).content
+    expect(turn({ gender: 'FEMALE' })).toMatch(/женский пол.*«ты выбрала»/)
+    expect(turn({ gender: 'MALE' })).toMatch(/мужской пол.*«ты выбрал»/)
+    expect(turn({})).toMatch(/на «ты» и без рода/)
+  })
+
+  // ТЗ v2.0, 5.2: «20» в ответ на её «Сколько есть: 10, 20 или 30 минут?» — то же указание пересчёта, что у «мало времени».
+  it('ответ числом на её вопрос о минутах — указание пересчёта плана', () => {
+    const studentContext = 'План на сегодня (тот же, что блок «Сегодня» на Главной): воркбук — 15 мин, не начато.'
+    const turn = (reply) =>
+      buildTurns({
+        messages: [{ role: 'user', content: 'у меня мало времени' }, { role: 'assistant', content: reply }, { role: 'user', content: '20' }],
+        user: {}, screen: { id: 'home', text: '' }, lang: 'ru', studentContext,
+      }).at(-1).content
+    expect(turn('Сколько у тебя есть: 10, 20 или 30 минут?')).toMatch(/\[\[REPLAN_NOW N\]\]/)
+    expect(turn('Хорошо, удачи!')).not.toMatch(/REPLAN/)
+  })
+
   // Зонд 21.10.2026: на «проверь» до проверки модель сама называла верный вариант.
   it('вопрос на непроверенном задании — с указанием не оценивать, на проверенном — без', () => {
     const turn = (text) =>
@@ -251,7 +271,7 @@ describe('системный промпт', () => {
   it('правила ТЗ v2.0: «ты» без родовых форм, Feedback, правила школы, учитель английского', () => {
     const rules = buildSystemPrompt()
     expect(rules).toMatch(/Обращайся к ученику на «ты»/)
-    expect(rules).toMatch(/Пол ученика неизвестен/)
+    expect(rules).toMatch(/Пол ученика — только из Профиля/)
     expect(rules).not.toMatch(/Обращайся на «вы»/)
     expect(rules).toContain('[[OPEN feedback]]')
     expect(rules).toMatch(/общий чат WhatsApp/)

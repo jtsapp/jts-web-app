@@ -26,6 +26,7 @@ import { isTtsActive, unlockSpeech } from '../lib/speech.js'
 import { useStuckWatch } from '../lib/assistant/useStuckWatch.js'
 import { assistantChips, chipScreenKind } from '../lib/assistant/chips.js'
 import { areRewardsEnabled } from '../config.js'
+import { replanSummary, replanToday } from '../ge/plan/replan.js'
 
 // Помощник по сайту — Луна: плавающая кнопка и окно чата поверх любого экрана
 // ученика. Где он показывается — решает App (lib/assistant/visibility.js).
@@ -278,8 +279,14 @@ const viewportNow = () => ({ w: window.innerWidth, h: window.innerHeight })
 
 // Подпись действия, когда в ответе нет своего текста (и для озвучки).
 function actionCaption(action, lang, t) {
+  if (action.kind === 'replan') return replanLabel(action, t)
   if (action.kind === 'click') return t(action.now ? 'assistant.action.clicking' : 'assistant.action.offerClick', { label: action.label })
   return t(action.now ? 'assistant.action.opening' : 'assistant.action.offerOpen', { name: openName(action, lang) })
+}
+
+// «Мало времени»: «Пересобрать план на 20 мин» / «Вернуть обычный план».
+function replanLabel(action, t) {
+  return action.minutes ? t('assistant.action.replan', { n: String(action.minutes) }) : t('assistant.action.replanReset')
 }
 
 // Что открываем — словами: у раздела имя из destinations.js, у конкретной вещи (урок 5,
@@ -633,6 +640,23 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       return press(action)
     }
     const cur = stateRef.current
+    // «Мало времени» — план пересобирает бэкенд, итог пишет окно по его ответу (replanSummary): модель отвечала раньше,
+    // чем день пересобран, и сама его не видит. «Главная» перечитает план по событию replanToday.
+    if (action?.kind === 'replan') {
+      if (!cur?.enabled || !cur.token) return
+      const say = (content) => mountedRef.current && setMessages((prev) => [...prev, { role: 'assistant', content, local: true }])
+      replanToday(cur.token, action.minutes)
+        .then((plan) => say(replanSummary(cur.t, cur.lang, plan)))
+        .catch(() => say(cur.t('assistant.replan.fail')))
+      return
+    }
+    // Feedback с категорией и черновиком обращения — форму заполняет раздел, отправляет ученик сам.
+    if (action?.kind === 'open' && action.feedback) {
+      if (!cur?.enabled) return
+      navigateTo('feedback', action.feedback)
+      if (isPhone()) setOpen(false)
+      return
+    }
     // Конкретная вещь по адресу (урок 5, тема) — переход строит App (items/refs.js).
     if (action?.kind === 'open' && isItemRef(action.target)) {
       if (!cur?.enabled) return
@@ -876,7 +900,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         // где можно (экзамен), или вышел из аккаунта — не ведём никуда.
         if (action.now && mountedRef.current && stateRef.current?.enabled) {
           // Нажатие — сразу (см. шапку); переход и тур — когда Луна договорит.
-          if (action.kind === 'click') clicked = perform(action)
+          // «Мало времени» — тоже сразу: с экрана не уводит, а итог пересчёта нужен, пока ученик ещё в окне
+          if (action.kind === 'click' || action.kind === 'replan') clicked = perform(action)
           else if (speaker && voiceRef.current === speaker) {
             dropDeferred()
             deferredRef.current = { action, owner: speaker, timer: setTimeout(() => runDeferred(speaker), ACTION_WAIT_MAX_MS) }
@@ -890,7 +915,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           showCmd(clicked === 'pressed' ? 'pressed' : 'missing', { label: action.label, ms: CMD_SHOW_MS })
         } else {
           showCmd(null)
-          if (!action?.now) setOpen(true)
+          // итог «мало времени» — сообщением в окне: голосовой команде его иначе не увидеть
+          if (!action?.now || action.kind === 'replan') setOpen(true)
         }
       }
       if (reply.offtopic) {
@@ -1856,9 +1882,13 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                       disabled={voiceBusy}
                       onClick={() => perform(m.action, { gesture: true })}
                     >
-                      {m.action.kind === 'click'
+                      {m.action.kind === 'replan'
+                        ? replanLabel(m.action, t)
+                        : m.action.kind === 'click'
                         ? t('assistant.action.click', { label: m.action.label })
-                        : t('assistant.action.open', { name: openName(m.action, lang) })}
+                        : m.action.feedback
+                          ? t('assistant.action.openFeedback')
+                          : t('assistant.action.open', { name: openName(m.action, lang) })}
                     </button>
                   )}
                   {m.reported && <p className="asst__reported">{t('assistant.reported')}</p>}

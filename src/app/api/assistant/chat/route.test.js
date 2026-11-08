@@ -146,7 +146,8 @@ describe('POST /api/assistant/chat', () => {
   it('зовёт loadStudentContext с бэрер-токеном ученика и кладёт результат в вопрос', async () => {
     studentContextResult = 'Домашка (1 к сроку на этой неделе): «Эссе» — до 2026-09-25.'
     await (await post(question(108), 'my-bearer')).text()
-    expect(loadStudentContext).toHaveBeenCalledWith('my-bearer', expect.objectContaining({ userId: 108 }))
+    // Четвёртый аргумент — флаг токенов стенда из окна (тогда в профиле их баланс).
+    expect(loadStudentContext).toHaveBeenCalledWith('my-bearer', expect.objectContaining({ userId: 108 }), expect.any(Number), { rewards: false })
     const last = calls[0].messages.at(-1).content
     expect(last).toContain('Профиль ученика')
     expect(last).toContain('«Эссе» — до 2026-09-25.')
@@ -634,6 +635,17 @@ describe('POST /api/assistant/chat', () => {
         target: 'homework',
         advice: 'Вы на Главной. У вас домашка «Unit 4» до 17 октября — с неё и стоит начать.',
       })
+    })
+
+    // ТЗ v2.0, этап 1: обращение в Feedback с черновиком — действие для окна, но не совет трекера.
+    it('метка Feedback с черновиком — хвост с категорией и закодированным текстом, заметки нет', async () => {
+      offer('Сочувствую. Это «Жалоба на преподавателя». Открыть с черновиком?\n[[FEEDBACK teacher | Преподаватель опоздал на 15 минут.]]')
+      const text = await (await post(question(604))).text()
+      expect(text).toContain('Открыть с черновиком?\n[[ASST_ACTION feedback teacher offer ')
+      expect(text).not.toContain('[[FEEDBACK')
+      const encoded = /\[\[ASST_ACTION feedback teacher offer (\S+)\]\]$/.exec(text)[1]
+      expect(decodeURIComponent(encoded)).toBe('Преподаватель опоздал на 15 минут.')
+      expect(saveAdviceNote).not.toHaveBeenCalled()
     })
 
     it('«открой» по просьбе ученика и ответ без метки — не советы', async () => {

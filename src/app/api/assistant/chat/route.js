@@ -131,7 +131,7 @@ export async function POST(request) {
   // параллельно с проверкой звонка и лимитом: это разные походы (бэкенд и
   // база), и ждать их по очереди — лишнее время до первого слова Луны.
   const ctxAt = performance.now()
-  const contextReady = loadStudentContext(bearer, auth.user)
+  const contextReady = loadStudentContext(bearer, auth.user, Date.now(), { rewards: parsed.rewards })
     .catch(() => null)
     .finally(() => {
       marks.ctx = since(ctxAt)
@@ -274,7 +274,8 @@ export async function POST(request) {
   // в строку идёт только сам совет (adviceText).
   const saveNote = async (action) => {
     // Конкретная вещь (урок, тема) — не совет раздела: трекер сверяет советы по разделам.
-    if (action?.kind !== 'open' || action.item || (action.now && !opening)) return
+    // Обращение в Feedback — тоже не совет: Луна помогает написать, а не зовёт учиться.
+    if (action?.kind !== 'open' || action.item || action.feedback || (action.now && !opening)) return
     await saveAdviceNote(key, { target: action.target, advice: adviceText(shown) }).catch(() => false)
   }
   const first = visible(head) + (finished ? visibleTail() : '')

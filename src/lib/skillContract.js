@@ -1,6 +1,6 @@
 // Валидация тела POST /api/skills. Без побочек — тестируется в node.
 
-import { SKILLS } from '../practice/skillStatsCore.js'
+import { SKILLS, skillLevel } from '../practice/skillStatsCore.js'
 
 export function isValidSkill(s) {
   return typeof s === 'string' && SKILLS.includes(s)
@@ -28,6 +28,25 @@ export function validateDeltas(body) {
     if (!isCount(done) || !isCount(firstTry)) return null
     if (firstTry > done) return null
     out[skill] = { done, firstTry }
+  }
+  return out
+}
+
+// body.byLevel = { A2: { <skill>: { done, firstTry } } } — те же попытки, разложенные по уровню задания
+// (ТЗ v2.0, 5.5). Необязательное: старый клиент его не шлёт. Кривой уровень или дельта — весь byLevel
+// отбрасывается (null), а общий итог по deltas всё равно пишется: навык ученика не должен теряться
+// из-за разбивки по уровням.
+export function validateByLevel(body) {
+  const raw = body?.byLevel
+  if (raw == null) return {}
+  if (typeof raw !== 'object' || Array.isArray(raw)) return null
+  const out = {}
+  for (const key of Object.keys(raw)) {
+    const level = skillLevel(key)
+    if (!level || level !== key) return null
+    const deltas = validateDeltas({ deltas: raw[key] })
+    if (!deltas) return null
+    out[level] = deltas
   }
   return out
 }
