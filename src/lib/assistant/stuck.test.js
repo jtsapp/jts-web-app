@@ -16,8 +16,27 @@ describe('verdictMarks', () => {
 })
 
 describe('createStuckTracker', () => {
-  it('две неверные проверки подряд — errors; одна — нет', () => {
+  // ТЗ v2.0, 7.2б: облачко — после первого неверного ответа и после 60 с простоя.
+  it('по умолчанию — первая же неверная проверка; пометка, что была при входе, — нет', () => {
+    expect(STUCK.wrongLimit).toBe(1)
+    expect(STUCK.idleMs).toBe(60_000)
     const s = createStuckTracker()
+    s.baseline({ screen: 'a', text: wrongPick('like') })
+    expect(s.observe({ screen: 'a', text: wrongPick('like'), now: 1 })).toBe(null)
+    expect(s.observe({ screen: 'a', text: wrongPick('dont'), now: 2 })).toBe('errors')
+    expect(s.wrongs()).toBe(1)
+  })
+
+  it('quiet — ошибка считается (wrongs), а облачко и его пауза не тратятся', () => {
+    const s = createStuckTracker()
+    expect(s.observe({ screen: 'a', text: wrongPick('like'), now: 1, quiet: true })).toBe(null)
+    expect(s.wrongs()).toBe(1)
+    expect(s.observe({ screen: 'a', text: wrongPick('dont'), now: 2 })).toBe('errors')
+    expect(s.wrongs()).toBe(2)
+  })
+
+  it('при пороге две — две неверные проверки подряд — errors; одна — нет', () => {
+    const s = createStuckTracker({ wrongLimit: 2 })
     s.baseline({ screen: 'kingdom-interior', text: wrongPick(null) })
     expect(s.observe({ screen: 'kingdom-interior', text: wrongPick('like'), now: 1000 })).toBe(null)
     // «Продолжить» — следующее задание, пометок нет: счёт не сбрасывается.
@@ -26,7 +45,7 @@ describe('createStuckTracker', () => {
   })
 
   it('та же пометка после «Послушать» — не новая ошибка; новый ввод — новая', () => {
-    const s = createStuckTracker()
+    const s = createStuckTracker({ wrongLimit: 2 })
     const field = (v) => `[поле: ученик ввёл «${v}» (отмечено как неверное)]`
     s.observe({ screen: 'workbook', text: field('goed'), now: 1 })
     expect(s.observe({ screen: 'workbook', text: field('goed'), now: 2 })).toBe(null)
@@ -34,7 +53,7 @@ describe('createStuckTracker', () => {
   })
 
   it('верная проверка сбрасывает счёт; уход с экрана — тоже', () => {
-    const s = createStuckTracker()
+    const s = createStuckTracker({ wrongLimit: 2 })
     s.observe({ screen: 'a', text: wrongPick('like'), now: 1 })
     s.observe({ screen: 'a', text: '[кнопка «x» (отмечено как верное)]', now: 2 })
     expect(s.observe({ screen: 'a', text: wrongPick('dont'), now: 3 })).toBe(null)
@@ -44,7 +63,7 @@ describe('createStuckTracker', () => {
   })
 
   it('пометки, что уже были на экране при входе, ошибкой не считаются', () => {
-    const s = createStuckTracker()
+    const s = createStuckTracker({ wrongLimit: 2 })
     s.baseline({ screen: 'a', text: wrongPick('like') })
     expect(s.observe({ screen: 'a', text: wrongPick('like'), now: 1 })).toBe(null)
     expect(s.observe({ screen: 'a', text: wrongPick('dont'), now: 2 })).toBe(null)
@@ -54,7 +73,7 @@ describe('createStuckTracker', () => {
   // Ошибки во время паузы копятся: ученик всё ещё ошибается — после паузы облачко
   // выходит на первой же новой ошибке, а не ждёт ещё двух.
   it(`не чаще раза в ${STUCK.cooldownMs / 60000} мин`, () => {
-    const s = createStuckTracker()
+    const s = createStuckTracker({ wrongLimit: 2 })
     const pair = (t0) => {
       s.observe({ screen: 'a', text: wrongPick('like'), now: t0 })
       return s.observe({ screen: 'a', text: wrongPick('dont'), now: t0 + 1 })
@@ -76,7 +95,7 @@ describe('createStuckTracker', () => {
   })
 
   it('дважды не нажал — до конца визита облачка нет; нажал — счёт игнора с нуля', () => {
-    const s = createStuckTracker({ cooldownMs: 0 })
+    const s = createStuckTracker({ cooldownMs: 0, wrongLimit: 2 })
     s.ignored()
     s.taken()
     s.ignored()

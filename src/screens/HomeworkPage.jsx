@@ -18,6 +18,8 @@ import { materialCard } from './homework/materialAssignments.js'
 import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot, useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { rememberPlace, resumeOf } from '../lib/navStack.js'
+import { homeworkHintId } from '../lib/assistant/hintTask.js'
+import { hintStepFor } from '../lib/assistant/hintSteps.js'
 
 /**
  * Экран «Домашняя работа» ученика: история заданий слева, открытое задание справа.
@@ -290,7 +292,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, initia
       const pending = pendingAnswers(selected, draft.homeworkId === selected.id ? draft.answers : loadAnswers(selected.id))
       for (const { exercise, answer } of pending) {
         const { correct } = gradeQuestion(exercise.question, answer)
-        await saveHomeworkAnswer(selected.id, exercise.id, token, answer, correct)
+        await saveHomeworkAnswer(selected.id, exercise.id, token, answer, correct, hintStepFor(homeworkHintId(selected.id, exercise.id)))
       }
       replace(await submitHomework(token, selected.id))
     } catch (e) {

@@ -41,6 +41,7 @@ vi.mock('../db/studentActivity.js', async () => {
     })),
   }
 })
+vi.mock('../db/assistantFacts.js', () => ({ loadFacts: vi.fn(async () => []) }))
 vi.mock('../db/assistantTracker.js', () => ({
   loadAdviceNotes: vi.fn(async () => []),
   loadTutorSessionsSince: vi.fn(async () => []),

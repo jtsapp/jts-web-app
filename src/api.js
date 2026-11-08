@@ -394,8 +394,20 @@ export function submitHomework(token, id) {
 // Ответ на задание, взятое преподавателем с живого урока. Правильность считает
 // клиент — тем же gradeQuestion, что и на уроке: сервер вопрос не разбирает, а
 // преподавателю нужно видеть не только ответ, но и сошёлся ли он с ключом.
-export async function saveHomeworkAnswer(id, exerciseId, token, answer, correct) {
-  return authPut(`/admin/homework/${id}/exercises/${exerciseId}/answer`, token, { answer, correct })
+// hintStep — до какой ступени подсказки Луны дошёл ученик на этом задании (lib/assistant/hintSteps.js, ТЗ v2.0 7.2б):
+// штрафа нет, преподаватель видит метку в проверке. Без подсказки поле не шлём — прежний бэкенд его не знает.
+// hintStep — ступень подсказки Луны на этом упражнении (ТЗ v2.0, 7.2б; backend V543): преподаватель видит «была
+// подсказка». Бэкенд без V543 отвечает 400 на незнакомое поле — тогда ответ уходит ещё раз без ступени: потерять ответ
+// ученика хуже, чем отметку.
+export async function saveHomeworkAnswer(id, exerciseId, token, answer, correct, hintStep = 0) {
+  const path = `/admin/homework/${id}/exercises/${exerciseId}/answer`
+  if (!(hintStep > 0)) return authPut(path, token, { answer, correct })
+  try {
+    return await authPut(path, token, { answer, correct, hintStep })
+  } catch (err) {
+    if (err?.status !== 400) throw err
+    return authPut(path, token, { answer, correct })
+  }
 }
 
 // Черновик не оценивается и не сдаёт домашку. Небольшой запрос переживает закрытие вкладки.

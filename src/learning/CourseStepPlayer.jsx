@@ -15,6 +15,7 @@ import TapText from '../screens/workspace/TapText.jsx'
 import TappableHtml from '../screens/workspace/TappableHtml.jsx'
 import TranslatePopover from '../screens/workspace/TranslatePopover.jsx'
 import { readResume, saveResume, clearResume } from '../lib/lessonResume.js'
+import { clearHintTask, setHintTask } from '../lib/assistant/hintTask.js'
 import { transcriptFor } from './courseTranscripts.js'
 
 // Пошаговый плеер урока (макет Figma «Обучение», секции Warm-up … Wrap).
@@ -301,6 +302,15 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   // (passRatio из данных теста). Обычный урок всегда доходит до итогов: там
   // считаются проценты, монеты и число ошибок, но выбросить из урока нечему.
   const exam = passRatio != null
+  // Ступени подсказки Луны (lib/assistant/hintTask.js, ТЗ v2.0 7.2б): шаг урока — задание практики, ключ — тот же
+  // expectedAnswer, что после проверки встаёт на плашку; окно возьмёт его только на 3-й ступени. В снимок экрана до
+  // проверки ключ по-прежнему не попадает. Тест юнита — режим test: подсказок нет вовсе.
+  const hintId = `course:${catalogLessonId || resumeKey || title || level || ''}:${idx}`
+  useEffect(() => {
+    if (!step) return undefined
+    setHintTask({ id: hintId, mode: exam ? 'test' : 'practice', getKey: () => expectedAnswer(step) })
+    return () => clearHintTask(hintId)
+  }, [hintId, step, exam])
   const reportDone = () => {
     if (endedRef.current) return
     endedRef.current = true

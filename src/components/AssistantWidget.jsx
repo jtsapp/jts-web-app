@@ -38,6 +38,8 @@ import { eventActions } from '../lib/assistant/eventActions.js'
 import { screenBlocks } from '../lib/assistant/proactiveDom.js'
 import { stopSummary, stopToday } from '../lib/assistant/stopDay.js'
 import { installMicArbiter } from '../lib/assistant/wake/micArbiter.js'
+import { hintMark, hintState, isHintAsk, keyAllowed, nextHintStep, noteWrong, recordHint } from '../lib/assistant/hintSteps.js'
+import { hintTask, keyFor } from '../lib/assistant/hintTask.js'
 
 // Помощник по сайту — Луна: плавающая кнопка и окно чата поверх любого экрана
 // ученика. Где он показывается — решает App (lib/assistant/visibility.js).
@@ -334,6 +336,12 @@ function buttonLabel(a, lang, t) {
       if (a.caption === 'practice') return t('assistant.btn.practice')
       return a.feedback ? t('assistant.action.openFeedback') : t('assistant.action.open', { name: openName(a, lang) })
   }
+}
+
+// Задание без регистрации раздела (hintTask.js) — подпись по экрану: начало снимка без кнопок, полей и пометок проверки
+// (всё это в снимке в квадратных скобках). Меняется со сменой вопроса, но не от того, что ученик ввёл или выбрал.
+function hintSig(screen, snap) {
+  return screenStateKey(screen, String(snap || '').replace(/\[[^\]]*\]/g, ' ').slice(0, 400))
 }
 
 // Таймер перерыва у кнопки Луны ([[BREAK N]], ТЗ 7.4): идёт, пока сайт открыт; нажатие — закончить раньше.
@@ -679,6 +687,12 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // Номера кнопок последнего снимка (screenSnapshot.snapshotWithRefs): по ним окно жмёт
   // кнопку, которую назвала Луна.
   const refsRef = useRef(new Map())
+  // Тест или экзамен на экране (data-assistant-test, как у «Подсказать?»): роут ставит рядом с вопросом «не подсказывай»
+  // — по снимку модель тест не узнаёт (зонд 08.11: «подскажи ответ» на тесте юнита — наводка на правило 2 из 2).
+  const screenIsTest = () => {
+    const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
+    return Boolean(root && (root.closest?.('[data-assistant-test]') || root.querySelector('[data-assistant-test]')))
+  }
   const takeSnapshot = useCallback(() => {
     const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
     const snap = snapshotWithRefs(root)
@@ -923,7 +937,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // quiet — команда голосом при закрытом окне: ход идёт облачком у кнопки, окно
   // открывается, только если ответ надо прочитать (объяснение, предложение).
   // event — ответ на событие трекера (useProactive): под ним кнопки события (eventActions), а не одна кнопка модели.
-  const send = useCallback(async (raw, { voice = false, opening = false, afterReply = null, quiet = false, event = null } = {}) => {
+  // hintKey — ключ задания для 3-й ступени подсказки в практике (takeHint): только с её пометкой, иначе пусто.
+  const send = useCallback(async (raw, { voice = false, opening = false, afterReply = null, quiet = false, event = null, hintKey = null } = {}) => {
     const text = String(raw ?? '').trim().slice(0, MAX_INPUT)
     const cur = stateRef.current
     if (!text || !cur?.token || !mountedRef.current) return
@@ -1040,13 +1055,14 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       const reply = await askAssistant({
         token: cur.token,
         messages: toSend,
-        screen: { id: cur.screen || null, text: takeSnapshot() },
+        screen: { id: cur.screen || null, text: takeSnapshot(), ...(screenIsTest() ? { test: true } : {}) },
         lang: cur.lang,
         errors: recentErrors(),
         pageUrl: typeof location !== 'undefined' ? location.href : '',
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
         bugReported: history.some((m) => m.reported),
         voice,
+        hintKey,
         signal: controller.signal,
         onDelta: (chunk) => {
           // Кусок оборванной первой реплики, уже прочитанный до обрыва, не должен
@@ -1317,7 +1333,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         const reply = await askAssistant({
           token: cur.token,
           messages: toSend,
-          screen: { id: cur.screen || null, text: screenText },
+          screen: { id: cur.screen || null, text: screenText, ...(screenIsTest() ? { test: true } : {}) },
           lang: cur.lang,
           errors: recentErrors(),
           pageUrl: typeof location !== 'undefined' ? location.href : '',
@@ -1604,7 +1620,11 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   }, [stopVoice, takeSnapshot, press, showCmd])
 
   // Текст ученика — команда на месте, иначе вопрос модели. Голос — и ответ голосом.
+  // takeHint объявлен ниже (ему нужен send): runText зовёт его через ref.
+  const takeHintRef = useRef(null)
   const runText = useCallback((text, { quiet = false, voice = true } = {}) => {
+    // «Подскажи» на задании — ступень подсказки, как у кнопки (hintSteps.js, isHintAsk).
+    if (isHintAsk(text) && !inFlightRef.current && takeHintRef.current?.('asked', { onlyTask: true, voice })) return
     const command = matchCommand(text)
     if (command && !inFlightRef.current && tryFast(command, text, { quiet, voice })) return
     send(text, { voice, quiet })
@@ -1821,6 +1841,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     label: t(s.key),
     text: t(s.ask || s.key),
     bug: s.bug,
+    hint: s.hint,
   }))
   const last = messages[messages.length - 1]
   // Подсказки-вопросы висят, пока ученик сам ничего не спросил: первая реплика
@@ -1957,29 +1978,77 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   const cmdPhase = cmd?.phase === 'listening' && voiceQ.state === 'transcribing' ? 'thinking' : cmd?.phase
   const badge = useBadge(cmd && !open ? { phase: cmdPhase, label: cmd.label } : null, open)
 
-  // «Подсказать?» (useStuckWatch.js): ученик дважды подряд ошибся или полторы минуты
-  // ничего не делает на задании. Не поверх другого облачка, ответа Луны и её голоса.
-  const stuck = useStuckWatch({
-    active: enabled && Boolean(token) && !open && !call,
-    screen,
-    canOffer: () => !badge && !introHint && !inFlightRef.current && !isTtsActive(),
-  })
-  // Нажал облачко (или кнопку Луны, пока оно на экране): окно и сразу разбор задания.
-  // unlockSpeech — в тике нажатия, как у обычного открытия: иначе iPhone не сыграет ответ.
-  const takeStuck = () => {
-    const reason = stuck.take()
-    if (!reason) return false
+  // «Подсказать?» (useStuckWatch.js): ученик ошибся или минуту ничего не делает на задании. Не поверх другого
+  // облачка, открытого окна, ответа Луны и её голоса.
+  // Ступени подсказки (ТЗ v2.0, 7.2б; lib/assistant/hintSteps.js). Какое задание и в каком режиме, сообщает раздел
+  // (hintTask.js: шаг урока, задание домашки); не сообщил — задание это сам экран, режим — по экрану (тест — метка
+  // data-assistant-test, домашка — экран «Домашняя работа», иначе практика). Ступень решает код по учёту задания.
+  // Сайт уже показал верный ответ (урок «Обучения» после ошибки) — это не подсказка, а разбор: прежняя пометка «застрял».
+  // onlyTask — просьба словами: подсказка, только если на экране задание (иначе это обычный вопрос).
+  const takeHint = useCallback((reason, { onlyTask = false, voice = null } = {}) => {
     const cur = stateRef.current
+    if (!cur?.enabled || !cur.token || cur.callLive) return false
+    const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
+    const snap = snapshotScreen(root)
+    if (onlyTask && !openingFocus(snap).task) return false
+    const test = Boolean(root && (root.closest?.('[data-assistant-test]') || root.querySelector('[data-assistant-test]')))
+    const task = hintTask() || { id: `screen:${hintSig(cur.screen, snap)}`, mode: test ? 'test' : cur.screen === 'homework' ? 'homework' : 'practice' }
+    // Тест и экзамен — подсказок нет вовсе (ТЗ 7.2б): обычный вопрос, Луна только поддержит.
+    if (test || task.mode === 'test') return false
     unlockSpeech()
     showCmd(null)
     setUnread(false)
     setOpen(true)
     // Обычное открытие окна следом не повторит первую реплику на этот же экран.
-    const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
-    greetedRef.current = screenStateKey(cur.screen, snapshotScreen(root))
-    send(stuckMark(reason), { voice: !cur.muted, opening: true })
+    greetedRef.current = screenStateKey(cur.screen, snap)
+    // Голосом — если звук не выключен; набранная просьба — текстом, как любой набранный вопрос.
+    const speak = voice == null ? !cur.muted : voice && !cur.muted
+    if (/\[верный ответ по заданию:/.test(snap)) {
+      send(stuckMark(reason === 'idle' ? 'idle' : 'errors'), { voice: speak, opening: true })
+      return true
+    }
+    const step = nextHintStep(task.mode, hintState(task.id))
+    if (!step) {
+      // Домашка после двух ступеней: дальше — сам или с преподавателем; модель тут не нужна.
+      setMessages((prev) => [...prev, { role: 'assistant', content: cur.t('assistant.hint.noMore'), local: true }])
+      return true
+    }
+    recordHint(task.id, step)
+    const hintKey = keyAllowed(task.mode, step) ? keyFor(task.id) : null
+    send(hintMark({ step, mode: task.mode, reason }), { voice: speak, opening: true, hintKey })
     return true
+  }, [send, showCmd])
+  useLayoutEffect(() => {
+    takeHintRef.current = takeHint
+  })
+  // Вторая ошибка на задании, где подсказка уже была, — следующая ступень сама (ТЗ 7.2б), без облачка.
+  const onHintWrong = useCallback(() => {
+    const cur = stateRef.current
+    const task = hintTask()
+    if (!cur?.enabled || cur.callLive || inFlightRef.current || !task || task.mode === 'test') return false
+    if (!noteWrong(task.id)) return false
+    // Ступени кончились (домашка после второй) — облачко «Подсказать?» ни к чему: помочь больше нечем.
+    if (!nextHintStep(task.mode, hintState(task.id))) return true
+    return takeHint('errors')
+  }, [takeHint])
+  const stuck = useStuckWatch({
+    // Ошибки считаются и при открытом окне — после подсказки ученик отвечает, не закрывая его; облачко — только при закрытом.
+    active: enabled && Boolean(token) && !call,
+    screen,
+    canOffer: () => !stateRef.current?.open && !badge && !introHint && !inFlightRef.current && !isTtsActive(),
+    onWrong: onHintWrong,
+  })
+  // Нажал облачко (или кнопку Луны, пока оно на экране): окно и сразу подсказка — ступенью по счёту задания.
+  // unlockSpeech — в тике нажатия, как у обычного открытия: иначе iPhone не сыграет ответ.
+  const takeStuck = () => {
+    const reason = stuck.take()
+    if (!reason) return false
+    return takeHint(reason)
   }
+  const dismissStuck = stuck.dismiss
+  useEffect(() => {
+    if (open) dismissStuck()
+  }, [open, dismissStuck])
 
   // ── Луна пишет первой (ТЗ v2.0, 7.1–7.4; lib/assistant/useProactive.js) ───────────────
   // Код решает, когда и о чём (события — events.js), модель формулирует. На компьютере окно открывается само, текстом и
@@ -2201,7 +2270,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                     type="button"
                     className={`asst__chip${s.bug ? ' asst__chip--bug' : ''}`}
                     disabled={voiceBusy}
-                    onClick={() => sendTyped(s.text)}
+                    onClick={() => (s.hint && takeHint('asked')) || sendTyped(s.text)}
                   >
                     {s.label}
                   </button>

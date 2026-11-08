@@ -27,6 +27,8 @@ import ProfileBlocks, { NotificationChannels } from '../matching/ProfileBlocks.j
 import { AXIS_TUTOR_KEYS, temperFor } from '../tutor/tutors.js'
 import ProfilePhone from './profile/ProfilePhone.jsx'
 import { PROACTIVE_LEVELS, useProactiveLevel, writeProactiveLevel } from '../lib/assistant/proactiveSetting.js'
+import { useLunaMemory } from '../lib/assistant/lunaMemory.js'
+import LunaMemory from './profile/LunaMemory.jsx'
 import DeleteAccount from './profile/DeleteAccount.jsx'
 import { useAccountDeletion } from './profile/useAccountDeletion.js'
 
@@ -145,6 +147,8 @@ export default function ProfilePage({
   // «Подсказки Луны: часто / иногда / только по запросу» (ТЗ v2.0, 7.4) — настройка устройства (proactiveSetting.js).
   const [lunaOpen, setLunaOpen] = useState(false)
   const lunaLevel = useProactiveLevel()
+  // «Память Луны» (ТЗ v2.0, 8.1) — только у ученика: у преподавателя Луны нет.
+  const lunaMemory = useLunaMemory(token, !isTeacher(token))
   const [editOpen, setEditOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
@@ -490,6 +494,7 @@ export default function ProfilePage({
           edit={{ form, setForm, saving, error: editErr, open: openEdit, save: saveProfile }}
           langLabel={langLabel}
           luna={{ visible: !isTeacher(token), level: lunaLevel, choose: writeProactiveLevel }}
+          lunaMemory={lunaMemory.status === 'ready' ? lunaMemory : null}
           notif={{
             visible: isTeacher(token) || !isStudentSectionHidden('notifications'),
             enabled: notifEnabled,
@@ -628,6 +633,15 @@ export default function ProfilePage({
             <SettingRow key={it.key} item={it} chip last={i === personalization.length - 1} />
           ))}
         </div>
+
+        {lunaMemory.status === 'ready' && (
+          <>
+            <div className="pf-label">{t('profile.lunaMemory')}</div>
+            <div className="pf-card">
+              <LunaMemory memory={lunaMemory} />
+            </div>
+          </>
+        )}
 
         {/* В кадре 4352:13735 значки «Настроек» лежат в таких же сиреневых
             плитках, что и в «Персонализации» — плитка есть у каждой строки

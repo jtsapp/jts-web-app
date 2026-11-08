@@ -6,6 +6,7 @@ import { useI18n, LANGS } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
 import { SKILLS, levelShare, shareBars } from '../../practice/skillStatsCore.js'
 import DeleteAccount from './DeleteAccount.jsx'
+import LunaMemory from './LunaMemory.jsx'
 import { MaskIcon } from './MaskIcon.jsx'
 
 /*
@@ -77,6 +78,9 @@ export default function ProfilePhone(p) {
           <Row ico="palette" tone="pink" title={t('profile.customization')} onClick={() => setSheet('custom')} />
           {p.luna?.visible && (
             <Row ico="chat_bubble" tone="violet" title={t('profile.luna')} sub={t(`profile.luna.${p.luna.level}`)} onClick={() => go('luna')} />
+          )}
+          {p.lunaMemory && (
+            <Row ico="chat_bubble" tone="blue" title={t('profile.lunaMemory')} sub={String(p.lunaMemory.facts.length)} onClick={() => go('memory')} />
           )}
           {p.notif.visible && (
             <Row ico="notifications" tone="violet" title={t('profile.notifications')} sub={p.notif.enabled ? t('profile.notifOn') : t('profile.notifOff')} onClick={() => { p.notif.open(); setSheet('notif') }} />
@@ -189,6 +193,15 @@ export default function ProfilePhone(p) {
           ))}
         </Card>
         <p className="pfm-luna__device">{t('profile.luna.device')}</p>
+      </Screen>
+    )
+  } else if (view === 'memory' && p.lunaMemory) {
+    // «Память Луны» (ТЗ v2.0, 8.1): факты и «удалить» — экраном, как язык.
+    body = (
+      <Screen title={t('profile.lunaMemory')} onBack={back}>
+        <Card>
+          <LunaMemory memory={p.lunaMemory} phone />
+        </Card>
       </Screen>
     )
   } else if (view === 'delete') {

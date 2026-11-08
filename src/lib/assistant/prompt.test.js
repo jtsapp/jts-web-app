@@ -562,7 +562,7 @@ describe('ученик застрял и нажал «Подсказать?»', 
     const last = buildTurns({ ...stuck(STUCK_ERRORS_MARK, { screen }), user: null, studentContext: profile }).at(-1).content
     expect(last).not.toContain('Вопрос ученика:')
     expect(last).not.toContain('Совет сайта')
-    expect(last).toContain(`</контекст>\n\n${STUCK_ERRORS_MARK}\nЯзык ответа: русский\nУченик застрял на задании на экране (две неверные проверки подряд)`)
+    expect(last).toContain(`</контекст>\n\n${STUCK_ERRORS_MARK}\nЯзык ответа: русский\nУченик застрял на задании на экране (ответ отмечен неверным)`)
     expect(last).toContain('Сайт уже показал верный ответ')
     expect(last).toContain('без метки')
     expect(last.endsWith(`Не больше 4 коротких предложений.
@@ -584,7 +584,7 @@ ${ADDR}
   it('простой на непроверенном задании — только подсказка, язык — казахский', () => {
     const screen = { id: 'workbook', text: 'Fill in. [пустое поле] [кнопка «Проверить»]' }
     const last = buildTurns({ ...stuck(STUCK_IDLE_MARK, { screen, lang: 'kk' }), user: null }).at(-1).content
-    expect(last).toContain('(полторы минуты ничего не делает)')
+    expect(last).toContain('(долго ничего не делает)')
     expect(last).toContain('Задание ещё не проверено: не оценивай введённый ответ и не называй правильный')
     expect(last).toContain('Язык ответа: казахский')
   })

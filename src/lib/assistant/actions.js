@@ -17,6 +17,8 @@
 //   работает, пока сайт открыт; по концу Луна сама пишет следующий шаг (событие break_over, events.js). Делает окно.
 //   [[STOP_DAY]] / [[STOP_DAY_NOW]] — «На сегодня всё»: бэкенд засчитывает сделанное, оставшиеся свои задачи дня переносит
 //   на следующий учебный день (lib/assistant/stopDay.js); итог пишет окно по ответу сервера, как у REPLAN.
+//   [[REMEMBER боится говорения]] — память Луны (ТЗ v2.0, 8.1; facts.js): не действие, а факт на 30 дней. Вырезается
+//   всегда, копится отдельно (facts()), не больше двух за ответ; что чувствительно, отсечёт роут перед записью.
 //   [[CLICK 7]] / [[CLICK_NOW 7]] — нажать кнопку экрана с номером 7 из снимка
 //   (screenSnapshot.snapshotWithRefs; 21.10.2026). Номер сверяется со снимком этого
 //   же запроса, подпись берётся оттуда — окно по ней проверит, что жмёт ту же кнопку.
@@ -32,6 +34,7 @@
 import { REPORTED_STREAM_MARKER, createHoldbackFilter } from './report.js'
 import { validAction } from './destinations.js'
 import { isItemRef } from './items/refs.js'
+import { REMEMBER_HEAD, REMEMBER_MARK } from './facts.js'
 
 // Форму модель местами путает (живой прогон 15.10.2026: «[[OPEN id="practice-listening"]]»),
 // поэтому двоеточие, «id=» и кавычки вокруг id прощаем — раздел всё равно сверяется со списком.
@@ -181,9 +184,14 @@ export function actionTail(action) {
  * screenText — снимок экрана этого запроса: по нему сверяется номер кнопки метки
  * нажатия (номера нет — метка вырезается, действия нет).
  */
+const MAX_FACTS = 2
+// Факт — до 240 символов текста: держим метку, пока она не закроется, как у Feedback.
+const MAX_REMEMBER_MARK = 400
+
 export function createActionFilter({ screenText = '', items = null } = {}) {
   let hold = ''
   let action = null
+  const facts = []
   return {
     push(chunk) {
       let s = hold + String(chunk ?? '')
@@ -203,7 +211,7 @@ export function createActionFilter({ screenText = '', items = null } = {}) {
         s = s.slice(i)
         const j = s.indexOf(']]', 2)
         if (j < 0) {
-          if (s.length < (s.startsWith(FEEDBACK_HEAD) ? MAX_FEEDBACK_MARK : MAX_MARK)) {
+          if (s.length < (s.startsWith(FEEDBACK_HEAD) ? MAX_FEEDBACK_MARK : s.startsWith(REMEMBER_HEAD) ? MAX_REMEMBER_MARK : MAX_MARK)) {
             hold = s
             return out
           }
@@ -213,6 +221,11 @@ export function createActionFilter({ screenText = '', items = null } = {}) {
         }
         const mark = s.slice(0, j + 2)
         s = s.slice(j + 2)
+        const rm = REMEMBER_MARK.exec(mark)
+        if (rm) {
+          if (facts.length < MAX_FACTS) facts.push(rm[1].trim())
+          continue
+        }
         const fb = FEEDBACK_MARK.exec(mark)
         if (fb) {
           if (!action) action = feedbackAction(fb[2], fb[3], Boolean(fb[1]))
@@ -256,6 +269,10 @@ export function createActionFilter({ screenText = '', items = null } = {}) {
     },
     action() {
       return action
+    },
+    /** Факты из меток [[REMEMBER …]] — для памяти Луны (роут сверит и запишет). */
+    facts() {
+      return facts.slice()
     },
   }
 }

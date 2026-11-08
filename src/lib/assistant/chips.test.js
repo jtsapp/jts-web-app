@@ -36,7 +36,7 @@ describe('готовые вопросы Луны по экрану и форма
 
   it('задание: «Подсказать?» с просьбой о подсказке; на тесте подсказки нет', () => {
     const task = assistantChips({ kind: 'task' })
-    expect(task[0]).toEqual({ key: 'assistant.suggest.hint', ask: 'assistant.suggest.hintAsk' })
+    expect(task[0]).toEqual({ key: 'assistant.suggest.hint', ask: 'assistant.suggest.hintAsk', hint: true })
     expect(keys({ kind: 'test' })).not.toContain('assistant.suggest.hint')
     // «Почему мой ответ неверный?» на Главной висел у всех (аудит 06.11.2026) — его там больше нет.
     expect(keys({ kind: 'home', format: 'with_teacher' })).not.toContain('assistant.suggest.whyWrongShort')
