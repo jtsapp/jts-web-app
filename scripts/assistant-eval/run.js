@@ -70,6 +70,9 @@ const prompt = await imp('src/lib/assistant/prompt.js')
 const { assistantPersona } = await imp('src/lib/assistant/persona.js')
 const { chatStreamRich } = await imp('src/lib/anthropic.js')
 const { createActionFilter } = await imp('src/lib/assistant/actions.js')
+// События «Луна пишет первой» (ТЗ 7.1–7.2): пометка — настоящей eventMark сайта, как её шлёт окно.
+// У develop без этапа 3 модуля нет: базу меряют без событий (--only L).
+const events = existsSync(path.join(REPO, 'src/lib/assistant/events.js')) ? await imp('src/lib/assistant/events.js') : null
 const { knowledgeText } = await import(pathToFileURL(path.join(ROOT, 'src/lib/assistant/knowledge.js')).href)
 const Anthropic = (await import('@anthropic-ai/sdk')).default
 const judgeClient = new Anthropic()
@@ -127,7 +130,7 @@ function teacherJob(q) {
 
 function lunaJob(c) {
   const ui = c.ui || 'ru'
-  const content = c.ask ? SERVICE_TURNS[c.ask]() : c.q
+  const content = c.event ? events.eventMark(c.event.type, c.event.params) : c.ask ? SERVICE_TURNS[c.ask]() : c.q
   return {
     set: 'luna', id: c.id, topic: `tz${c.tz}`, ui, answer: c.answer || ui, content, screen: SCREENS[c.screen],
     profile: PROFILES[c.profile], user: USER, rewards: Boolean(c.rewards), history: c.history, src: c,
@@ -293,7 +296,7 @@ async function judge(job, visible, raw) {
   }
   const c = job.src
   const hist = (c.history || []).map((m) => `${m.role === 'user' ? 'Ученик' : 'Помощник'}: ${m.content}`).join('\n')
-  const situation = c.ask === 'OPENING' ? 'ученик открыл окно помощника, ничего не спросив' : c.ask === 'STUCK_ERRORS' ? 'ученик дважды подряд ошибся и нажал «Подсказать?»' : c.ask === 'STUCK_IDLE' ? 'ученик долго ничего не делал на задании и нажал «Подсказать?»' : c.q
+  const situation = c.event ? `сайт сам написал ученику (событие ${c.event.type}): ${c.situation}` : c.ask === 'OPENING' ? 'ученик открыл окно помощника, ничего не спросив' : c.ask === 'STUCK_ERRORS' ? 'ученик дважды подряд ошибся и нажал «Подсказать?»' : c.ask === 'STUCK_IDLE' ? 'ученик долго ничего не делал на задании и нажал «Подсказать?»' : c.q
   const user = `${hist ? `Разговор до этого:\n${hist}\n\n` : ''}Вопрос/ситуация: ${situation}\nКритерий: ${c.pass}\n\nИмя ученика: ${USER.name}. Язык интерфейса: ${job.ui}.\nЭкран ученика:\n${job.screen.text}\n\nПрофиль, который видел помощник:\n${job.profile}\n\nОтвет помощника:\n${visible}\n\nСлужебные метки в ответе (ученик их не видит, но под ответом будет кнопка): ${marks(raw)}`
   const kb = 'Факты о сайте школы (база знаний помощника; что здесь написано — правда, это не выдумка):\n\n' + knowledgeText(assistantPersona(job.ui), { rewards: job.rewards })
   const j = await judgeCall(LUNA_JUDGE, kb, user)
