@@ -5906,6 +5906,8 @@ const dict = {
     'ieltsMt.fresh.hint': "өзекті — соңғы {n} күнде қосылғандар",
     'ieltsMt.empty': 'Бұл трекке mock әлі жарияланбаған.',
     'ieltsMt.more': 'Толығырақ',
+    'ieltsMt.prev': 'Алдыңғы тесттер',
+    'ieltsMt.next': 'Келесі тесттер',
     'ieltsMt.continue': 'Жалғастыру',
     'ieltsMt.history': 'Әрекеттер тарихы',
     'ieltsMt.col.test': 'Тест',

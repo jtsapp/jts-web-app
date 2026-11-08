@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { setIeltsParams } from '../urlParams.js'
 import { getIeltsMocks } from '../../api.js'
 import { loadToken } from '../../lib/session.js'
@@ -7,7 +7,7 @@ import PageHeader from '../ui/PageHeader.jsx'
 import EmptyState from '../ui/EmptyState.jsx'
 import { MOCK_ORDER } from '../mock/mockSession.js'
 import { SectionTile } from '../sections.jsx'
-import { ArrowForwardIcon, CheckCircleIcon, ChevronLeftIcon, QuizIcon, RadioOffIcon, ScheduleIcon, TimerIcon, CloseIcon } from '../icons.jsx'
+import { ArrowForwardIcon, CheckCircleIcon, ChevronLeftIcon, ChevronRightIcon, QuizIcon, RadioOffIcon, ScheduleIcon, TimerIcon, CloseIcon } from '../icons.jsx'
 
 // Вкладка «Mock-тесты» (дизайн «IELTS new», Figma 92:3267): полный экзамен, последняя попытка, доступные mock трека
 // и история попыток. Mock — документы банка skill = mock (backend TEST_FORMAT.md §11), попытки — сессии с серверными
@@ -81,6 +81,87 @@ function FreshSwitch({ mocks, value, onChange, days }) {
         {t('ieltsMt.fresh.old')} <i>{old}</i>
       </button>
       <span className="ih-mtfresh__hint">{t('ieltsMt.fresh.hint', { n: String(days || 30) })}</span>
+    </div>
+  )
+}
+
+// Доступные mock на вкладке — одной лентой: прокрутка колесом, полосой и перетаскиванием мышью, стрелки — у краёв при
+// наведении. Край ленты, за которым ещё есть карточки, плавно уходит в фон раздела.
+function MockRow({ children }) {
+  const { t } = useI18n()
+  const track = useRef(null)
+  const drag = useRef(null)
+  const [edge, setEdge] = useState({ prev: false, next: false })
+
+  const measure = useCallback(() => {
+    const el = track.current
+    if (!el) return
+    const max = el.scrollWidth - el.clientWidth
+    setEdge({ prev: el.scrollLeft > 2, next: el.scrollLeft < max - 2 })
+  }, [])
+
+  useEffect(() => {
+    const el = track.current
+    if (!el) return undefined
+    measure()
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', measure)
+      return () => window.removeEventListener('resize', measure)
+    }
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [measure, children])
+
+  const step = (dir) => {
+    const el = track.current
+    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'smooth' })
+  }
+
+  // перетаскивание — только мышью: палец и тачпад листают ленту сами
+  const onPointerDown = (e) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return
+    drag.current = { x: e.clientX, left: track.current.scrollLeft, moved: false }
+  }
+  const onPointerMove = (e) => {
+    const d = drag.current
+    if (!d) return
+    const dx = e.clientX - d.x
+    if (!d.moved && Math.abs(dx) < 5) return
+    if (!d.moved) {
+      d.moved = true
+      track.current.setPointerCapture(e.pointerId)
+      track.current.classList.add('is-drag')
+    }
+    track.current.scrollLeft = d.left - dx
+  }
+  const onPointerUp = () => {
+    const d = drag.current
+    drag.current = null
+    track.current?.classList.remove('is-drag')
+    // клик в конце перетаскивания не должен открыть карточку под курсором
+    if (d?.moved) track.current?.addEventListener('click', (ev) => ev.stopPropagation(), { capture: true, once: true })
+  }
+
+  return (
+    <div className={`ih-mtrow${edge.prev ? ' has-prev' : ''}${edge.next ? ' has-next' : ''}`}>
+      <div
+        ref={track}
+        className="ih-mt__cards"
+        onScroll={measure}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        {children}
+      </div>
+      <div className="ih-mtrow__side is-prev">
+        <button type="button" className="ih-mtrow__arrow" aria-label={t('ieltsMt.prev')} tabIndex={edge.prev ? 0 : -1} onClick={() => step(-1)}><ChevronLeftIcon size={22} /></button>
+      </div>
+      <div className="ih-mtrow__side is-next">
+        <button type="button" className="ih-mtrow__arrow" aria-label={t('ieltsMt.next')} tabIndex={edge.next ? 0 : -1} onClick={() => step(1)}><ChevronRightIcon size={22} /></button>
+      </div>
     </div>
   )
 }
@@ -241,7 +322,7 @@ export default function MockTestsTab({ token, track, onOpenMock, onOpenSession }
           <h2 className="ih-mt__h2">{t('ieltsMt.available')}</h2>
           <FreshSwitch mocks={allMocks} value={shownAge} onChange={setAge} days={data.freshDays} />
           {mocks.length === 0 ? <p className="ih-muted">{t('ieltsMt.empty')}</p> : (
-            <div className="ih-mt__cards">
+            <MockRow>
               {mocks.map((m) => (
                 <article key={m.id} className="ih-mt__card">
                   <span className="ih-mt__icon"><QuizIcon size={22} /></span>
@@ -256,7 +337,7 @@ export default function MockTestsTab({ token, track, onOpenMock, onOpenSession }
                   <SectionMarks sections={m.sections} />
                 </article>
               ))}
-            </div>
+            </MockRow>
           )}
 
           {history.length > 0 && (

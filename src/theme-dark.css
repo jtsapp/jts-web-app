@@ -236,6 +236,14 @@ html[data-theme="dark"] .ih-mtfresh button.is-on {
   border-color: var(--dk-acc);
   color: #fff;
 }
+/* лента mock: край уходит в тёмный фон раздела, стрелки — карточкой темы */
+html[data-theme="dark"] .ih-mtrow {
+  --mt-fade: var(--dk-page);
+}
+html[data-theme="dark"] .ih-mtrow__arrow {
+  background: var(--dk-card);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 35%);
+}
 html[data-theme="dark"] .ih-mtsec__s {
   background: var(--dk-card);
   border-color: var(--dk-line);
