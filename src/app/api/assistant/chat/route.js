@@ -42,6 +42,7 @@ import {
   shouldAutoReportBug,
 } from '@/lib/assistant/report.js'
 import { actionTail, createActionFilter } from '@/lib/assistant/actions.js'
+import { createScriptFixer } from '@/lib/assistant/mixedScript.js'
 import { clickAllowed } from '@/lib/assistant/clickPolicy.js'
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
@@ -244,8 +245,10 @@ export async function POST(request) {
     shown += out
     return out
   }
-  const visible = (text) => keep(actions.push(filter.push(text)))
-  const visibleTail = () => keep(actions.push(filter.flush()) + actions.flush())
+  // Латиница посреди казахского слова («бітken») — чинит код (mixedScript.js), последним, на видимом тексте.
+  const script = createScriptFixer()
+  const visible = (text) => keep(script.push(actions.push(filter.push(text))))
+  const visibleTail = () => keep(script.push(actions.push(filter.flush()) + actions.flush()) + script.flush())
   // Служебный хвост: действие, затем «отчёт записан». Клиент режет всё от
   // первого [[ASST_ (actions.js), поэтому оба идут после всего видимого текста.
   // Действие ответа: метка модели, а в первой реплике без метки — кнопка «Совета

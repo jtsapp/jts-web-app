@@ -5,7 +5,9 @@ const hintsFor = (question, extra = {}) => questionHints({ question, ...extra })
 
 describe('указания рядом с вопросом (turnHints.js)', () => {
   it('обращение: «ты» без рода; по-казахски «сен»; по-английски не нужно', () => {
-    expect(addressHint('ru')).toMatch(/на «ты» и без рода/)
+    expect(addressHint('ru')).toMatch(/на «ты». О прошлом и состоянии ученика пиши через «у тебя»/)
+    // Второй круг (08.11.2026): слов «без рода», «пол не указан» в указании нет — модель цитировала их ученику.
+    expect(addressHint('ru')).not.toMatch(/без рода|пол ученика/)
     expect(addressHint('kk')).toMatch(/на «сен»/)
     expect(addressHint('en')).toBe('')
   })
@@ -14,7 +16,7 @@ describe('указания рядом с вопросом (turnHints.js)', () =>
   it('обращение: пол из Профиля задаёт род; казахскому и английскому он не нужен', () => {
     expect(addressHint('ru', 'FEMALE')).toMatch(/женский пол.*«ты выбрала»/)
     expect(addressHint('ru', 'MALE')).toMatch(/мужской пол.*«ты выбрал»/)
-    expect(addressHint('ru', null)).toMatch(/без рода/)
+    expect(addressHint('ru', null)).toMatch(/«у тебя сделано»/)
     expect(addressHint('kk', 'FEMALE')).toMatch(/на «сен»/)
     expect(addressHint('en', 'MALE')).toBe('')
   })

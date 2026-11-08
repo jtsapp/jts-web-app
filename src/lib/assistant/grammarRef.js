@@ -21,7 +21,7 @@ export const MAX_ENTRIES = 4
 // Вопрос об английском, а не о сайте: без этого «Где Speaking Buddy?» поднимал бы справку по speak/talk.
 const LANG_Q = /(по-английски|ағылшынша|английск|переведи|перевести|перевод|аудар|как (сказать|спросить|произнос|правильно)|что значит|что означает|деген не|қалай айт|қалай болады|правильно ли|можно ли сказать|дұрыс па|бола ма|айтуға|почему (нельзя|говорят|ошибка|«)|в чём разница|в чем разница|чем отлича|айырмашы|объясни|түсіндір|ереже|правил|произнос|ударени|айтылу|екпін|грамматик|провер|тексер|\bcheck\b|\bcorrect\b|difference|\bmean\b|how do (i|you) say|is it correct|can i say|what does)/i
 // Грамматические термины ru/kk — вопрос об английском и без английских слов («Когда к глаголу добавляется -s?»).
-const GRAMMAR_TERMS = /глагол|артикл|услов|степен|предлог|местоим|прилагат|существит|причаст|залог|времен[иа]|-s\b|-ing\b|-ed\b|етістік|шақ\b|есімдік|сын есім|зат есім/i
+const GRAMMAR_TERMS = /глагол|артикл|услов|степен|предлог|местоим|прилагат|существит|причаст|залог|времена|какое время|в каком времени|-s\b|-ing\b|-ed\b|етістік|шақ\b|есімдік|сын есім|зат есім/i
 // Названия разделов сайта латиницей — не английский вопрос: «Где Speaking Buddy?» справки не просит.
 const SITE_NAMES = /speaking buddy|speakspin|feedback|ielts|\bsat\b|word hunt|word rush|speak or die|cartoon world|pronunciation world|prepositions world|just to listen|whatsapp|google|telegram/gi
 const latinWords = (s) => (String(s).replace(SITE_NAMES, ' ').match(/[A-Za-z]{2,}/g) || []).length
@@ -59,9 +59,9 @@ export const GRAMMAR_REF = [
   { id: 'past-simple', kk: "Past Simple: дұрыс етістіктер + -ed (worked; stop → stopped, study → studied), бұрыс етістіктердің өз екінші формасы бар (go → went, see → saw, have → had). Сұраулы және болымсыз сөйлемде did/didn't + негізгі форма: Did you go? I didn't go (didn't went емес). Белгілері: yesterday, last week, in 2019, ago; олармен Present Perfect қолданылмайды.",
     match: /past simple|прошедш|өткен шақ|\bwent\b|\bgoed\b|\bdid\b|\bdidn'?t\b|yesterday|кеше|вчера|have went|has went/i,
     text: 'Past Simple: правильные + -ed (worked; stop → stopped, study → studied), неправильные — вторая форма (go → went, see → saw, have → had); их учат. Вопрос и отрицание — did/didn\'t + начальная форма: Did you go? I didn\'t go (не didn\'t went, не goed). Маркеры: yesterday, last week, in 2019, ago. С ними не Present Perfect: Yesterday I went (не I have went).' },
-  { id: 'was-were', kk: "be өткен шақта: I/he/she/it was, we/you/they were (we was емес): I was at home yesterday.",
+  { id: 'was-were', kk: "be өткен шақта: I/he/she/it was, we/you/they were (we was емес): I was at work on Monday.",
     match: /\bwas\b|\bwere\b|was\/were|we was|i am at home/i,
-    text: 'be в прошлом: I/he/she/it was, we/you/they were (не we was). «Вчера я был дома» — I was at home yesterday.' },
+    text: 'be в прошлом: I/he/she/it was, we/you/they were (не we was). «В понедельник я был на работе» — I was at work on Monday.' },
   { id: 'present-perfect', kk: "Present Perfect: have/has + етістіктің үшінші формасы (V3). Уақыты айтылмаған тәжірибе (I have been to London), қазіргі нәтиже (I've lost my keys), осы уақытқа дейінгі кезең for/since-пен (I have lived here for five years / since 2020). Нақты өткен уақытпен (yesterday, last week, in 2019) — Past Simple. Жиі қате: I live here for five years → I have lived / I've been living here for five years.",
     match: /present perfect|perfect|have been|\b(have|has) \w+(ed|en)\b|\balready\b|\byet\b|\bever\b|\bsince\b|\bfor (two|three|five|\d+) years\b|уже (сделал|был|поел)|уже сдела|пять лет|үш жыл|жылдан бері|лет живу|живу здесь/i,
     text: 'Present Perfect: have/has + третья форма (V3). Опыт без даты (I have been to London), результат сейчас (I\'ve lost my keys), период до сейчас с for/since (I have lived here for five years / since 2020). С точным прошлым временем (yesterday, last week, in 2019, ago) — Past Simple: I received it yesterday (не I have received it yesterday). Ошибка русско- и казахскоязычных: I live here for five years → I have lived / I\'ve been living here for five years.' },
@@ -71,9 +71,9 @@ export const GRAMMAR_REF = [
   { id: 'pp-continuous', kk: "Present Perfect Continuous: have/has been + -ing — осы уақытқа дейін созылған іс (I've been working for three hours). live, work, study етістіктерімен екеуі де дұрыс: I have lived / I've been living here for two years.",
     match: /perfect continuous|been .*ing/i,
     text: 'Present Perfect Continuous: have/has been + -ing — длительность, процесс до сейчас (I\'ve been working for three hours; I\'m tired — I\'ve been running). Present Perfect — результат, сколько сделано (I\'ve written three letters). Глаголы состояния — без Continuous: I\'ve known him for years. С live, work, study верны оба: I have lived / I\'ve been living here for two years.' },
-  { id: 'used-to', kk: "used to + етістік — бұрын болған, қазір жоқ әдет: I used to play football; be used to + зат есім немесе -ing — үйреніп кету: I'm used to getting up early, I'm used to it; get used to — үйрену (I've got used to it — үйреніп кеттім).",
+  { id: 'used-to', kk: "used to + етістік — бұрын болған, қазір жоқ әдет: I used to play football; be used to + зат есім немесе -ing — үйреніп кету: I'm used to living alone, I'm used to the noise; get used to — үйрену (I've got used to it — үйреніп кеттім).",
     match: /used to|привык|үйреніп кет|үйрендім|раньше.*(а теперь|теперь нет)/i,
-    text: 'used to + глагол — привычка или состояние в прошлом, которого сейчас нет: I used to play football; отрицание и вопрос — didn\'t use to / Did you use to…? be used to + существительное или -ing — привыкнуть, быть привычным: I\'m used to getting up early, I\'m used to it; get used to — привыкать (I\'ve got used to it — уже привык).' },
+    text: 'used to + глагол — привычка или состояние в прошлом, которого сейчас нет: I used to play football; отрицание и вопрос — didn\'t use to / Did you use to…? be used to + существительное или -ing — привыкнуть, быть привычным: I\'m used to living alone, I\'m used to the noise; get used to — привыкать (I\'ve got used to it — уже привык).' },
   { id: 'future', match: /going to|\bwill\b|будущ|келер шақ/i,
     text: 'be going to — план, решено заранее, или прогноз по видимым признакам (Look at the clouds — it\'s going to rain); will — решение в момент речи, обещание, предположение (I\'ll help you; I think it will rain); Present Continuous — договорённость с временем или людьми (I\'m meeting Tom tomorrow).' },
   { id: 'time-clauses', match: /\b(when|as soon as|before|after|until)\b.*\bwill\b|\bwill\b.*\b(when|as soon as)\b/i,
@@ -111,7 +111,7 @@ export const GRAMMAR_REF = [
   { id: 'people', match: /\bpeople\b|\bchildren\b/i,
     text: 'people — множественное число от person: people are (a person is); children — от child.' },
   { id: 'ed-ing', match: /interest(ing|ed)|excit(ing|ed)|-ed.*-ing|-ing.*-ed/i,
-    text: '-ed — что чувствует человек (I\'m interested in music, I\'m excited), -ing — какой предмет или человек для других (an interesting film, an exciting game). I am interesting in music — ошибка.' },
+    text: '-ed — что чувствует человек (I\'m interested in music, I\'m excited), -ing — какой предмет или человек для других (an interesting film, an exciting game). I\'m exciting about the trip — ошибка.' },
   { id: 'adj-order', kk: "Сын есім зат есімнің алдында тұрады: a red car, a big house (a car red емес).",
     match: /car red|прилагательн.*(перед|после)|сын есім/i,
     text: 'Прилагательное стоит перед существительным: a red car, a big house (не a car red).' },
@@ -156,7 +156,7 @@ export const GRAMMAR_REF = [
   { id: 'see-look-watch', match: /\bwatch\b.*\b(see|look)\b|\b(see|look)\b.*\bwatch\b/i,
     text: 'see — видеть (само собой); look (at) — смотреть, направлять взгляд; watch — смотреть, наблюдать за движущимся, долго: watch TV, watch a film. see a film — сходить в кино, тоже верно.' },
   { id: 'job-work', match: /\bjob\b.*\bwork\b|\bwork\b.*\bjob\b/i, text: 'job — исчисляемое, конкретная должность: a job, two jobs; work — неисчисляемое, сама работа или место: I have a lot of work, I go to work (не a work в значении «должность»).' },
-  { id: 'false-friends', kk: "Жалған достар: actually — шын мәнінде, негізінде (актуальный мағынасында емес — ол relevant); sympathetic — жанашыр; magazine — журнал (дүкен — shop, store); fabric — мата (фабрика — factory); accurate — дәл.",
+  { id: 'false-friends', kk: "Жалған достар: actually — шын мәнінде, негізінде («өзекті» деген мағынада емес — ол relevant); sympathetic — жанашыр; magazine — журнал (дүкен — shop, store); fabric — мата (фабрика — factory); accurate — дәл.",
     match: /actually|актуальн|sympathetic|симпатичн|magazine|магазин|fabric|accurate|аккуратн/i,
     text: 'Ложные друзья: actually — на самом деле, вообще-то (актуальный — relevant, up to date); sympathetic — сочувствующий, отзывчивый (симпатичный — nice, good-looking, cute); magazine — журнал (магазин — shop, store); fabric — ткань (фабрика — factory); accurate — точный (аккуратный — neat, tidy).' },
   { id: 'pretty', match: /\bpretty\b/i, text: 'pretty перед прилагательным или наречием — разговорное «довольно, весьма»: pretty good, pretty fast; pretty как прилагательное — милый, симпатичный.' },
