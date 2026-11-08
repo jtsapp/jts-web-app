@@ -150,7 +150,7 @@ export default function SatDailyPage({ token, onNav }) {
   }
   const practice = async (skillIds) => {
     const s = await startSatSession(authToken, { mode: 'skills', skillIds, count: 10 })
-    setParams({ satSession: s.id, satLesson: null })
+    setParams({ satSession: s.id })
     onNav?.('sat-study')
   }
 

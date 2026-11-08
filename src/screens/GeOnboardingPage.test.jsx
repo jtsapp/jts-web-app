@@ -81,6 +81,6 @@ describe('GeOnboardingPage', () => {
   it('правка — три шага, начиная с цели', () => {
     renderPage({ level: 'A2', edit: true })
     expect(screen.getByText('Шаг 1 из 3')).toBeTruthy()
-    expect(screen.getByText('Какой уровень вам нужен?')).toBeTruthy()
+    expect(screen.getByText('Какой уровень тебе нужен?')).toBeTruthy()
   })
 })

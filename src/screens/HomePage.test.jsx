@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import HomePage from './HomePage.jsx'
+import { getDemoAccess, getMyHomework } from '../api.js'
 
 // Пробный урок: состояние заявки и расписание отдаём готовыми. Обе величины
 // в изменяемых переменных — vi.mock поднимается наверх файла, и подменить его
@@ -10,8 +11,13 @@ import HomePage from './HomePage.jsx'
 const trialState = { value: { requested: false, managerAssigned: false } }
 const occurrences = { value: [] }
 const homework = { value: [] }
+// Задания, выданные с урока (/student/assignments) — второй источник раздела «Домашняя работа».
+const materials = { value: [] }
 // Прогресс по уровню считает сервер — здесь отдаём его готовым.
 const levelProgress = { value: { level: 'B1', next: 'B2', percent: 45, done: 9, total: 20, remaining: 11 } }
+// Абонемент ученика (/cabinet/my-sections): по нему «Главная», как меню и Луна, решает, есть ли уроки с преподавателем.
+// Снимок разделов общий на вкладку и кэшируется по владельцу токена — тестам с абонементом свои токены.
+const mySections = { value: { known: false, allowed: [] } }
 
 vi.mock('../api.js', () => ({
   // Карточка «Новый отчёт о прогрессе» спрашивает список отчётов.
@@ -26,8 +32,11 @@ vi.mock('../api.js', () => ({
   getTrialRequestState: vi.fn(async () => trialState.value),
   getMyLessonOccurrences: vi.fn(async () => occurrences.value),
   getMyHomework: vi.fn(async () => homework.value),
+  getMyMaterialAssignments: vi.fn(async () => materials.value),
   requestTrialLesson: vi.fn(async () => ({ requested: true, managerAssigned: false })),
   getLevelProgress: vi.fn(async () => levelProgress.value),
+  getMySections: vi.fn(async () => mySections.value),
+  getLessonsSummary: vi.fn(async () => ({ conducted: 7, remaining: 9, cancelled: 0, rescheduled: 0 })),
 }))
 
 // Рейтинг навыков: локальное зеркало отдаём готовым, сеть не трогаем — экран
@@ -45,7 +54,7 @@ const localStats = { value: FULL_STATS }
 
 vi.mock('../practice/skillStats.js', () => ({
   readLocalSkillStats: () => localStats.value,
-  loadSkillStatsRemote: vi.fn(async () => null),
+  loadSkillStatsRemote: vi.fn(async () => null), readLocalLevelSkillStats: () => localStats.value, loadLevelSkillStatsRemote: vi.fn(async () => null),
 }))
 
 function renderHome(props = {}) {
@@ -74,6 +83,22 @@ beforeEach(() => {
   levelProgress.value = { level: 'B1', next: 'B2', percent: 45, done: 9, total: 20, remaining: 11 }
 })
 
+// Ширина телефона (≤560): «Главная» рисует там свои карточки расписания, домашки и пробного урока по макету приложения
+// (usePhoneWidth). В jsdom matchMedia нет — без подмены экран считает себя компьютером.
+function phoneWidth() {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', (q) => ({
+      matches: /max-width:\s*560px/.test(q),
+      media: q,
+      addEventListener() {},
+      removeEventListener() {},
+    }))
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+}
+
 describe('Главная демо-аккаунта', () => {
   it('уровень с названием и целью — следующая ступень CEFR', () => {
     renderHome()
@@ -97,7 +122,7 @@ describe('Главная демо-аккаунта', () => {
 
     // «Ещё примерно 4 урока» было выдумкой: плана «сколько уроков до B2» у
     // приложения нет. Материалы уровня — есть, и их можно пересчитать.
-    expect(await screen.findByText('Ещё 11 материалов — и вы перейдёте на уровень B2')).toBeTruthy()
+    expect(await screen.findByText('Ещё 11 материалов — и ты перейдёшь на уровень B2')).toBeTruthy()
   })
 
   it('пока сервер не ответил, полосы и подписи нет', () => {
@@ -150,7 +175,7 @@ describe('Главная демо-аккаунта', () => {
     const onStartLevelTest = vi.fn()
     const { container } = renderHome({ levelUnknown: true, onStartLevelTest })
 
-    expect(screen.getByText('Прогресс вашего обучения недоступен')).toBeTruthy()
+    expect(screen.getByText('Прогресс твоего обучения недоступен')).toBeTruthy()
     // На компьютере карточки уровня нет; телефонная (скрыта на компьютере CSS) — с «?» и кнопкой теста.
     expect(container.querySelector('.hm-level:not(.hm-level--phone)')).toBeNull()
 
@@ -168,27 +193,51 @@ describe('Главная демо-аккаунта', () => {
     const pcts = [...container.querySelectorAll('.hm-skill__pct')].map((n) => n.textContent)
     expect(pcts).toEqual(['???', '???', '???', '???', '???'])
     expect(container.querySelector('.hm-skill__fill')).toBeNull()
-    expect(screen.getByText('Пройдите тест уровня и здесь появится ваш профиль навыков')).toBeTruthy()
+    expect(screen.getByText('Пройди тест уровня, и здесь появится твой профиль навыков')).toBeTruthy()
 
     fireEvent.click(container.querySelector('.hm-skills__cta'))
     expect(onStartLevelTest).toHaveBeenCalledTimes(1)
   })
 
-  it('у демо на месте расписания и домашки — пробный урок, практика остаётся', () => {
-    // Так на макете демо-доступа: расписания и домашки у демо нет, а входы в
-    // практику — есть (кадр «новый ученик» макета «Главная · редизайн»).
+  it('у демо на месте расписания и домашки — «Ближайшее» с пробным уроком, практика остаётся', () => {
+    // ТЗ v2.0, 5.4: у демо справа «Ближайшее» (неделя и пробный урок), уроков с преподавателем нет; входы в практику
+    // — «Свободная практика».
     const { container } = renderHome()
 
     expect(container.querySelector('.hm-sched')).toBeNull()
     expect(container.querySelector('.hm-hw')).toBeNull()
-    expect(screen.getByText('Ваша практика на сегодня')).toBeTruthy()
-    expect(container.querySelector('.hm-trial')).not.toBeNull()
+    expect(container.querySelector('.hm-tl')).toBeNull()
+    expect(screen.getByText('Свободная практика')).toBeTruthy()
+    expect(container.querySelector('.hm-near .hm-near__trial')).not.toBeNull()
+    expect(container.querySelectorAll('.hm-near .hm-week__day')).toHaveLength(7)
   })
 
   it('сильная и слабая стороны названы', () => {
     const { container } = renderHome()
     expect(container.querySelector('.hm-tag--up').textContent).toBe('Сильнее всегоГоворение')
     expect(container.querySelector('.hm-tag--down').textContent).toBe('Стоит подтянутьПисьмо')
+  })
+
+  // ТЗ v2.0, 5.5: доля верных с первой попытки в заданиях уровня; меньше пяти заданий — «мало данных», не процент.
+  it('навыки — доля по заданиям уровня с подписью источника; меньше пяти заданий — «мало данных»', () => {
+    localStats.value = { ...FULL_STATS, reading: { done: 3, firstTry: 3 } }
+    const { container } = renderHome()
+    expect(container.querySelector('.hm-skills__src').textContent).toBe('Уровень B1 · % верных с первой попытки в заданиях уровня B1')
+    const rows = [...container.querySelectorAll('.hm-skill')].map((r) => [r.querySelector('.hm-skill__name').textContent, r.querySelector('.hm-skill__pct').textContent])
+    // 21 из 25 — 84%: чистая доля, без «уверенности объёмом».
+    expect(rows[0]).toEqual(['Говорение', '84%'])
+    expect(rows.at(-1)).toEqual(['Чтение', 'мало данных'])
+  })
+
+  // Решение владельца 07.11.2026: пока заданий уровня меньше пяти, процент — по всем прошлым заданиям, и подпись это говорит.
+  it('процент по прошлым заданиям помечен в подписи', () => {
+    localStats.value = { ...FULL_STATS, reading: { done: 40, firstTry: 30, estimate: true } }
+    const { container } = renderHome()
+    expect(container.querySelector('.hm-skills__src').textContent).toBe(
+      'Уровень B1 · % верных с первой попытки в заданиях уровня B1; где их пока меньше пяти — по всем прошлым заданиям',
+    )
+    const reading = [...container.querySelectorAll('.hm-skill')].find((r) => r.querySelector('.hm-skill__name').textContent === 'Чтение')
+    expect(reading.querySelector('.hm-skill__pct').textContent).toBe('75%')
   })
 
   it('навыки идут от сильного к слабому', () => {
@@ -204,7 +253,7 @@ describe('Главная демо-аккаунта', () => {
     const { container } = renderHome({ token: 'T' })
     expect([...container.querySelectorAll('.hm-skill__pct')].every((n) => n.textContent === '???')).toBe(true)
     expect(container.querySelector('.hm-skills__tags')).toBeNull()
-    expect(screen.getByText(/Пройдите несколько заданий/)).toBeTruthy()
+    expect(screen.getByText(/Пройди несколько заданий/)).toBeTruthy()
     // Нулевой прогресс — не повод обещать переход: план остаётся честным.
     await waitFor(() => expect(container.querySelector('.hm-level__fill')).not.toBeNull())
     expect(container.querySelector('.hm-level__fill').style.width).toBe('0%')
@@ -325,9 +374,8 @@ describe('Карточка пробного урока', () => {
     const { onOpenLesson } = renderHome({ token: 'T' })
 
     expect(await screen.findByText('Урок назначен')).toBeTruthy()
-    // Ищем внутри самой карточки: то же занятие теперь стоит и в расписании
-    // рядом — как «Мой график» и календарь на экране «Уроки».
-    const card = document.querySelector('.hm-trial')
+    // Ищем внутри строки пробного урока в «Ближайшем».
+    const card = document.querySelector('.hm-near__trial')
     expect(card.textContent).toContain('Айгерим')
     fireEvent.click(screen.getByText('Перейти к уроку'))
     expect(onOpenLesson).toHaveBeenCalledWith(42)
@@ -350,7 +398,8 @@ describe('Карточка пробного урока', () => {
   })
 })
 
-describe('Карточка домашки у ученика', () => {
+describe('Карточка домашки у ученика (телефон)', () => {
+  phoneWidth()
   beforeEach(() => {
     homework.value = []
   })
@@ -388,6 +437,28 @@ describe('Карточка домашки у ученика', () => {
     expect(await screen.findByText('5 заданий')).toBeTruthy()
   })
 
+  // Аудит ТЗ v2.0 (06.11.2026): «Главная» не видела заданий с урока и писала «всё сделано» при просроченном материале;
+  // на сбое запроса — тоже «всё сделано». Теперь источник тот же, что у раздела, а сбой — «Не загрузилось».
+  it('задание с урока — в карточке домашки, просроченное первым', async () => {
+    homework.value = [{ id: 1, title: 'Эссе', status: 'ASSIGNED', dueDate: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10) }]
+    materials.value = [{ id: 7, materialTitle: 'Unit 4. Past Simple', status: 'ASSIGNED', isOverdue: true, dueDate: '2026-09-01' }]
+    const { container } = renderHome({ token: 'T', isDemoAccount: false })
+    await screen.findByText('Unit 4. Past Simple')
+    const titles = [...container.querySelectorAll('.hm-hw__item b')].map((b) => b.textContent)
+    expect(titles).toEqual(['Unit 4. Past Simple', 'Эссе'])
+    materials.value = []
+  })
+
+  it('домашка не загрузилась — «Не загрузилось» и «Повторить», а не «всё сделано»', async () => {
+    getMyHomework.mockRejectedValueOnce(new Error('502'))
+    homework.value = [{ id: 1, title: 'После повтора', status: 'ASSIGNED' }]
+    renderHome({ token: 'T', isDemoAccount: false })
+    expect(await screen.findByText('Не загрузилось.')).toBeTruthy()
+    expect(screen.queryByText(/всё сделано/i)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }))
+    expect(await screen.findByText('После повтора')).toBeTruthy()
+  })
+
   it('без упражнений и частей строка «N заданий» не рисуется вовсе', async () => {
     homework.value = [{ id: 1, title: 'Файлом', status: 'ASSIGNED' }]
     const { container } = renderHome({ token: 'T', isDemoAccount: false })
@@ -396,6 +467,80 @@ describe('Карточка домашки у ученика', () => {
     expect(container.querySelector('.hm-hw__item i')).toBeNull()
   })
 })
+// ТЗ v2.0, 5.4: у формата с преподавателем справа один блок — неделя, следующий урок, остаток и домашка от
+// преподавателя со статусами цветом; на пункте меню «Домашняя работа» — число просроченных и заданных.
+describe('«Уроки с преподавателем» (компьютер)', () => {
+  const tomorrowAt = () => {
+    const d = new Date(Date.now() + 86400000)
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T10:00:00`
+  }
+  beforeEach(() => {
+    // Ученик с преподавателем — не демо: у демо меню прячет «Уроки» и «Домашнюю работу» (ТЗ v2.0, 4.2), а /user/me
+    // в этом файле по умолчанию отвечает «демо».
+    getDemoAccess.mockImplementation(async () => ({ isDemo: false, expiresAt: null }))
+    mySections.value = { known: true, format: 'GROUP', allowed: ['lessons', 'homework', 'practice', 'speaking', 'vocabulary', 'review'] }
+    occurrences.value = [{ lessonId: 7, teacherName: 'Айгерим', durationMinutes: 60, lessonStatus: 'SCHEDULED', scheduledAt: tomorrowAt() }]
+    homework.value = [
+      { id: 1, title: 'Проверенная', status: 'COMPLETED', grade: 5 },
+      { id: 2, title: 'На проверке', status: 'SUBMITTED' },
+      { id: 3, title: 'Заданная', status: 'ASSIGNED', dueDate: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10) },
+      { id: 4, title: 'Просроченная', status: 'ASSIGNED', dueDate: '2026-08-18' },
+    ]
+  })
+  afterEach(() => {
+    getDemoAccess.mockImplementation(async () => ({ isDemo: true, expiresAt: null }))
+    mySections.value = { known: false, allowed: [] }
+    occurrences.value = []
+    homework.value = []
+  })
+
+  it('неделя, следующий урок, остаток и до трёх работ со статусом; «Открыть» у ждущих ученика', async () => {
+    const onNav = vi.fn()
+    const { container, onOpenLesson } = renderHome({ token: 'T-group-1', isDemoAccount: false, onNav })
+    await waitFor(() => expect(container.querySelector('.hm-tl')).not.toBeNull())
+    const block = container.querySelector('.hm-tl')
+    expect(container.querySelector('.hm-near')).toBeNull()
+    expect(container.querySelector('.hm-sched')).toBeNull()
+    await waitFor(() => expect(block.querySelectorAll('.hm-week__day.has-lesson')).toHaveLength(1))
+    expect(block.querySelectorAll('.hm-week__day')[0].classList.contains('is-today')).toBe(true)
+    fireEvent.click(within(block).getByRole('button', { name: 'Подключиться' }))
+    expect(onOpenLesson).toHaveBeenCalledWith(7)
+    expect(await within(block).findByText('Осталось уроков: 9')).toBeTruthy()
+    await waitFor(() => expect(block.querySelectorAll('.hm-blk__row')).toHaveLength(3))
+    const rows = [...block.querySelectorAll('.hm-blk__row')]
+    expect(rows.map((r) => r.querySelector('.hm-blk__rowTitle').textContent)).toEqual(['Просроченная', 'Заданная', 'На проверке'])
+    expect(rows.map((r) => r.querySelector('.hm-blk__st').className)).toEqual([
+      'hm-blk__st hm-blk__st--late',
+      'hm-blk__st hm-blk__st--todo',
+      'hm-blk__st hm-blk__st--check',
+    ])
+    expect(within(block).getAllByRole('button', { name: 'Открыть' })).toHaveLength(2)
+    fireEvent.click(within(rows[0]).getByRole('button', { name: 'Открыть' }))
+    expect(onNav).toHaveBeenLastCalledWith('homework', { id: 4 })
+    fireEvent.click(within(block).getByRole('button', { name: 'Все →' }))
+    expect(onNav).toHaveBeenLastCalledWith('homework')
+    fireEvent.click(within(block).getByRole('button', { name: 'Расписание →' }))
+    expect(onNav).toHaveBeenLastCalledWith('lessons')
+  })
+
+  it('на пункте меню «Домашняя работа» — число просроченных и заданных', async () => {
+    const { container } = renderHome({ token: 'T-group-2', isDemoAccount: false })
+    await waitFor(() => expect(container.querySelector('.sb [data-nav="homework"] .sb__badge')?.textContent).toBe('2'))
+  })
+
+  it('Self Study — «Ближайшее» без строк «Нет уроков»', async () => {
+    mySections.value = { known: true, format: 'SELF', allowed: ['practice', 'speaking', 'vocabulary', 'review'] }
+    occurrences.value = []
+    homework.value = []
+    const { container } = renderHome({ token: 'T-self-1', isDemoAccount: false })
+    await waitFor(() => expect(container.querySelector('.hm-near')).not.toBeNull())
+    expect(container.querySelector('.hm-tl')).toBeNull()
+    expect(screen.getByText('Ближайших событий нет — продолжай по плану «Сегодня».')).toBeTruthy()
+    expect(screen.queryByText('Нет уроков')).toBeNull()
+  })
+})
+
 // «Что сделать сегодня»: рекомендация по реальным данным экрана, без сети и
 // без вызова помощника (см. lib/assistant/recommend.js).
 describe('Карточка «Что сделать сегодня»', () => {
@@ -459,6 +604,7 @@ describe('Карточка «Что сделать сегодня»', () => {
 
 // Телефон по дизайну приложения (спека 2026-10-26): разметка общая с компьютером, телефонные элементы скрыты CSS.
 describe('«Главная» телефона', () => {
+  phoneWidth()
   it('без теста — карточка уровня телефона с «?» и кнопкой теста', () => {
     const onStartLevelTest = vi.fn()
     const { container } = renderHome({ levelUnknown: true, onStartLevelTest })
@@ -479,7 +625,7 @@ describe('«Главная» телефона', () => {
     const goal = container.querySelector('.hm-level__goal')
     expect(goal.textContent).toContain('Изменить')
     fireEvent.click(goal)
-    expect(screen.getByText('Ваша цель')).toBeTruthy()
+    expect(screen.getByText('Твоя цель')).toBeTruthy()
   })
 
   it('расписание: семь дней, точка у дня с уроком, нажатие выбирает день', async () => {

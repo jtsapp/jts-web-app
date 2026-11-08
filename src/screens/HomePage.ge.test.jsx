@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { I18nProvider } from '../i18n.jsx'
 import { LanguageProvider } from '../i18n/LanguageContext.jsx'
 import HomePage from './HomePage.jsx'
-import { getGePlan } from '../api.js'
+import { getGePlan, getLessonModules, getLessonProgress } from '../api.js'
 
 // «Главная» General English (спека 2026-10-12, секция 3): верхний блок по профилю — прежняя карточка без профиля,
 // приглашение, следующий шаг и блок цели.
@@ -28,7 +28,7 @@ vi.mock('../api.js', () => ({
   getLessonModules: vi.fn(async () => []),
   getLessonProgress: vi.fn(async () => ({ done: [] })),
 }))
-vi.mock('../practice/skillStats.js', () => ({ readLocalSkillStats: () => ({}), loadSkillStatsRemote: vi.fn(async () => null) }))
+vi.mock('../practice/skillStats.js', () => ({ readLocalSkillStats: () => ({}), loadSkillStatsRemote: vi.fn(async () => null), readLocalLevelSkillStats: () => ({}), loadLevelSkillStatsRemote: vi.fn(async () => null) }))
 globalThis.ResizeObserver ??= class {
   observe() {}
   disconnect() {}
@@ -71,12 +71,12 @@ describe('HomePage — General English', () => {
   })
 
   // С 14.10.2026 анкету «Главной» заменила анкета теста v16. С редизайна (21.10.2026) до теста сверху баннер
-  // «Здесь будет ваш маршрут», а на месте «Сегодня» — «Начните отсюда»: обе кнопки ведут на тест.
-  it('анкеты нет — баннер «Здесь будет ваш маршрут» и «Начните отсюда» зовут на тест (с уровнем и без)', async () => {
+  // «Здесь будет твой маршрут», а на месте «Сегодня» — «Начни отсюда»: обе кнопки ведут на тест.
+  it('анкеты нет — баннер «Здесь будет твой маршрут» и «Начни отсюда» зовут на тест (с уровнем и без)', async () => {
     for (const levelUnknown of [false, true]) {
       const onGeStart = vi.fn()
       const { unmount } = renderHome({ geProfile: { onboarded: false }, levelUnknown, onGeStart })
-      await waitFor(() => expect(screen.getByText('Здесь будет ваш маршрут')).toBeTruthy())
+      await waitFor(() => expect(screen.getByText('Здесь будет твой маршрут')).toBeTruthy())
       expect(document.querySelector('.hm-level:not(.hm-level--phone)')).toBe(null)
       // телефон: карточка уровня замещает скрытый там блок GE (дизайн приложения)
       expect(document.querySelector('.hm-level--phone')).toBeTruthy()
@@ -94,37 +94,36 @@ describe('HomePage — General English', () => {
   it('учившийся до теста, анкеты нет — баннер зовёт на тест, маршрут не «закрыт»', async () => {
     const onGeStart = vi.fn()
     renderHome({ geProfile: { onboarded: false }, existingStudent: true, onGeStart })
-    await waitFor(() => expect(screen.getByText('Здесь будет ваш маршрут')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('Здесь будет твой маршрут')).toBeTruthy())
     expect(document.querySelector('.ge-locked')).toBe(null)
     fireEvent.click(within(document.querySelector('.ge-start.ge-invite')).getByRole('button', { name: 'Пройти тест уровня' }))
     expect(onGeStart).toHaveBeenCalled()
   })
 
-  // Решение владельца 21.10.2026: непройденный тест спрашивается в самом блоке «Результаты теста уровня» — у всех, кто
-  // без теста: «Не пройден», плитки навыков с прочерком и кнопка теста.
-  it('учившийся до теста с блоком цели — блок цели на месте, «Результаты теста уровня» пустые и зовут на тест', async () => {
-    const onStartLevelTest = vi.fn()
-    renderHome({ geProfile: goal, existingStudent: true, onStartLevelTest })
-    await waitFor(() => expect(document.querySelector('.pl-report--missing')).toBeTruthy())
-    expect(document.querySelector('.ge-goal')).toBeTruthy()
-    const card = document.querySelector('.pl-report--missing')
-    expect(within(card).getByText('Результаты теста уровня')).toBeTruthy()
-    expect(within(card).getByText('Не пройден')).toBeTruthy()
-    expect([...card.querySelectorAll('.pl-report__chip')].map((n) => n.textContent)).toEqual(['—', '—', '—', '—'])
-    fireEvent.click(within(card).getByRole('button', { name: 'Пройти тест уровня' }))
-    expect(onStartLevelTest).toHaveBeenCalledTimes(1)
+  // ТЗ v2.0, 5.5 и 5.7: длинного отчёта теста и «Что делать дальше» на «Главной» нет — они на своей странице
+  // (PlacementResultsPage.test.jsx), а в «Сильных и слабых сторонах» одна ссылка «Результаты теста →». Пустой блок
+  // «Не пройден» с кнопкой теста живёт там же (решение владельца 21.10.2026 — тест числится непройденным).
+  it('учившийся до теста с блоком цели — блок цели на месте, отчёта теста нет, ссылка ведёт на страницу результатов', async () => {
+    const onNav = vi.fn()
+    renderHome({ geProfile: goal, existingStudent: true, onNav })
+    await waitFor(() => expect(document.querySelector('.ge-goal')).toBeTruthy())
+    expect(document.querySelector('.pl-report')).toBe(null)
+    expect(document.querySelector('.pl-next')).toBe(null)
+    fireEvent.click(screen.getByRole('button', { name: 'Результаты теста →' }))
+    expect(onNav).toHaveBeenCalledWith('placement-results')
   })
 
-  it('новый ученик без теста — тот же пустой блок результатов', async () => {
+  it('новый ученик без теста — на «Главной» ни отчёта, ни пересдачи', async () => {
     renderHome({ geProfile: { onboarded: false } })
-    await waitFor(() => expect(document.querySelector('.pl-report--missing')).toBeTruthy())
-    expect(document.querySelector('.pl-report--missing').textContent).toContain('Уровень не определён')
+    await waitFor(() => expect(screen.getByText('Здесь будет твой маршрут')).toBeTruthy())
+    expect(document.querySelector('.pl-report')).toBe(null)
+    expect(screen.queryByRole('button', { name: 'Пройти тест заново' })).toBe(null)
   })
 
   it('анкета есть, формата нет — шаг «выберите формат»', async () => {
     const onGeRoute = vi.fn()
     renderHome({ geProfile: { ...goal, route: null }, onGeRoute })
-    await waitFor(() => expect(screen.getByText('Выберите, как будете заниматься')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('Выбери, как будешь заниматься')).toBeTruthy())
     fireEvent.click(within(document.querySelector('.ge-start')).getByRole('button', { name: 'Выбрать формат' }))
     fireEvent.click(within(document.querySelector('.hm-start')).getByRole('button', { name: 'Выбрать формат' }))
     expect(onGeRoute).toHaveBeenCalledTimes(2)
@@ -166,12 +165,58 @@ describe('HomePage — General English', () => {
     renderHome({ geProfile: goal, onNav })
     await waitFor(() => expect(document.querySelector('.ge-today')).toBeTruthy())
     expect(document.querySelector('.hm-recommend')).toBe(null)
-    expect(screen.getByText('Неделя: 1 из 6')).toBeTruthy()
-    expect(screen.getByText('6 / 15 мин')).toBeTruthy()
+    // шапка «Сегодня» по ТЗ v2.0 (5.2): сделанные минуты дня; у начатой практики — тип и «6 / 15 мин»
+    expect(screen.getByText('6 из 30 мин')).toBeTruthy()
+    expect(screen.getByText('Говорение · 6 / 15 мин')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Продолжить' }))
     expect(onNav).toHaveBeenCalledWith('tutor')
     fireEvent.click(screen.getByRole('button', { name: /Весь план/ }))
     expect(onNav).toHaveBeenCalledWith('ge-plan')
+  })
+
+  // ТЗ v2.0, 5.1 и 5.4. Уровень B1, а не A2 прочих тестов: каталог курса кэшируется по уровню на весь файл.
+  it('баннер: «Сейчас · урок N из M» по тропе, облачко — от минут дня; у Self Study — «Ближайшее» с тестом курса', async () => {
+    const index = {
+      level: 'B1',
+      units: [],
+      lessons: [1, 2, 3].map((n) => ({ n, unit: 1, no: n, title: `Lesson ${n}` })),
+      tests: [{ unit: 1, title: 'Unit 1 Review Test', items: 30, pass: 21 }],
+    }
+    fetch.mockImplementation(async (url) => ({
+      ok: true,
+      json: async () => (String(url).includes('/course/b1/index.json') ? index : { configured: false }),
+    }))
+    getLessonModules.mockResolvedValue([{ id: 9, level: 'B1' }])
+    getLessonProgress.mockResolvedValue({ done: ['L1'] })
+    getGePlan.mockResolvedValueOnce({
+      today: '2026-10-14',
+      state: 'ready',
+      route: 'self_study',
+      week: { done: 1, total: 6 },
+      liveMissing: false,
+      tasks: [
+        { id: 21, date: '2026-10-14', kind: 'practice', module: 'ai_tutor', minutes: 15, got: 15, status: 'completed', overdue: false },
+        { id: 22, date: '2026-10-14', kind: 'practice', module: 'vocabulary_sr', minutes: 15, got: 5, status: 'in_progress', overdue: false },
+      ],
+    })
+    const profile = {
+      ...goal,
+      fromLevel: 'B1',
+      deadline: { state: 'days', date: '2027-06-01', daysRemaining: 200, approximate: false },
+      journey: { start: 'B1', current: { level: 'B1', percent: 10 }, target: 'B2', reached: false },
+    }
+    renderHome({ geProfile: profile, userLevel: 'B1' })
+    await waitFor(() => expect(document.querySelector('.ge-goal .ih-gb__nowtag').textContent).toBe('Сейчас · урок 2 из 3'))
+    await waitFor(() => expect(document.querySelector('.ge-goal .ih-gb__bubble').textContent).toBe('Сегодня уже 20 мин. Так держать!'))
+    const near = document.querySelector('.hm-near')
+    expect(near).toBeTruthy()
+    expect(document.querySelector('.hm-tl')).toBe(null)
+    expect(within(near).getByText('Unit 1 Review Test')).toBeTruthy()
+    expect(within(near).getByText('30 вопросов · после урока 3')).toBeTruthy()
+    // 7 строк «Нет уроков» прежнего расписания на компьютере больше нет (ТЗ 5.7)
+    expect(screen.queryByText('Нет уроков')).toBe(null)
+    getLessonModules.mockReset().mockResolvedValue([])
+    getLessonProgress.mockReset().mockResolvedValue({ done: [] })
   })
 
   it('группа без занятий — плашка «запишитесь», план без ручки — прежняя карточка', async () => {
@@ -230,7 +275,7 @@ describe('HomePage — тур общего курса', () => {
     expect(within(hello).getByText('Сакен')).toBeTruthy()
     fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
 
-    const first = await screen.findByRole('dialog', { name: 'Здесь виден ваш прогресс' })
+    const first = await screen.findByRole('dialog', { name: 'Здесь виден твой прогресс' })
     expect(first.querySelectorAll('.t-tour__dots i')).toHaveLength(3)
     next(first)
     next(await screen.findByRole('dialog', { name: 'Ближайшие уроки и домашка' }))
@@ -262,7 +307,7 @@ describe('HomePage — тур общего курса', () => {
         fireEvent.click(within(hello).getByRole('button', { name: 'Пропустить' }))
       } else {
         fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
-        await walkHints('Здесь будет ваш маршрут')
+        await walkHints('Здесь будет твой маршрут')
       }
       await waitFor(() => expect(onGeStart).toHaveBeenCalledTimes(1))
       // окно «Жёсткий режим» ждёт возвращения с пройденным тестом: поверх закрытого роадмапа его нет

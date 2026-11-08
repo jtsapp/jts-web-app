@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { gateReply } from './helpers/login.js'
 
 // Анкета General English на «Главной» (спека 2026-10-12): правка цели — три шага и снова маршрут. Бэкенд подменён —
 // проверяем экраны и запросы.
@@ -33,6 +34,9 @@ async function setup(page, initial) {
   await page.route(/justtostudy\.kz/, (route) => {
     const req = route.request()
     const url = req.url()
+    // Замки кабинета (документы, разделы тарифа) — иначе они встают поверх экрана (helpers/login.js).
+    const gate = gateReply(url)
+    if (gate) return route.fulfill(json(gate))
     if (url.includes('/mobile/ge/profile/route')) {
       state.profile = { ...state.profile, route: JSON.parse(req.postData()).route }
       return route.fulfill(json(state.profile))

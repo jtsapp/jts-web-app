@@ -29,7 +29,7 @@ export const LIVE_STALE_AFTER_MS = 3 * 60 * 60000
 // LIVE_STALE_AFTER_MS: забытый незакрытый урок прошлой недели не идёт.
 export function findLiveOccurrence(occurrences, now = new Date()) {
   const live = (occurrences || []).filter(
-    (o) => isLessonLive(o.lessonStatus) && endOf(o).getTime() + LIVE_STALE_AFTER_MS >= now.getTime()
+    (o) => !o.frozen && isLessonLive(o.lessonStatus) && endOf(o).getTime() + LIVE_STALE_AFTER_MS >= now.getTime()
   )
   if (live.length === 0) return null
   // Если почему-то идут два — берём тот, что начался раньше: он и есть текущий.
@@ -45,6 +45,6 @@ export function pickFeaturedOccurrence(occurrences, now = new Date()) {
   if (live) return live
 
   return (occurrences || [])
-    .filter((o) => o.lessonStatus === 'SCHEDULED' && endOf(o) >= now)
+    .filter((o) => !o.frozen && o.lessonStatus === 'SCHEDULED' && endOf(o) >= now)
     .sort((a, b) => parseLessonDate(a.scheduledAt) - parseLessonDate(b.scheduledAt))[0] || null
 }

@@ -43,6 +43,18 @@ describe('снимок экрана', () => {
     expect(snap.match(/\[поле ввода\]/g)).toHaveLength(3)
   })
 
+  // Игра: «Проверить» нет, ответ — нажатием варианта; область задания помечена, и снимок говорит об этом строкой.
+  it('пишет пометку задания data-assistant-task перед его текстом', () => {
+    const root = mount(`
+      <main data-assistant-task="игра: вариант выбирают нажатием">
+        <p>She ___ (go) to school yesterday.</p>
+        <button>goed</button><button>went</button>
+      </main>`)
+    const snap = snapshotScreen(root)
+    expect(snap).toMatch(/^\[задание: игра: вариант выбирают нажатием\]\nShe ___ \(go\) to school yesterday\./)
+    expect(snap).toContain('[кнопка «went»]')
+  })
+
   it('пропускает скрытое и помеченное data-assistant-ignore', () => {
     const root = mount(`
       <p>видно</p>

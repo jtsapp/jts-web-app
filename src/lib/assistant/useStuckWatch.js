@@ -42,20 +42,23 @@ function mediaPlaying(doc) {
 }
 
 /**
- * @param {{ active: boolean, screen: string|null, canOffer?: () => boolean, rootSelector?: string,
- *           opts?: Partial<typeof STUCK> }} p
- * @returns {{ offer: null | { reason: 'errors'|'idle' }, take: () => ('errors'|'idle'|null) }}
+ * onWrong — каждая новая неверная проверка на экране (и когда облачко не выходит): вернул true — окно само дало
+ * следующую ступень подсказки (на задании она уже была, hintSteps.js), облачка не нужно.
+ *
+ * @param {{ active: boolean, screen: string|null, canOffer?: () => boolean, onWrong?: () => boolean,
+ *           rootSelector?: string, opts?: Partial<typeof STUCK> }} p
+ * @returns {{ offer: null | { reason: 'errors'|'idle'|'idle2' }, take: () => ('errors'|'idle'|'idle2'|null), dismiss: () => void }}
  */
-export function useStuckWatch({ active, screen, canOffer, rootSelector = SCREEN_ROOT, opts }) {
+export function useStuckWatch({ active, screen, canOffer, onWrong, rootSelector = SCREEN_ROOT, opts }) {
   const [offer, setOffer] = useState(null)
   // Счётчик живёт весь визит: «дважды не нажал — больше не показываем» держится до перезагрузки.
   const [tracker] = useState(() => createStuckTracker(opts))
   const idleMs = opts?.idleMs ?? STUCK.idleMs
   const showMs = opts?.showMs ?? STUCK.showMs
   // Свежие значения для слушателей: они живут дольше одного рендера.
-  const live = useRef({ active, screen, canOffer })
+  const live = useRef({ active, screen, canOffer, onWrong })
   useLayoutEffect(() => {
-    live.current = { active, screen, canOffer }
+    live.current = { active, screen, canOffer, onWrong }
   })
   const offerRef = useRef(null)
   const hideTimer = useRef(null)
@@ -63,9 +66,10 @@ export function useStuckWatch({ active, screen, canOffer, rootSelector = SCREEN_
   const drop = useCallback((ignored) => {
     clearTimeout(hideTimer.current)
     if (!offerRef.current) return
+    const { reason } = offerRef.current
     offerRef.current = null
     setOffer(null)
-    if (ignored) tracker.ignored()
+    if (ignored) tracker.ignored(reason)
   }, [tracker])
 
   const show = useCallback(
@@ -100,10 +104,18 @@ export function useStuckWatch({ active, screen, canOffer, rootSelector = SCREEN_
       if (cur.canOffer && !cur.canOffer()) return null
       return root
     }
+    // Ошибки считаем и когда облачку нельзя (окно открыто — ученик отвечает после подсказки): по ним окно даёт
+    // следующую ступень. Облачко и его пауза — только когда можно.
     const scan = () => {
-      const root = rootIfFree()
-      if (!root) return
-      const reason = tracker.observe({ screen: live.current.screen, text: snapshotScreen(root), now: Date.now() })
+      const cur = live.current
+      if (!cur.active) return
+      const root = doc.querySelector(rootSelector)
+      if (!root || stuckBlocked(root, doc)) return
+      const free = !offerRef.current && (!cur.canOffer || cur.canOffer())
+      const before = tracker.wrongs()
+      const reason = tracker.observe({ screen: cur.screen, text: snapshotScreen(root), now: Date.now(), quiet: !free })
+      // Ошибка — окну: если на этом задании подсказка уже была, оно даст следующую ступень само, а не облачком.
+      if (tracker.wrongs() > before && live.current.onWrong?.()) return
       if (reason) show(reason)
     }
     const inScreen = (e) => {
@@ -113,8 +125,8 @@ export function useStuckWatch({ active, screen, canOffer, rootSelector = SCREEN_
     const onCheck = (e) => {
       lastActionAt = Date.now()
       if (!inScreen(e)) return
-      // Ученик снова взялся за задание сам — облачко уходит, оно ему не понадобилось.
-      if (offerRef.current) return drop(true)
+      // Ученик снова взялся за задание сам — облачко уходит, оно ему не понадобилось (но ответ всё равно смотрим).
+      if (offerRef.current) drop(true)
       if (e.type === 'keydown' && e.key !== 'Enter') return
       // Экран — каким его оставило прошлое действие: слушатель в фазе захвата, клик его
       // ещё не поменял. Иначе «Продолжить» быстрее 0.8 с после ошибки увёл бы её с экрана
@@ -171,5 +183,9 @@ export function useStuckWatch({ active, screen, canOffer, rootSelector = SCREEN_
     return o.reason
   }, [tracker])
 
-  return { offer, take }
+  // Окно открылось само (Луна пишет первой) — облачко не нужно, но и пропущенным оно не было: раньше это делал выход
+  // active → false, а теперь наблюдение при открытом окне идёт (ошибки нужны ступеням подсказки).
+  const dismiss = useCallback(() => drop(false), [drop])
+
+  return { offer, take, dismiss }
 }

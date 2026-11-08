@@ -56,6 +56,10 @@ services:
       IELTS_GRADER_KEY: ${IELTS_GRADER_KEY:-}
       # Модель разбора IELTS; пусто → claude-sonnet-5-5 (дефолт в src/lib/anthropic.js)
       IELTS_REVIEW_MODEL: ${IELTS_REVIEW_MODEL:-}
+      # Луна: модель ответов учителя английского; пусто → claude-sonnet-5-5 (src/lib/assistant/model.js).
+      # Откат на Haiku без правки кода — claude-haiku-5-5. Effort — low | medium | high, пусто → low.
+      ASSISTANT_TEACHER_MODEL: ${ASSISTANT_TEACHER_MODEL:-}
+      ASSISTANT_TEACHER_EFFORT: ${ASSISTANT_TEACHER_EFFORT:-}
       # Кэш озвучки /api/tts — общий для dev и прода Redis из
       # compose-redis.yaml (имя tts-redis в сети jts-tts-redis). Не секрет,
       # поэтому дефолт здесь, а не в GitLab.

@@ -45,6 +45,10 @@ const PRELUDE =
   "(function(){try{var q=new URLSearchParams(location.search);var l=q.get('lang');" +
   "window.JTS_HOST={lang:['ru','kk','en'].indexOf(l)>=0?l:null,ns:(q.get('ns')||'').replace(/[^A-Za-z0-9_-]/g,'').slice(0,64)}" +
   '}catch(e){window.JTS_HOST={lang:null,ns:\'\'}}' +
+  // Анкета целей: «Зачем мы спрашиваем» под подзаголовком каждого шага (кейс 35 ТЗ v2.0, 7.2в; патч goals-why). Язык —
+  // тот, что тест сам ставит на <html lang> (при переключении внутри теста тоже), иначе из адреса.
+  'var W={"ru":["Зачем мы спрашиваем: по цели соберём маршрут и подберём темы заданий.","Зачем мы спрашиваем: чем точнее цель, тем точнее план и примеры в заданиях.","Зачем мы спрашиваем: так поймём, на каких ситуациях тренироваться в первую очередь.","Зачем мы спрашиваем: задания будут ближе к тому, что тебе интересно.","Зачем мы спрашиваем: план дня впишется в твоё время, а срок будет честным.","Проверь ответы: по ним после теста соберём маршрут и первый шаг."],"kk":["Неге сұраймыз: мақсатқа қарай маршрут құрып, тапсырма тақырыптарын таңдаймыз.","Неге сұраймыз: мақсат неғұрлым нақты болса, жоспар мен мысалдар да соғұрлым дәл.","Неге сұраймыз: алдымен қандай жағдайларда жаттығу керегін түсінеміз.","Неге сұраймыз: тапсырмалар саған қызықты нәрсеге жақын болады.","Неге сұраймыз: күн жоспары уақытыңа сыяды, ал мерзім шынайы болады.","Жауаптарыңды тексер: тесттен кейін солар бойынша маршрут пен алғашқы қадамды құрамыз."],"en":["Why we ask: your goal shapes your route and the topics of your tasks.","Why we ask: the more precise the goal, the more precise your plan and examples.","Why we ask: it tells us which situations to practise first.","Why we ask: tasks will be closer to what interests you.","Why we ask: your daily plan will fit your time, and the deadline will be realistic.","Check your answers: after the test we’ll build your route and first step from them."]};' +
+  "window.JTS_GOALS_WHY=function(s){var l=(document.documentElement.lang||(window.JTS_HOST&&window.JTS_HOST.lang)||'ru').slice(0,2);return (W[l]||W.ru)[s]||''};" +
   // Картинки макета по позам экрана (патч skin-images): остальные позы рисует автор.
   "window.JTS_SKIN_IMG={welcome:'skin/intro.webp',result:'skin/result.webp'};})();</script>"
 
@@ -160,6 +164,14 @@ const PATCHES = [
     'speaking-retry-result-action',
   ],
   ...skinPatches(),
+  ...addressPatches(),
+  // «Зачем мы спрашиваем» на каждом шаге анкеты (кейс 35 ТЗ v2.0): тексты — JTS_GOALS_WHY прелюдии. Шаги, а не
+  // вопросы: вопросов у анкеты десятки, и они зависят от цели; объяснение шага покрывает их все.
+  [
+    '<p>${esc(u(subtitles[d.step]))}</p></header>',
+    '<p>${esc(u(subtitles[d.step]))}</p>${window.JTS_GOALS_WHY&&window.JTS_GOALS_WHY(d.step)?`<p class="go-why">${esc(window.JTS_GOALS_WHY(d.step))}</p>`:\'\'}</header>',
+    'goals-why',
+  ],
 ]
 
 // Скин по макету «Регистрация → 2 · Цели и маршрут, 3 · Тест уровня» (Figma, 21.10.2026). Вид задаёт skin.css (рядом
@@ -215,7 +227,7 @@ function skinPatches() {
     ],
     [
       "<h1>${t('welcome')}<br><span>JTS Placement Test</span></h1>",
-      "<h1>${lang==='ru'?'Давайте определим<br>ваш уровень':lang==='kk'?'Деңгейіңізді<br>анықтайық':'Let’s find<br>your level'}</h1>",
+      "<h1>${lang==='ru'?'Давай определим<br>твой уровень':lang==='kk'?'Деңгейіңді<br>анықтайық':'Let’s find<br>your level'}</h1>",
       'skin-welcome-title',
     ],
     [
@@ -281,6 +293,37 @@ function skinPatches() {
       '<small>${esc(u(\'saveNote\'))}</small></footer></div>${jtsGoalsPanel()}</section>`,u(\'goalsLabel\'));',
       'skin-goals-panel',
     ],
+  ]
+}
+
+// Обращение — «ты» / «сен» и без родовых форм (ТЗ v2.0 «Луна-трекер», 7.2в: онбординг тоже на «ты»; решение владельца 7:
+// «ты» везде, без «готов(а)»). Тест автора почти весь уже на «ты»; здесь — оставшиеся строки: пять форм с «(а)» в русском
+// и вежливые «-ңыз/-сыз» в казахском. «Что вы чаще обсуждаете…» и «Как вы общаетесь…» не трогаем: там «вы» — ученик
+// вместе с коллегами и друзьями, а не вежливость (в казахском у них «-сыңдар»). «Проверьте ссылки…» — подпись для
+// преподавателя. Новая версия автора, где строку поправили сами, уронит сборку — тогда патч просто убрать.
+function addressPatches() {
+  return [
+    ['Не уверен(а) в произношении', 'Сомневаюсь в произношении', 'address-ru-pronunciation'],
+    ['хочешь решать сам(а)?', 'хочешь решать без помощи?', 'address-ru-hotels'],
+    ['Какой небольшой разговор ты хотел(а) бы провести уже скоро?', 'Какой небольшой разговор тебе хочется провести уже скоро?', 'address-ru-small-talk'],
+    ['Сколько времени ты реально готов(а) уделять английскому?', 'Сколько времени ты реально можешь уделять английскому?', 'address-ru-availability'],
+    ['Ты пока не указал(а) личную цель.', 'Личной цели пока нет.', 'address-ru-no-goals'],
+    ["welcome:'Қош келдіңіз',placement:", "welcome:'Қош келдің',placement:", 'address-kk-welcome'],
+    ["welcome:'Қош келдіңіз',readingTitle:", "welcome:'Қош келдің',readingTitle:", 'address-kk-welcome-sections'],
+    ['Ағылшын тілі деңгейіңізді анықтап', 'Ағылшын тілі деңгейіңді анықтап', 'address-kk-intro'],
+    ['Бөлімді таңдаңыз', 'Бөлімді таңда', 'address-kk-sections'],
+    ['басқа бөлімдерге өте аласыз.', 'басқа бөлімдерге өте аласың.', 'address-kk-audio-pending'],
+    ['Еркін жауап беріңіз.', 'Еркін жауап бер.', 'address-kk-speaking-help'],
+    ['Бар нәтижені көре аласыз.', 'Бар нәтижені көре аласың.', 'address-kk-buddy-problem'],
+    ['Браузерді тексеріңіз.', 'Браузерді тексер.', 'address-kk-sound-fail'],
+    ['өзіңізді қаншалықты еркін сезінесіз?', 'өзіңді қаншалықты еркін сезінесің?', 'address-kk-self-title'],
+    ['Өзіңізге жақын нұсқаны таңдаңыз.', 'Өзіңе жақын нұсқаны таңда.', 'address-kk-self-subtitle'],
+    ['деңгей жауаптарыңызға байланысты', 'деңгей жауаптарыңа байланысты', 'address-kk-self-note'],
+    ['АҒЫЛШЫН ТІЛІҢІЗ', 'АҒЫЛШЫН ТІЛІҢ', 'address-kk-self-eyebrow'],
+    ['Мәтінді оқыңыз', 'Мәтінді оқы', 'address-kk-reading-title'],
+    ['Әр сұраққа жауап беріңіз немесе «Білмеймін» таңдаңыз.', 'Әр сұраққа жауап бер немесе «Білмеймін» таңда.', 'address-kk-read-one'],
+    ['Бөлімдерді еркін ауыстыра аласыз.', 'Бөлімдерді еркін ауыстыра аласың.', 'address-kk-guide'],
+    ['Өз қарқыныңызбен.', 'Өз қарқыныңмен.', 'address-kk-pace'],
   ]
 }
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import QuestionScreen from '../sat/question/QuestionScreen.jsx'
 import useSatSession from '../sat/question/useSatSession.js'
 import { counts } from '../sat/question/session.js'
-import { pick } from '../sat/model/profile.js'
+import { domainName, skillName } from '../sat/names.js'
 import SAMPLE from '../sat/question/sample.json'
 import TAXONOMY from '../sat/data/taxonomy.json'
 import { useI18n } from '../i18n.jsx'
@@ -66,11 +66,11 @@ export default function SatRunPage({ onNav }) {
   let title
   let subtitle
   if (mode === 'study') {
-    title = t('sat.sample.studyTitle', { skill: skill ? pick({ en: skill.name_en, ru: skill.name_ru, kk: skill.name_kk }, lang) : '' })
+    title = t('sat.sample.studyTitle', { skill: skill ? skillName(skill.id, lang) : '' })
     subtitle = t('sat.sample.studySub', { n, total })
   } else if (mode === 'diagnostic') {
     title = t('sat.sample.diagTitle', { section: sectionName })
-    subtitle = domain ? pick({ en: domain.name_en, ru: domain.name_ru, kk: domain.name_kk }, lang) : ''
+    subtitle = domain ? domainName(domain.id, lang) : ''
   } else {
     title = t('sat.sample.examTitle', { section: sectionName })
     subtitle = t('sat.sample.examSub')
@@ -92,9 +92,7 @@ export default function SatRunPage({ onNav }) {
       study={mode === 'study' ? {
         skillLabel: (d) => {
           const s = TAXONOMY.skills.find((x) => x.id === d.skillId)
-          const dm = TAXONOMY.domains.find((x) => x.id === s?.domain)
-          const name = (o) => (o ? pick({ en: o.name_en, ru: o.name_ru, kk: o.name_kk }, lang) : '')
-          return [name(dm), name(s)].filter(Boolean).join(' · ')
+          return [s && domainName(s.domain, lang), s && skillName(s.id, lang)].filter(Boolean).join(' · ')
         },
       } : undefined}
     />

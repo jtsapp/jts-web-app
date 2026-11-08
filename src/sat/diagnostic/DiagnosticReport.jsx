@@ -2,7 +2,8 @@ import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
 import { ArrowForwardIcon, FlagIcon, InfoIcon, MenuBookIcon } from '../../ielts/icons.jsx'
 import { RouteIcon, SigmaIcon } from '../icons.jsx'
-import { bands, phaseKey } from '../model/plan.js'
+import { bands } from '../model/plan.js'
+import TimingBanner from '../plan/TimingBanner.jsx'
 import { domainShares } from '../model/profile.js'
 import { TAXONOMY, domainName, domainSection } from '../names.js'
 
@@ -33,10 +34,11 @@ function Dots({ correct, total }) {
 
 /**
  * Карта по итогам диагностики (Figma SAT 9). Не балл SAT — доля верных по секциям и доменам, три полосы и два
- * приоритета, с которых откроется план. startPhase — фаза первой недели плана (её и называет макет).
- * Первый раз ведёт к времени на занятия (Figma 10); когда план уже есть — к плану и к повторной диагностике.
+ * приоритета, с которых откроется план. startKey — ключ первой фазы с занятиями (её и называет макет).
+ * Внизу (Figma «NEW 2», 17:1194): «Посмотреть план» (onRoadmap — роудмап поверх отчёта) и «Дальше: Bluebook Test N»
+ * (onNext — «План» с открытой фазой 1, где вводятся баллы теста; nextTest — его номер).
  */
-export default function DiagnosticReport({ result, finishedAt, startPhase, planExists, stale, busy, onRoadmap, onNext, onRetake, onPlan, onRebuild }) {
+export default function DiagnosticReport({ result, finishedAt, startKey, timing, nextTest = 6, onManager, onRoadmap, onNext }) {
   const { t, lang } = useI18n()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const total = result.total || 0
@@ -54,7 +56,7 @@ export default function DiagnosticReport({ result, finishedAt, startPhase, planE
       domain: domainName(first, lang),
       pct: String(share ?? ''),
       section: section === 'math' ? 'Math' : 'R&W',
-      phase: t(`sat.phase.${phaseKey(startPhase)}`),
+      phase: t(`sat.phase.${startKey || 'foundations1'}`),
     })
   }
 
@@ -136,28 +138,17 @@ export default function DiagnosticReport({ result, finishedAt, startPhase, planE
         <p className="st-rep__paper"><InfoIcon size={18} />{t('sat.rep.paperItems', { n: String(result.paperItems) })}</p>
       )}
 
-      {planExists && stale && (
-        // Нет в Figma: план построен до этого результата — адаптация прототипа diagnostic.js (diag.planStale)
-        <div className="st-rep__stale">
-          <span>{t('sat.rep.stale')}</span>
-          <button type="button" className="ih-btn ih-btn--outline" disabled={busy} onClick={onRebuild}>{t('sat.plan.rebuild')}</button>
-        </div>
-      )}
+      {/* план строится впервые — сразу видно, помещается ли он до экзамена (задача 4) */}
+      <TimingBanner timing={timing} onManager={onManager} />
 
       <div className="st-rep__foot">
         <span className="st-muted">{t('sat.rep.footNote')}</span>
         <span className="st-spacer" />
-        {planExists ? (
-          <>
-            <button type="button" className="ih-btn ih-btn--outline st-rep__btn" onClick={onRetake}>{t('sat.dx.retake')}</button>
-            <button type="button" className="ih-cta st-rep__cta" onClick={onPlan}>{t('sat.rep.toPlan')}<ArrowForwardIcon size={20} /></button>
-          </>
-        ) : (
-          <>
-            <button type="button" className="ih-btn ih-btn--outline st-rep__btn" onClick={onRoadmap}><RouteIcon size={20} />{t('sat.rep.roadmap')}</button>
-            <button type="button" className="ih-cta st-rep__cta" onClick={onNext}>{t('sat.rep.next')}<ArrowForwardIcon size={20} /></button>
-          </>
-        )}
+        {/* после диагностики — сразу готовое расписание группы, без шага настройки (ТЗ 21.10, задача 3.1). «Пройти
+            заново» нет (решение владельца 08.11.2026): диагностика — база плана, повтор с известными ответами завышает
+            балл; пересдать можно только после сброса куратором в админке */}
+        <button type="button" className="ih-btn ih-btn--outline st-rep__btn" onClick={onRoadmap}><RouteIcon size={20} />{t('sat.rep.roadmap')}</button>
+        <button type="button" className="ih-cta st-rep__cta" onClick={onNext}>{t('sat.rep.next', { n: String(nextTest) })}<ArrowForwardIcon size={20} /></button>
       </div>
     </main>
   )

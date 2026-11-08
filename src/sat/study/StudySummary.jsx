@@ -36,8 +36,8 @@ function tileLabel(it, t) {
 
 /**
  * «Занятие выполнено» (Figma SAT 28): самостоятельные ответы отдельно от взятых с помощью (только первые идут в
- * mastery), навык занятия — статус до и после, плитки вопросов с типом ошибки или помощи, когда вернутся ошибки,
- * следующее занятие плана.
+ * mastery), навык занятия — статус до и после, плитки вопросов с типом ошибки или помощи, когда вернутся ошибки.
+ * Следующее занятие ставит группа (ТЗ 21.10), его показывает «Сегодня», а не итог сессии.
  */
 export default function StudySummary({ summary, skillIds, onPlan, planLabel, onErrors }) {
   const { t, lang } = useI18n()
@@ -46,7 +46,6 @@ export default function StudySummary({ summary, skillIds, onPlan, planLabel, onE
   const time = summary.timeSec || 0
   const names = skillIds.map((s) => skillName(s, lang)).join(' · ')
   const skill = summary.skills?.[0]
-  const next = summary.nextLesson
 
   return (
     <main className="st-sum">
@@ -104,9 +103,6 @@ export default function StudySummary({ summary, skillIds, onPlan, planLabel, onE
           <button type="button" className="ih-btn ih-btn--outline st-rep__btn" onClick={onErrors}><ReplayIcon size={20} />{t('sat.sum.reviewErrors')}</button>
         )}
         <span className="st-spacer" />
-        {next && (
-          <span className="st-muted">{t('sat.sum.next', { when: fmt(next.date, { weekday: 'short', day: 'numeric', month: 'short' }), skills: next.skillIds.map((s) => skillName(s, lang)).join(' · ') })}</span>
-        )}
         <button type="button" className="ih-cta st-rep__cta" onClick={onPlan}>{planLabel || t('sat.sum.toPlan')}<ArrowForwardIcon size={20} /></button>
       </div>
     </main>

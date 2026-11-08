@@ -387,8 +387,18 @@ export function removeHomeworkAnswer(token, id, materialId) {
   return authDelete(`/admin/homework/${id}/submission-materials/${materialId}`, token)
 }
 
-export function submitHomework(token, id) {
-  return authPut(`/admin/homework/${id}/submit`, token)
+// hintLevels — ступени подсказки Луны по заданиям работы ({ "<exerciseId>": 1|2 }, ТЗ v2.0 7.2б; backend V543, контракт
+// homework-hint-contract.md): то, что не ушло сразу ручкой …/hint. Тело необязательное — без ступеней PUT пустой, как
+// раньше; прежний бэкенд тело сдачи не читает.
+export function submitHomework(token, id, { hintLevels = null } = {}) {
+  const body = hintLevels && Object.keys(hintLevels).length ? { hintLevels } : null
+  return authPut(`/admin/homework/${id}/submit`, token, body)
+}
+
+// Ступень подсказки Луны по заданию домашки — сразу, как Луна её дала (1 — наводка, 2 — правило и пример; ответа в
+// домашке нет). Сервер хранит максимум, повтор безопасен; штрафа нет, преподаватель видит метку в проверке.
+export function saveHomeworkHint(id, exerciseId, token, hintLevel) {
+  return authPut(`/admin/homework/${id}/exercises/${exerciseId}/hint`, token, { hintLevel })
 }
 
 // Ответ на задание, взятое преподавателем с живого урока. Правильность считает
@@ -783,6 +793,22 @@ export function moveGeTask(token, id, date) {
 /** Ученик отмечает своё задание преподавателя («Своё задание», kind custom) выполненным или снимает отметку. */
 export function markGeTaskDone(token, id, done) {
   return authPut(`/mobile/ge/plan/tasks/${encodeURIComponent(id)}/done`, token, { done: !!done })
+}
+
+/**
+ * «У меня мало времени» (ТЗ v2.0, 5.2): сегодняшний день плана под minutes (5–180; экран даёт 10/20/30), null —
+ * обычный план. Ответ — план, как у getGePlan, плюс replan { minutes, kept, moved } (backend docs/ge/PLAN.md).
+ */
+export async function replanGeDay(token, minutes) {
+  return gePlanShape(await authPost('/mobile/ge/plan/replan', token, { minutes: minutes || null }))
+}
+
+/**
+ * «На сегодня всё» (ТЗ v2.0, 7.2 day_stopped): сделанное засчитывается, оставшиеся свои задачи дня — на следующий учебный
+ * день. Ответ — план, как у getGePlan, плюс stop { done, moved } (backend docs/ge/PLAN.md). Вернуть день — replanGeDay(null).
+ */
+export async function stopGeDay(token) {
+  return gePlanShape(await authPost('/mobile/ge/plan/stop-day', token, {}))
 }
 
 // Работа ученика в самостоятельном уроке: ответы, проверенные карточки и
@@ -1884,30 +1910,79 @@ export function submitSatDiagnostic(token, id, body) {
   return authPost(`/mobile/sat/diagnostic/${encodeURIComponent(id)}/submit`, token, body)
 }
 
-export function getSatPlan(token) {
-  return authGet('/mobile/sat/plan', token)
+/** Фазы плана по ТЗ 21.10 — одна структура для дашборда, «Плана» и счётчиков: { roadmap, examDate, inGroup, selfPrep, tests }. */
+export function getSatRoadmap(token) {
+  return authGet('/mobile/sat/roadmap', token)
 }
 
-/** Дни (1 = пн) и минуты: первый раз строит план, дальше пересобирает недели впереди. */
-export function saveSatPlan(token, body) {
-  return authPut('/mobile/sat/plan', token, body)
+/** Занятия группы студента: { inGroup, groups, lessons, attended, lessonCount, packages }. */
+export function getSatSchedule(token) {
+  return authGet('/mobile/sat/schedule', token)
 }
 
-export function rebuildSatPlan(token) {
-  return authPost('/mobile/sat/plan/rebuild', token, {})
+/** «Все вопросы» (задача 8): банк секции по навыкам, клетка [id, сложность, 1 · 0 · null]. */
+export function getSatBank(token, section) {
+  return authGet(`/mobile/sat/bank?section=${encodeURIComponent(section)}`, token)
 }
 
-/** { status: 'done' | 'skipped' | 'planned' } или { date: 'ГГГГ-ММ-ДД' } — перенести. */
-export function updateSatLesson(token, lessonId, body) {
-  return authPatch(`/mobile/sat/plan/lessons/${encodeURIComponent(lessonId)}`, token, body)
+/** Разбор уже решённого вопроса банка: { question, given, correct, answer, explanation, distractors }. */
+export function getSatBankReview(token, qid) {
+  return authGet(`/mobile/sat/bank/questions/${encodeURIComponent(qid)}/review`, token)
 }
 
-/** Навык из разбора пробника — в ближайшее занятие плана → { added, lesson, plan }; added=false — уже есть на неделе. */
-export function addSatPlanSkill(token, skillId) {
-  return authPost('/mobile/sat/plan/skills', token, { skillId })
+/** Вопрос банка без ключа — решать по одному (режим «Все вопросы»). */
+export function getSatQuestion(token, qid) {
+  return authGet(`/mobile/sat/questions/${encodeURIComponent(qid)}`, token)
 }
 
-/** Учебная сессия: { lessonId } — занятие плана; { skillIds, count } — по навыкам. Незаконченное занятие продолжается. */
+/** Подсказка index (с нуля) к вопросу банка вне сессии. */
+export function getSatQuestionHint(token, qid, index) {
+  return authGet(`/mobile/sat/questions/${encodeURIComponent(qid)}/hints/${index}`, token)
+}
+
+/** «Задания на сегодня» (задача 11): { practiceToday, openErrors, reviewedToday, mock, weakSkill } — факты дня. */
+export function getSatTodayTasks(token, skills = [], section) {
+  const q = new URLSearchParams()
+  skills.forEach((s) => q.append('skills', s))
+  if (section) q.set('section', section)
+  return authGet(`/mobile/sat/today-tasks?${q.toString()}`, token)
+}
+
+/** «Работа над ошибками» (задача 9): { items, stats } — неверные и неотвеченные с причиной и источником. */
+export function getSatErrorLog(token) {
+  return authGet('/mobile/sat/error-log', token)
+}
+
+/** Разбор ошибки: { item, question, given, answer, explanation, distractors }. */
+export function getSatErrorReview(token, id) {
+  return authGet(`/mobile/sat/error-log/${encodeURIComponent(id)}`, token)
+}
+
+/** Уроки гида по Desmos, отмеченные «изучено» (задача 17): [id]. */
+export function getSatGuideStudied(token) {
+  return authGet('/mobile/sat/guide/studied', token)
+}
+
+export function markSatGuideStudied(token, lessonId, studied) {
+  return authPut(`/mobile/sat/guide/studied/${encodeURIComponent(lessonId)}`, token, { studied })
+}
+
+/** Перенести отметки из браузера в аккаунт — только добавляет. */
+export function importSatGuideStudied(token, lessonIds) {
+  return authPost('/mobile/sat/guide/studied/import', token, { lessonIds })
+}
+
+/** Bluebook Test 6 → 8 → 10: баллы с приростом и снимки карты доменов. */
+export function getSatBluebook(token) {
+  return authGet('/mobile/sat/bluebook', token)
+}
+
+/** Ввести баллы теста 6, 8 или 10: { rw, math, takenOn } — уходит на подтверждение куратору. */
+export function submitSatBluebook(token, test, body) {
+  return authPost(`/mobile/sat/bluebook/${encodeURIComponent(test)}`, token, body)
+}
+
+/** Учебная сессия: { mode, skillIds, count } — практика по навыкам, { unitCode } — набор юнита (продолжается, если не закончен). */
 export function startSatSession(token, body) {
   return authPost('/mobile/sat/sessions', token, body)
 }
@@ -1983,29 +2058,6 @@ export function startSatDaily(token) {
 /** Сдать проверку разом: { answers, times }. */
 export function submitSatDaily(token, id, body) {
   return authPost(`/mobile/sat/daily/${encodeURIComponent(id)}/submit`, token, body)
-}
-
-/** Словарь SAT: дневная цель, оценено сегодня, расписание SM-2 по слову, свои слова (колода — public/sat/vocab). */
-export function getSatVocab(token) {
-  return authGet('/mobile/sat/vocab', token)
-}
-
-/** Оценить карточку: 0 «Снова», 3 «Трудно», 4 «Хорошо», 5 «Легко». */
-export function gradeSatVocab(token, wordId, grade) {
-  return authPost('/mobile/sat/vocab/grade', token, { wordId, grade })
-}
-
-export function setSatVocabGoal(token, goal) {
-  return authPut('/mobile/sat/vocab/goal', token, { goal })
-}
-
-/** Своё слово: { word, definition, example, ru }. */
-export function addSatVocabWord(token, body) {
-  return authPost('/mobile/sat/vocab/words', token, body)
-}
-
-export function deleteSatVocabWord(token, id) {
-  return authDelete(`/mobile/sat/vocab/words/${encodeURIComponent(id)}`, token)
 }
 
 /** Курс «36 юнитов»: размер набора каждого юнита и что ученик в нём сделал. */
@@ -2667,11 +2719,12 @@ export async function getIeltsMe(token) {
 // Обновление профиля (PUT /user/update, Bearer). Тело — как UpdateUserRequest
 // мобилки: name обязателен, остальные поля шлём только если заданы, чтобы не
 // затирать то, что уже хранит бэкенд. Возвращает обновлённый UserInfo.
+// gender — 'MALE' | 'FEMALE' | '' (стереть); не передан — бэкенд пол не трогает (backend V542).
 export async function updateUser(token, { name, email, city, gender, birthDate, phone }) {
   const payload = { name }
   if (email) payload.email = email
   if (city) payload.city = city
-  if (gender) payload.gender = gender
+  if (gender != null) payload.gender = gender
   if (birthDate) payload.birthDate = birthDate
   if (phone) payload.phone = normalizePhone(phone)
   let res

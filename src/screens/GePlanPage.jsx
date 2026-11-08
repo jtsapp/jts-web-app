@@ -5,7 +5,7 @@ import { loadToken } from '../lib/session.js'
 import { useI18n } from '../i18n.jsx'
 import { ArrowForwardIcon } from '../ielts/icons.jsx'
 import { useGePlan } from '../ge/plan/useGePlan.js'
-import { courseTitles, mondayOf } from '../ge/plan/planModel.js'
+import { courseLessons, courseTitles, mondayOf } from '../ge/plan/planModel.js'
 import { useGeTaskStart } from '../ge/plan/useGeTaskStart.js'
 import { MonthView, RoadmapView, WeekView } from '../ge/plan/GePlanViews.jsx'
 import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot, useScreenTour } from '../tutor/OnboardingTour.jsx'
@@ -74,6 +74,7 @@ export default function GePlanPage({ token, userName, userLevel, onNav, onProfil
     setAt(u.at)
   }, [])
   const titles = useMemo(() => (plan ? courseTitles(plan.tasks, frontier) : {}), [plan, frontier])
+  const lessons = useMemo(() => (plan ? courseLessons(plan.tasks, frontier) : {}), [plan, frontier])
   // Тур экрана — при первом заходе, когда план уже на экране (решает один раз за заход, как на «Главной»). Шаг про
   // дорогу — только в её виде; открыли неделю по ссылке — тур его пропустит.
   const tour = useScreenTour(status === 'ready' && plan?.state === 'ready' ? tourKey : null)
@@ -99,7 +100,7 @@ export default function GePlanPage({ token, userName, userLevel, onNav, onProfil
     setAt(a)
     writeUrl(v, a)
   }
-  const { start, markFailed } = useGeTaskStart({ token: authToken, level, onNav, reload })
+  const { start, markFailed } = useGeTaskStart({ token: authToken, level, onNav, reload, lessons })
   const move = (task, date) => {
     setMoveError(false)
     moveGeTask(authToken, task.id, date).then(reload).catch(() => setMoveError(true))

@@ -695,6 +695,13 @@ html body::after {
   line-height: 24px;
   font-weight: 500;
 }
+/* «Зачем мы спрашиваем» под подзаголовком шага анкеты (патч goals-why, кейс 35 ТЗ v2.0): тише подзаголовка. */
+#app .go-heading p.go-why {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+}
 #app .go-card {
   display: flex;
   flex-direction: column;

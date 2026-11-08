@@ -146,7 +146,8 @@ describe('POST /api/assistant/chat', () => {
   it('зовёт loadStudentContext с бэрер-токеном ученика и кладёт результат в вопрос', async () => {
     studentContextResult = 'Домашка (1 к сроку на этой неделе): «Эссе» — до 2026-09-25.'
     await (await post(question(108), 'my-bearer')).text()
-    expect(loadStudentContext).toHaveBeenCalledWith('my-bearer', expect.objectContaining({ userId: 108 }))
+    // Четвёртый аргумент — флаг токенов стенда из окна (тогда в профиле их баланс).
+    expect(loadStudentContext).toHaveBeenCalledWith('my-bearer', expect.objectContaining({ userId: 108 }), expect.any(Number), { rewards: false })
     const last = calls[0].messages.at(-1).content
     expect(last).toContain('Профиль ученика')
     expect(last).toContain('«Эссе» — до 2026-09-25.')
@@ -210,6 +211,63 @@ describe('POST /api/assistant/chat', () => {
     const other = { ...question(107), call: room }
     for (let i = 0; i < 20; i += 1) await (await post(other)).text()
     expect((await post(other)).status).toBe(429)
+  })
+
+  // Модель хода — lib/assistant/model.js (свой тест); здесь — что роут её передаёт и откатывается на Haiku.
+  describe('модель учителя', () => {
+    const ask = (userId, content, extra = {}) => ({ ...question(userId), messages: [{ role: 'user', content }], screen: { id: 'home', text: 'Главная' }, ...extra })
+
+    it('вопрос учителю — Sonnet 5.5 с effort учителя, справка по сайту — Haiku 5.5', async () => {
+      let res = await post(ask(3101, 'Объясни present perfect'))
+      await res.text()
+      expect(calls.at(-1)).toMatchObject({ model: 'claude-sonnet-5-5', effort: 'low' })
+      // журнал оценок (#877) пишет модель из заголовка — она должна совпадать с той, что ответила
+      expect(res.headers.get('x-assistant-model')).toBe('claude-sonnet-5-5')
+      res = await post(ask(3102, 'Где мои домашки?'))
+      await res.text()
+      expect(calls.at(-1).model).toBe('claude-haiku-5-5')
+      expect(calls.at(-1).effort).toBeUndefined()
+      expect(res.headers.get('x-assistant-model')).toBe('claude-haiku-5-5')
+    })
+
+    it('в живом звонке и на служебном ходе — Haiku', async () => {
+      const room = 'jts-luna-teacher-1760600000000'
+      liveCalls.add(`${room}:3103`)
+      await (await post(ask(3103, 'Объясни present perfect', { call: room }))).text()
+      expect(calls.at(-1).model).toBe('claude-haiku-5-5')
+      await (await post(ask(3104, '[ученик открыл окно]'))).text()
+      expect(calls.at(-1).model).toBe('claude-haiku-5-5')
+    })
+
+    it('Sonnet упала или промолчала до первого слова — тот же ход на Haiku, ученик получает ответ', async () => {
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      let n = 0
+      streamImpl = async function* () {
+        n += 1
+        if (n === 1) throw new Error('rate_limit_error')
+        yield { type: 'text', text: 'Present Perfect — это…' }
+      }
+      let res = await post(ask(3105, 'Объясни present perfect'))
+      expect(res.status).toBe(200)
+      // ответила Haiku — в журнал оценок уходит она, а не выбранная сначала Sonnet
+      expect(res.headers.get('x-assistant-model')).toBe('claude-haiku-5-5')
+      expect(await res.text()).toBe('Present Perfect — это…')
+      expect(calls.slice(-2).map((c) => c.model)).toEqual(['claude-sonnet-5-5', 'claude-haiku-5-5'])
+      // отказ классификатора до первого слова: поток кончился пустым
+      n = 0
+      streamImpl = async function* () {
+        n += 1
+        if (n === 1) {
+          yield { type: 'done', stopReason: 'refusal' }
+          return
+        }
+        yield { type: 'text', text: 'Ответ Haiku' }
+      }
+      res = await post(ask(3106, 'Переведи: I miss you'))
+      expect(await res.text()).toBe('Ответ Haiku')
+      expect(calls.slice(-2).map((c) => c.model)).toEqual(['claude-sonnet-5-5', 'claude-haiku-5-5'])
+      errSpy.mockRestore()
+    })
   })
 
   it('обрыв модели посреди ответа — ошибка чтения, а не полуфраза как готовый ответ', async () => {
@@ -287,6 +345,58 @@ describe('POST /api/assistant/chat', () => {
       const res = await post(question(205))
       expect(res.headers.get('x-assistant-offtopic')).toBeNull()
       expect(await res.text()).toBe('[пример] Is Clare reading?')
+    })
+
+    // Кейс 16 ТЗ v2.0 (приёмочный прогон 08.11.2026): свой отказ модели и метка последней строкой.
+    describe('метка в конце своего отказа', () => {
+      const lateStream = (tail = '\n\n[[OFFTOPIC]]') => {
+        streamImpl = async function* () {
+          yield { type: 'text', text: 'Это вопрос не по теме. Вернёмся к домашке «Unit 4»?' }
+          yield { type: 'text', text: '\n[[OPEN homework]]' }
+          yield { type: 'text', text: tail }
+        }
+      }
+
+      it('ученик метки не видит, окно получает хвост «не по теме», кнопки и заметки нет', async () => {
+        saveAdviceNote.mockClear()
+        lateStream()
+        const res = await post(question(2606))
+        expect(res.status).toBe(200)
+        expect(res.headers.get('x-assistant-offtopic')).toBeNull()
+        expect(await res.text()).toBe('Это вопрос не по теме. Вернёмся к домашке «Unit 4»?\n\n\n[[ASST_OFFTOPIC]]')
+        expect(saveAdviceNote).not.toHaveBeenCalled()
+      })
+
+      it('считается в лимит «не по теме»: после пяти за сутки — пауза', async () => {
+        const body = question(2607)
+        for (let i = 0; i < 5; i += 1) {
+          lateStream()
+          await (await post(body)).text()
+        }
+        const paused = await post(body)
+        expect(paused.status).toBe(429)
+        expect((await paused.json()).error).toBe('offtopic_cooldown')
+      })
+
+      it('основной лимит не тратит', async () => {
+        const body = question(2608)
+        for (let i = 0; i < 4; i += 1) {
+          lateStream()
+          await (await post(body)).text()
+        }
+        streamImpl = async function* () {
+          yield { type: 'text', text: 'ok' }
+        }
+        for (let i = 0; i < 20; i += 1) expect((await post(body)).status).toBe(200)
+      })
+
+      it('в первой реплике окна метку только вырезает — ни отказа, ни паузы', async () => {
+        lateStream()
+        const res = await post({ ...question(2609), messages: [{ role: 'user', content: '[ученик открыл окно]' }] })
+        const text = await res.text()
+        expect(text).not.toContain('[[OFFTOPIC]]')
+        expect(text).not.toContain('[[ASST_OFFTOPIC]]')
+      })
     })
   })
 
@@ -456,7 +566,8 @@ describe('POST /api/assistant/chat', () => {
       const last = calls[0].messages.at(-1).content
       expect(last).toMatch(/Сегодня: \d{4}-\d{2}-\d{2}/)
       expect(last).toMatch(/<\/контекст>\n\n\[ученик открыл окно\]\nЯзык ответа: русский\n/)
-      expect(last).toMatch(/Не больше 4 коротких предложений\.$/)
+      // Последней строкой — обращение (turnHints.js, зонд 07.11.2026).
+      expect(last).toMatch(/Не больше 4 коротких предложений\.\n\nОбращение — на «ты»/)
       expect(last).not.toContain('Вопрос ученика:')
     })
 
@@ -633,6 +744,17 @@ describe('POST /api/assistant/chat', () => {
         target: 'homework',
         advice: 'Вы на Главной. У вас домашка «Unit 4» до 17 октября — с неё и стоит начать.',
       })
+    })
+
+    // ТЗ v2.0, этап 1: обращение в Feedback с черновиком — действие для окна, но не совет трекера.
+    it('метка Feedback с черновиком — хвост с категорией и закодированным текстом, заметки нет', async () => {
+      offer('Сочувствую. Это «Жалоба на преподавателя». Открыть с черновиком?\n[[FEEDBACK teacher | Преподаватель опоздал на 15 минут.]]')
+      const text = await (await post(question(604))).text()
+      expect(text).toContain('Открыть с черновиком?\n[[ASST_ACTION feedback teacher offer ')
+      expect(text).not.toContain('[[FEEDBACK')
+      const encoded = /\[\[ASST_ACTION feedback teacher offer (\S+)\]\]$/.exec(text)[1]
+      expect(decodeURIComponent(encoded)).toBe('Преподаватель опоздал на 15 минут.')
+      expect(saveAdviceNote).not.toHaveBeenCalled()
     })
 
     it('«открой» по просьбе ученика и ответ без метки — не советы', async () => {

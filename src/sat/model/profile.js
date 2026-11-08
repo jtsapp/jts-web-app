@@ -1,5 +1,7 @@
+import { groupByCountry } from './colleges.js'
+
 // Чистая логика онбординга SAT (Figma SAT, главы 3–6) и шапки хаба: цель по секциям, куда она попадает
-// относительно middle-50% вузов, статус даты экзамена и доли доменов. Правила — из прототипа jts-sat-platform
+// относительно данных вузов (middle-50%, порог, ориентир), статус даты экзамена и доли доменов. Правила — из прототипа jts-sat-platform
 // (onboarding.js, README «The target score, and where it lands», «Picking the exam date»).
 
 export const SECTION_MIN = 200
@@ -26,24 +28,98 @@ export function splitTotal(total) {
   return { rw: roundSection(half), math: roundSection(total - half) }
 }
 
+// Вуз без Total, но с секциями (Harvard, Caltech): «чуть ниже» — до 30 под нижней границей секции
+export const NEAR_BELOW_SECTION = 30
+// Запас над порогом (minimum) и ориентиром (full_range): порог — отсечение, а не цель (решения SAT, «тип значения»)
+export const MIN_MARGIN = 50
+
+const goalOf = (goal) => (typeof goal === 'number' ? { total: goal, rw: null, math: null } : { ...goal, total: goal.rw + goal.math })
+const bandIn = (v, [lo, hi], near) => {
+  if (v >= lo && (hi == null || v <= hi)) return 'in'
+  if (v > hi) return 'above'
+  return lo - v <= near ? 'near' : 'below'
+}
+const WORST = ['below', 'near', 'in', 'above']
+
 /**
- * Где цель относительно middle-50% вуза: in — внутри, above — выше, near — до 70 ниже нижней границы, below — ещё
- * ниже. Это не шанс поступления, и экран так и пишет.
+ * Где цель относительно данных вуза. middle_50: in / above / near (до 70 ниже нижней границы) / below; без Total —
+ * по каждой секции, берётся худшая (Total из суммы секций не считаем). minimum и full_range: pass — не ниже порога или
+ * ориентира, near, below. null — сравнивать не с чем (балл не публикуется). Это не шанс поступления.
+ * goal — {rw, math} или число-итог.
  */
-export function collegeBand(target, college) {
-  const [lo, hi] = college.midSAT.total
-  if (target >= lo && target <= hi) return 'in'
-  if (target > hi) return 'above'
-  return lo - target <= NEAR_BELOW ? 'near' : 'below'
+export function collegeBand(goal, college) {
+  const s = college.score
+  if (!s) return null
+  const g = goalOf(goal)
+  if (s.type === 'middle_50') {
+    if (s.total) return bandIn(g.total, s.total, NEAR_BELOW)
+    const parts = ['rw', 'math'].filter((k) => s[k])
+    if (!parts.length || parts.some((k) => g[k] == null)) return null
+    return parts.map((k) => bandIn(g[k], s[k], NEAR_BELOW_SECTION)).sort((a, b) => WORST.indexOf(a) - WORST.indexOf(b))[0]
+  }
+  if (!s.total) return null
+  const lo = s.total[0]
+  if (g.total >= lo) return 'pass'
+  return lo - g.total <= NEAR_BELOW ? 'near' : 'below'
 }
 
-/** Вузы по тому, куда падает цель: сперва достижимые (в диапазоне, выше, чуть ниже), потом остальные; test-blind нет. */
-export function rankColleges(target, colleges) {
-  const order = { in: 0, above: 1, near: 2, below: 3 }
+/**
+ * «В досягаемости»: middle_50 — цель не ниже нижней границы Total (без Total — каждой секции), minimum — не ниже порога,
+ * full_range — не ниже ориентира. «Чуть ниже» не считается. Вуз без балла не входит ни в N, ни в M.
+ */
+export const inReach = (band) => band === 'in' || band === 'above' || band === 'pass'
+
+export function reachSummary(goal, colleges) {
+  const bands = colleges.map((c) => collegeBand(goal, c)).filter(Boolean)
+  return { n: bands.filter(inReach).length, total: bands.length }
+}
+
+/**
+ * Вузы ОДНОЙ страны по тому, куда падает цель: достижимые, чуть ниже, ниже, без балла. Внутри — по нижней границе.
+ * Списки разных стран сюда вместе не передавать: баллы несравнимы (rankByCountry делит сам).
+ */
+export function rankColleges(goal, colleges) {
+  const order = { in: 0, above: 0, pass: 0, near: 1, below: 2 }
+  const g = goalOf(goal)
   return colleges
     .filter((c) => c.testPolicy !== 'blind')
-    .map((c) => ({ ...c, band: collegeBand(target, c), gap: target - c.midSAT.total[0] }))
-    .sort((a, b) => order[a.band] - order[b.band] || b.midSAT.total[0] - a.midSAT.total[0])
+    .map((c) => {
+      const band = collegeBand(goal, c)
+      const lo = c.score?.total?.[0] ?? null
+      return { ...c, band, gap: lo == null ? null : g.total - lo }
+    })
+    .sort((a, b) => (order[a.band] ?? 3) - (order[b.band] ?? 3) || (b.score?.total?.[0] ?? -1) - (a.score?.total?.[0] ?? -1))
+}
+
+/** Группы по стране (порядок чипов), каждая отсортирована сама по себе. */
+export function rankByCountry(goal, colleges) {
+  return groupByCountry(colleges).map(({ country, rows }) => ({ country, rows: rankColleges(goal, rows) }))
+}
+
+/**
+ * Какую цель подставить по вузу: middle_50 — верхняя граница Total (без Total — верх каждой секции), minimum и
+ * full_range — порог (верхняя полоса, если полос несколько) плюс MIN_MARGIN. Без балла — null.
+ */
+export function suggestGoal(college) {
+  const s = college.score
+  if (!s) return null
+  if (s.type === 'middle_50') {
+    if (s.total) return splitTotal(s.total[1])
+    if (s.rw && s.math) return { rw: roundSection(s.rw[1]), math: roundSection(s.math[1]) }
+    return null
+  }
+  if (!s.total) return null
+  const base = s.total[1] ?? s.total[0]
+  return splitTotal(Math.min(SECTION_MAX * 2, Math.ceil((base + MIN_MARGIN) / 10) * 10))
+}
+
+/**
+ * Диапазон test-optional смещён вверх: балл прислали те, кому он помогал. Признак — политика «по желанию» или меньше
+ * половины зачисленных прислали тест (Stanford Fall 2023 — 47%).
+ */
+export function isSkewed(college) {
+  if (college.score?.type !== 'middle_50') return false
+  return college.testPolicy === 'optional' || (college.submittedPct != null && college.submittedPct < 50)
 }
 
 const dayStart = (d) => {

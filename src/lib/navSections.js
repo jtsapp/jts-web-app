@@ -1,5 +1,6 @@
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, isRewardsScreen, isStudentSectionHidden } from '../config.js'
 import { isSectionOpen } from './studentSectionRules.js'
+import { learnerFormat } from './assistant/format.js'
 
 // Меню ученика — одно на сайдбар (компьютер и планшет), нижнюю панель телефона и экран «Сервисы». Правила
 // перенесены из Sidebar.jsx без изменений (26.10.2026): панель и «Сервисы» обязаны показывать ровно те разделы, что
@@ -28,6 +29,7 @@ const NAV_FULL = [
   { key: 'practice', label: 'nav.practice', ico: 'auto_stories' },
   { key: 'tutor', label: 'nav.tutor', ico: 'auto_awesome' },
   { key: 'lessons', label: 'nav.lessons', ico: 'videocam' },
+  // Значок — сколько работ ждут ученика: просроченные и заданные (ТЗ v2.0, 5.4; useHomeworkBadge в useMenuItems).
   { key: 'homework', label: 'nav.homework', ico: 'assignment' },
   // IELTS вернулся в меню вместе с хабом раздела (макет Screen MS, 01.10.2026).
   // Пунктов стало восемь — на низких экранах их ужимает CSS (.sb в styles.css).
@@ -76,6 +78,12 @@ function learningAfterVocab(items) {
  * при своей подписке, абонементе или тарифе (exams), пока ответа нет — спрятаны. «Мой учитель» — когда на стенде
  * есть подбор учителя (myTeacher). Разделы по тарифу и формату (sections, ТЗ кабинетов 14е): закрытый раздел в меню не
  * показываем; при загрузке и ошибке остаются общие разделы, полное меню — только по явному ответу об онбординге.
+ *
+ * «Уроки» и «Домашняя работа» — только у формата с преподавателем (ТЗ v2.0, 4.2): у Self Study и демо их нет. Матрица
+ * тарифа этого не решает, когда бэкенд о тарифе не ответил (known: false — «меню полное»), а у демо-аккаунта абонемента
+ * не бывает вовсе, поэтому формат берётся тем же правилом, что у «Главной» и Луны (learnerFormat), с признаком демо из
+ * /user/me (demo). demo: null — признак ещё не пришёл: пока формат неизвестен, эти два пункта ждут его, иначе у демо они
+ * мелькали бы на первом кадре. Ученик с преподавателем, чей тариф пришёл, от демо не зависит.
  */
 export function menuItems({
   teacher = false,
@@ -84,7 +92,10 @@ export function menuItems({
   rewards = false,
   myTeacher = false,
   sections = null,
+  demo = false,
 } = {}) {
+  const format = learnerFormat({ demo: demo === true, sections })
+  const noTeacherItems = format === 'demo' || format === 'self_study' || (demo === null && format === null)
   const head = teacher ? [HOME_ITEM] : myTeacher ? [HOME_ITEM, MY_TEACHER_ITEM, GROUP_ITEM] : [HOME_ITEM, GROUP_ITEM]
   const all = teacher
     ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key))
@@ -96,6 +107,7 @@ export function menuItems({
     if (!teacher && isStudentSectionHidden(item.key)) return false
     if (!rewards && isRewardsScreen(item.key)) return false
     if (!teacher && !isSectionOpen(sections, item.key)) return false
+    if (!teacher && noTeacherItems && (item.key === 'lessons' || item.key === 'homework')) return false
     if (item.key === 'ielts') return exams.ielts
     if (item.key === 'sat') return exams.sat
     return true

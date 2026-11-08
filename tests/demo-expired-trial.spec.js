@@ -60,7 +60,8 @@ test('после конца демо вместо тарифов — заявк�
   // «Главная» узнала о заявке: плашка больше не зовёт, карточка рядом — тоже.
   await expect(banner).toContainText('менеджер свяжется с вами')
   await expect(banner.getByRole('button')).toHaveCount(0)
-  await expect(page.locator('.hm-trial')).toContainText('Заявка принята')
+  // на компьютере пробный урок — строка «Ближайшего» (ТЗ v2.0, 5.4)
+  await expect(page.locator('.hm-near__trial')).toContainText('Заявка принята')
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/home-booked-${info.project.name}.png` })
 })
 

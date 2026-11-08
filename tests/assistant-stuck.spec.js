@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 import { unlockStep } from './helpers/course-steps.js'
 
 // «Застряли? Подсказать?» (lib/assistant/stuck.js, useStuckWatch.js) на настоящем
-// уроке курса: ученик дважды подряд ошибся — у кнопки Луны облачко, по нажатию окно
-// и в чат уходит служебная пометка «ученик застрял». Модель подменена.
+// уроке курса: ученик ошибся (с 08.11.2026 — с первого раза, ТЗ v2.0, 7.2б) — у кнопки
+// Луны облачко, по нажатию окно и в чат уходит служебная пометка «ученик застрял»: урок
+// после ошибки сам показывает верный ответ, поэтому это разбор, а не ступень подсказки.
+// Модель подменена.
 //
 // Урок A1 №1: первый оценённый экран — выбор (третий по счёту), до него заметка и
 // «отметь, что про тебя» без оценки. У A2 перед выбором стоит «соединение», которое
@@ -17,6 +20,8 @@ async function setup(page) {
     // Вводное облачко «Я Луна…» — для тех, кто ни разу не открывал окно; здесь оно мешало бы.
     localStorage.setItem('jts_assistant_met', '1')
   })
+  // Замки кабинета (документы, разделы тарифа) — иначе они встают поверх экрана (helpers/login.js).
+  await mockGates(page)
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 7, name: 'Айгерім', role: 'STUDENT', phone: '77001234567', languageLevel: 'A1' } })),
   )
@@ -63,7 +68,7 @@ async function answerWrong(page, steps) {
   await expect(page.locator('.cp-fb.is-no')).toBeVisible()
 }
 
-test('две ошибки подряд — облачко «Подсказать?», по нажатию Луна разбирает задание', async ({ page }) => {
+test('первая ошибка — облачко «Подсказать?», по нажатию Луна разбирает задание', async ({ page }) => {
   test.setTimeout(90_000)
   const chat = await setup(page)
   await page.goto('/?screen=kingdom-interior&level=A1&unlock=1')
@@ -75,13 +80,6 @@ test('две ошибки подряд — облачко «Подсказать
 
   await toChoice(page)
   await answerWrong(page, key)
-  // Одна ошибка — обычное дело: облачка нет (снимки — через 0.8 и 2 с после действия).
-  await page.waitForTimeout(2500)
-  await expect(page.locator('.asst__hint--stuck')).toHaveCount(0)
-
-  await page.locator('.cp-cta:not([disabled])').click()
-  await toChoice(page)
-  await answerWrong(page, key)
   const hint = page.locator('.asst__hint--stuck')
   await expect(hint).toBeVisible({ timeout: 5000 })
   await expect(hint).toHaveText('Подсказать?')
@@ -90,7 +88,7 @@ test('две ошибки подряд — облачко «Подсказать
   await hint.click()
   await expect(page.getByRole('dialog', { name: 'Луна' })).toBeVisible()
   await expect.poll(() => chat.length).toBe(1)
-  expect(chat[0].messages.at(-1).content).toBe('[ученик застрял: две ошибки подряд]')
+  expect(chat[0].messages.at(-1).content).toBe('[ученик застрял: ответ отмечен неверным]')
   expect(chat[0].voice).toBe(true)
   // Служебная пометка в переписке не рисуется — виден только ответ Луны.
   await expect(page.locator('.asst__msg--me')).toHaveCount(0)

@@ -236,6 +236,14 @@ html[data-theme="dark"] .ih-mtfresh button.is-on {
   border-color: var(--dk-acc);
   color: #fff;
 }
+/* лента mock: край уходит в тёмный фон раздела, стрелки — карточкой темы */
+html[data-theme="dark"] .ih-mtrow {
+  --mt-fade: var(--dk-page);
+}
+html[data-theme="dark"] .ih-mtrow__arrow {
+  background: var(--dk-card);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 35%);
+}
 html[data-theme="dark"] .ih-mtsec__s {
   background: var(--dk-card);
   border-color: var(--dk-line);
@@ -544,4 +552,37 @@ html[data-theme="dark"] .tb-legend__item--gold i {
 }
 html[data-theme="dark"] .scr-load--page {
   background: var(--dk-page);
+}
+/* «Подсказки Луны» в Профиле (ТЗ v2.0, 7.4): пояснения выбора — вторичным текстом. */
+html[data-theme="dark"] .pf-luna__note,
+html[data-theme="dark"] .pfm-luna__note,
+html[data-theme="dark"] .pfm-luna__device {
+  color: var(--dk-text-2);
+}
+/* «Память Луны» (ТЗ v2.0, 8.1). */
+html[data-theme="dark"] .pf-mem__note,
+html[data-theme="dark"] .pf-mem__empty,
+html[data-theme="dark"] .pf-mem__until,
+html[data-theme="dark"] .pfm-mem__note,
+html[data-theme="dark"] .pfm-mem__empty,
+html[data-theme="dark"] .pfm-mem__until {
+  color: var(--dk-text-2);
+}
+html[data-theme="dark"] .pf-mem__fact,
+html[data-theme="dark"] .pfm-mem__fact {
+  color: var(--dk-text);
+}
+html[data-theme="dark"] .pf-mem__item,
+html[data-theme="dark"] .pfm-mem__item {
+  border-color: var(--dk-line);
+}
+html[data-theme="dark"] .pf-mem__del,
+html[data-theme="dark"] .pfm-mem__del {
+  background: var(--dk-chip);
+  color: var(--dk-text-2);
+}
+html[data-theme="dark"] .pf-mem__del:hover,
+html[data-theme="dark"] .pfm-mem__del:hover {
+  background: var(--dk-red-tint);
+  color: var(--dk-red);
 }

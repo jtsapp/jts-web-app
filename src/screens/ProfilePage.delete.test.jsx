@@ -21,7 +21,7 @@ vi.mock('../api.js', () => ({
 
 vi.mock('../practice/skillStats.js', () => ({
   readLocalSkillStats: () => null,
-  loadSkillStatsRemote: vi.fn(async () => null),
+  loadSkillStatsRemote: vi.fn(async () => null), readLocalLevelSkillStats: () => null, loadLevelSkillStatsRemote: vi.fn(async () => null),
 }))
 
 import ProfilePage from './ProfilePage.jsx'
@@ -103,7 +103,7 @@ describe('удаление аккаунта — компьютер', () => {
     const { onAccountDeleted } = renderProfile()
     openDesktopDialog()
     fireEvent.click(confirmButton())
-    expect((await findError()).textContent).toBe('Аккаунт сотрудника удаляет администратор. Напишите в службу поддержки.')
+    expect((await findError()).textContent).toBe('Аккаунт сотрудника удаляет администратор. Напиши в службу поддержки.')
     expect(onAccountDeleted).not.toHaveBeenCalled()
     expect(confirmButton().disabled).toBe(false)
     fireEvent.click(screen.getByText('Оставить аккаунт'))

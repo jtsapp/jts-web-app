@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getGePlan } from '../../api.js'
 import { loadCourseFrontier } from './courseFrontier.js'
+import { GE_PLAN_CHANGED } from './replan.js'
 
 /**
  * План по дням общего курса и тропа для подписей уроков. status: 'loading' | 'ready' (план пришёл, его state может быть
@@ -35,6 +36,12 @@ export function useGePlan(token, { enabled = true, level = null } = {}) {
   }, [token, off, level, n])
 
   const reload = useCallback(() => setN((x) => x + 1), [])
+  // «мало времени» пересобрал день — с «Главной» или из окна Луны: план перечитывается там, где он показан
+  useEffect(() => {
+    if (off) return undefined
+    window.addEventListener(GE_PLAN_CHANGED, reload)
+    return () => window.removeEventListener(GE_PLAN_CHANGED, reload)
+  }, [off, reload])
   // выключенный план — сразу «нет», без setState в эффекте
   return { ...(off ? { status: 'none', plan: null, frontier: [] } : state), reload }
 }

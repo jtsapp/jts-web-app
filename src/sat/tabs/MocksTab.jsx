@@ -9,12 +9,12 @@ import { ArrowForwardIcon, CheckCircleIcon, InfoIcon, RadioOffIcon } from '../..
 import { AssignmentIcon, BlockIcon, CafeIcon, CalculateIcon, LaptopIcon, NAV_ICONS, RouteIcon } from '../icons.jsx'
 import { MOCK_BLOCKS, MOCK_MIN_WIDTH, TOTAL_MINUTES, hoursMinutes, mid } from '../model/mock.js'
 import { fmtDate } from '../model/dates.js'
-import { AddScoreDialog, ScoreTrajectory, ScoresTable, gapToTarget } from '../mock/ScoresPanel.jsx'
+import { AddScoreDialog, ScoreTrajectory, ScoresTable, TrajectoryLegend } from '../mock/ScoresPanel.jsx'
 import { enterFullWindow, leaveFullWindow } from '../fullWindow.js'
 
 /**
  * Запасной список для таблицы, пока /mobile/sat/scores нет на бэкенде: только симуляции из /mocks (без past papers),
- * балл — середина диапазона «внутренней оценки JTS».
+ * балл — середина диапазона «внутренней оценки JTS». Изменения (delta) нет вовсе — его посчитает tableRows.
  */
 export function entriesFromRuns(runs = []) {
   return runs
@@ -27,18 +27,18 @@ export function entriesFromRuns(runs = []) {
       rw: r.sections?.rw ? Math.round(mid(r.sections.rw) / 10) * 10 : null,
       math: r.sections?.math ? Math.round(mid(r.sections.math) / 10) * 10 : null,
       total: Math.round(mid(r.total) / 10) * 10,
-      delta: null,
+      range: { rw: r.sections?.rw || null, math: r.sections?.math || null, total: r.total },
       mockId: r.id,
     }))
 }
 
 /**
- * Вкладка «Пробники» (Figma SAT 16, B5–B7): полная симуляция JTS рядом с траекторией к цели, под ними — таблица
- * «Результаты»: симуляции и баллы, которые ученик добавил сам (Bluebook, официальный SAT, решение D2), с изменением
- * к предыдущему. Past papers — своя страница во всё окно (B6), отсюда на неё ведёт кнопка; в таблицу их результаты
- * не входят. Симуляция идёт во весь экран (B7).
+ * Вкладка «Пробники» (Figma SAT 16, B5–B7; вид — «NEW 2», 17:2430): полная симуляция JTS рядом с траекторией к цели, под ними — таблица
+ * «Результаты»: симуляции, Past papers и баллы, которые ученик добавил сам (Bluebook, официальный SAT, решение D2),
+ * с изменением к предыдущему. Past papers запускаются на своей странице во всё окно (B6), а результаты — здесь,
+ * в общей таблице (ТЗ SAT 17.10, задача 13). Симуляция идёт во весь экран (B7).
  */
-export default function MocksTab({ target, onOpenRun, onReview, onPapers, onPricing }) {
+export default function MocksTab({ target, onOpenRun, onReview, onPapers, onPricing, onCompare }) {
   const { t, lang } = useI18n()
   const token = loadToken()
   const [hub, setHub] = useState(null)
@@ -130,7 +130,6 @@ export default function MocksTab({ target, onOpenRun, onReview, onPapers, onPric
   const cap = hub.capacity
   const entries = scores ? scores.entries || [] : entriesFromRuns(hub.runs || [])
   const goal = (scores && scores.target) || target || null
-  const gap = gapToTarget(entries, goal)
 
   let action
   if (active) {
@@ -203,19 +202,14 @@ export default function MocksTab({ target, onOpenRun, onReview, onPapers, onPric
         </section>
         <section className="st-card st-mocks__traj">
           <h2>{t('sat.mock.trajectory')}</h2>
-          <p className="st-muted">{gap == null ? t('sat.scores.trajSub') : gap > 0 ? t('sat.scores.gap', { n: String(gap) }) : t('sat.scores.reached')}</p>
+          <p className="st-muted">{t('sat.mock.trajectorySub')}</p>
           <ScoreTrajectory entries={entries} target={goal} />
-          {entries.length > 0 && (
-            <div className="st-mocks__legend">
-              <span className="st-mocks__src is-simulation"><i />{t('sat.scores.src.SIMULATION')}</span>
-              <span className="st-mocks__src is-bluebook"><i />{t('sat.scores.src.BLUEBOOK')}</span>
-              <span className="st-mocks__src is-official"><i />{t('sat.scores.src.OFFICIAL')}</span>
-            </div>
-          )}
+          <TrajectoryLegend entries={entries} />
         </section>
       </div>
 
-      {/* Past papers — своя страница во всё окно (B6, прототип b5e85dfa): отсюда на неё одна кнопка */}
+      {/* Past papers — запуск на своей странице во всё окно, результаты — в общей таблице ниже (ТЗ SAT, задача 13).
+          В макете «NEW 2» карточки нет, но другого входа в Past papers из хаба нет — оставили */}
       <section className="st-card st-mocks__papersLink">
         <span className="st-mocks__simIcon">{NAV_ICONS.papers(24)}</span>
         <div>
@@ -226,7 +220,7 @@ export default function MocksTab({ target, onOpenRun, onReview, onPapers, onPric
         <button type="button" className="ih-btn ih-btn--outline" onClick={onPapers}>{t('sat.papers.open')}<ArrowForwardIcon size={18} /></button>
       </section>
 
-      <ScoresTable entries={entries} busy={busy} onAdd={() => { setAddError(null); setAdding(true) }} onDelete={removeScore} onReview={onReview} />
+      <ScoresTable entries={entries} busy={busy} onAdd={() => { setAddError(null); setAdding(true) }} onDelete={removeScore} onReview={onReview} onCompare={onCompare} />
 
       {adding && <AddScoreDialog busy={busy} error={addError} onSave={addScore} onClose={() => setAdding(false)} />}
       <ConfirmDialog

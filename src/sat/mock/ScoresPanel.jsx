@@ -2,14 +2,14 @@ import { useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import ConfirmDialog from '../../ielts/ui/ConfirmDialog.jsx'
 import { InfoIcon } from '../../ielts/icons.jsx'
-import { PlusIcon, TrashIcon } from '../icons.jsx'
+import { CalendarIcon, ErrorIcon, PlusIcon, TrashIcon } from '../icons.jsx'
 import { SatModal } from '../question/ToolDialogs.jsx'
-import { MANUAL_SOURCES, gapToTarget, scale, scoreBody, tableRows, trajectoryPoints, validateScore } from '../model/scores.js'
+import { MANUAL_SOURCES, deltaText, isRejected, legendKinds, roundSection, scoreBody, sectionState, tableRows, trajectoryChart, validateScore } from '../model/scores.js'
+import { rangeText } from '../model/mock.js'
 import { fmtDate } from '../model/dates.js'
 
 const W = 372
 const H = 210
-const PAD = { l: 34, r: 10, t: 12, b: 26 }
 
 function todayIso() {
   const d = new Date()
@@ -20,51 +20,125 @@ function day(s) {
   return new Date(`${String(s).slice(0, 10)}T00:00:00Z`)
 }
 
-/** Траектория к цели (прототип 34658a47): точка на результат, цвет — источник, пунктир — цель. */
+/**
+ * Месяц оси «июн», «авг» (17:2430). Отдельный месяц Intl пишет полной формой («июнь»), поэтому берём его из даты с
+ * числом — там он сокращённый — и снимаем число.
+ */
+function monthLabel(loc, iso) {
+  return fmtDate(loc, day(iso), { day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/^\d+\s*/, '')
+}
+
+const locOf = (lang) => (lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU')
+
+/**
+ * Подпись источника в таблице (Figma «NEW 2», 17:2430): «Bluebook · пробник», «Past paper · Test 4». Имя симуляции
+ * «Full simulation» — служебное английское с сервера, его не показываем; у сложных симуляций имя своё — его оставляем.
+ */
+function sourceText(r, t) {
+  const src = t(`sat.scores.src.${r.source}`)
+  if (r.source === 'BLUEBOOK') return `${src} · ${r.bluebookTest ? `Test ${r.bluebookTest}` : t('sat.scores.mockTag')}`
+  if (r.source === 'SIMULATION') return r.label && r.label !== 'Full simulation' ? `${src} · ${r.label}` : src
+  return r.label ? `${src} · ${r.label}` : src
+}
+
+/** Чип проверки куратора — один и тот же в таблице, форме и плитке (17:8454). */
+export function ReviewChip({ status }) {
+  const { t } = useI18n()
+  if (!status) return null
+  return <span className={`st-review is-${status.toLowerCase()}`}>{t(`sat.scores.status.${status}`)}</span>
+}
+
+/**
+ * Траектория к цели (17:2430): сплошная синяя линия — официальные и Bluebook, симуляция — оранжевая «пилюля» своего
+ * диапазона с точкой середины, Past paper — отдельная бирюзовая точка; цель — фиолетовая линия с подписью-пилюлей.
+ * Геометрию считает trajectoryChart, здесь только разметка.
+ */
 export function ScoreTrajectory({ entries, target }) {
   const { t, lang } = useI18n()
-  const pts = trajectoryPoints(entries)
-  const sc = scale([...pts.map((p) => p.total), target || null])
-  if (!pts.length || !sc) return <p className="st-muted st-mocks__empty">{t('sat.mock.trajEmpty')}</p>
-  const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
-  const y = (v) => PAD.t + (1 - (v - sc.lo) / (sc.hi - sc.lo)) * (H - PAD.t - PAD.b)
-  const n = pts.length
-  const x = (i) => PAD.l + 20 + (n === 1 ? (W - PAD.l - PAD.r - 40) / 2 : (i * (W - PAD.l - PAD.r - 40)) / (n - 1))
+  const c = trajectoryChart(entries, target, { w: W, h: H })
+  if (!c) return <p className="st-muted st-mocks__empty">{t('sat.mock.trajEmpty')}</p>
+  const loc = locOf(lang)
+  const goalText = t('sat.scores.goal', { n: String(target) })
+  const goalW = 12 + goalText.length * 6.2
   return (
     <svg className="st-traj" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('sat.mock.trajectory')}>
-      {sc.ticks.map((v) => (
-        <g key={v}>
-          <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} className="st-traj__grid" />
-          <text x={PAD.l - 6} y={y(v) + 3} className="st-traj__tick">{v}</text>
+      {c.ticks.map((k) => (
+        <g key={k.v}>
+          <line x1={34} x2={W - 10} y1={k.y} y2={k.y} className="st-traj__grid" />
+          <text x={28} y={k.y + 3} className="st-traj__tick">{k.v}</text>
         </g>
       ))}
-      {target && target >= sc.lo && target <= sc.hi && (
+      {c.goal != null && (
         <g>
-          <line x1={PAD.l} x2={W - PAD.r} y1={y(target)} y2={y(target)} className="st-traj__goal" />
-          <text x={W - PAD.r - 4} y={y(target) - 6} className="st-traj__goalText">{t('sat.mock.goal', { n: String(target) })}</text>
+          <line x1={34} x2={W - 10} y1={c.goal} y2={c.goal} className="st-traj__goal" />
+          <rect x={W - 10 - goalW} y={c.goal - 22} width={goalW} height={18} rx={9} className="st-traj__goalPill" />
+          <text x={W - 10 - goalW / 2} y={c.goal - 9.5} className="st-traj__goalText">{goalText}</text>
         </g>
       )}
-      {n > 1 && <polyline className="st-traj__line" points={pts.map((p, i) => `${x(i)},${y(p.total)}`).join(' ')} />}
-      {pts.map((p, i) => (
+      {c.line.length > 1 && <polyline className="st-traj__line" points={c.line.map((p) => `${p.x},${p.y}`).join(' ')} />}
+      {c.ranges.map((p) => (
         <g key={p.id}>
-          <circle cx={x(i)} cy={y(p.total)} r="6" className={`st-traj__dot is-${String(p.source).toLowerCase()}`} />
-          {(n <= 6 || i === 0 || i === n - 1) && (
-            <text x={x(i)} y={H - 6} className="st-traj__month">{fmtDate(loc, day(p.takenOn), { day: 'numeric', month: 'short', timeZone: 'UTC' })}</text>
-          )}
+          <rect x={p.x - 6} y={p.top} width={12} height={Math.max(12, p.bottom - p.top)} rx={6} className="st-traj__range" />
+          <circle cx={p.x} cy={p.mid} r="3.5" className="st-traj__dot is-sim" />
         </g>
+      ))}
+      {c.line.map((p) => <circle key={p.id} cx={p.x} cy={p.y} r="4.5" className="st-traj__dot is-real" />)}
+      {c.dots.map((p) => <circle key={p.id} cx={p.x} cy={p.y} r="6" className={`st-traj__dot is-${p.kind}`} />)}
+      {c.months.map((m) => (
+        <text key={m.key} x={m.x} y={H - 6} className="st-traj__month">{monthLabel(loc, m.date)}</text>
       ))}
     </svg>
   )
 }
 
-/** «Добавить результат» (Figma 30): источник — официальный SAT, JTS или Bluebook, дата, баллы секций; итог считается сам. */
+/** Легенда траектории — цветные чипы только тех источников, что есть на графике (17:2430). */
+export function TrajectoryLegend({ entries }) {
+  const { t } = useI18n()
+  const kinds = legendKinds(entries)
+  if (!kinds.length) return null
+  return (
+    <div className="st-mocks__legend">
+      {kinds.map((k) => <span key={k} className={`st-legend is-${k}`}><i />{t(`sat.scores.legend.${k}`)}</span>)}
+    </div>
+  )
+}
+
+/** Поле секции с подсказкой «200–800» справа и живой проверкой: некратный 10 — предложение округлить (17:4989). */
+function SectionField({ label, dot, value, onChange, tried }) {
+  const { t } = useI18n()
+  const state = sectionState(value)
+  const rounded = roundSection(value)
+  const bad = state === 'round' || (state === 'range' && value !== '') || (tried && state === 'empty')
+  return (
+    <label className="st-field">
+      <span><i className={`st-dot is-${dot}`} />{label}</span>
+      <span className={`st-scoreform__input ${bad ? 'is-bad' : ''}`}>
+        <input type="number" inputMode="numeric" min={200} max={800} step={10} value={value} onChange={(e) => onChange(e.target.value)} />
+        <small>200–800</small>
+      </span>
+      {state === 'round' && (
+        <button type="button" className="st-scoreform__round" onClick={() => onChange(String(rounded))}>
+          <ErrorIcon size={16} />{t('sat.scores.round', { n: String(rounded) })}
+        </button>
+      )}
+      {(state === 'range' || (tried && state === 'empty')) && <small className="st-field__err">{t('sat.scores.err.section')}</small>}
+    </label>
+  )
+}
+
+/**
+ * «Добавить результат» (17:4989): официальный SAT, Bluebook или «Другое», дата, баллы секций; итог считается сам —
+ * из уже округлённых секций, то есть ровно тот, что сохранится.
+ */
 function AddScoreDialog({ busy, error, onSave, onClose }) {
   const { t } = useI18n()
   const [form, setForm] = useState({ source: 'BLUEBOOK', takenOn: todayIso(), rw: '', math: '' })
   const [tried, setTried] = useState(false)
   const errs = validateScore(form, todayIso())
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
-  const total = Number(form.rw) + Number(form.math)
+  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }))
+  const rw = roundSection(form.rw)
+  const math = roundSection(form.math)
+  const ready = rw != null && math != null
   const submit = (e) => {
     e.preventDefault()
     setTried(true)
@@ -79,33 +153,28 @@ function AddScoreDialog({ busy, error, onSave, onClose }) {
         <div className="ih-seg st-scoreform__src" role="radiogroup" aria-label={t('sat.scores.source')}>
           {MANUAL_SOURCES.map((s) => (
             <button key={s} type="button" role="radio" aria-checked={form.source === s} className={form.source === s ? 'is-on' : ''} onClick={() => setForm((f) => ({ ...f, source: s }))}>
-              {t(`sat.scores.src.${s}`)}
+              {t(s === 'JTS' ? 'sat.scores.srcOther' : `sat.scores.src.${s}`)}
             </button>
           ))}
         </div>
         <label className="st-field">
           <span>{t('sat.scores.date')}</span>
-          <input type="date" value={form.takenOn} max={todayIso()} onChange={set('takenOn')} />
+          <span className="st-scoreform__date">
+            <CalendarIcon size={20} />
+            <input type="date" value={form.takenOn} max={todayIso()} onChange={(e) => set('takenOn')(e.target.value)} />
+          </span>
           {tried && errs.takenOn && <small className="st-field__err">{t(`sat.scores.err.${errs.takenOn}`)}</small>}
         </label>
         <div className="st-scoreform__pair">
-          <label className="st-field">
-            <span><i className="st-dot is-rw" />Reading and Writing</span>
-            <input type="number" inputMode="numeric" min={200} max={800} step={10} value={form.rw} onChange={set('rw')} placeholder="200–800" />
-            {tried && errs.rw && <small className="st-field__err">{t('sat.scores.err.section')}</small>}
-          </label>
-          <label className="st-field">
-            <span><i className="st-dot is-math" />Math</span>
-            <input type="number" inputMode="numeric" min={200} max={800} step={10} value={form.math} onChange={set('math')} placeholder="200–800" />
-            {tried && errs.math && <small className="st-field__err">{t('sat.scores.err.section')}</small>}
-          </label>
+          <SectionField label="Reading and Writing" dot="rw" value={form.rw} onChange={set('rw')} tried={tried} />
+          <SectionField label="Math" dot="math" value={form.math} onChange={set('math')} tried={tried} />
         </div>
         <div className="st-scoreform__total">
           <span>
             <small>{t('sat.scores.totalAuto')}</small>
-            {!errs.rw && !errs.math && <span>{form.rw} + {form.math} = {total}</span>}
+            {ready && <span>{rw} + {math} = {rw + math}</span>}
           </span>
-          <b>{!errs.rw && !errs.math ? total : '—'}</b>
+          <b>{ready ? rw + math : '—'}</b>
         </div>
         {error && <p className="st-error" role="alert">{error}</p>}
         <div className="st-navdlg__actions">
@@ -117,15 +186,27 @@ function AddScoreDialog({ busy, error, onSave, onClose }) {
   )
 }
 
+/** Баллы строки: у симуляции — диапазоны «530–610» (оценка JTS, не балл), у остальных — числа. */
+function cells(r) {
+  const range = r.source === 'SIMULATION' ? r.range : null
+  return {
+    rw: range?.rw ? rangeText(range.rw) : r.rw ?? '—',
+    math: range?.math ? rangeText(range.math) : r.math ?? '—',
+    total: range?.total ? rangeText(range.total) : r.total ?? '—',
+    estimate: !!range?.total,
+  }
+}
+
 /**
- * Таблица «Результаты» (B5): симуляции JTS и добавленные баллы с изменением к предыдущему; свои строки можно удалить.
- * Бумажные тесты сюда не входят — их результаты на странице Past papers. data — ответ GET /mobile/sat/scores.
+ * Таблица «Результаты» (17:2430): симуляции JTS, Past papers и добавленные баллы с изменением к предыдущему; статус
+ * проверки куратора — своей колонкой после итога (17:8454), все три состояния. Свои строки можно удалить; у симуляции
+ * и Past paper — «Разбор», у Bluebook Test 8 и 10 — «Сравнение». data — ответ GET /mobile/sat/scores.
  */
-export function ScoresTable({ entries, onAdd, onDelete, onReview, busy }) {
+export function ScoresTable({ entries, onAdd, onDelete, onReview, onCompare, busy }) {
   const { t, lang } = useI18n()
   const [drop, setDrop] = useState(null)
   const rows = tableRows(entries)
-  const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
+  const loc = locOf(lang)
   return (
     <section className="st-card st-mocks__hist" id="sat-scores">
       <div className="st-mocks__histHead">
@@ -134,35 +215,48 @@ export function ScoresTable({ entries, onAdd, onDelete, onReview, busy }) {
           <p className="st-muted">{t('sat.scores.sub')}</p>
         </div>
         <span className="st-spacer" />
-        <button type="button" className="ih-btn ih-btn--outline" onClick={onAdd}><PlusIcon size={16} />{t('sat.scores.add')}</button>
+        <button type="button" className="st-mocks__add" onClick={onAdd}><PlusIcon size={16} />{t('sat.scores.add')}</button>
       </div>
       {rows.length === 0 ? <p className="st-muted st-mocks__empty">{t('sat.mock.noResults')}</p> : (
         <div className="st-mocks__table" role="table">
           <div className="st-mocks__tr is-head" role="row">
-            {['date', 'source', 'rw', 'math', 'total', 'delta'].map((k) => <span key={k} role="columnheader">{t(`sat.mock.col.${k}`)}</span>)}
+            {['date', 'source', 'rw', 'math', 'total'].map((k) => <span key={k} role="columnheader">{t(`sat.mock.col.${k}`)}</span>)}
+            <span role="columnheader" />
+            <span role="columnheader">{t('sat.mock.col.delta')}</span>
             <span role="columnheader" />
           </div>
-          {rows.map((r) => (
-            <div key={r.id} className="st-mocks__tr" role="row">
-              <span role="cell" className="is-wide">{r.takenOn ? fmtDate(loc, day(r.takenOn), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—'}</span>
-              <span role="cell" className="is-wide">
-                <span className={`st-mocks__src is-${String(r.source).toLowerCase()}`} title={r.label || undefined}><i /><span>{r.label || t(`sat.scores.src.${r.source}`)}</span></span>
-              </span>
-              <span role="cell" data-label={t('sat.mock.col.rw')}><b>{r.rw ?? '—'}</b></span>
-              <span role="cell" data-label={t('sat.mock.col.math')}><b>{r.math ?? '—'}</b></span>
-              <span role="cell" className="st-mocks__total" data-label={t('sat.mock.col.total')}><b>{r.total ?? '—'}</b></span>
-              <span role="cell" data-label={t('sat.mock.col.delta')} className={r.delta > 0 ? 'is-up' : r.delta < 0 ? 'is-down' : 'st-muted'}>{r.delta == null ? '—' : `${r.delta > 0 ? '+' : ''}${r.delta}`}</span>
-              <span role="cell" className="st-mocks__rowActs">
-                {r.source === 'SIMULATION' && r.mockId && <button type="button" className="st-link" onClick={() => onReview(r.mockId)}>{t('sat.mock.reviewShort')}</button>}
-                {r.source !== 'SIMULATION' && (
-                  <button type="button" className="st-iconbtn" disabled={busy} aria-label={t('sat.scores.delete')} title={t('sat.scores.delete')} onClick={() => setDrop(r)}><TrashIcon size={16} /></button>
-                )}
-              </span>
-            </div>
-          ))}
+          {rows.map((r) => {
+            const c = cells(r)
+            return (
+              <div key={r.id} className={`st-mocks__tr ${isRejected(r) ? 'is-rejected' : ''}`} role="row">
+                <span role="cell" className="is-wide">{r.takenOn ? fmtDate(loc, day(r.takenOn), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—'}</span>
+                <span role="cell" className="is-wide">
+                  <span className={`st-mocks__src is-${String(r.source).toLowerCase()}`} title={sourceText(r, t)}><i /><span>{sourceText(r, t)}</span></span>
+                </span>
+                <span role="cell" data-label={t('sat.mock.col.rw')}><b>{c.rw}</b></span>
+                <span role="cell" data-label={t('sat.mock.col.math')}><b>{c.math}</b></span>
+                <span role="cell" className="st-mocks__total" data-label={t('sat.mock.col.total')}>
+                  <b>{c.total}</b>
+                  {c.estimate && <span className="st-mocks__est">{t('sat.scores.estimate')}</span>}
+                </span>
+                <span role="cell"><ReviewChip status={r.reviewStatus} /></span>
+                <span role="cell" data-label={t('sat.mock.col.delta')} className={r.delta > 0 ? 'is-up' : r.delta < 0 ? 'is-down' : 'st-muted'}>{deltaText(r)}</span>
+                <span role="cell" className="st-mocks__rowActs">
+                  {(r.source === 'SIMULATION' || r.source === 'PAPER') && r.mockId && <button type="button" className="st-link" onClick={() => onReview(r.mockId)}>{t('sat.mock.reviewShort')}</button>}
+                  {/* сравнение 6 → 8 → 10 открывается и отсюда, не только из «Плана»; у отклонённого его нет — баллы не в счёт */}
+                  {(r.bluebookTest === 8 || r.bluebookTest === 10) && !isRejected(r) && onCompare && (
+                    <button type="button" className="st-link" onClick={() => onCompare(r.bluebookTest)}>{t('sat.scores.compare')}</button>
+                  )}
+                  {MANUAL_SOURCES.includes(r.source) && (
+                    <button type="button" className="st-iconbtn" disabled={busy} aria-label={t('sat.scores.delete')} title={t('sat.scores.delete')} onClick={() => setDrop(r)}><TrashIcon size={16} /></button>
+                  )}
+                </span>
+              </div>
+            )
+          })}
         </div>
       )}
-      <p className="st-mocks__note"><InfoIcon size={20} />{t('sat.scores.note')}</p>
+      <p className="st-mocks__note"><InfoIcon size={20} />{t('sat.mock.historyNote')}</p>
       <ConfirmDialog
         open={!!drop}
         title={t('sat.scores.deleteTitle')}
@@ -181,4 +275,4 @@ export function ScoresTable({ entries, onAdd, onDelete, onReview, busy }) {
   )
 }
 
-export { AddScoreDialog, gapToTarget }
+export { AddScoreDialog }

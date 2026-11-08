@@ -13,6 +13,8 @@
 // стандартный отказ с заголовком x-assistant-offtopic, основной лимит
 // ученика возвращается, а вопрос идёт в отдельный счётчик (rateLimit.js).
 // Задержки это не добавляет: первые токены клиент ждал бы и так.
+// Метку в конце своего отказа (так модель пишет после правила REMEMBER, 08.11.2026) вырезает фильтр действий, а
+// засчитывает serviceTail — служебным хвостом [[ASST_OFFTOPIC]] вместо заголовка.
 
 import { bearerFromRequest, verifyTokenStatus } from '@/lib/auth-server.js'
 import { chatStreamRich, hasAnthropicKey } from '@/lib/anthropic.js'
@@ -29,9 +31,11 @@ import {
   openingFocus,
   stuckReason,
   parseChatRequest,
+  parseEventMark,
 } from '@/lib/assistant/prompt.js'
 import { createOfftopicGuard, createRateLimiter } from '@/lib/assistant/rateLimit.js'
-import { loadStudentContext } from '@/lib/assistant/studentContext.js'
+import { dropStudentContext, loadStudentContext } from '@/lib/assistant/studentContext.js'
+import { saveFacts } from '@/lib/db/assistantFacts.js'
 import { assistantPersona } from '@/lib/assistant/persona.js'
 import {
   REPORTED_STREAM_MARKER,
@@ -39,20 +43,22 @@ import {
   fallbackBugSummary,
   shouldAutoReportBug,
 } from '@/lib/assistant/report.js'
-import { actionTail, createActionFilter } from '@/lib/assistant/actions.js'
+import { OFFTOPIC_STREAM_MARKER, actionTail, createActionFilter } from '@/lib/assistant/actions.js'
+import { createScriptFixer } from '@/lib/assistant/mixedScript.js'
 import { clickAllowed } from '@/lib/assistant/clickPolicy.js'
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
 import { adviceText, inferAdviceOffer } from '@/lib/assistant/tracker.js'
 import { isLiveAssistantCall } from '@/lib/assistant/callUsage.js'
 import { itemIntentForTurns } from '@/lib/assistant/items/intent.js'
+import { parseHintMark } from '@/lib/assistant/hintSteps.js'
 import { buildItemCatalog, resolveItem } from '@/lib/assistant/items/catalog.js'
+import { baseModel, pickAssistantModel } from '@/lib/assistant/model.js'
 
 export const runtime = 'nodejs'
 
-// Haiku: ответ справки должен начаться за секунду, а разбор школьного
-// задания ему по силам. Для эксперимента с моделью посильнее — ASSISTANT_MODEL.
-const MODEL = process.env.ASSISTANT_MODEL || 'claude-haiku-5-5'
+// Модель — lib/assistant/model.js: справка и служебные ходы — Haiku 5.5 (ASSISTANT_MODEL), вопрос учителю
+// английского — Sonnet 5.5 (ASSISTANT_TEACHER_MODEL, с 08.11.2026).
 const MAX_OUTPUT_TOKENS = 800
 
 const takeQuota = createRateLimiter()
@@ -119,6 +125,12 @@ export async function POST(request) {
   // задание, раздел не предлагает. Строка лога — сколько раз облачко нажимали, без текста.
   const stuck = stuckReason(parsed.messages[parsed.messages.length - 1].content)
   if (stuck) console.info('[assistant]', JSON.stringify({ kind: 'stuck', reason: stuck }))
+  // Событие трекера («Луна пишет первой», lib/assistant/events.js): строка лога — сколько каких событий, без текста.
+  const event = parseEventMark(parsed.messages[parsed.messages.length - 1].content)
+  if (event) console.info('[assistant]', JSON.stringify({ kind: 'event', type: event.type }))
+  // Ступень подсказки (lib/assistant/hintSteps.js): сколько каких ступеней и был ли ключ — без текста задания и ключа.
+  const hint = parseHintMark(parsed.messages[parsed.messages.length - 1].content)
+  if (hint) console.info('[assistant]', JSON.stringify({ kind: 'hint', step: hint.step, mode: hint.mode, key: Boolean(parsed.hintKey) }))
   const studentTurns = parsed.messages.filter((m) => !(m.role === 'user' && isOpeningTurn(m.content)))
   const lastText = parsed.messages[parsed.messages.length - 1].content
   const pause = offtopic.blockedFor(key)
@@ -131,7 +143,7 @@ export async function POST(request) {
   // параллельно с проверкой звонка и лимитом: это разные походы (бэкенд и
   // база), и ждать их по очереди — лишнее время до первого слова Луны.
   const ctxAt = performance.now()
-  const contextReady = loadStudentContext(bearer, auth.user)
+  const contextReady = loadStudentContext(bearer, auth.user, Date.now(), { rewards: parsed.rewards })
     .catch(() => null)
     .finally(() => {
       marks.ctx = since(ctxAt)
@@ -156,27 +168,38 @@ export async function POST(request) {
 
   const [studentContext, itemCatalog] = await Promise.all([contextReady, itemsReady])
 
-  const modelAt = performance.now()
-  const gen = chatStreamRich({
-    systemPrompt: buildSystemPrompt(assistantPersona(parsed.lang)),
-    messages: buildTurns({
-      ...parsed,
-      user: auth.user,
-      studentContext,
-      items: itemCatalog?.text || null,
-      itemsMode: intent?.followUp ? 'followUp' : intent?.guess ? 'guess' : 'ask',
-      today: new Date().toISOString().slice(0, 10),
-    }),
-    model: MODEL,
-    maxOutputTokens: MAX_OUTPUT_TOKENS,
-    task: 'site_assistant',
+  // Вопрос учителю — модели учителя (model.js). Служебный ход — не вопрос ученика, даже если в пометке слово «правило».
+  const picked = pickAssistantModel({
+    question: lastText,
+    unchecked: !opening && !wake && openingFocus(parsed.screen.text).unchecked,
+    service: Boolean(opening || wake || stuck || hint || event),
+    call: inCall,
+  })
+  const systemPrompt = buildSystemPrompt(assistantPersona(parsed.lang), { rewards: parsed.rewards })
+  // chatStreamRich собирает свои объекты сообщений из этих (toRichMessages), поэтому повтор на другой модели берёт
+  // тот же ход без пересборки.
+  const turns = buildTurns({
+    ...parsed,
+    user: auth.user,
+    studentContext,
+    items: itemCatalog?.text || null,
+    itemsMode: intent?.followUp ? 'followUp' : intent?.guess ? 'guess' : 'ask',
+    today: new Date().toISOString().slice(0, 10),
   })
 
   // Читаем, пока не станет ясно, метка это или ответ.
-  let head = ''
-  let verdict = 'undecided'
-  let finished = false
-  try {
+  const startReply = async (model) => {
+    const gen = chatStreamRich({
+      systemPrompt,
+      messages: turns,
+      model,
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      task: 'site_assistant',
+      ...(model === picked.model ? { effort: picked.effort } : {}),
+    })
+    let head = ''
+    let verdict = 'undecided'
+    let finished = false
     while (verdict === 'undecided') {
       const { value, done } = await gen.next()
       if (done) {
@@ -188,16 +211,35 @@ export async function POST(request) {
         verdict = classifyStart(head)
       }
     }
+    return { gen, head, verdict, finished, model }
+  }
+
+  const modelAt = performance.now()
+  let reply
+  try {
+    reply = await startReply(picked.model).catch((err) => {
+      if (!picked.teacher) throw err
+      console.error('[assistant] teacher model failed:', err?.message || err)
+      return null
+    })
+    // Модель учителя не ответила — сбой, свой лимит запросов у Sonnet, отказ классификатора до первого слова: тот же
+    // ход на Haiku. Ученик получит ответ попроще, а не «не удалось ответить».
+    if (picked.teacher && (!reply || (reply.finished && !reply.head.trim()))) reply = await startReply(baseModel())
   } catch (err) {
     console.error('[assistant] model failed:', err?.message || err)
     // Ответа не было — и вопрос не должен съесть лимит ученика.
     limiter.refund(key)
     return json(502, { error: 'model_failed' })
   }
+  // answeredModel — модель, которая на самом деле ответила: у вопроса учителю это Sonnet, а после её сбоя — Haiku.
+  const { gen, head, finished, model: answeredModel } = reply
+  let { verdict } = reply
 
   marks.model = since(modelAt)
   marks.total = since(startedAt)
-  const timingHeaders = { 'server-timing': serverTiming(marks) }
+  // x-assistant-model — какая модель ответила: окно кладёт её в журнал оценок (/api/assistant/rating, ТЗ 8.5).
+  // Заголовком, а не хвостом стрима: тело ответа и его тесты не меняются.
+  const timingHeaders = { 'server-timing': serverTiming(marks), 'x-assistant-model': answeredModel }
 
   // Модель закончила на обрывке метки («[[OFF») — ответа по теме тут нет.
   if (finished && verdict === 'undecided' && head.trim()) verdict = 'offtopic'
@@ -235,8 +277,10 @@ export async function POST(request) {
     shown += out
     return out
   }
-  const visible = (text) => keep(actions.push(filter.push(text)))
-  const visibleTail = () => keep(actions.push(filter.flush()) + actions.flush())
+  // Латиница посреди казахского слова («бітken») — чинит код (mixedScript.js), последним, на видимом тексте.
+  const script = createScriptFixer()
+  const visible = (text) => keep(script.push(actions.push(filter.push(text))))
+  const visibleTail = () => keep(script.push(actions.push(filter.flush()) + actions.flush()) + script.flush())
   // Служебный хвост: действие, затем «отчёт записан». Клиент режет всё от
   // первого [[ASST_ (actions.js), поэтому оба идут после всего видимого текста.
   // Действие ответа: метка модели, а в первой реплике без метки — кнопка «Совета
@@ -248,8 +292,15 @@ export async function POST(request) {
   // не опасное и не ответ за ученика на непроверенном задании. Метку модели сверяем с
   // его же репликой: RULES это просят, но держит их модель через раз.
   const finalAction = async () => {
-    if (focusTask || wake || stuck) return null
+    if (focusTask || wake || stuck || hint) return null
     const action = actions.action()
+    // Ответ на событие: кнопки ставит окно по таблице событий (events.js) — перерыв, «мало времени», «На сегодня всё»
+    // модели не доверяем, даже если указание она пропустила. Остаётся только её предложение открыть раздел: оно нужно,
+    // когда плана по дням нет и окну нечего поставить на «Начать».
+    if (event) {
+      if (action && (action.kind !== 'open' || action.feedback || action.item)) return null
+      return action ? { ...action, now: false } : inferAdviceOffer(shown, studentContext)
+    }
     if (action?.kind === 'click') {
       return !opening && clickAllowed(action.label, { screenText: parsed.screen.text, userText: lastText }) ? action : null
     }
@@ -261,9 +312,20 @@ export async function POST(request) {
     }
     return action || (opening ? inferAdviceOffer(shown, studentContext) : null)
   }
+  // Отказ «не по теме» меткой в конце ответа (actions.js, OFFTOPIC_MARK). Свой отказ модели ученик уже видит, поэтому
+  // стандартного нет — только учёт, как у метки в начале: основной лимит назад, вопрос — в счётчик «не по теме», окно
+  // не берёт эту пару в историю. Ни действия, ни заметки, ни памяти, ни поломки: ученик спрашивал не про учёбу.
+  // Служебный ход (открытие окна, позывной, «Подсказать?», событие) — не слова ученика: там метку просто вырезали.
+  const lateOfftopic = () => actions.offtopic() && !opening && !wake && !stuck && !hint && !event
   const serviceTail = async () => {
+    if (lateOfftopic()) {
+      limiter.refund(key)
+      offtopic.record(key)
+      return OFFTOPIC_STREAM_MARKER
+    }
     const action = await finalAction()
     await saveNote(action)
+    await saveMemory()
     return actionTail(action) + ((await saveReport()) ? REPORTED_STREAM_MARKER : '')
   }
   // Заметка Луны-трекера (lib/db/assistantTracker.js): совет — это её предложение
@@ -274,8 +336,20 @@ export async function POST(request) {
   // в строку идёт только сам совет (adviceText).
   const saveNote = async (action) => {
     // Конкретная вещь (урок, тема) — не совет раздела: трекер сверяет советы по разделам.
-    if (action?.kind !== 'open' || action.item || (action.now && !opening)) return
+    // Обращение в Feedback — тоже не совет: Луна помогает написать, а не зовёт учиться.
+    if (action?.kind !== 'open' || action.item || action.feedback || (action.now && !opening)) return
     await saveAdviceNote(key, { target: action.target, advice: adviceText(shown) }).catch(() => false)
+  }
+  // Память Луны (ТЗ v2.0, 8.1; lib/assistant/facts.js): факт из метки [[REMEMBER …]] — только из ответа на слова
+  // ученика, не на служебный ход (открытие окна, событие, подсказка): там ученик о себе ничего не говорил. Что
+  // чувствительно, отсекает saveFacts. Записали — профиль из кэша долой: следующий ответ уже знает факт.
+  const saveMemory = async () => {
+    if (opening) return
+    const facts = actions.facts()
+    if (!facts.length) return
+    const n = await saveFacts(key, facts).catch(() => 0)
+    console.info('[assistant]', JSON.stringify({ kind: 'fact', proposed: facts.length, saved: n }))
+    if (n) dropStudentContext(auth.user.userId)
   }
   const first = visible(head) + (finished ? visibleTail() : '')
   const saveReport = async () => {

@@ -75,7 +75,7 @@ describe('помощник по сайту — повтор после ошиб�
       </I18nProvider>,
     )
     fireEvent.click(await screen.findByRole('button', { name: 'Помощник' }, WAIT))
-    fireEvent.click(await screen.findByRole('button', { name: 'Почему мой ответ неверный?' }, WAIT))
+    fireEvent.click(await screen.findByRole('button', { name: 'Что мне делать сегодня?' }, WAIT))
     await screen.findByRole('alert', {}, WAIT)
 
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }))

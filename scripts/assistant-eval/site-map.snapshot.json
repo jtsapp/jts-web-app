@@ -1,0 +1,987 @@
+{
+  "screens": {
+    "account-deleted": [
+      "profile"
+    ],
+    "arcade": [
+      "arcade"
+    ],
+    "booth": [
+      "исключение: аккаунт класса (вход в урок с общего компьютера), не ученический кабинет"
+    ],
+    "cartoons": [
+      "cartoons"
+    ],
+    "chat": [
+      "registration"
+    ],
+    "complete-registration": [
+      "registration"
+    ],
+    "contracts": [
+      "cabinet"
+    ],
+    "course-catalog": [
+      "исключение: вход только у преподавателя (кнопка в «Уроках» — LessonsPage), ученик сюда не попадает"
+    ],
+    "feedback": [
+      "feedback"
+    ],
+    "ge-onboarding": [
+      "home"
+    ],
+    "ge-plan": [
+      "home"
+    ],
+    "ge-route": [
+      "home"
+    ],
+    "grammar-games": [
+      "grammar-games"
+    ],
+    "group": [
+      "cabinet"
+    ],
+    "home": [
+      "demo",
+      "home"
+    ],
+    "homework": [
+      "homework"
+    ],
+    "ielts": [
+      "ielts"
+    ],
+    "ielts-diagnostic": [
+      "ielts"
+    ],
+    "ielts-diagnostic-result": [
+      "ielts"
+    ],
+    "ielts-dictation": [
+      "ielts"
+    ],
+    "ielts-listening": [
+      "ielts"
+    ],
+    "ielts-listening-run": [
+      "ielts"
+    ],
+    "ielts-mock": [
+      "ielts"
+    ],
+    "ielts-onboarding": [
+      "ielts"
+    ],
+    "ielts-pricing": [
+      "ielts"
+    ],
+    "ielts-progress": [
+      "ielts"
+    ],
+    "ielts-reading": [
+      "ielts"
+    ],
+    "ielts-reading-review": [
+      "ielts"
+    ],
+    "ielts-reading-run": [
+      "ielts"
+    ],
+    "ielts-route": [
+      "ielts"
+    ],
+    "ielts-speaking": [
+      "ielts"
+    ],
+    "ielts-speaking-run": [
+      "ielts"
+    ],
+    "ielts-writing": [
+      "ielts"
+    ],
+    "ielts-writing-run": [
+      "ielts"
+    ],
+    "kingdom": [
+      "course-map"
+    ],
+    "kingdom-interior": [
+      "course-map",
+      "lesson-player"
+    ],
+    "lesson-workspace": [
+      "self-study",
+      "homework"
+    ],
+    "lessons": [
+      "lessons-tabs"
+    ],
+    "listen": [
+      "just-listen"
+    ],
+    "listenchoose": [
+      "listen-choose"
+    ],
+    "listening": [
+      "listening"
+    ],
+    "live-lesson": [
+      "live-lesson"
+    ],
+    "login-password": [
+      "registration"
+    ],
+    "minutes": [
+      "tutor-minutes"
+    ],
+    "my-teacher": [
+      "cabinet"
+    ],
+    "notifications": [
+      "cabinet"
+    ],
+    "numbers": [
+      "numbers"
+    ],
+    "otp": [
+      "registration"
+    ],
+    "phone": [
+      "registration"
+    ],
+    "placement": [
+      "placement"
+    ],
+    "placement-results": [
+      "home"
+    ],
+    "practice": [
+      "practice"
+    ],
+    "prepositions": [
+      "prepositions"
+    ],
+    "pricing": [
+      "plans"
+    ],
+    "prizes": [
+      "coins",
+      "tokens"
+    ],
+    "profile": [
+      "profile"
+    ],
+    "pronunciation": [
+      "pronunciation"
+    ],
+    "reading": [
+      "reading"
+    ],
+    "reg-birth": [
+      "registration"
+    ],
+    "reg-contacts": [
+      "registration"
+    ],
+    "reg-email": [
+      "registration"
+    ],
+    "reg-google": [
+      "registration"
+    ],
+    "reg-lang": [
+      "registration"
+    ],
+    "reg-name": [
+      "registration"
+    ],
+    "reg-phone": [
+      "registration"
+    ],
+    "sat": [
+      "sat"
+    ],
+    "sat-daily": [
+      "sat"
+    ],
+    "sat-diagnostic": [
+      "sat"
+    ],
+    "sat-mock": [
+      "sat"
+    ],
+    "sat-mock-review": [
+      "sat"
+    ],
+    "sat-onboarding": [
+      "sat"
+    ],
+    "sat-papers": [
+      "sat"
+    ],
+    "sat-pricing": [
+      "sat"
+    ],
+    "sat-run": [
+      "sat"
+    ],
+    "sat-study": [
+      "sat"
+    ],
+    "sat-unit": [
+      "sat"
+    ],
+    "sat-weekly": [
+      "sat"
+    ],
+    "services": [
+      "about"
+    ],
+    "set-password": [
+      "registration"
+    ],
+    "shadowing": [
+      "shadowing"
+    ],
+    "situations": [
+      "situations"
+    ],
+    "speaking-test": [
+      "speaking-buddy"
+    ],
+    "speakspin": [
+      "speakspin"
+    ],
+    "speed-reading": [
+      "speed-reading"
+    ],
+    "success": [
+      "registration"
+    ],
+    "teacher-pick": [
+      "cabinet"
+    ],
+    "teacher-wizard": [
+      "cabinet"
+    ],
+    "test": [
+      "placement"
+    ],
+    "test-intro": [
+      "placement"
+    ],
+    "tokens": [
+      "coins",
+      "tokens"
+    ],
+    "tutor-analysis": [
+      "speaking-buddy"
+    ],
+    "tutor-call-report": [
+      "tutor-reports",
+      "speaking-buddy"
+    ],
+    "tutor-chat-history": [
+      "tutor-reports",
+      "speaking-buddy"
+    ],
+    "tutor-choose": [
+      "speaking-buddy"
+    ],
+    "tutor-dashboard": [
+      "speaking-buddy"
+    ],
+    "tutor-error-analytics": [
+      "tutor-reports",
+      "speaking-buddy"
+    ],
+    "tutor-interests": [
+      "speaking-buddy"
+    ],
+    "tutor-lang": [
+      "speaking-buddy"
+    ],
+    "tutor-lesson-plan": [
+      "speaking-buddy"
+    ],
+    "tutor-level-offer": [
+      "speaking-buddy"
+    ],
+    "tutor-level-result": [
+      "speaking-buddy"
+    ],
+    "tutor-loading": [
+      "speaking-buddy"
+    ],
+    "tutor-manage": [
+      "speaking-buddy"
+    ],
+    "tutor-practice-result": [
+      "tutor-reports",
+      "speaking-buddy"
+    ],
+    "tutor-profession": [
+      "speaking-buddy"
+    ],
+    "tutor-scenarios": [
+      "tutor-scenarios",
+      "speaking-buddy"
+    ],
+    "tutor-voice-chat": [
+      "speaking-buddy"
+    ],
+    "tutor-voice-intro": [
+      "speaking-buddy"
+    ],
+    "tutor-welcome": [
+      "speaking-buddy"
+    ],
+    "verbs": [
+      "verbs"
+    ],
+    "vocab": [
+      "vocabulary"
+    ],
+    "welcome": [
+      "registration"
+    ],
+    "wordhunt": [
+      "wordhunt"
+    ],
+    "words": [
+      "words-pictures"
+    ],
+    "workbook": [
+      "workbooks"
+    ],
+    "writing": [
+      "writing"
+    ]
+  },
+  "menu": [
+    {
+      "key": "home",
+      "label": "Главная",
+      "screen": "home"
+    },
+    {
+      "key": "my-teacher",
+      "label": "Мой учитель",
+      "screen": "my-teacher"
+    },
+    {
+      "key": "group",
+      "label": "Выбрать группу",
+      "screen": "group"
+    },
+    {
+      "key": "practice",
+      "label": "Практика",
+      "screen": "practice"
+    },
+    {
+      "key": "tutor",
+      "label": "Speaking Buddy",
+      "screen": "tutor-dashboard"
+    },
+    {
+      "key": "lessons",
+      "label": "Уроки",
+      "screen": "lessons"
+    },
+    {
+      "key": "homework",
+      "label": "Домашняя работа",
+      "screen": "homework"
+    },
+    {
+      "key": "ielts",
+      "label": "IELTS",
+      "screen": "ielts"
+    },
+    {
+      "key": "sat",
+      "label": "SAT",
+      "screen": "sat"
+    },
+    {
+      "key": "vocab",
+      "label": "Словарь",
+      "screen": "vocab"
+    },
+    {
+      "key": "learning",
+      "label": "Повторение",
+      "screen": "kingdom"
+    },
+    {
+      "key": "tokens",
+      "label": "Мои токены",
+      "screen": "tokens"
+    },
+    {
+      "key": "prizes",
+      "label": "Призы",
+      "screen": "prizes"
+    },
+    {
+      "key": "feedback",
+      "label": "Feedback",
+      "screen": "feedback"
+    },
+    {
+      "key": "notifications",
+      "label": "Уведомления",
+      "screen": "notifications"
+    },
+    {
+      "key": "contracts",
+      "label": "Договоры",
+      "screen": "contracts"
+    }
+  ],
+  "practice": [
+    {
+      "tab": "listening",
+      "label": "Аудирование",
+      "cards": [
+        {
+          "id": "listenchoose",
+          "title": "Услышь детали — найди свою картинку"
+        },
+        {
+          "id": "justListen",
+          "title": "Just to Listen"
+        },
+        {
+          "id": "speedReading",
+          "title": "Скорочтение"
+        },
+        {
+          "id": "cartoons",
+          "title": "Cartoon World"
+        },
+        {
+          "id": "shadowing",
+          "title": "Шэдоуинг"
+        },
+        {
+          "id": "karaoke",
+          "title": "Караоке"
+        },
+        {
+          "id": "memes",
+          "title": "Мемы и рилсы"
+        },
+        {
+          "id": "tales",
+          "title": "Сказки"
+        }
+      ]
+    },
+    {
+      "tab": "reading",
+      "label": "Чтение",
+      "cards": [
+        {
+          "id": "reading",
+          "title": "Читай по-английски и разбирай прочитанное"
+        },
+        {
+          "id": "books",
+          "title": "Книжки"
+        },
+        {
+          "id": "comics",
+          "title": "Комиксы"
+        },
+        {
+          "id": "tales",
+          "title": "Сказки"
+        }
+      ]
+    },
+    {
+      "tab": "writing",
+      "label": "Письмо",
+      "cards": [
+        {
+          "id": "grammar",
+          "title": "Грамматика"
+        },
+        {
+          "id": "prepositions",
+          "title": "Prepositions World"
+        },
+        {
+          "id": "writing",
+          "title": "Учись писать по-английски по шагам"
+        },
+        {
+          "id": "verbs",
+          "title": "Три формы глагола — в ритме бита"
+        },
+        {
+          "id": "workbooks",
+          "title": "Воркбуки"
+        }
+      ]
+    },
+    {
+      "tab": "speaking",
+      "label": "Говорение",
+      "cards": [
+        {
+          "id": "pronunciation",
+          "title": "Pronunciation World"
+        },
+        {
+          "id": "situations",
+          "title": "Ситуации"
+        },
+        {
+          "id": "speakspin",
+          "title": "SpeakSpin: одна минута английского"
+        },
+        {
+          "id": "shadowing",
+          "title": "Шэдоуинг"
+        },
+        {
+          "id": "karaoke",
+          "title": "Караоке"
+        },
+        {
+          "id": "tales",
+          "title": "Сказки"
+        }
+      ]
+    },
+    {
+      "tab": "grammarGames",
+      "label": "Грамматика",
+      "cards": [
+        {
+          "id": "topics",
+          "title": "Темы по уровням"
+        },
+        {
+          "id": "listening",
+          "title": "Тренируй Listening в мини-игре"
+        },
+        {
+          "id": "words",
+          "title": "Слушай слово и находи его на картинке"
+        },
+        {
+          "id": "numbers",
+          "title": "Мир чисел Декстера"
+        },
+        {
+          "id": "wordhunt",
+          "title": "Word Hunt"
+        },
+        {
+          "id": "speak",
+          "title": "Speak or Die"
+        },
+        {
+          "id": "runner",
+          "title": "Word Rush"
+        }
+      ]
+    }
+  ],
+  "destinations": [
+    {
+      "id": "home",
+      "screen": "home"
+    },
+    {
+      "id": "learning",
+      "screen": "kingdom"
+    },
+    {
+      "id": "practice",
+      "screen": "practice"
+    },
+    {
+      "id": "practice-listening",
+      "screen": "practice",
+      "tab": "listening"
+    },
+    {
+      "id": "practice-reading",
+      "screen": "practice",
+      "tab": "reading"
+    },
+    {
+      "id": "practice-writing",
+      "screen": "practice",
+      "tab": "writing"
+    },
+    {
+      "id": "practice-speaking",
+      "screen": "practice",
+      "tab": "speaking"
+    },
+    {
+      "id": "listening",
+      "screen": "listening"
+    },
+    {
+      "id": "listenchoose",
+      "screen": "listenchoose"
+    },
+    {
+      "id": "cartoons",
+      "screen": "cartoons"
+    },
+    {
+      "id": "words",
+      "screen": "words"
+    },
+    {
+      "id": "numbers",
+      "screen": "numbers"
+    },
+    {
+      "id": "listen",
+      "screen": "listen"
+    },
+    {
+      "id": "speed-reading",
+      "screen": "speed-reading"
+    },
+    {
+      "id": "grammar-games",
+      "screen": "grammar-games"
+    },
+    {
+      "id": "prepositions",
+      "screen": "prepositions"
+    },
+    {
+      "id": "pronunciation",
+      "screen": "pronunciation"
+    },
+    {
+      "id": "reading",
+      "screen": "reading"
+    },
+    {
+      "id": "writing",
+      "screen": "writing"
+    },
+    {
+      "id": "verbs",
+      "screen": "verbs"
+    },
+    {
+      "id": "speakspin",
+      "screen": "speakspin"
+    },
+    {
+      "id": "wordhunt",
+      "screen": "wordhunt"
+    },
+    {
+      "id": "arcade",
+      "screen": "arcade"
+    },
+    {
+      "id": "shadowing",
+      "screen": "practice",
+      "card": "shadowing"
+    },
+    {
+      "id": "situations",
+      "screen": "practice",
+      "card": "situations"
+    },
+    {
+      "id": "grammar",
+      "screen": "practice",
+      "card": "grammar"
+    },
+    {
+      "id": "workbooks",
+      "screen": "practice",
+      "card": "workbooks"
+    },
+    {
+      "id": "books",
+      "screen": "practice",
+      "card": "books"
+    },
+    {
+      "id": "comics",
+      "screen": "practice",
+      "card": "comics"
+    },
+    {
+      "id": "karaoke",
+      "screen": "practice",
+      "card": "karaoke"
+    },
+    {
+      "id": "tales",
+      "screen": "practice",
+      "card": "tales"
+    },
+    {
+      "id": "memes",
+      "screen": "practice",
+      "card": "memes"
+    },
+    {
+      "id": "tutor",
+      "screen": "tutor-dashboard"
+    },
+    {
+      "id": "vocab",
+      "screen": "vocab"
+    },
+    {
+      "id": "lessons",
+      "screen": "lessons"
+    },
+    {
+      "id": "homework",
+      "screen": "homework"
+    },
+    {
+      "id": "feedback",
+      "screen": "feedback"
+    },
+    {
+      "id": "profile",
+      "screen": "profile"
+    },
+    {
+      "id": "pricing",
+      "screen": "pricing"
+    },
+    {
+      "id": "minutes",
+      "screen": "minutes"
+    }
+  ],
+  "articles": {
+    "about": {
+      "title": "Что такое Just to Study и как устроен сайт",
+      "hash": "x4la0o"
+    },
+    "coins": {
+      "title": "Монеты и серия дней",
+      "when": "noRewards",
+      "hash": "1lejyej"
+    },
+    "tokens": {
+      "title": "Токены и призы",
+      "when": "rewards",
+      "hash": "1ay21jx"
+    },
+    "registration": {
+      "title": "Регистрация и вход",
+      "hash": "a3wcm7"
+    },
+    "demo": {
+      "title": "Демо-доступ и пробный урок",
+      "hash": "13cqd10"
+    },
+    "placement": {
+      "title": "Тест уровня",
+      "hash": "12qst29"
+    },
+    "level": {
+      "title": "Уровень английского и звания",
+      "hash": "6pu4b1"
+    },
+    "home": {
+      "title": "Главная",
+      "hash": "1xuha7h"
+    },
+    "course-map": {
+      "title": "Повторение: карта курса",
+      "hash": "wtic99"
+    },
+    "lesson-player": {
+      "title": "Как проходить урок",
+      "hash": "dlt3zt"
+    },
+    "answer-checking": {
+      "title": "Как проверяются письменные ответы",
+      "hash": "1jhwfxq"
+    },
+    "lessons-tabs": {
+      "title": "Уроки: вкладки и расписание",
+      "hash": "1eten58"
+    },
+    "school-rules": {
+      "title": "Правила обучения школы: перенос, отмена, заморозка",
+      "hash": "uwr5iv"
+    },
+    "live-lesson": {
+      "title": "Урок с преподавателем",
+      "hash": "95kixs"
+    },
+    "self-study": {
+      "title": "Самостоятельно",
+      "hash": "8mevr8"
+    },
+    "homework": {
+      "title": "Домашняя работа",
+      "hash": "1g3lvgk"
+    },
+    "cabinet": {
+      "title": "Мой учитель, Выбрать группу, Уведомления, Договоры",
+      "hash": "1aor2vj"
+    },
+    "practice": {
+      "title": "Практика: обзор и лимиты",
+      "hash": "13w4ztp"
+    },
+    "grammar": {
+      "title": "Практика: Грамматика",
+      "hash": "1fjs30y"
+    },
+    "listening": {
+      "title": "Практика: Аудирование",
+      "hash": "15fqgee"
+    },
+    "listen-choose": {
+      "title": "Практика: Услышь детали (Слушай и выбирай)",
+      "hash": "1e5ryfq"
+    },
+    "cartoons": {
+      "title": "Практика: Cartoon World",
+      "hash": "1uiecor"
+    },
+    "reading": {
+      "title": "Практика: Чтение",
+      "hash": "jy5rcw"
+    },
+    "wordhunt": {
+      "title": "Практика: Word Hunt",
+      "hash": "ygv2rz"
+    },
+    "writing": {
+      "title": "Практика: Письмо",
+      "hash": "1gw0lqh"
+    },
+    "shadowing": {
+      "title": "Практика: Шэдоуинг",
+      "hash": "35c1lb"
+    },
+    "situations": {
+      "title": "Практика: Ситуации и ситуативки",
+      "hash": "zbcus2"
+    },
+    "workbooks": {
+      "title": "Практика: Воркбуки",
+      "hash": "opiio6"
+    },
+    "verbs": {
+      "title": "Практика: Неправильные глаголы",
+      "hash": "6qko30"
+    },
+    "words-pictures": {
+      "title": "Практика: Слова в картинках",
+      "hash": "1kntqt9"
+    },
+    "just-listen": {
+      "title": "Практика: Just to Listen",
+      "hash": "149il6l"
+    },
+    "prepositions": {
+      "title": "Практика: Prepositions World",
+      "hash": "1ehe129"
+    },
+    "pronunciation": {
+      "title": "Практика: Pronunciation World",
+      "hash": "1152dbh"
+    },
+    "grammar-games": {
+      "title": "Практика: Грамматика · игры",
+      "hash": "1yb17z4"
+    },
+    "speed-reading": {
+      "title": "Практика: Скорочтение",
+      "hash": "1e41jb1"
+    },
+    "library": {
+      "title": "Практика: Книжки, сказки, комиксы, мемы, караоке",
+      "hash": "zccxu4"
+    },
+    "speakspin": {
+      "title": "Практика: SpeakSpin",
+      "hash": "159fahh"
+    },
+    "numbers": {
+      "title": "Практика: Мир чисел Декстера",
+      "hash": "4rfrdh"
+    },
+    "arcade": {
+      "title": "Практика: Аркада — Speak or Die и Word Rush",
+      "hash": "eynx3a"
+    },
+    "vocabulary": {
+      "title": "Словарь",
+      "hash": "tv6n0h"
+    },
+    "speaking-buddy": {
+      "title": "Speaking Buddy — AI-тьютор голосом",
+      "hash": "vmiaat"
+    },
+    "tutor-scenarios": {
+      "title": "Speaking Buddy: сценарии",
+      "hash": "1dtcu39"
+    },
+    "tutor-reports": {
+      "title": "Speaking Buddy: разбор разговора и история",
+      "hash": "1g2hpa"
+    },
+    "tutor-minutes": {
+      "title": "Минуты AI-тьютора и докупка",
+      "hash": "uozaos"
+    },
+    "ielts": {
+      "title": "IELTS",
+      "hash": "nunxwu"
+    },
+    "sat": {
+      "title": "SAT",
+      "hash": "h4kksz"
+    },
+    "profile": {
+      "title": "Профиль и настройки",
+      "hash": "12axtgs"
+    },
+    "plans": {
+      "title": "Тарифы и оплата",
+      "hash": "1c1ihik"
+    },
+    "feedback": {
+      "title": "Feedback — отзывы и жалобы",
+      "hash": "10j2dfh"
+    },
+    "contacts": {
+      "title": "Официальные контакты",
+      "hash": "1xit33j"
+    },
+    "troubleshooting": {
+      "title": "Частые проблемы",
+      "hash": "15mepws"
+    },
+    "support": {
+      "title": "Куда обращаться",
+      "hash": "3czd9t"
+    },
+    "faq": {
+      "title": "Частые вопросы → куда",
+      "hash": "1nqkfi1"
+    }
+  }
+}

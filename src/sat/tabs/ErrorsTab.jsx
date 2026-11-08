@@ -1,152 +1,233 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { getSatErrors, patchSatError } from '../../api.js'
+import { getSatErrorLog } from '../../api.js'
 import { loadToken } from '../../lib/session.js'
-import EmptyState from '../../ielts/ui/EmptyState.jsx'
-import { FlagIcon } from '../../ielts/icons.jsx'
-import { ReplayIcon } from '../icons.jsx'
-import { ERROR_TYPES } from '../study/ErrorTypeDialog.jsx'
-import { parse } from '../model/plan.js'
+import { plural } from '../../lib/plural.js'
+import { ArrowForwardIcon, CloseIcon, HelpIcon, InfoIcon } from '../../ielts/icons.jsx'
+import { HistoryIcon, OkCircleIcon } from '../icons.jsx'
 import { skillName } from '../names.js'
-import { filterErrors, normType, paginate, reasonCounts, sortErrors, statusCounts, statusOf, STATUSES } from '../model/errors.js'
+import { parse } from '../model/plan.js'
+import { fmtDate } from '../model/dates.js'
+import { DIFFICULTIES } from '../practice/FilterBlocks.jsx'
+import {
+  EMPTY, REASON_FILTER, SOURCES, STATUSES, activeFilters, barsOf, counters, filterItems, insightTone, reasonBars, skillsIn,
+} from '../errors/errorLog.js'
+import { DiffChip, REASON_ICON, ReasonChip, SourceChip, StatusChip, useReasonWord } from '../errors/chips.jsx'
+import { PillDate, PillSelect } from '../errors/PillFilters.jsx'
+import ErrorReview from '../errors/ErrorReview.jsx'
 
-const TYPES = ERROR_TYPES.map((x) => x.key)
+const SECTION_SHORT = { rw: 'R&W', math: 'Math' }
+const STEPS = [['wrong', CloseIcon], ['reason', HelpIcon], ['log', HistoryIcon], ['review', OkCircleIcon]]
+
+/** «всего / разобрано / не разобрано»: в журнале — серые плитки и полоса доли, в статистике — белые на всю ширину. */
+function Counters({ c, wide }) {
+  const { t } = useI18n()
+  return (
+    <div className={`st-elcnt ${wide ? 'is-wide' : ''}`}>
+      <div className="st-elcnt__tile"><b>{c.total}</b><span>{t('sat.el.cnt.total')}</span></div>
+      <div className="st-elcnt__tile is-ok"><b>{c.reviewed}</b><span>{t('sat.el.cnt.reviewed')}</span></div>
+      <div className="st-elcnt__tile is-open"><b>{c.open}</b><span>{t('sat.el.cnt.open')}</span></div>
+      {!wide && (
+        <div className="st-elcnt__bar">
+          <b>{t('sat.el.reviewedPct', { p: String(c.pct) })}</b>
+          <i><i style={{ width: `${c.pct}%` }} /></i>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Строки «название — полоса — число» правой колонки статистики. */
+function Bars({ title, rows, tone }) {
+  return (
+    <section className="st-card st-elbars">
+      <h3>{title}</h3>
+      {rows.map((r) => (
+        <div key={r.key} className="st-elbars__row">
+          <span>{r.label}</span>
+          <i className={`is-${tone}`}><i style={{ width: `${r.width}%` }} /></i>
+          <b>{r.n}</b>
+        </div>
+      ))}
+    </section>
+  )
+}
 
 /**
- * «Ошибки» — журнал ошибок (B9, прототип errors.js после cfbaf69d / ab84ead6). Шапка — что это за журнал и одно
- * действие (повторить то, чему пора); четыре плитки (всего, пора, ждут, разобрано) — они же фильтр статуса; причины
- * одной строкой — фильтр по типу ошибки; ниже карточки, по десять на страницу с номерами страниц.
- * Промахи, записанные кнопкой «Log error» (B3), несут свой заголовок и тему; остальные — начало вопроса и навык.
- * Тип ошибки меняется прямо в карточке; «Разобрано» — ручная отметка, её можно снять.
+ * «Работа над ошибками» («NEW 2»: журнал 17:9002, разбор 17:9308, статистика 17:9658, пусто 17:9900). Журнал —
+ * счётчики, фильтры-таблетки и таблица; клик по строке открывает разбор справа. «Статистика» отвечает на вопрос
+ * «над чем работать»: выводы сервера, распределение по причинам и три разреза. Данные — журнал, который платформа
+ * уже собирает (причину называет сам студент), плюс неотвеченные.
  */
-export default function ErrorsTab({ onReview }) {
+export default function ErrorsTab({ onPractice, onOpenPractice, explainLang, initialSkill }) {
   const { t, lang } = useI18n()
   const token = loadToken()
-  const [list, setList] = useState(null)
-  const [status, setStatus] = useState('all')
-  const [kind, setKind] = useState('all')
-  const [page, setPage] = useState(1)
-  const [busy, setBusy] = useState(false)
-  const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
-  const fmt = (s) => new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'long' }).format(parse(String(s).slice(0, 10)))
+  const word = useReasonWord()
+  const [page, setPage] = useState(null)
+  const [view, setView] = useState('journal')
+  const [filters, setFilters] = useState(() => ({ ...EMPTY, skill: initialSkill || 'all' }))
+  const [open, setOpen] = useState(null)
 
   const load = useCallback(() => {
-    getSatErrors(token, 'all')
-      .then((l) => setList(Array.isArray(l) ? l : []))
-      .catch(() => setList([]))
+    getSatErrorLog(token).then(setPage).catch(() => setPage({ items: [], stats: null }))
   }, [token])
   useEffect(() => load(), [load])
 
-  const all = useMemo(() => sortErrors(list || []), [list])
-  const counts = statusCounts(all)
-  const byStatus = filterErrors(all, { status })
-  const reasons = reasonCounts(byStatus, TYPES)
-  const shown = filterErrors(byStatus, { kind })
-  const pg = paginate(shown, page)
+  const items = useMemo(() => filterItems(page?.items || [], filters), [page, filters])
+  const cnt = useMemo(() => counters(page?.items || []), [page])
+  const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
+  const day = (iso) => fmtDate(loc, parse(String(iso).slice(0, 10)), { day: 'numeric', month: 'short' })
+  const set = (k) => (v) => setFilters((f) => ({ ...f, [k]: v }))
 
-  const pickStatus = (s) => {
-    setStatus(s)
-    setPage(1)
-  }
-  const pickKind = (k) => {
-    setKind((cur) => (cur === k ? 'all' : k))
-    setPage(1)
-  }
-
-  const patch = async (id, body) => {
-    setBusy(true)
-    try {
-      const upd = await patchSatError(token, id, body)
-      setList((l) => l.map((e) => (e.id === id ? { ...e, ...upd } : e)))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (!list) return null
-  return (
-    <div className="st-errs">
-      <div className="st-errs__top">
-        <p className="st-muted">{t('sat.errs.lead')}</p>
-        <span className="st-spacer" />
-        <button type="button" className="ih-cta st-errs__all" disabled={!counts.due} onClick={onReview}>
-          <ReplayIcon size={18} />{counts.due ? t('sat.errs.reviewAll', { n: String(counts.due) }) : t('sat.errs.nothingDue')}
-        </button>
+  if (!page) return <p className="st-muted">{t('sat.study.loading')}</p>
+  const empty = !page.items.length
+  const head = (
+    <div className="st-el__head">
+      <div>
+        <h1>{t('sat.el.title')}</h1>
+        <p className="st-muted">{t(empty ? 'sat.el.sub.empty' : view === 'stats' ? 'sat.el.sub.stats' : 'sat.el.sub.journal')}</p>
       </div>
-
-      <div className="st-errs__tiles" role="tablist" aria-label={t('sat.errs.statusLabel')}>
-        {STATUSES.map((s) => (
-          <button key={s} type="button" role="tab" aria-selected={status === s} className={`st-card st-errs__tile is-${s} ${status === s ? 'is-on' : ''}`} onClick={() => pickStatus(s)}>
-            <b>{counts[s]}</b>
-            <span>{t(`sat.errs.tile.${s}`)}</span>
-          </button>
-        ))}
-      </div>
-
-      {all.length > 0 && (
-        <div className="st-errs__kinds" role="group" aria-label={t('sat.errs.whyLabel')}>
-          {reasons.map((r) => (
-            <button key={r.key} type="button" aria-pressed={kind === r.key} className={`st-errs__kind ${kind === r.key ? 'is-on' : ''} ${r.n ? '' : 'is-zero'}`} onClick={() => pickKind(r.key)}>
-              <span>{r.key === 'none' ? t('sat.errs.noType') : t(`sat.etype.${r.key}`)}</span>
-              <b>{r.n}</b>
-            </button>
+      {!empty && (
+        <div className="ih-seg" role="tablist">
+          {['journal', 'stats'].map((v) => (
+            <button key={v} type="button" role="tab" aria-selected={view === v} className={view === v ? 'is-on' : ''} onClick={() => setView(v)}>{t(`sat.el.view.${v}`)}</button>
           ))}
         </div>
       )}
+    </div>
+  )
 
-      {pg.items.length === 0 ? (
-        <EmptyState icon={<FlagIcon size={28} />} title={t(all.length ? 'sat.errs.emptyFilter' : 'sat.errs.empty.all')} text={t('sat.errs.emptyText')} />
+  if (empty) {
+    // новому студенту — не пустая страница, а путь, которым сюда попадают ошибки, и выход в практику
+    return (
+      <div className="st-el">
+        {head}
+        <section className="st-card st-elempty">
+          <span className="st-elempty__icon"><HistoryIcon size={36} /></span>
+          <h2>{t('sat.el.emptyTitle')}</h2>
+          <p>{t('sat.el.emptyText')}</p>
+          <ol className="st-elempty__steps">
+            {STEPS.map(([k, Icon]) => <li key={k}><span><Icon size={18} /></span>{t(`sat.el.step.${k}`)}</li>)}
+          </ol>
+          {onOpenPractice && <button type="button" className="ih-cta st-elempty__cta" onClick={onOpenPractice}>{t('sat.el.toPractice')}<ArrowForwardIcon size={18} /></button>}
+        </section>
+      </div>
+    )
+  }
+
+  const s = page.stats
+  const opt = (value, label) => ({ value, label })
+
+  return (
+    <div className="st-el">
+      {head}
+      {view === 'journal' ? (
+        <>
+          <p className="st-elbanner"><InfoIcon size={18} /><span>{t('sat.el.banner')}</span></p>
+          <Counters c={cnt} />
+          <div className="st-el__filters">
+            <PillSelect label={t('sat.prac.section')} value={filters.section} onChange={set('section')}
+              options={[opt('all', t('sat.el.f.allSections')), opt('rw', 'R&W'), opt('math', 'Math')]} />
+            <PillSelect label={t('sat.el.f.skill')} value={filters.skill} onChange={set('skill')}
+              options={[opt('all', t('sat.el.f.allSkills')), ...skillsIn(page.items).map((id) => opt(id, skillName(id, lang)))]} />
+            <PillSelect multi label={t('sat.filters.difficulty')} value={filters.difficulty} onChange={set('difficulty')}
+              options={DIFFICULTIES.map(([d, label]) => opt(d, label))} />
+            <PillSelect label={t('sat.el.f.reason')} value={filters.reason} onChange={set('reason')}
+              options={[opt('all', t('sat.el.f.allReasons')), ...REASON_FILTER.map((r) => opt(r, r === 'unanswered' ? t('sat.el.kind.unanswered') : t(`sat.el.reason.${r}`)))]} />
+            <PillSelect label={t('sat.el.f.source')} value={filters.source} onChange={set('source')}
+              options={[opt('all', t('sat.el.f.allSources')), ...SOURCES.map((x) => opt(x, t(`sat.el.source.${x}`)))]} />
+            <PillSelect label={t('sat.el.f.status')} value={filters.status} onChange={set('status')}
+              options={STATUSES.map((x) => opt(x, t(`sat.el.status.${x}`)))} />
+            <PillDate label={t('sat.el.f.date')} from={filters.from} to={filters.to} fromLabel={t('sat.el.f.from')} toLabel={t('sat.el.f.to')}
+              format={day} onChange={(r) => setFilters((f) => ({ ...f, ...r }))} />
+            {activeFilters(filters) > 0 && <button type="button" className="st-link" onClick={() => setFilters(EMPTY)}>{t('sat.filters.resetShort')}</button>}
+          </div>
+          <div className="st-card st-el__list">
+            <table className="st-el__table">
+              <thead>
+                <tr>
+                  <th>{t('sat.el.col.question')}</th><th>{t('sat.el.col.skill')}</th><th>{t('sat.filters.difficulty')}</th>
+                  <th>{t('sat.el.f.reason')}</th><th>{t('sat.el.f.source')}</th><th>{t('sat.el.f.date')}</th><th>{t('sat.el.f.status')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((i) => (
+                  <tr key={i.id} tabIndex={0} className={open?.id === i.id ? 'is-open' : ''} onClick={() => setOpen(i)}
+                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setOpen(i))}>
+                    <td className="st-el__q"><span>{i.preview || i.questionId}</span></td>
+                    <td>{SECTION_SHORT[i.section] || i.section} · {skillName(i.skillId, lang)}</td>
+                    <td><DiffChip d={i.difficulty} /></td>
+                    <td><ReasonChip item={i} /></td>
+                    <td><SourceChip source={i.source} /></td>
+                    <td className="st-muted">{day(i.createdAt)}</td>
+                    <td><StatusChip reviewed={i.reviewed} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!items.length && <p className="st-muted st-el__none">{t('sat.el.noMatch')}</p>}
+          </div>
+        </>
       ) : (
-        <ul className="st-errs__list">
-          {pg.items.map((e) => {
-            const st = statusOf(e)
-            const topic = e.unitCode ? `${e.unitCode}${e.topic ? ` · ${e.topic}` : ''}` : e.topic || skillName(e.skillId, lang)
-            return (
-              <li key={e.id} className={`st-card st-err is-${st} is-${e.section === 'math' ? 'math' : 'rw'}`}>
-                <div className="st-err__top">
-                  <span className="st-err__skill"><i className={`st-dot is-${e.section === 'math' ? 'math' : 'rw'}`} />{topic}</span>
-                  {e.logged && <span className="st-err__logged">{t('sat.errs.loggedTag')}</span>}
-                  <span className="st-spacer" />
-                  <small className="st-muted">{e.createdAt ? fmt(e.createdAt) : ''}</small>
-                </div>
-                {e.title ? (
-                  <p className="st-err__title">{e.title}</p>
-                ) : (
-                  // теги сервер уже снял, остались сущности (&minus;, &pi;) — их раскрывает разметка
-                  e.stem && <p className="st-err__stem" dangerouslySetInnerHTML={{ __html: e.stem.length > 160 ? `${e.stem.slice(0, 160)}…` : e.stem }} />
-                )}
-                <div className="st-err__foot">
-                  <small className="st-muted">
-                    {t(`sat.errs.mode.${e.mode}`)} · {e.resolvedAt ? t('sat.errs.closed', { date: fmt(e.resolvedAt) }) : t(e.due ? 'sat.errs.dueNow' : 'sat.errs.dueOn', { date: e.reviewDueAt ? fmt(e.reviewDueAt) : '—' })}
-                  </small>
-                  <span className="st-spacer" />
-                  <select className={`st-err__type ${e.errorType ? '' : 'is-none'}`} value={normType(e.errorType) || ''} disabled={busy} aria-label={t('sat.etype.title')} onChange={(ev) => patch(e.id, { errorType: ev.target.value })}>
-                    <option value="" disabled>{t('sat.errs.noType')}</option>
-                    {TYPES.map((key) => <option key={key} value={key}>{t(`sat.etype.${key}`)}</option>)}
-                  </select>
-                  <label className="st-err__check">
-                    <input type="checkbox" checked={!!e.resolvedAt} disabled={busy} onChange={() => patch(e.id, { resolved: !e.resolvedAt })} />
-                    <span>{t(e.resolvedAt ? 'sat.errs.reviewed' : 'sat.errs.notReviewed')}</span>
-                  </label>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
+        <>
+          {s?.insights?.length > 0 && (
+            <section className="st-elwork">
+              <h3>{t('sat.el.work')}</h3>
+              {s.insights.map((x) => {
+                const tone = insightTone(x.key)
+                const Icon = REASON_ICON[tone]
+                return (
+                  <p key={x.key} className="st-elwork__row">
+                    <span className={`st-elicon is-${tone}`}><Icon size={18} /></span>
+                    {t(`sat.el.insight.${x.key}`, { skill: x.skillId ? skillName(x.skillId, lang) : '' })}
+                  </p>
+                )
+              })}
+            </section>
+          )}
+          <Counters c={cnt} wide />
+          {s && (
+            <div className="st-elstats">
+              <section className="st-card st-elreasons">
+                <h2>{t('sat.el.byReason')}</h2>
+                <p className="st-muted">{t('sat.el.byReasonSub')}</p>
+                {(() => {
+                  const { rows, none } = reasonBars(s.byReason, s.total)
+                  return (
+                    <>
+                      {rows.map((r) => {
+                        const Icon = REASON_ICON[r.reason]
+                        return (
+                          <div key={r.reason} className="st-elreasons__row">
+                            <span className={`st-elicon is-${r.reason}`}><Icon size={18} /></span>
+                            <b>{word(r.reason)}</b>
+                            <i className={`is-${r.reason}`}><i style={{ width: `${r.width}%` }} /></i>
+                            <strong>{r.n}</strong>
+                            <small>{r.pct}%</small>
+                          </div>
+                        )
+                      })}
+                      {none > 0 && <p className="st-muted st-elreasons__note">{plural(t, lang, 'sat.el.noneNote', none)}</p>}
+                      {s.unanswered > 0 && <p className="st-muted st-elreasons__note">{plural(t, lang, 'sat.el.unansweredNote', s.unanswered)}</p>}
+                    </>
+                  )
+                })()}
+              </section>
+              <div className="st-elstats__side">
+                <Bars title={t('sat.el.bySection')} tone="violet"
+                  rows={barsOf(['rw', 'math'].filter((k) => s.bySection?.[k]).map((k) => [k, s.bySection[k]])).map((r) => ({ ...r, label: r.key === 'math' ? 'Math' : 'Reading and Writing' }))} />
+                <Bars title={t('sat.el.topSkills')} tone="orange"
+                  rows={barsOf((s.topSkills || []).slice(0, 5).map((e) => [e.skillId, e.n])).map((r) => ({ ...r, label: skillName(r.key, lang) }))} />
+                <Bars title={t('sat.el.byDiff')} tone="grey"
+                  rows={barsOf(DIFFICULTIES.filter(([d]) => s.byDifficulty?.[d]).map(([d]) => [d, s.byDifficulty[d]])).map((r) => ({ ...r, label: Object.fromEntries(DIFFICULTIES)[r.key] }))} />
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      {shown.length > 0 && (
-        <div className="st-errs__foot">
-          <span className="st-muted">{shown.length === all.length ? t('sat.errs.showingAll', { n: String(all.length) }) : t('sat.errs.showingSome', { n: String(shown.length), total: String(all.length) })}</span>
-          <span className="st-spacer" />
-          {pg.pages > 1 && (
-            <nav className="st-errs__pages" aria-label={t('sat.errs.pages')}>
-              {Array.from({ length: pg.pages }, (_, i) => i + 1).map((n) => (
-                <button key={n} type="button" className={n === pg.page ? 'is-on' : ''} aria-current={n === pg.page ? 'page' : undefined} onClick={() => setPage(n)}>{n}</button>
-              ))}
-            </nav>
-          )}
-        </div>
+      {open && (
+        <ErrorReview item={open} explainLang={explainLang} onChanged={load} onPractice={onPractice} onClose={() => setOpen(null)} />
       )}
     </div>
   )

@@ -3,7 +3,7 @@ import { plural } from '../../lib/plural.js'
 import { ArrowForwardIcon, ChevronLeftIcon, InfoIcon, TrendingUpIcon } from '../../ielts/icons.jsx'
 import { FlashIcon } from '../icons.jsx'
 import { skillName, skillSection } from '../names.js'
-import { hoursMinutes, moduleNo, onScale, share } from '../model/mock.js'
+import { hoursMinutes, moduleNo, onScale, rangeText, share } from '../model/mock.js'
 
 const SECTIONS = [
   { key: 'rw', name: 'Reading and Writing', short: 'R&W' },
@@ -24,11 +24,12 @@ export default function MockResult({ run, target: profileTarget, onReview, onPra
   // (SatMockService) или только в профиле; навыки с наибольшей потерей — weak (имя поля уточняется по бэкенду).
   // SatMockService: score { total, rw, math, min, max }, target { total, rw, math }, toTarget, lost — топ-5 навыков
   // { skillId, section, missed, lostPoints }. Старые прохождения — диапазон total { low, high } и weak.
+  // заголовок — диапазон (Figma «NEW 2», 17:4708): середина score.total — только для «до цели», а не главным числом
   const num = r.score?.total ?? (typeof r.total === 'number' ? r.total : null)
-  const total = num != null ? { low: num, high: num } : r.total
+  const total = r.total && typeof r.total === 'object' ? r.total : num != null ? { low: num, high: num } : null
   const target = (typeof r.target === 'object' && r.target ? r.target.total : r.target) ?? profileTarget ?? null
   const weak = r.lost || r.weak || []
-  const middle = total ? Math.round((total.low + total.high) / 2) : null
+  const middle = num ?? (total ? Math.round((total.low + total.high) / 2) : null)
   const gap = r.toTarget ?? (target && middle != null ? target - middle : null)
 
   return (
@@ -56,7 +57,7 @@ export default function MockResult({ run, target: profileTarget, onReview, onPra
             <span className="st-spacer" />
             <span className="st-res__flag"><InfoIcon size={14} />{t('sat.mock.rangeNotScore')}</span>
           </div>
-          <b className="st-res__range">{total ? (total.low === total.high ? total.low : `${total.low}–${total.high}`) : '—'}<small className="st-res__of"> / 1600</small></b>
+          <b className="st-res__range">{rangeText(total)}</b>
           {gap != null && <p className="st-res__gap">{gap > 0 ? t('sat.scores.gap', { n: String(gap) }) : t('sat.scores.reached')}</p>}
           {total && (
             <div className="st-res__scale" aria-hidden="true">
@@ -92,7 +93,7 @@ export default function MockResult({ run, target: profileTarget, onReview, onPra
                 </div>
                 <div className="st-res__nums">
                   <div><b>{x.correct} / {x.total}</b><small>{t('sat.mock.rawCorrect')}</small></div>
-                  <div><b className="st-res__secRange">{x.mid != null ? x.mid : x.low != null ? `${x.low}–${x.high}` : '—'}</b><small>{t('sat.mock.secEstimate')}</small></div>
+                  <div><b className="st-res__secRange">{rangeText(x, x.mid)}</b><small>{t('sat.mock.secEstimate')}</small></div>
                 </div>
                 <div className="st-res__bar"><i style={{ width: `${Math.round(share(x) * 100)}%` }} /></div>
               </section>

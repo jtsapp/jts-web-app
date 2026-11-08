@@ -58,6 +58,36 @@ describe('меню ученика', () => {
       'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'ielts', 'sat', 'feedback', 'notifications', 'contracts',
     ])
   })
+
+  // ТЗ v2.0, 4.2 (кейс 19): «Уроки» и «Домашняя работа» — только с преподавателем, и тогда, когда о тарифе ответа нет.
+  describe('«Уроки» и «Домашняя работа» — по формату ученика', () => {
+    const lessonItems = (list) => keys(list).filter((k) => k === 'lessons' || k === 'homework')
+
+    it('демо без ответа о тарифе — пунктов нет, как у Self Study', () => {
+      expect(lessonItems(menuItems({ demo: true }))).toEqual([])
+      expect(lessonItems(menuItems({ demo: true, sections: { known: true, allowed: ['lessons', 'homework'] } }))).toEqual([])
+    })
+
+    it('Self Study — пунктов нет, даже если матрица их открыла', () => {
+      const sections = { known: true, format: 'SELF', allowed: ['lessons', 'homework', 'practice'] }
+      expect(lessonItems(menuItems({ sections }))).toEqual([])
+    })
+
+    it('с преподавателем — есть, и признак демо ещё не пришёл', () => {
+      const sections = { known: true, format: 'GROUP', allowed: ['lessons', 'homework', 'practice'] }
+      expect(lessonItems(menuItems({ sections, demo: false }))).toEqual(['lessons', 'homework'])
+      expect(lessonItems(menuItems({ sections, demo: null }))).toEqual(['lessons', 'homework'])
+    })
+
+    it('не демо и тариф неизвестен — меню полное; пока признак демо не пришёл — ждём его', () => {
+      expect(lessonItems(menuItems({ demo: false }))).toEqual(['lessons', 'homework'])
+      expect(lessonItems(menuItems({ demo: null }))).toEqual([])
+    })
+
+    it('преподавателя правило не касается', () => {
+      expect(keys(menuItems({ teacher: true, demo: true }))).toEqual(['practice', 'lessons'])
+    })
+  })
 })
 
 describe('нижняя панель телефона', () => {

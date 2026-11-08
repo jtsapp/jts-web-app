@@ -35,8 +35,41 @@ describe('useStuckWatch', () => {
   const watch = (props = {}) =>
     renderHook((p) => useStuckWatch({ active: true, screen: 'kingdom-interior', ...p }), { initialProps: props })
 
-  it('две неверные проверки подряд — облачко errors; оно уходит само через showMs', async () => {
+  // ТЗ v2.0, 7.2б: «Подсказать?» — после первой неверной проверки.
+  it('первая неверная проверка — облачко errors', async () => {
     const { result } = watch()
+    press('go')
+    markWrong('a')
+    await later(900)
+    expect(result.current.offer).toEqual({ reason: 'errors' })
+  })
+
+  it('onWrong вернул true (окно дало ступень само) — облачка нет; окно открыто — ошибка всё равно доходит', async () => {
+    const onWrong = vi.fn(() => true)
+    const { result } = watch({ onWrong, canOffer: () => false })
+    press('go')
+    markWrong('a')
+    await later(900)
+    expect(onWrong).toHaveBeenCalledTimes(1)
+    expect(result.current.offer).toBe(null)
+    press('go')
+    markWrong('b')
+    await later(900)
+    expect(onWrong).toHaveBeenCalledTimes(2)
+  })
+
+  it('onWrong вернул false — облачко как обычно', async () => {
+    const onWrong = vi.fn(() => false)
+    const { result } = watch({ onWrong })
+    press('go')
+    markWrong('a')
+    await later(900)
+    expect(onWrong).toHaveBeenCalledTimes(1)
+    expect(result.current.offer).toEqual({ reason: 'errors' })
+  })
+
+  it('при пороге две — две неверные проверки подряд — облачко errors; оно уходит само через showMs', async () => {
+    const { result } = watch({ opts: { wrongLimit: 2 } })
     press('go')
     markWrong('a')
     await later(900)
@@ -53,7 +86,7 @@ describe('useStuckWatch', () => {
   // проверки увидел бы уже следующее задание. Поэтому экран снимается и в момент
   // клика — до того, как клик его поменял (съёмка облачка 28.10 так ошибку теряла).
   it('ошибка, сразу «Продолжить» — ошибка всё равно засчитана', async () => {
-    const { result } = watch()
+    const { result } = watch({ opts: { wrongLimit: 2 } })
     press('go')
     markWrong('a')
     await later(100)
@@ -67,7 +100,7 @@ describe('useStuckWatch', () => {
   })
 
   it('take — причина для пометки и облачко уходит', async () => {
-    const { result } = watch()
+    const { result } = watch({ opts: { wrongLimit: 2 } })
     press('go')
     markWrong('a')
     await later(900)
@@ -83,7 +116,7 @@ describe('useStuckWatch', () => {
   })
 
   it('ученик снова взялся за задание — облачко уходит; клик вне экрана — нет', async () => {
-    const { result } = watch()
+    const { result } = watch({ opts: { wrongLimit: 2 } })
     press('go')
     markWrong('a')
     await later(900)
@@ -125,6 +158,38 @@ describe('useStuckWatch', () => {
     expect(result.current.offer).toBe(null)
     await later(12_000)
     expect(result.current.offer).toEqual({ reason: 'idle' })
+  })
+
+  it('dismiss (окно открылось само) — облачко уходит, пропущенным не считается', async () => {
+    // Простой здесь не нужен — только ошибки.
+    const { result } = watch({ opts: { ignoreLimit: 1, idleMs: 1e9 } })
+    press('go')
+    markWrong('a')
+    await later(900)
+    expect(result.current.offer).toEqual({ reason: 'errors' })
+    act(() => result.current.dismiss())
+    expect(result.current.offer).toBe(null)
+    // Пропуском не засчитано: при ignoreLimit 1 облачко после пропуска больше не вышло бы.
+    await later(STUCK.cooldownMs)
+    press('go')
+    markWrong('b')
+    await later(900)
+    expect(result.current.offer).toEqual({ reason: 'errors' })
+  })
+
+  it(`простой: «Подсказать?», ещё ${STUCK.idle2Ms / 1000} с — «Передохнуть?» (idle2), дальше тишина`, async () => {
+    const { result } = watch()
+    await later(STUCK.idleMs + 6000)
+    expect(result.current.offer).toEqual({ reason: 'idle' })
+    // Не нажал — облачко уходит; простой продолжается.
+    await later(STUCK.showMs + 1000)
+    expect(result.current.offer).toBe(null)
+    // Второй уровень — через idle2Ms после первого (часы простоя идут от последнего действия, а не от облачка).
+    await later(STUCK.idleMs + STUCK.idle2Ms + 4000 - (STUCK.idleMs + 6000 + STUCK.showMs + 1000))
+    expect(result.current.offer).toEqual({ reason: 'idle2' })
+    await later(STUCK.showMs + 1000)
+    await later(STUCK.cooldownMs * 2)
+    expect(result.current.offer).toBe(null)
   })
 
   it('окно открыли (active → false) — облачко уходит, пропущенным не считается', async () => {

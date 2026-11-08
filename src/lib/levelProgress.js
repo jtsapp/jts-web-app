@@ -16,7 +16,8 @@
 // тестах без DOM.
 
 import { LEVELS } from '../cefr.js'
-import { SKILLS } from '../practice/skillStatsCore.js'
+import { SKILLS, levelShare } from '../practice/skillStatsCore.js'
+export { MIN_LEVEL_TASKS } from '../practice/skillStatsCore.js'
 
 // Столько заданий на навык считаем «набранным объёмом»: до него точность ещё
 // не показательна и процент придерживается уверенностью. То же число, что в
@@ -57,6 +58,34 @@ export function skillHighlights(ranked) {
   }
 }
 
+// Навыки текущего уровня: формула — levelShare (practice/skillStatsCore.js), одна на «Главной», в Профиле и у Луны.
+export const levelSkillPercent = levelShare
+
+/**
+ * [{ skill, percent, done, estimate }] — от сильного к слабому, «мало данных» в конце в порядке SKILLS. estimate — процент
+ * по всем прошлым заданиям, пока заданий уровня меньше пяти (withStartEstimate).
+ */
+export function rankLevelSkills(stats) {
+  return SKILLS.map((skill) => ({
+    skill,
+    percent: levelSkillPercent(stats?.[skill]),
+    done: Number(stats?.[skill]?.done) || 0,
+    estimate: Boolean(stats?.[skill]?.estimate),
+  })).sort((a, b) => {
+    if (a.percent == null || b.percent == null) return (a.percent == null) - (b.percent == null) || SKILLS.indexOf(a.skill) - SKILLS.indexOf(b.skill)
+    return b.percent - a.percent || SKILLS.indexOf(a.skill) - SKILLS.indexOf(b.skill)
+  })
+}
+
+/** Сильнейший и слабейший среди навыков с данными; слабый — только если правда слабее. */
+export function levelSkillHighlights(ranked) {
+  const known = (ranked || []).filter((r) => r.percent != null)
+  if (!known.length) return { strongest: null, weakest: null }
+  const first = known[0]
+  const last = known[known.length - 1]
+  return { strongest: first, weakest: known.length > 1 && last.percent < first.percent ? last : null }
+}
+
 // Шкала «Главной» начинается с A0: сервер считает A0 отдельным уровнем курса.
 // LEVELS из cefr.js не расширяем — по нему рисуется шкала теста, где A0 нет.
 export const COURSE_LEVELS = ['A0', ...LEVELS]
@@ -86,7 +115,7 @@ export function nextLevel(level) {
  *
  * Уровень карточки — CEFR из профиля (тест и ручная правка менеджера).
  * Полоса прогресса берётся у сервера отдельно: ученик мог купить курс выше
- * своего, и дорожка тогда считает другой уровень, но подпись «ВАШ УРОВЕНЬ»
+ * своего, и дорожка тогда считает другой уровень, но подпись «ТВОЙ УРОВЕНЬ»
  * должна остаться профилем. Пустой профиль не подменяем A1 здесь — это делает
  * карточка «тест не пройден».
  */

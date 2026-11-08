@@ -11,12 +11,14 @@ import ErrorsTab from '../sat/tabs/ErrorsTab.jsx'
 import MocksTab from '../sat/tabs/MocksTab.jsx'
 import MaterialsTab from '../sat/tabs/MaterialsTab.jsx'
 import ProgressTab from '../sat/tabs/ProgressTab.jsx'
-import { getSatDiagnostic, getSatMe, getSatPlan, getSatProfile, getSatToday, startSatSession, updateSatLesson } from '../api.js'
+import { getSatBluebook, getSatDiagnostic, getSatMe, getSatProfile, getSatRoadmap, getSatSchedule, getSatToday, startSatSession } from '../api.js'
 import SatStartView from '../sat/tabs/SatStartView.jsx'
 import { satStarted } from '../sat/model/start.js'
 import { loadToken } from '../lib/session.js'
 import { plural } from '../lib/plural.js'
 import { daysUntil } from '../sat/model/profile.js'
+import { TODAY_SIZE, moduleSize } from '../sat/model/practice.js'
+import { skillSection } from '../sat/names.js'
 import { useI18n } from '../i18n.jsx'
 import { EventIcon, MenuBookIcon, QuizIcon } from '../ielts/icons.jsx'
 import { FireIcon, TargetIcon } from '../sat/icons.jsx'
@@ -26,8 +28,9 @@ import { errorText } from '../lib/examQuota.js'
 
 // Вкладки хаба: из Figma (решение 1 доски) + «Материалы» и «Ошибки» (решение C плана). «Прогресс» вернулся по Figma 16
 // (15.10.2026), «Словаря» во вкладках больше нет — в макете его нет. Past papers — свой экран, вход — из «Пробников».
-// «Материалы» и «Ошибки» скрыты (вкладки и их экраны остаются в коде): адрес с satTab=materials|errors открывает «Сегодня»
-export const SAT_TABS = ['today', 'plan', 'practice', 'mocks', 'progress', 'guide']
+// «Материалы» скрыты (вкладка и экран остаются в коде): адрес с satTab=materials открывает «Сегодня». «Ошибки» вернулись
+// в меню страницей «Работа над ошибками» (ТЗ 21.10, задача 9); «Пробники» перед ними — порядок макета «NEW 2» (30.10)
+export const SAT_TABS = ['today', 'plan', 'practice', 'mocks', 'errors', 'progress', 'guide']
 const SOON_ICON = {}
 
 function readTab() {
@@ -52,7 +55,7 @@ function writeTab(tab) {
 
 /**
  * Хаб SAT (Figma SAT 11–20): шапка «SAT · Digital · Bluebook» с целью и датой, вкладки раздела. Работают «Сегодня»,
- * «План», «Практика», «Пробники» (фаза 7), «Прогресс», «Словарь» (фаза 9), «Гайд» (с гидом по Desmos), «Материалы»
+ * «План», «Практика», «Пробники» (фаза 7), «Прогресс», «Гайд» (с гидом по Desmos), «Материалы»
  * (фаза 8) и «Ошибки» (docs/sat/PLAN.md).
  */
 export default function SatPage({ token, userName, userLevel, onNav, onProfile }) {
@@ -61,10 +64,16 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
   const [tab, setTab] = useState('today')
   const [moved, setMoved] = useState(false)
   const [profile, setProfile] = useState(null)
-  const [plan, setPlan] = useState(null)
   const [diagnostic, setDiagnostic] = useState(null)
-  const [busy, setBusy] = useState(false)
   const [today, setToday] = useState(null)
+  // фазы плана, расписание группы и Bluebook-тесты (ТЗ 21.10, задачи 1 и 15) — один источник для «Сегодня» и «Плана»
+  const [roadmap, setRoadmap] = useState(null)
+  const [schedule, setSchedule] = useState(null)
+  const [bluebook, setBluebook] = useState(null)
+  // «N ошибок в очереди» у навыка ведёт на страницу ошибок с фильтром по этому навыку (задача 9)
+  const [errorSkill, setErrorSkill] = useState(null)
+  // режим, в котором открыть «Практику» (фаза 7 «Сегодня»: банк — «Все вопросы», слабые домены — «Слабые»)
+  const [practiceMode, setPracticeMode] = useState(null)
   const [error, setError] = useState(null)
   // шаги старта и доступ (V341): пока что-то не пройдено, вместо вкладок — экран старта
   const [me, setMe] = useState(null)
@@ -85,12 +94,25 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     getSatProfile(authToken)
       .then((p) => alive && setProfile(p))
       .catch(() => alive && setProfile({ exists: false }))
-    getSatPlan(authToken)
-      .then((p) => alive && setPlan(p))
-      .catch(() => alive && setPlan({ exists: false }))
     getSatDiagnostic(authToken)
       .then((d) => alive && setDiagnostic(d))
       .catch(() => alive && setDiagnostic({ status: 'none' }))
+    return () => {
+      alive = false
+    }
+  }, [authToken])
+
+  useEffect(() => {
+    let alive = true
+    getSatRoadmap(authToken)
+      .then((r) => alive && setRoadmap(r))
+      .catch(() => alive && setRoadmap(null))
+    getSatSchedule(authToken)
+      .then((s) => alive && setSchedule(s))
+      .catch(() => alive && setSchedule({ inGroup: false, lessons: [] }))
+    getSatBluebook(authToken)
+      .then((b) => alive && setBluebook(b))
+      .catch(() => alive && setBluebook(null))
     return () => {
       alive = false
     }
@@ -117,6 +139,13 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     setMoved(true)
     setTab(next)
     writeTab(next)
+    // обычный переход на «Практику» (вкладкой) — в её режим по умолчанию, а не в оставшийся от «Сегодня»
+    setPracticeMode(null)
+  }
+
+  const openPractice = (mode) => {
+    go('practice')
+    setPracticeMode(mode)
   }
 
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
@@ -126,7 +155,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
       ? t('sat.dateUndecided')
       : null
 
-  // в диагностику — на нужный шаг (?satDiag=time — время на занятия после сданной диагностики)
+  // в диагностику — на нужный шаг (?satDiag=intro|report)
   const toDiagnostic = (step) => {
     try {
       const url = new URL(window.location.href)
@@ -139,17 +168,14 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     onNav?.('sat-diagnostic')
   }
 
-  // занятие плана → учебная сессия (фаза 5); сервер продолжит начатую, если она есть
-  const startLesson = (lessonId) => {
-    try {
-      const url = new URL(window.location.href)
-      url.searchParams.set('satLesson', lessonId)
-      url.searchParams.delete('satSession')
-      window.history.replaceState(window.history.state, '', url)
-    } catch {
-      /* без адреса занятие не откроется — кнопка ничего не сделает */
+  // занятие группы → практика по его теме (навыки занятия из программы, размер — модуль секции, задача 7)
+  const practiceLesson = (lesson) => {
+    const skillIds = lesson?.skillIds || []
+    if (!skillIds.length) {
+      go('practice')
+      return
     }
-    onNav?.('sat-study')
+    startPractice({ mode: 'skills', skillIds, count: moduleSize(skillSection(skillIds[0])) }).catch((e) => setError(errorText(e, t)))
   }
 
   // любая сессия по адресу (?satSession=) — продолжить или открыть только что собранную
@@ -157,7 +183,6 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     try {
       const url = new URL(window.location.href)
       url.searchParams.set('satSession', id)
-      url.searchParams.delete('satLesson')
       window.history.replaceState(window.history.state, '', url)
     } catch {
       /* без адреса сессия не откроется */
@@ -175,6 +200,30 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
       /* без адреса прохождение не откроется */
     }
     onNav?.(screen)
+  }
+
+  // форма Bluebook-теста и сравнение 6 → 8 → 10 — свои экраны во всё окно (Figma «NEW 2», 17:8284, 17:8528). Вкладка
+  // остаётся в ?satTab=, а фаза карточки — в ?satPhase=: выйдя с экрана, студент вернётся туда же, откуда пришёл
+  const openBluebook = (test, phase) => {
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.set('satBluebook', String(test))
+      if (phase) url.searchParams.set('satPhase', String(phase))
+      window.history.replaceState(window.history.state, '', url)
+    } catch {
+      /* без адреса экран не узнает тест */
+    }
+    onNav?.('sat-bluebook')
+  }
+  const openCompare = (test) => {
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.set('satCompare', String(test))
+      window.history.replaceState(window.history.state, '', url)
+    } catch {
+      /* без адреса экран не узнает тест */
+    }
+    onNav?.('sat-compare')
   }
 
   // юнит курса — свой экран во всё окно, код в ?satUnit=
@@ -204,25 +253,41 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     }
   }
 
-  const onLesson = async (id, body) => {
-    setBusy(true)
-    try {
-      setPlan(await updateSatLesson(authToken, id, body))
-    } finally {
-      setBusy(false)
-    }
+  // список дел фазы 7: каждая строка ведёт туда, где это делается
+  const selfPrepActions = {
+    onErrors: () => review(),
+    onPractice: () => go('practice'),
+    onMocks: () => go('mocks'),
+    onCurator: () => onNav?.('sat-pricing'),
   }
 
   let panel
-  if (tab === 'guide') panel = <GuideTab />
+  if (tab === 'guide') panel = <GuideTab explainLang={profile?.explainLang} />
   else if (tab === 'plan') {
-    panel = !plan || !diagnostic ? null : (
-      <PlanTab plan={plan} diagnostic={diagnostic} busy={busy} onLesson={onLesson} onStart={startLesson} onRebuild={() => toDiagnostic('time')} onDiagnostic={toDiagnostic} />
+    panel = !roadmap || !schedule ? null : (
+      <PlanTab
+        roadmap={roadmap}
+        bluebook={bluebook}
+        schedule={schedule}
+        onLesson={practiceLesson}
+        onToday={() => go('today')}
+        onBluebook={openBluebook}
+        onCompare={openCompare}
+        selfPrepActions={selfPrepActions}
+      />
     )
   } else if (tab === 'today') {
-    panel = !profile || !plan || !diagnostic || !today ? null : todayPanel()
+    panel = !profile || !diagnostic || !today || !roadmap || !schedule ? null : todayPanel()
   } else if (tab === 'practice') {
-    panel = <PracticeTab onStart={startPractice} />
+    panel = (
+      <PracticeTab
+        key={practiceMode || 'default'}
+        initialMode={practiceMode || undefined}
+        onStart={startPractice}
+        explainLang={profile?.explainLang}
+        onErrors={(skillId) => { setErrorSkill(skillId); go('errors') }}
+      />
+    )
   } else if (tab === 'mocks') {
     panel = (
       <MocksTab
@@ -231,14 +296,23 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         onReview={(id) => openMock(id, 'sat-mock-review')}
         onPapers={() => onNav?.('sat-papers')}
         onPricing={() => onNav?.('sat-pricing')}
+        onCompare={openCompare}
       />
     )
   } else if (tab === 'progress') {
-    panel = <ProgressTab onPractice={(skillIds) => startPractice({ mode: 'skills', skillIds, count: 10 }).catch((e) => setError(errorText(e, t)))} />
+    panel = <ProgressTab roadmap={roadmap} onPractice={(skillIds) => startPractice({ mode: 'skills', skillIds, count: moduleSize(skillSection(skillIds[0])) }).catch((e) => setError(errorText(e, t)))} />
   } else if (tab === 'materials') {
     panel = <MaterialsTab onOpen={(code) => openUnit(code)} />
   } else if (tab === 'errors') {
-    panel = <ErrorsTab onReview={review} />
+    panel = (
+      <ErrorsTab
+        key={errorSkill || 'all'}
+        initialSkill={errorSkill}
+        explainLang={profile?.explainLang}
+        onPractice={(skillIds) => startPractice({ mode: 'skills', skillIds, count: moduleSize(skillSection(skillIds[0])) }).catch((e) => setError(errorText(e, t)))}
+        onOpenPractice={() => go('practice')}
+      />
+    )
   } else {
     const Icon = SOON_ICON[tab] || QuizIcon
     panel = <EmptyState icon={<Icon size={28} />} title={t('sat.soon.title')} text={t(`sat.soon.${tab}`)} />
@@ -272,31 +346,24 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         />
       )
     }
-    if (!plan.exists) {
-      return (
-        <EmptyState
-          icon={<EventIcon size={28} />}
-          title={t('sat.plan.noPlanTime')}
-          text={t('sat.plan.noPlanTimeText')}
-          action={
-            <div className="st-today__acts">
-              <PillButton variant="primary" onClick={() => toDiagnostic('time')}>{t('sat.plan.toTime')}</PillButton>
-              <PillButton variant="outline" onClick={() => toDiagnostic('report')}>{t('sat.today.report')}</PillButton>
-            </div>
-          }
-        />
-      )
-    }
+    // плана «по своим дням» больше не ждём: даты занятий ставит школа (расписание группы, ТЗ 21.10, задача 15)
     return (
       <TodayTab
         today={today}
-        plan={plan}
-        diagnostic={diagnostic}
-        onStart={startLesson}
+        roadmap={roadmap}
+        schedule={schedule}
+        bluebook={bluebook}
+        onWords={() => onNav?.('vocab', { back: true })}
+        onPracticeSkills={(skillIds) => startPractice({ mode: 'skills', skillIds, count: TODAY_SIZE }).catch((e) => setError(errorText(e, t)))}
+        onMocks={() => go('mocks')}
+        onErrors={() => go('errors')}
         onResume={openSession}
         onReview={review}
-        onWeekly={() => onNav?.('sat-weekly')}
         onPlan={() => go('plan')}
+        onPracticeMode={openPractice}
+        // контакта менеджера и куратора на сервере пока нет — обе кнопки ведут на тарифы SAT («уточнит менеджер»)
+        onManager={() => onNav?.('sat-pricing')}
+        onCurator={() => onNav?.('sat-pricing')}
       />
     )
   }

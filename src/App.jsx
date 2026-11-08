@@ -42,6 +42,8 @@ import { isTourSeen, syncTourMarks, tourMarksReady, useTourMarks } from './lib/t
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
 import { useStudentSections, refreshStudentSections } from './lib/studentSections.js'
+// Формат ученика для готовых вопросов Луны (chips.js) — из тех же разделов, что у меню.
+import { learnerFormat } from './lib/assistant/format.js'
 import StudentSectionGate from './components/StudentSectionGate.jsx'
 import { useStudentExams } from './lib/useStudentExams.js'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile, saveGeProfile } from './api.js'
@@ -51,7 +53,7 @@ import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
 import { screenNeedsLogin } from './lib/guestLogin.js'
 import { isTeacher, userIdFromToken } from './lib/jwt.js'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
-import { onAssistantNavigate } from './lib/assistant/assistantBus.js'
+import { APP_NAV, onAssistantNavigate } from './lib/assistant/assistantBus.js'
 import { destinationOf } from './lib/assistant/destinations.js'
 import { isItemRef, itemNav } from './lib/assistant/items/refs.js'
 import { readSituationsDone } from './practice/situations/situationsProgress.js'
@@ -65,7 +67,7 @@ import { practiceUnitTarget } from './lib/studentDeepLink.js'
 import { pushNav, popNav, readNavStack, writeNavStack, placeOf, setResume, resumeOf, isReturnable, backLabelKey } from './lib/navStack.js'
 import { restoreScroll } from './lib/scrollRestore.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
-import { flushSkillStats } from './practice/skillStats.js'
+import { flushSkillStats, setSkillLevel } from './practice/skillStats.js'
 import { clearAccountLeftovers, forgetExpiredSession } from './lib/accountLeftovers.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
 import { persistPlacementLevel, syncProfileLevel } from './lib/levelSave.js'
@@ -91,6 +93,8 @@ const MatchingPopups = lazyScreen(() => import('./matching/MatchingPopups.jsx'))
 const LessonFeedbackPrompt = lazyScreen(() => import('./components/LessonFeedbackPrompt.jsx'))
 const PurchaseSuccessModal = lazyScreen(() => import('./components/PurchaseSuccessModal.jsx'))
 const DemoSubscriptionModal = lazyScreen(() => import('./components/DemoSubscriptionModal.jsx'))
+// Куда окно Луны ведёт кнопкой (assistantBus.APP_NAV): шаги своего плана дня (planModel.taskRoute) и экран «План».
+const APP_NAV_KEYS = new Set(['course', 'tutor', 'practice', 'vocab', 'workbook', 'ge-plan', 'home'])
 
 const loadCatalogLesson = (...args) =>
   import('./screens/workspace/loadCatalogLesson.js').then(
@@ -108,6 +112,8 @@ const CompleteRegistrationPage = lazyScreen(() => import('./screens/CompleteRegi
 const PlacementPage = lazyScreen(() => import('./screens/PlacementPage.jsx'))
 const LearningPage = lazyScreen(() => import('./screens/LearningPage.jsx'))
 const HomePage = lazyScreen(() => import('./screens/HomePage.jsx'))
+// Полный отчёт теста уровня — своей страницей по ссылке из «Сильных и слабых сторон» (ТЗ v2.0, 5.5 и 5.7).
+const PlacementResultsPage = lazyScreen(() => import('./screens/PlacementResultsPage.jsx'))
 const PricingPage = lazyScreen(() => import('./screens/PricingPage.jsx'))
 const MinutesTopUpPage = lazyScreen(() => import('./screens/MinutesTopUpPage.jsx'))
 const PracticePage = lazyScreen(() => import('./screens/PracticePage.jsx'))
@@ -162,6 +168,8 @@ const SatStudyPage = lazyScreen(() => import('./screens/SatStudyPage.jsx'))
 const SatDailyPage = lazyScreen(() => import('./screens/SatDailyPage.jsx'))
 const SatWeeklyPage = lazyScreen(() => import('./screens/SatWeeklyPage.jsx'))
 const SatPapersPage = lazyScreen(() => import('./screens/SatPapersPage.jsx'))
+const SatBluebookPage = lazyScreen(() => import('./screens/SatBluebookPage.jsx'))
+const SatComparePage = lazyScreen(() => import('./screens/SatComparePage.jsx'))
 const SatMockPage = lazyScreen(() => import('./screens/SatMockPage.jsx'))
 const SatMockReviewPage = lazyScreen(() => import('./screens/SatMockReviewPage.jsx'))
 const SatUnitPage = lazyScreen(() => import('./screens/SatUnitPage.jsx'))
@@ -234,6 +242,8 @@ const PERSISTABLE_SCREENS = new Set([
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
   // Анкета, маршрут и план General English (спеки 2026-10-12 и 2026-10-13): данные берут у бэкенда сами
   'ge-onboarding', 'ge-route', 'ge-plan',
+  // Полный отчёт теста уровня (ТЗ v2.0, 5.7): отчёт экран берёт у сервера сам, F5 остаётся на нём
+  'placement-results',
   // Тест уровня v16: прогон тест хранит сам (localStorage с пространством профиля), F5 продолжает с того же места
   'placement',
   // SAT: хаб держит вкладку в ?satTab= сам (docs/sat/PLAN.md)
@@ -242,12 +252,14 @@ const PERSISTABLE_SCREENS = new Set([
   'sat-run',
   // диагностика держит шаг в ?satDiag= сама
   'sat-diagnostic',
-  // учебная сессия держит себя в ?satSession= (или ?satLesson= до старта)
+  // учебная сессия держит себя в ?satSession=
   'sat-study',
   // ежедневная проверка — одна на день, свой экран без меню (с 14.10.2026 из навигации убрана, диплинк остался)
   'sat-daily',
   // недельный тест (SAT-SYNC-PLAN B1) и past papers во всё окно (B6)
   'sat-weekly', 'sat-papers',
+  // баллы Bluebook-теста и сравнение 6 → 8 → 10 держат тест в ?satBluebook= / ?satCompare= (Figma «NEW 2»)
+  'sat-bluebook', 'sat-compare',
   // пробник и его разбор держат прохождение в ?satMock= (фаза — на сервере)
   'sat-mock',
   'sat-mock-review',
@@ -716,6 +728,8 @@ export default function App() {
   // управление/на дашборд, а не гоняют всю цепочку заново.
   const [tutorEditFrom, setTutorEditFrom] = useState(null)
   const [userLevel, setUserLevel] = useState('A1')
+  // Уровень ученика — для навыков по уровню (практика без своего уровня задания пишет попытку в него; ТЗ v2.0, 5.5).
+  useEffect(() => { setSkillLevel(userLevel) }, [userLevel])
   // Демо-статус текущего аккаунта — решает, показывать ли на экранах «лимит
   // исчерпан» демо-CTA со ссылкой на WhatsApp поддержки (см. src/lib/support.js)
   // или обычный текст. Саморегистрация всегда демо (см. RegistrationService на
@@ -865,6 +879,8 @@ export default function App() {
   // Урок, который тропа откроет сама по загрузке (Луна: «открой урок 5», lib/assistant/items/):
   // { code, at } — at различает две одинаковые просьбы подряд.
   const [courseLessonTarget, setCourseLessonTarget] = useState(null)
+  // Обращение, с которым Луна открывает Feedback: { category, draft } (lib/assistant/actions.js).
+  const [feedbackDraft, setFeedbackDraft] = useState(null)
   // Просмотр всего контента без гейтинга (?unlock=1, только dev) — см. эффект
   // диплинков ниже.
   const [devUnlock, setDevUnlock] = useState(false)
@@ -1398,11 +1414,21 @@ export default function App() {
 
   // Итог теста v16 (спека 2026-10-14): конверт — в базу (отчёт «Главной»), уровень — в пустой аккаунт, ответы анкеты —
   // в профиль General English, если анкета ещё не заполнялась (анкета теста заменила нашу). События идут цепочкой.
+  // Итог теста — Луне (кейс 35 ТЗ v2.0): на «Главной» она назовёт уровень, сильное и слабое и первый шаг. Раз на попытку:
+  // итог приходит и при показе, и по «Продолжить». Модуль отчёта — по требованию, в стартовый бандл он не нужен.
+  const announcedAttempt = useRef(null)
+  function announceToLuna(env) {
+    const id = env?.assessment?.attemptId
+    if (!id || announcedAttempt.current === id) return
+    announcedAttempt.current = id
+    import('./lib/assistant/placementEvent.js').then((m) => m.announcePlacement(env)).catch(() => {})
+  }
   function finalizePlacement(env) {
     const run = async () => {
       const st = placementState.current
       if (!st.token || !env) return
       if (await saveAttempt(st.token, env)) setPlacementVersion((v) => v + 1)
+      announceToLuna(env)
       let level = st.needsLevelTest ? null : st.userLevel
       const tested = levelFromEnvelope(env)
       if (st.needsLevelTest && tested) level = await saveTestLevel(tested)
@@ -1831,7 +1857,11 @@ export default function App() {
     else if (key === 'minutes') setScreen('minutes')
     // Профиль из меню открывается своей кнопкой; сюда приходит от Луны (destinations.js).
     else if (key === 'profile') setScreen('profile')
-    else if (key === 'feedback') setScreen('feedback')
+    // Луна открывает Feedback с категорией и черновиком (ТЗ v2.0); переход из меню черновик сбрасывает.
+    else if (key === 'feedback') {
+      setFeedbackDraft(payload?.category ? { category: payload.category, draft: String(payload.draft || '') } : null)
+      setScreen('feedback')
+    }
     else if (key === 'tokens' || key === 'prizes') setScreen(key)
     else if (key === 'learning' || key === 'learn') setScreen('kingdom')
     // «Урок курса» из плана по дням — сразу в тропу уровня, который ученик проходит, а не на карту королевств
@@ -1845,6 +1875,7 @@ export default function App() {
       } else setScreen('kingdom')
     }
     else if (key === 'ge-plan') setScreen('ge-plan')
+    else if (key === 'placement-results') setScreen('placement-results')
     // Практика открывается и с домашней работы: payload несёт адрес юнита,
     // который задал преподаватель.
     else if (key === 'practice') { setPracticeTarget(payload || null); setScreen('practice') }
@@ -1919,7 +1950,7 @@ export default function App() {
     else if (key === 'ielts-onboarding' || key === 'ielts-diagnostic' || key === 'ielts-route') { setIeltsRunTarget(payload || null); setScreen(key) }
     else if (key === 'ielts-diagnostic-result') { setIeltsReviewTarget(payload || null); setScreen(key) }
     else if (key === 'ielts-mock') { if (payload?.mockId || payload?.sessionId) { setIeltsMockTarget(payload); setScreen('ielts-mock') } }
-    else if (key === 'sat' || key === 'sat-onboarding' || key === 'sat-run' || key === 'sat-diagnostic' || key === 'sat-study' || key === 'sat-daily' || key === 'sat-weekly' || key === 'sat-papers' || key === 'sat-mock' || key === 'sat-mock-review' || key === 'sat-unit' || key === 'sat-pricing' || key === 'ielts-pricing') setScreen(key)
+    else if (key === 'sat' || key === 'sat-onboarding' || key === 'sat-run' || key === 'sat-diagnostic' || key === 'sat-study' || key === 'sat-daily' || key === 'sat-weekly' || key === 'sat-papers' || key === 'sat-bluebook' || key === 'sat-compare' || key === 'sat-mock' || key === 'sat-mock-review' || key === 'sat-unit' || key === 'sat-pricing' || key === 'ielts-pricing') setScreen(key)
     else if (key === 'ielts-reading-review') { if (payload?.attemptId) { setIeltsReviewTarget(payload); setScreen('ielts-reading-review') } }
     // back: словарь открыт ссылкой изнутри урока или раздела — у него появляется
     // «Назад» туда. Из меню словарь — раздел верхнего уровня, кнопки нет.
@@ -1956,7 +1987,21 @@ export default function App() {
   })
   useEffect(
     () =>
-      onAssistantNavigate((target) => {
+      onAssistantNavigate((target, payload) => {
+        // Кнопка окна Луны «Начать: урок курса» / «Показать план» (assistantBus.APP_NAV): шаг плана — тем же путём, что
+        // кнопка задачи в «Сегодня». Ключи — только из списка: payload собирает окно, но адрес задачи приходит с бэкенда.
+        if (target === APP_NAV) {
+          // «Пройти тест уровня» из окна Луны (знакомство, кейс 24): тест v16, по выходу — «Главная».
+          if (payload?.to === 'placement') {
+            openPlacement('home')
+            return
+          }
+          if (!APP_NAV_KEYS.has(payload?.to)) return
+          setResume(null)
+          setScreenNonce((n) => n + 1)
+          handleNavRef.current?.(payload.to, payload.payload || undefined)
+          return
+        }
         // Конкретная вещь по адресу (урок 5, тема, текст — lib/assistant/items/): экран
         // открывается заново с целью, даже если ученик уже на нём. Квота «Ситуаций» —
         // по уровням, уже открытым на этом устройстве (как у карточки Практики).
@@ -1970,12 +2015,14 @@ export default function App() {
         }
         const dest = destinationOf(target)
         if (!dest) return
+        // Своя цель перехода (Feedback с черновиком) — раздел открывается заново, даже если ученик уже в нём.
+        const to = payload || dest.payload
         if (dest.screen === screenRef.current) {
-          if (!dest.payload) return
+          if (!to) return
           setResume(null)
           setScreenNonce((n) => n + 1)
         }
-        handleNavRef.current?.(dest.nav, dest.payload)
+        handleNavRef.current?.(dest.nav, to)
       }),
     [],
   )
@@ -2029,7 +2076,8 @@ export default function App() {
   // экран, открытый сразу на сценарии или игре, по нему решает, выйти ли
   // назад целиком (пришли с карточки) или в список раздела (диплинк).
   // `skill` — вкладка Практики, куда «назад» уводит без истории (диплинк, переход Луны). С редизайна 29.10.2026
-  // мини-игра Listening, «Слова в картинках», «Числа», «Скорочтение», Word Hunt и «Аркада» — во вкладке «Грамматика».
+  // мини-игра Listening, «Слова в картинках», «Числа», Word Hunt и «Аркада» — во вкладке «Грамматика»;
+  // «Скорочтение» с 08.11.2026 снова в «Аудировании».
   function sectionBack(skill) {
     return {
       onBack: () => goBack(() => handleNav('practice', skill ? { skill } : undefined)),
@@ -2182,7 +2230,7 @@ export default function App() {
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && <LessonFeedbackPrompt key={userIdFromToken(token)} token={token} enabled={isLegalDocumentsScreen(view) && !['live-lesson', 'lesson-workspace'].includes(view)} />}</OptionalPart>
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && !isStudentSectionHidden('my-teacher') && <MatchingPopups token={token} screen={view} onNav={handleNav} />}</OptionalPart>
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && (
-        <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
+        <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen proactive level={needsLevelTest ? null : userLevel} newcomer={needsLevelTest && accountCreatedAt != null && !isExistingStudent(accountCreatedAt)} format={learnerFormat({ demo: isDemoAccount, sections: sectionAccess?.status === 'ready' ? sectionAccess : null })} />
       )}</OptionalPart>
     </MobileTabContext.Provider>
     </LegalDocumentsGate>
@@ -2460,6 +2508,19 @@ export default function App() {
           }}
         />
       )
+    case 'placement-results':
+      return (
+        <PlacementResultsPage
+          token={token}
+          userName={name}
+          userLevel={userLevel}
+          geTarget={(!ieltsAccount && geProfile?.targetLevel) || null}
+          placementVersion={placementVersion}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+          onStartTest={() => openPlacement('home')}
+        />
+      )
     case 'minutes':
       // Витрина пакетов минут. «Назад» — туда, откуда пришли: разговор к этому
       // моменту уже закрыт лимитом, поэтому возвращаем на домашний экран тьютора.
@@ -2549,7 +2610,7 @@ export default function App() {
     case 'teacher-pick':
       return <TeacherPickPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} />
     case 'feedback':
-      return <FeedbackCenter userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} token={token} onBack={() => goBack(() => setScreen('profile'))} />
+      return <FeedbackCenter initialCategory={feedbackDraft?.category} initialDraft={feedbackDraft?.draft} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} token={token} onBack={() => goBack(() => setScreen('profile'))} />
     case 'practice':
       return (
         <PracticePage
@@ -2691,7 +2752,7 @@ export default function App() {
     case 'speed-reading':
       return (
         <SpeedReadingPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2923,6 +2984,10 @@ export default function App() {
       return <SatWeeklyPage token={token} onNav={handleNav} />
     case 'sat-papers':
       return <SatPapersPage token={token} onNav={handleNav} />
+    case 'sat-bluebook':
+      return <SatBluebookPage token={token} onNav={handleNav} />
+    case 'sat-compare':
+      return <SatComparePage token={token} onNav={handleNav} />
     case 'sat-mock':
       return <SatMockPage token={token} onNav={handleNav} />
     case 'sat-mock-review':

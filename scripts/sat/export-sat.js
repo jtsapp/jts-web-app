@@ -428,6 +428,8 @@ async function main() {
     })),
   })
   writeJson('taxonomy.json', { domains: plain(d.domains), skills: plain(d.skills) })
+  // Вузы прототипа — только для сверки: src/sat/data/colleges.json с 11.2026 ведёт веб-приложение (решения SAT,
+  // «1. Данные вузов»: типы балла, годы, источники), эту выгрузку поверх него не копировать.
   writeJson('reference/colleges.json', { meta: plain(d.collegesMeta), rows: plain(d.colleges) })
   writeJson('reference/exam-dates.json', { meta: plain(d.examDatesMeta), dates: plain(d.examDates) })
   writeJson('reference/sat-info.json', { meta: plain(d.satInfoMeta), chapters: plain(d.satInfo) })

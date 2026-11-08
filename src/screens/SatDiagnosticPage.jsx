@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getSatDiagnostic, getSatPlan, getSatProfile, rebuildSatPlan, saveSatPlan, saveSatProfile, startSatDiagnostic, submitSatDiagnostic } from '../api.js'
+import { getSatDiagnostic, getSatProfile, getSatRoadmap, startSatDiagnostic, submitSatDiagnostic } from '../api.js'
 import { loadToken } from '../lib/session.js'
 import { useI18n } from '../i18n.jsx'
 import QuestionScreen from '../sat/question/QuestionScreen.jsx'
@@ -7,24 +7,12 @@ import useSatSession from '../sat/question/useSatSession.js'
 import { timeOn } from '../sat/question/session.js'
 import DiagnosticIntro from '../sat/diagnostic/DiagnosticIntro.jsx'
 import DiagnosticReport from '../sat/diagnostic/DiagnosticReport.jsx'
-import StudyTime from '../sat/diagnostic/StudyTime.jsx'
 import RoadmapView from '../sat/plan/RoadmapView.jsx'
 import { SatModal } from '../sat/question/ToolDialogs.jsx'
-import { phaseForWeek, horizonWeeks, previewPlan, roadmapSteps } from '../sat/model/plan.js'
+import { phaseKeyOf } from '../sat/model/roadmap.js'
 import { domainName } from '../sat/names.js'
 import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 import { errorText, isQuotaError } from '../lib/examQuota.js'
-
-const STEPS = ['intro', 'report', 'time']
-
-function readStep() {
-  try {
-    const v = new URLSearchParams(window.location.search).get('satDiag')
-    return STEPS.includes(v) ? v : null
-  } catch {
-    return null
-  }
-}
 
 function writeStep(step) {
   try {
@@ -98,34 +86,34 @@ function DiagnosticRun({ diag, onExit, onDone }) {
 }
 
 /**
- * Диагностика SAT — фаза 4 плана: старт (Figma 7) → 24 вопроса (Figma 8) → карта (Figma 9) → время на занятия
- * (Figma 10) → план. Шаг держится в ?satDiag=intro|report|time: перезагрузка не выбрасывает в начало, а идущая
- * диагностика всегда продолжается с того же места (набор на сервере, ответы — черновиком на устройстве).
+ * Диагностика SAT: старт (Figma 7) → 24 вопроса (Figma 8) → карта (Figma 9) → план. Шага «время на занятия» больше нет
+ * (ТЗ 21.10, задача 3.1): даты занятий ставит школа, язык разборов — в «Настройках» профиля. Шаг держится в
+ * ?satDiag=intro|report: перезагрузка не выбрасывает в начало, а идущая диагностика продолжается с того же места.
  */
 export default function SatDiagnosticPage({ token, onNav }) {
   const { t } = useI18n()
   const authToken = token || loadToken()
   const [diag, setDiag] = useState(null)
-  const [plan, setPlan] = useState(null)
   const [profile, setProfile] = useState(null)
   const [step, setStep] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [roadmap, setRoadmap] = useState(false)
+  // фазы плана с сервера (ТЗ 21.10): тот же роудмап, что у вкладки «План»
+  const [road, setRoad] = useState(null)
 
   const load = useCallback(async () => {
-    const [d, p, pr] = await Promise.all([
+    const [d, , pr] = await Promise.all([
       getSatDiagnostic(authToken).catch(() => ({ status: 'none' })),
-      getSatPlan(authToken).catch(() => ({ exists: false })),
+      getSatRoadmap(authToken).then(setRoad).catch(() => null),
       getSatProfile(authToken).catch(() => ({ exists: false })),
     ])
     setDiag(d)
-    setPlan(p)
     setProfile(pr)
-    const want = readStep()
+    // сдавший видит отчёт даже по ?satDiag=intro: пересдача — только после сброса куратором
     if (d.status === 'active') setStep('run')
-    else if (want === 'intro' || d.status === 'none') setStep('intro')
-    else setStep(want === 'time' ? 'time' : 'report')
+    else if (d.status === 'finished') setStep('report')
+    else setStep('intro')
   }, [authToken])
 
   useEffect(() => {
@@ -140,11 +128,14 @@ export default function SatDiagnosticPage({ token, onNav }) {
     window.scrollTo(0, 0)
   }
 
-  const toPlan = () => {
+  // phase — фаза роудмапа, которую «План» откроет первой (satPhase читает PlanTab и сразу убирает из адреса)
+  const toPlan = (phase) => {
     writeStep(null)
     try {
       const url = new URL(window.location.href)
       url.searchParams.set('satTab', 'plan')
+      url.searchParams.delete('satPlanView')
+      if (phase) url.searchParams.set('satPhase', String(phase))
       window.history.replaceState(window.history.state, '', url)
     } catch {
       /* вкладку выберет хаб */
@@ -167,32 +158,8 @@ export default function SatDiagnosticPage({ token, onNav }) {
     } catch (e) {
       // исчерпанная демо-квота диагностики (E2) — понятный текст сервера, а не «не удалось начать»
       setError(isQuotaError(e) ? errorText(e, t) : t('sat.dx.startError'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const build = async ({ days, minutes, lang: explainLang }) => {
-    setBusy(true)
-    setError(null)
-    try {
-      await saveSatProfile(authToken, { explainLang })
-      const p = await saveSatPlan(authToken, { studyDays: days, minutesPerDay: minutes })
-      setPlan(p)
-      toPlan()
-    } catch {
-      setError(t('sat.time.buildError'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const rebuild = async () => {
-    setBusy(true)
-    try {
-      setPlan(await rebuildSatPlan(authToken))
-    } catch {
-      setError(t('sat.time.buildError'))
+      // сервер отказал, потому что диагностика уже сдана (другая вкладка) — показываем отчёт
+      if (e?.status === 400) load()
     } finally {
       setBusy(false)
     }
@@ -213,17 +180,16 @@ export default function SatDiagnosticPage({ token, onNav }) {
   }
 
   const examDate = profile?.dateUndecided ? null : profile?.examDate || null
-  const today = new Date()
-  const startPhase = plan?.exists ? plan.plan.weeks[0]?.phase || 2 : phaseForWeek(0, horizonWeeks(today, examDate))
-  const chip = step === 'time' ? t('sat.time.chip') : t('sat.dx.chip')
-  const back = step === 'time' ? () => goStep('report') : exit
+  // первая фаза с занятиями — её называет отчёт («начнём с … в фазе …»)
+  const startKey = road ? phaseKeyOf(road.roadmap, road.roadmap.phases.find((p) => p.kind === 'lessons')?.n) : 'foundations1'
+  const chip = t('sat.dx.chip')
+  const back = exit
 
   let body = null
-  if (step === 'intro') {
+  if (step === 'intro' && diag.status !== 'finished') {
     body = (
       <DiagnosticIntro
         examDate={examDate}
-        last={diag.status === 'finished' ? diag.finishedAt : null}
         resuming={diag.status === 'active'}
         busy={busy}
         error={error}
@@ -235,27 +201,13 @@ export default function SatDiagnosticPage({ token, onNav }) {
       <DiagnosticReport
         result={diag.result}
         finishedAt={diag.finishedAt}
-        startPhase={startPhase}
-        planExists={!!plan?.exists}
-        stale={!!plan?.stale}
-        busy={busy}
-        onRoadmap={() => setRoadmap(true)}
-        onNext={() => goStep('time')}
-        onRetake={() => goStep('intro')}
-        onPlan={toPlan}
-        onRebuild={rebuild}
-      />
-    )
-  } else if (step === 'time') {
-    body = (
-      <StudyTime
-        initial={plan?.exists ? { days: plan.studyDays, minutes: plan.minutesPerDay, lang: profile?.explainLang } : { lang: profile?.explainLang }}
-        examDate={examDate}
-        rebuilding={!!plan?.exists}
-        busy={busy}
-        error={error}
-        onBack={() => goStep('report')}
-        onBuild={build}
+        startKey={startKey}
+        timing={road?.timing}
+        onManager={() => onNav?.('sat-pricing')}
+        nextTest={road?.roadmap?.phases?.find((p) => p.n === 1)?.bluebookTest ?? 6}
+        // роудмап не загрузился — «Посмотреть план» ведёт во вкладку, а не в пустое окно
+        onRoadmap={road ? () => setRoadmap(true) : () => toPlan()}
+        onNext={() => toPlan(1)}
       />
     )
   }
@@ -270,13 +222,9 @@ export default function SatDiagnosticPage({ token, onNav }) {
         <button type="button" className="st-ob__exit" onClick={exit}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>
       </header>
       <div key={step} className="ih-enter">{body}</div>
-      {roadmap && (
+      {roadmap && road && (
         <SatModal wide title={t('sat.plan.view.roadmap')} onClose={() => setRoadmap(false)}>
-          <RoadmapView
-            steps={roadmapSteps(previewPlan(today, examDate), diag.finishedAt?.slice(0, 10))}
-            current={startPhase}
-            examDate={examDate}
-          />
+          <RoadmapView data={road} />
         </SatModal>
       )}
     </div>

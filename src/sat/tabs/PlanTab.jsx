@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import EmptyState from '../../ielts/ui/EmptyState.jsx'
-import PillButton from '../../ielts/ui/PillButton.jsx'
-import { EventIcon, HelpIcon, SyncIcon } from '../../ielts/icons.jsx'
+import { HelpIcon } from '../../ielts/icons.jsx'
 import RoadmapView from '../plan/RoadmapView.jsx'
 import WeekView from '../plan/WeekView.jsx'
 import MonthView from '../plan/MonthView.jsx'
 import { SatModal } from '../question/ToolDialogs.jsx'
-import { currentPhase, iso, nextLesson, roadmapSteps } from '../model/plan.js'
+import { iso } from '../model/plan.js'
+import { nextGroupLesson, scheduleAsPlan } from '../model/roadmap.js'
 
 const VIEWS = ['roadmap', 'week', 'month']
 
@@ -17,6 +16,23 @@ function readView() {
     return VIEWS.includes(v) ? v : 'roadmap'
   } catch {
     return 'roadmap'
+  }
+}
+
+/**
+ * Фаза, открытая ссылкой (`satPhase=1` — отчёт диагностики «Дальше: Bluebook Test 6»). Читается один раз и сразу
+ * убирается из адреса: иначе каждое возвращение на вкладку снова открывало бы ту же фазу вместо текущей.
+ */
+function takePhase() {
+  try {
+    const url = new URL(window.location.href)
+    const n = Number(url.searchParams.get('satPhase'))
+    if (!url.searchParams.has('satPhase')) return null
+    url.searchParams.delete('satPhase')
+    window.history.replaceState(window.history.state, '', url)
+    return Number.isInteger(n) && n > 0 ? n : null
+  } catch {
+    return null
   }
 }
 
@@ -48,36 +64,39 @@ export function HowItWorks({ onClose }) {
 }
 
 /**
- * Вкладка «План» (Figma SAT 12–14): Роудмап · Неделя · Месяц (решение F: роудмап — первым видом, как в макете).
- * План строит сервер; «Пересобрать план» ведёт на «время на занятия» (Figma 10) — там же меняют дни и минуты,
- * а прожитые недели при пересборке сохраняются.
+ * Вкладка «План» (Figma «NEW 2» 17:1367, 17:1583, 17:1866; фазы — ТЗ 21.10.2026): Роудмап · Неделя · Месяц. Фазы и
+ * счётчики — с сервера (тот же источник, что у «Сегодня»), даты занятий — из расписания группы: студент дни не
+ * выбирает, их ставит школа. Клик по занятию ведёт сразу в практику по его теме — меню занятия убрано (задача 3.4).
+ * Счётчика «X из N занятий» в строке вкладок больше нет: макет держит его в полосе фаз «Недели» и в карточке фазы.
  */
-export default function PlanTab({ plan, diagnostic, busy, onLesson, onRebuild, onDiagnostic, onStart }) {
+export default function PlanTab({ roadmap, bluebook, schedule, onLesson, onToday, onBluebook, onCompare, selfPrepActions }) {
   const { t } = useI18n()
   const [view, setView] = useState('roadmap')
   const [how, setHow] = useState(false)
-  useEffect(() => setView(readView()), [])
+  const [phase, setPhase] = useState(null)
+  useEffect(() => {
+    const n = takePhase()
+    setView(n ? 'roadmap' : readView())
+    if (n) {
+      setPhase(n)
+      writeView('roadmap')
+    }
+  }, [])
   const go = (v) => {
     setView(v)
     writeView(v)
   }
+  if (!roadmap) return null
 
-  if (!plan?.exists) {
-    const finished = diagnostic?.status === 'finished'
-    return (
-      <EmptyState
-        icon={<EventIcon size={28} />}
-        title={t(finished ? 'sat.plan.noPlanTime' : 'sat.plan.noPlan')}
-        text={t(finished ? 'sat.plan.noPlanTimeText' : 'sat.plan.noPlanText')}
-        action={<PillButton variant="primary" onClick={() => onDiagnostic(finished ? 'time' : null)}>{t(finished ? 'sat.plan.toTime' : 'sat.plan.toDiag')}</PillButton>}
-      />
-    )
-  }
-
-  const p = plan.plan
+  const r = roadmap.roadmap
+  const plan = scheduleAsPlan(schedule, r, roadmap.examDate)
+  const next = nextGroupLesson(plan)
   const todayIso = iso(new Date())
-  const next = nextLesson(p, todayIso)
-  const steps = roadmapSteps(p, diagnostic?.finishedAt ? diagnostic.finishedAt.slice(0, 10) : null)
+  const byId = new Map((schedule?.lessons || []).map((l) => [String(l.id), l]))
+  const open = (id) => {
+    const l = byId.get(String(id))
+    if (l) onLesson(l)
+  }
 
   return (
     <div className="st-plan">
@@ -93,14 +112,16 @@ export default function PlanTab({ plan, diagnostic, busy, onLesson, onRebuild, o
         {view === 'roadmap' && (
           <button type="button" className="st-tool" onClick={() => setHow(true)}><HelpIcon size={16} />{t('sat.how.title')}</button>
         )}
-        <button type="button" className="st-tool" onClick={onRebuild}><SyncIcon size={16} />{t('sat.plan.rebuild')}</button>
       </div>
-      {plan.stale && <p className="st-rep__stale"><span>{t('sat.rep.stale')}</span></p>}
-      {p.provisional && <p className="st-plan__note">{t('sat.plan.provisional')}</p>}
+      {r.provisional && <p className="st-plan__note">{t('sat.plan.provisional')}</p>}
       <div key={view} className="ih-enter">
-        {view === 'roadmap' && <RoadmapView steps={steps} current={currentPhase(p, todayIso)} examDate={p.examDate} onStart={next ? () => onStart(next.id) : null} />}
-        {view === 'week' && <WeekView plan={p} next={next} todayIso={todayIso} busy={busy} onLesson={onLesson} onStart={onStart} />}
-        {view === 'month' && <MonthView plan={p} next={next} todayIso={todayIso} busy={busy} onLesson={onLesson} onStart={onStart} />}
+        {view === 'roadmap' && (
+          <RoadmapView data={roadmap} bluebook={bluebook} schedule={schedule} onToday={onToday} onBluebook={onBluebook}
+            onCompare={onCompare} selfPrepActions={selfPrepActions} initialPhase={phase} />
+        )}
+        {view !== 'roadmap' && !plan.weeks.length && <p className="st-plan__note">{t('sat.road.noGroup')}</p>}
+        {view === 'week' && plan.weeks.length > 0 && <WeekView plan={plan} data={roadmap} schedule={schedule} next={next} todayIso={todayIso} onStart={open} />}
+        {view === 'month' && plan.weeks.length > 0 && <MonthView plan={plan} roadmap={r} next={next} todayIso={todayIso} onStart={open} />}
       </div>
       {how && <HowItWorks onClose={() => setHow(false)} />}
     </div>

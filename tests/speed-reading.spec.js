@@ -85,17 +85,18 @@ function watchErrors(page) {
 
 const host = (page) => page.locator('.srp-host')
 
-test('Практика → Грамматика → Скорочтение: образец, запись, итог по серверу, попытка и «Мои попытки»', async ({ page }) => {
+test('Практика → Аудирование → Скорочтение: образец, запись, итог по серверу, попытка и «Мои попытки»', async ({ page }) => {
   test.setTimeout(120_000)
   const errors = watchErrors(page)
   const server = await mockBackend(page)
   await page.goto('/?screen=practice')
-  // С редизайна 29.10.2026 «Скорочтение» — тренажёр вкладки «Грамматика», а не баннер «Аудирования»;
-  // вся карточка — кнопка перехода, бейдж «Новое» — на обложке.
-  const grammar = page.locator('.pk-skill--grammarGames')
-  await expect(grammar).toBeVisible({ timeout: 60_000 })
-  await grammar.click()
+  // «Скорочтение» — карточка вкладки «Аудирование», сразу после Just to Listen (редизайн 29.10.2026 уносил его в
+  // «Грамматику», 08.11.2026 вернули); вся карточка — кнопка перехода, бейдж «Новое» — на обложке.
+  const listening = page.locator('.pk-skill--listening')
+  await expect(listening).toBeVisible({ timeout: 60_000 })
+  await listening.click()
   const card = page.locator('#sec-speed-reading')
+  await expect(page.locator('#sec-listen + #sec-speed-reading')).toHaveCount(1)
   await expect(card.locator('.pk-card__badge')).toHaveText('Новое')
   await card.click()
   await expect(page).toHaveURL(/screen=speed-reading/)

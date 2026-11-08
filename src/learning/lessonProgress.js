@@ -177,7 +177,15 @@ export async function markDone(level, token, moduleId, code, xp = 0) {
       if (uid) queuePending({ uid, moduleId, code, xp })
     }
   }
+  const first = codes.size === 0
   codes.add(code)
   writeLocal(level, [...codes])
+  // Луна-трекер (lib/assistant/useProactive.js): урок пройден — перечитать план дня (шаг закрыт по фактам), а в демо
+  // предложить пробный урок (ТЗ v2.0, 7.2г). first — первый пройденный урок уровня на этом устройстве.
+  try {
+    window.dispatchEvent(new CustomEvent('jts:lesson-done', { detail: { level, code, first } }))
+  } catch {
+    // без window (тесты на node) слушать некому
+  }
   return codes
 }

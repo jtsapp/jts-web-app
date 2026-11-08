@@ -4,13 +4,14 @@ import { pick } from '../model/profile.js'
 import { useI18n } from '../../i18n.jsx'
 import { ChevronLeftIcon, ChevronRightIcon, InfoIcon } from '../../ielts/icons.jsx'
 import DesmosGuide from '../guide/DesmosGuide.jsx'
+import { CalendarIcon } from '../icons.jsx'
 
 /**
  * «Гайд» (Figma SAT 19): шесть глав онбординга, чтобы перечитать в любой момент, — из тех же данных и теми же
  * компонентами. Слева список глав, справа открытая глава и переход к соседним. Вторая половина — гид по Desmos
  * (Figma 20, фаза 9) — `src/sat/guide/DesmosGuide.jsx`.
  */
-export default function GuideTab() {
+export default function GuideTab({ explainLang }) {
   const { t, lang } = useI18n()
   const [open, setOpen] = useState(0)
   const [view, setView] = useState('about')
@@ -35,7 +36,7 @@ export default function GuideTab() {
       ))}
     </div>
   )
-  if (view === 'desmos') return <DesmosGuide seg={seg} />
+  if (view === 'desmos') return <DesmosGuide seg={seg} explainLang={explainLang} />
   return (
     <div className="st-guide">
       <div className="st-guide__top">
@@ -52,7 +53,7 @@ export default function GuideTab() {
           ))}
         </nav>
         <article key={id} className="st-card st-guide__body ih-enter">
-          <span className="st-ob__chip st-ob__chip--violet">{t('sat.guide.chapter', { n: String(open + 1) })}</span>
+          <span className="st-ob__chip st-ob__chip--violet"><CalendarIcon size={14} />{t('sat.guide.chapter', { n: String(open + 1) })}</span>
           <h2>{title(id)}</h2>
           <p className="st-ob__lead st-ob__lead--left">{pick(ch.lead, lang)}</p>
           {body}

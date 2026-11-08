@@ -41,6 +41,13 @@ describe('что на экране: задание и проверено ли о
     // Поле без кнопки проверки рядом (кнопка вне снимка или ещё не отрисована) — тоже задание.
     expect(openingFocus('Clare is reading. [поле: ученик ввёл «Is Cleare reading?»]')).toEqual({ task: true, unchecked: true })
     expect(openingFocus('Ответ: [пустое поле]')).toEqual({ task: true, unchecked: true })
+    // Игра: варианты — просто кнопки, «Проверить» нет; область помечена data-assistant-task (зонд M03, 08.11.2026).
+    expect(openingFocus('[задание: игра: вариант выбирают нажатием]\nShe ___ (go). [кнопка #1 «goed»] [кнопка #2 «went»]')).toEqual({
+      task: true,
+      unchecked: true,
+    })
+    // Те же кнопки без пометки — не задание (выбор раздела, «Ещё раз / Следующая игра»).
+    expect(openingFocus('She ___ (go). [кнопка #1 «goed»] [кнопка #2 «went»]')).toEqual({ task: false, unchecked: false })
     expect(openingFocus('Ответ: [поле Ваш ответ: ученик ввёл «x»]')).toEqual({ task: true, unchecked: true })
     expect(openingFocus('[поле: ученик ввёл «go» (отмечено как неверное)] Неверный ответ')).toEqual({ task: true, unchecked: false })
     expect(openingFocus('[кнопка «like» неактивна (отмечено как неверное)] [верный ответ по заданию: «don\'t like»]')).toEqual({

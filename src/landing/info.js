@@ -10,7 +10,12 @@
 
 export const INFO_PAGES = ['tariffs', 'payment', 'refund', 'contacts']
 
-export const infoUrl = (page, lang) => `/info/${page}${lang === 'kz' ? '?lang=kz' : ''}`
+// Язык страниц: у лендинга казахский — `kz`, а приложение (i18n.jsx) зовёт его `kk`; без сведения подвал приложения на
+// казахском интерфейсе показывал русские ссылки (ТЗ v2.0, кейс 17). Английских страниц нет (решение владельца 08.11.2026
+// «Оставить русские»): при английском интерфейсе ссылки ведут на русские страницы.
+export const infoLang = (lang) => (lang === 'kz' || lang === 'kk' ? 'kz' : 'ru')
+
+export const infoUrl = (page, lang) => `/info/${page}${infoLang(lang) === 'kz' ? '?lang=kz' : ''}`
 
 export const ru = {
   nav: {
@@ -371,4 +376,4 @@ export const kz = {
 }
 
 const DICTS = { ru, kz }
-export const pickInfo = (lang) => DICTS[lang] || ru
+export const pickInfo = (lang) => DICTS[infoLang(lang)] || ru

@@ -15,7 +15,9 @@
 //   приходит только их число — тостом прототипа), уровень — cfg.level по
 //   профилю, язык — приложения (api.setLang), звук — настройка устройства
 //   (api.setSound); localStorage прототипа и «режим преподавателя» убраны;
-// - HOOK.mist не подключён: ошибки не сохраняются (решение 25.10.2026);
+// - HOOK.mist прототипа — cfg.onMistake(тема, вопрос, верный ответ): с 08.11.2026 ошибка идёт в журнал модели ученика
+//   Луны (ТЗ v2.0, 8.1; 30 дней, только пример «вопрос → ответ»). Решение 25.10.2026 «ошибки игр не сохраняются»
+//   этим пересмотрено только для журнала: своего списка ошибок у игр по-прежнему нет;
 //   HOOK.popBtn — своя кнопка «В словарь» (cfg.addWord);
 // - голос — cfg.speak (Soniox), а не speechSynthesis; автоозвучка выключена,
 //   как в прототипе;
@@ -27,6 +29,7 @@
 //   снимает всё;
 // - починка: строка разбирается на слова до экранирования (text.js, wrapEN).
 // Каждый ответ в игре — cfg.onAnswer(верно?) → рейтинг навыка «грамматика».
+// Пока идёт раунд, #app помечен data-assistant-task — Луна видит непроверенное задание и ответ не называет.
 // Прокрутку на смене вида делает приложение — cfg.scrollTop(вид): во вкладке Практики раздел стоит под карточками
 // навыков, и хаб показывается с верха страницы, а тема и игра — с верха раздела.
 
@@ -38,7 +41,7 @@ import { esc, wrapEN, lookUp, norm, trail, sentOf } from './text.js'
  * @param {object} cfg  см. docs/superpowers/plans/2026-10-25-grammar-games-web.md, Task 4
  */
 export function mountGrammarGames(root, cfg) {
-const { index, loadTopic, loadGloss, onResult = () => null, onAnswer = () => {}, speak = () => {}, stopVoice = () => {}, addWord = null, asset, initialTopic = null, scrollTop = () => {} } = cfg
+const { index, loadTopic, loadGloss, onResult = () => null, onAnswer = () => {}, onMistake = () => {}, speak = () => {}, stopVoice = () => {}, addWord = null, asset, initialTopic = null, scrollTop = () => {} } = cfg
 const doc = root.ownerDocument
 const SR = root.getRootNode()
 const ac = new AbortController()
@@ -138,9 +141,10 @@ const topicStars=tp=>gamesOf(tp).reduce((a,g)=>a+starsOf(tp.id,g),0);
 const topicMax=tp=>gamesOf(tp).length*3;
 function unlocked(){return true;}
 function starStr(n,max=3){let h='';for(let i=0;i<max;i++)h+=`<span class="${i<n?'y':''}">★</span>`;return h;}
-// Решение 25.10.2026: ошибки игр нигде не сохраняются и никуда не уходят — крючок прототипа пустой.
-function mist(){}
-function answered(ok){try{onAnswer(!!ok);}catch{/* рейтинг навыка — не повод ронять игру */}}
+// Крючок ошибки прототипа: (вопрос, варианты, верный) → журнал модели ученика (см. шапку). Тема — открытая сейчас.
+function mist(q,opts,right){try{onMistake(G.topic,String(q??''),String(right??''));}catch{/* журнал — не повод ронять игру */}}
+// Тема — вторым аргументом: по ней модель ученика ведёт карту тем и повторение (рейтинг навыка её не читает).
+function answered(ok){try{onAnswer(!!ok,G.topic);}catch{/* рейтинг навыка — не повод ронять игру */}}
 const plain=html=>{const d=doc.createElement('div');d.innerHTML=html;return d.textContent.replace(/\s+/g,' ').trim();};
 // Кнопка разметки: имя действия и аргументы в data-*, обработчик один — на корне (см. шапку файла).
 const act=(name,...args)=>`data-act="${name}"${args.length?` data-args="${esc(JSON.stringify(args))}"`:''}`;
@@ -205,7 +209,10 @@ function go(v,a,b){loadSeq++;stopLoops();closeModal();hidePop();
 function openTopic(id,tab){const seq=++loadSeq;G.view='loading';G.loading=id;G.loadTab=tab;render();scrollTop(G.view);
  return Promise.resolve().then(()=>loadTopic(id)).then(body=>{if(dead||seq!==loadSeq)return;if(!body||body.id!==id)throw new Error('тема не та');TMAP[id]=body;G.topic=id;G.tab=tab;G.view='topic';render();},
   ()=>{if(dead||seq!==loadSeq)return;G.view='loadfail';render();});}
-function render(){const a=$('app');if(G.view==='hub')a.innerHTML=vHub();else if(G.view==='topic')a.innerHTML=G.tab==='rule'?vRule():vQuest();else if(G.view==='game')startGame();else if(G.view==='result')a.innerHTML=vResult();else if(G.view==='loading')a.innerHTML=vWait(false);else if(G.view==='loadfail')a.innerHTML=vWait(true);}
+// Идёт раунд — для Луны это непроверенное задание (data-assistant-task, lib/assistant/screenSnapshot.js): варианты здесь
+// просто кнопки, «Проверить» нет, и без пометки она на «помоги» называла ответ текущего вопроса (зонд M03, 08.11.2026).
+const TASK_NOTE='игра: вариант выбирают нажатием, ответ засчитывается сразу';
+function render(){const a=$('app');if(G.view==='game')a.setAttribute('data-assistant-task',TASK_NOTE);else a.removeAttribute('data-assistant-task');if(G.view==='hub')a.innerHTML=vHub();else if(G.view==='topic')a.innerHTML=G.tab==='rule'?vRule():vQuest();else if(G.view==='game')startGame();else if(G.view==='result')a.innerHTML=vResult();else if(G.view==='loading')a.innerHTML=vWait(false);else if(G.view==='loadfail')a.innerHTML=vWait(true);}
 function vWait(fail){return `<button class="back" ${act('go','hub')}>${t('back')}</button><div class="stage gg-wait" ${fail?'role="alert"':'role="status"'}><img src="${fail?IMG.sleep:IMG.read}" alt=""><p class="sub">${t(fail?'loadFail':'loading')}</p>${fail?`<button class="btn" ${act('retryTopic')}>${t('retry')}</button>`:''}</div>`;}
 /* ================= HUB ================= */
 function vHub(){const total=TOPICS.reduce((a,tp)=>a+topicStars(tp),0);

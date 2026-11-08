@@ -1,0 +1,825 @@
+{
+ "roadmap": {
+  "roadmap": {
+   "phases": [
+    {
+     "n": 1,
+     "key": "diagnostic",
+     "kind": "test",
+     "status": "done",
+     "counted": true,
+     "weekFrom": null,
+     "weekTo": null,
+     "start": "2026-10-05",
+     "end": "2026-10-05",
+     "lessonFrom": null,
+     "lessonTo": null,
+     "bluebookTest": 6
+    },
+    {
+     "n": 2,
+     "key": "foundations1",
+     "kind": "lessons",
+     "status": "active",
+     "counted": true,
+     "weekFrom": 1,
+     "weekTo": 4,
+     "start": "2026-10-05",
+     "end": "2026-11-01",
+     "lessonFrom": 1,
+     "lessonTo": 12,
+     "bluebookTest": null
+    },
+    {
+     "n": 3,
+     "key": "test8",
+     "kind": "test",
+     "status": "done",
+     "counted": true,
+     "weekFrom": null,
+     "weekTo": null,
+     "start": "2026-11-02",
+     "end": "2026-11-02",
+     "lessonFrom": null,
+     "lessonTo": null,
+     "bluebookTest": 8
+    },
+    {
+     "n": 4,
+     "key": "foundations2",
+     "kind": "lessons",
+     "status": "upcoming",
+     "counted": true,
+     "weekFrom": 5,
+     "weekTo": 8,
+     "start": "2026-11-02",
+     "end": "2026-11-29",
+     "lessonFrom": 13,
+     "lessonTo": 24,
+     "bluebookTest": null
+    },
+    {
+     "n": 5,
+     "key": "test10",
+     "kind": "test",
+     "status": "upcoming",
+     "counted": true,
+     "weekFrom": null,
+     "weekTo": null,
+     "start": "2026-11-30",
+     "end": "2026-11-30",
+     "lessonFrom": null,
+     "lessonTo": null,
+     "bluebookTest": 10
+    },
+    {
+     "n": 7,
+     "key": "self",
+     "kind": "self",
+     "status": "upcoming",
+     "counted": false,
+     "weekFrom": 9,
+     "weekTo": 9,
+     "start": "2026-11-30",
+     "end": "2026-12-04",
+     "lessonFrom": null,
+     "lessonTo": null,
+     "bluebookTest": null
+    },
+    {
+     "n": 8,
+     "key": "exam",
+     "kind": "exam",
+     "status": "upcoming",
+     "counted": false,
+     "weekFrom": null,
+     "weekTo": null,
+     "start": "2026-12-05",
+     "end": "2026-12-05",
+     "lessonFrom": null,
+     "lessonTo": null,
+     "bluebookTest": null
+    }
+   ],
+   "active": 2,
+   "activeIndex": 2,
+   "countedTotal": 5,
+   "currentWeek": 3,
+   "totalWeeks": 8,
+   "attended": 1,
+   "lessonCount": 24,
+   "provisional": false
+  },
+  "examDate": "2026-12-05",
+  "inGroup": true,
+  "selfPrep": {
+   "openErrors": 97,
+   "weakDomains": [
+    "m.psda",
+    "rw.sec"
+   ],
+   "bankLeft": 2468,
+   "bluebookLeft": [
+    10
+   ],
+   "offerChallenge": false
+  },
+  "tests": [
+   {
+    "test": 6,
+    "entered": true,
+    "entryId": 2,
+    "rw": 560,
+    "math": 600,
+    "total": 1160,
+    "takenOn": "2026-10-03",
+    "reviewStatus": "PENDING",
+    "reviewComment": null,
+    "deltaRw": null,
+    "deltaMath": null,
+    "deltaTotal": null
+   },
+   {
+    "test": 8,
+    "entered": true,
+    "entryId": 3,
+    "rw": 600,
+    "math": 650,
+    "total": 1250,
+    "takenOn": "2026-10-22",
+    "reviewStatus": "PENDING",
+    "reviewComment": null,
+    "deltaRw": 40,
+    "deltaMath": 50,
+    "deltaTotal": 90
+   },
+   {
+    "test": 10,
+    "entered": false,
+    "entryId": null,
+    "rw": null,
+    "math": null,
+    "total": null,
+    "takenOn": null,
+    "reviewStatus": null,
+    "reviewComment": null,
+    "deltaRw": null,
+    "deltaMath": null,
+    "deltaTotal": null
+   }
+  ]
+ },
+ "schedule": {
+  "inGroup": true,
+  "lessons": [
+   {
+    "id": 1,
+    "number": 1,
+    "week": 1,
+    "section": "RW",
+    "domainId": "rw.cs",
+    "domain": "Craft and Structure",
+    "topic": "Words in Context",
+    "skillIds": [
+     "rw.cs.words-in-context"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-05T19:00:00+05:00",
+    "status": "DONE",
+    "next": false
+   },
+   {
+    "id": 2,
+    "number": 2,
+    "week": 1,
+    "section": "RW",
+    "domainId": "rw.cs",
+    "domain": "Craft and Structure",
+    "topic": "Text Structure and Purpose",
+    "skillIds": [
+     "rw.cs.text-structure-purpose"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-07T19:00:00+05:00",
+    "status": "MISSED",
+    "next": false
+   },
+   {
+    "id": 3,
+    "number": 3,
+    "week": 1,
+    "section": "MATH",
+    "domainId": "m.alg",
+    "domain": "Algebra",
+    "topic": "Linear Equations and Inequalities in One Variable",
+    "skillIds": [
+     "m.alg.linear"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-09T20:00:00+05:00",
+    "status": "MOVED",
+    "next": false
+   },
+   {
+    "id": 4,
+    "number": 4,
+    "week": 2,
+    "section": "RW",
+    "domainId": "rw.cs",
+    "domain": "Craft and Structure",
+    "topic": "Cross-Text Connections",
+    "skillIds": [
+     "rw.cs.cross-text-connections"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-10T18:30:00+05:00",
+    "status": "MISSED",
+    "next": false
+   },
+   {
+    "id": 5,
+    "number": 5,
+    "week": 2,
+    "section": "MATH",
+    "domainId": "m.alg",
+    "domain": "Algebra",
+    "topic": "Linear Equations in Two Variables, Slope, and Linear Functions",
+    "skillIds": [
+     "m.alg.linear"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-13T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 6,
+    "number": 6,
+    "week": 2,
+    "section": "MATH",
+    "domainId": "m.alg",
+    "domain": "Algebra",
+    "topic": "Systems of Linear Equations",
+    "skillIds": [
+     "m.alg.systems"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-15T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 7,
+    "number": 7,
+    "week": 3,
+    "section": "RW",
+    "domainId": "rw.ii",
+    "domain": "Information and Ideas",
+    "topic": "Central Ideas and Details",
+    "skillIds": [
+     "rw.ii.central-ideas"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-17T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 8,
+    "number": 8,
+    "week": 3,
+    "section": "RW",
+    "domainId": "rw.ii",
+    "domain": "Information and Ideas",
+    "topic": "Command of Evidence: Textual",
+    "skillIds": [
+     "rw.ii.evidence-textual"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-20T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 10,
+    "number": 10,
+    "week": 4,
+    "section": "RW",
+    "domainId": "rw.ii",
+    "domain": "Information and Ideas",
+    "topic": "Command of Evidence: Quantitative",
+    "skillIds": [
+     "rw.ii.evidence-quantitative"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-22T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 11,
+    "number": 11,
+    "week": 4,
+    "section": "MATH",
+    "domainId": "m.adv",
+    "domain": "Advanced Math",
+    "topic": "Quadratics Part 2",
+    "skillIds": [
+     "m.adv.nonlinear",
+     "m.adv.expressions"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-24T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": true
+   },
+   {
+    "id": 12,
+    "number": 12,
+    "week": 4,
+    "section": "MATH",
+    "domainId": "m.adv",
+    "domain": "Advanced Math",
+    "topic": "Exponentials and Radicals",
+    "skillIds": [
+     "m.adv.expressions"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-27T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 13,
+    "number": 13,
+    "week": 5,
+    "section": "RW",
+    "domainId": "rw.ii",
+    "domain": "Information and Ideas",
+    "topic": "Inferences",
+    "skillIds": [
+     "rw.ii.inferences"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-29T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 14,
+    "number": 14,
+    "week": 5,
+    "section": "RW",
+    "domainId": "rw.sec",
+    "domain": "Standard English Conventions",
+    "topic": "Boundaries Part 1",
+    "skillIds": [
+     "rw.sec.boundaries"
+    ],
+    "goals": [],
+    "startsAt": "2026-10-31T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 15,
+    "number": 15,
+    "week": 5,
+    "section": "MATH",
+    "domainId": "m.psda",
+    "domain": "Problem-Solving and Data Analysis",
+    "topic": "Ratios, Rates, and Percentages",
+    "skillIds": [
+     "m.psda.ratios",
+     "m.psda.percentages",
+     "m.psda.units"
+    ],
+    "goals": [],
+    "startsAt": "2026-11-03T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 16,
+    "number": 16,
+    "week": 6,
+    "section": "RW",
+    "domainId": "rw.sec",
+    "domain": "Standard English Conventions",
+    "topic": "Boundaries Part 2",
+    "skillIds": [
+     "rw.sec.boundaries"
+    ],
+    "goals": [],
+    "startsAt": "2026-11-05T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 17,
+    "number": 17,
+    "week": 6,
+    "section": "MATH",
+    "domainId": "m.psda",
+    "domain": "Problem-Solving and Data Analysis",
+    "topic": "Statistics, Data Displays, and Probability",
+    "skillIds": [
+     "m.psda.statistics",
+     "m.psda.probability"
+    ],
+    "goals": [],
+    "startsAt": "2026-11-07T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 18,
+    "number": 18,
+    "week": 6,
+    "section": "MATH",
+    "domainId": "m.alg",
+    "domain": "Algebra",
+    "topic": "Linear Inequalities, Absolute Value, and Desmos Shading",
+    "skillIds": [
+     "m.alg.inequalities"
+    ],
+    "goals": [],
+    "startsAt": "2026-11-10T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 19,
+    "number": 19,
+    "week": 7,
+    "section": "RW",
+    "domainId": "rw.sec",
+    "domain": "Standard English Conventions",
+    "topic": "Form, Structure, and Sense",
+    "skillIds": [
+     "rw.sec.form-structure-sense"
+    ],
+    "goals": [],
+    "startsAt": "2026-11-12T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 20,
+    "number": 20,
+    "week": 7,
+    "section": "MATH",
+    "domainId": "m.geo",
+    "domain": "Geometry and Trigonometry",
+    "topic": "Geometry Part 1: Lines, Angles, Triangles, Area and Volume",
+    "skillIds": [
+     "m.geo.triangles",
+     "m.geo.area-volume"
+    ],
+    "goals": [],
+    "startsAt": "2026-11-14T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 21,
+    "number": 21,
+    "week": 7,
+    "section": "MATH",
+    "domainId": "m.adv",
+    "domain": "Advanced Math",
+    "topic": "Functions, Polynomials, and Rational Equations",
+    "skillIds": [
+     "m.adv.functions",
+     "m.adv.nonlinear"
+    ],
+    "goals": [],
+    "startsAt": "2026-11-17T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 22,
+    "number": 22,
+    "week": 8,
+    "section": "RW",
+    "domainId": "rw.ei",
+    "domain": "Expression of Ideas",
+    "topic": "Rhetorical Synthesis",
+    "skillIds": [
+     "rw.ei.rhetorical-synthesis"
+    ],
+    "goals": [],
+    "startsAt": "2026-11-19T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 9,
+    "number": 9,
+    "week": 3,
+    "section": "MATH",
+    "domainId": "m.adv",
+    "domain": "Advanced Math",
+    "topic": "Quadratics Part 1",
+    "skillIds": [
+     "m.adv.nonlinear"
+    ],
+    "goals": [],
+    "startsAt": "2026-11-21T10:00:00+05:00",
+    "status": "MOVED",
+    "next": false
+   },
+   {
+    "id": 23,
+    "number": 23,
+    "week": 8,
+    "section": "RW",
+    "domainId": "rw.ei",
+    "domain": "Expression of Ideas",
+    "topic": "Transitions",
+    "skillIds": [
+     "rw.ei.transitions"
+    ],
+    "goals": [],
+    "startsAt": "2026-11-21T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   },
+   {
+    "id": 24,
+    "number": 24,
+    "week": 8,
+    "section": "MATH",
+    "domainId": "m.geo",
+    "domain": "Geometry and Trigonometry",
+    "topic": "Geometry Part 2: Right Triangles, Trigonometry, Circles",
+    "skillIds": [
+     "m.geo.trig-ratios",
+     "m.geo.circles",
+     "m.geo.radians"
+    ],
+    "goals": [],
+    "startsAt": "2026-11-24T18:30:00+05:00",
+    "status": "PLANNED",
+    "next": false
+   }
+  ],
+  "attended": 1,
+  "lessonCount": 24,
+  "packages": {
+   "base": true,
+   "extra": false,
+   "lessonCount": 24
+  },
+  "groups": [
+   {
+    "id": 1,
+    "name": "SAT · group",
+    "packageCode": "BASE"
+   }
+  ]
+ },
+ "bluebook": {
+  "tests": [
+   {
+    "test": 6,
+    "entered": true,
+    "entryId": 2,
+    "rw": 560,
+    "math": 600,
+    "total": 1160,
+    "takenOn": "2026-10-03",
+    "reviewStatus": "PENDING",
+    "reviewComment": null,
+    "deltaRw": null,
+    "deltaMath": null,
+    "deltaTotal": null
+   },
+   {
+    "test": 8,
+    "entered": true,
+    "entryId": 3,
+    "rw": 600,
+    "math": 650,
+    "total": 1250,
+    "takenOn": "2026-10-22",
+    "reviewStatus": "PENDING",
+    "reviewComment": null,
+    "deltaRw": 40,
+    "deltaMath": 50,
+    "deltaTotal": 90
+   },
+   {
+    "test": 10,
+    "entered": false,
+    "entryId": null,
+    "rw": null,
+    "math": null,
+    "total": null,
+    "takenOn": null,
+    "reviewStatus": null,
+    "reviewComment": null,
+    "deltaRw": null,
+    "deltaMath": null,
+    "deltaTotal": null
+   }
+  ],
+  "snapshots": [
+   {
+    "test": 6,
+    "domains": [
+     {
+      "id": "rw.ii",
+      "band": "shaky",
+      "section": "rw",
+      "accuracy": 0.717391304347826,
+      "attempts": 46
+     },
+     {
+      "id": "rw.cs",
+      "band": "shaky",
+      "section": "rw",
+      "accuracy": 0.7,
+      "attempts": 50
+     },
+     {
+      "id": "rw.ei",
+      "band": "weak",
+      "section": "rw",
+      "accuracy": 0.42424242424242425,
+      "attempts": 33
+     },
+     {
+      "id": "rw.sec",
+      "band": "weak",
+      "section": "rw",
+      "accuracy": 0.391304347826087,
+      "attempts": 46
+     },
+     {
+      "id": "m.alg",
+      "band": "shaky",
+      "section": "math",
+      "accuracy": 0.7142857142857143,
+      "attempts": 14
+     },
+     {
+      "id": "m.adv",
+      "band": "weak",
+      "section": "math",
+      "accuracy": 0.5,
+      "attempts": 48
+     },
+     {
+      "id": "m.psda",
+      "band": "weak",
+      "section": "math",
+      "accuracy": 0.08571428571428572,
+      "attempts": 35
+     },
+     {
+      "id": "m.geo",
+      "band": "weak",
+      "section": "math",
+      "accuracy": 0.4482758620689655,
+      "attempts": 29
+     }
+    ],
+    "focus": [
+     "m.psda",
+     "rw.sec"
+    ],
+    "createdAt": "2026-10-22T21:05:43.433750"
+   },
+   {
+    "test": 8,
+    "domains": [
+     {
+      "id": "rw.ii",
+      "band": "shaky",
+      "section": "rw",
+      "accuracy": 0.717391304347826,
+      "attempts": 46
+     },
+     {
+      "id": "rw.cs",
+      "band": "shaky",
+      "section": "rw",
+      "accuracy": 0.7,
+      "attempts": 50
+     },
+     {
+      "id": "rw.ei",
+      "band": "weak",
+      "section": "rw",
+      "accuracy": 0.42424242424242425,
+      "attempts": 33
+     },
+     {
+      "id": "rw.sec",
+      "band": "weak",
+      "section": "rw",
+      "accuracy": 0.391304347826087,
+      "attempts": 46
+     },
+     {
+      "id": "m.alg",
+      "band": "shaky",
+      "section": "math",
+      "accuracy": 0.7142857142857143,
+      "attempts": 14
+     },
+     {
+      "id": "m.adv",
+      "band": "weak",
+      "section": "math",
+      "accuracy": 0.5,
+      "attempts": 48
+     },
+     {
+      "id": "m.psda",
+      "band": "weak",
+      "section": "math",
+      "accuracy": 0.08571428571428572,
+      "attempts": 35
+     },
+     {
+      "id": "m.geo",
+      "band": "weak",
+      "section": "math",
+      "accuracy": 0.4482758620689655,
+      "attempts": 29
+     }
+    ],
+    "focus": [
+     "m.psda",
+     "rw.sec"
+    ],
+    "createdAt": "2026-10-22T21:05:43.672502"
+   }
+  ],
+  "currentDomains": [
+   {
+    "id": "rw.ii",
+    "section": "rw",
+    "band": "shaky",
+    "accuracy": 0.717391304347826,
+    "attempts": 46
+   },
+   {
+    "id": "rw.cs",
+    "section": "rw",
+    "band": "shaky",
+    "accuracy": 0.7,
+    "attempts": 50
+   },
+   {
+    "id": "rw.ei",
+    "section": "rw",
+    "band": "weak",
+    "accuracy": 0.42424242424242425,
+    "attempts": 33
+   },
+   {
+    "id": "rw.sec",
+    "section": "rw",
+    "band": "weak",
+    "accuracy": 0.391304347826087,
+    "attempts": 46
+   },
+   {
+    "id": "m.alg",
+    "section": "math",
+    "band": "shaky",
+    "accuracy": 0.7142857142857143,
+    "attempts": 14
+   },
+   {
+    "id": "m.adv",
+    "section": "math",
+    "band": "weak",
+    "accuracy": 0.5,
+    "attempts": 48
+   },
+   {
+    "id": "m.psda",
+    "section": "math",
+    "band": "weak",
+    "accuracy": 0.08571428571428572,
+    "attempts": 35
+   },
+   {
+    "id": "m.geo",
+    "section": "math",
+    "band": "weak",
+    "accuracy": 0.4482758620689655,
+    "attempts": 29
+   }
+  ],
+  "currentFocus": [
+   "m.psda",
+   "rw.sec"
+  ]
+ }
+}
