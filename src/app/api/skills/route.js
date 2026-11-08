@@ -3,10 +3,13 @@
 // дельтами. Только для залогиненных: аутентификация первична (401 без Bearer).
 
 import { isDbConfigured } from '@/lib/db/sql.js'
-import { loadSkillStats, applySkillDeltas } from '@/lib/db/skillStats.js'
+import { loadSkillStats, loadLevelSkillStats, applySkillDeltas } from '@/lib/db/skillStats.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
-import { validateDeltas } from '@/lib/skillContract.js'
+import { validateByLevel, validateDeltas } from '@/lib/skillContract.js'
+import { skillLevel } from '@/practice/skillStatsCore.js'
+import { utcDay } from '@/lib/db/activityTime.js'
+import { queueGeActivity } from '@/lib/geActivity.js'
 
 export const runtime = 'nodejs'
 
@@ -22,8 +25,12 @@ export async function GET(request) {
   const resolved = await resolveProfileId(request, '')
   if ('error' in resolved) return resolved.error
 
+  // ?level=A2 — ещё и навыки этого уровня (skill_level_stat): «Сильные и слабые стороны» на «Главной» и в Профиле
+  // считаются по заданиям текущего уровня ученика (ТЗ v2.0, 5.5).
+  const level = skillLevel(new URL(request.url).searchParams.get('level'))
   try {
     const stats = await loadSkillStats(resolved.id)
+    if (level) return Response.json({ configured: true, stats, level, levelStats: await loadLevelSkillStats(resolved.id, level) })
     return Response.json({ configured: true, stats })
   } catch (err) {
     console.error('[skills.GET] failed', err)
@@ -48,12 +55,17 @@ export async function POST(request) {
   if (!deltas) {
     return Response.json({ configured: true, error: 'Invalid deltas.' }, { status: 400 })
   }
+  // Кривая разбивка по уровню — не повод терять общий итог: пишем без неё.
+  const byLevel = validateByLevel(body) || {}
 
   const resolved = await resolveProfileId(request, '')
   if ('error' in resolved) return resolved.error
 
   try {
-    await applySkillDeltas(resolved.id, deltas)
+    await applySkillDeltas(resolved.id, deltas, undefined, byLevel)
+    // ответы заданий двигают «Стоит подтянуть» — бэкенд плана узнаёт его вместе с итогом дня (geActivity.js); после
+    // ответа, не задерживая сохранение. Минут здесь нет: итог дня тот же, повтор безвреден
+    queueGeActivity(resolved.id, utcDay(new Date()))
     const stats = await loadSkillStats(resolved.id)
     return Response.json({ configured: true, stats })
   } catch (err) {

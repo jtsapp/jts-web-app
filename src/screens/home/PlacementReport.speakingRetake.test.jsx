@@ -71,7 +71,7 @@ describe('PlacementResults — пересдать говорение', () => {
     const reload = draw(ENV)
     fireEvent.click(screen.getByTestId('speaking-retake'))
     fireEvent.click(screen.getByTestId('fake-speaking'))
-    await screen.findByText('Не удалось сохранить результат говорения. Попробуйте ещё раз.')
+    await screen.findByText('Не удалось сохранить результат говорения. Попробуй ещё раз.')
     expect(reload).not.toHaveBeenCalled()
   })
 

@@ -4,8 +4,9 @@ import AssetImage from '../../components/AssetImage.jsx'
 import { UserIcon } from '../../components/icons.jsx'
 import { useI18n, LANGS } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
-import { SKILLS, skillBars } from '../../practice/skillStatsCore.js'
+import { SKILLS, levelShare, shareBars } from '../../practice/skillStatsCore.js'
 import DeleteAccount from './DeleteAccount.jsx'
+import LunaMemory from './LunaMemory.jsx'
 import { MaskIcon } from './MaskIcon.jsx'
 
 /*
@@ -75,6 +76,12 @@ export default function ProfilePhone(p) {
           <Row ico="edit" tone="violet" title={t('profile.editProfile')} onClick={openEdit} />
           <Row ico="language" tone="blue" title={t('profile.language')} sub={p.langLabel} onClick={() => go('lang')} />
           <Row ico="palette" tone="pink" title={t('profile.customization')} onClick={() => setSheet('custom')} />
+          {p.luna?.visible && (
+            <Row ico="chat_bubble" tone="violet" title={t('profile.luna')} sub={t(`profile.luna.${p.luna.level}`)} onClick={() => go('luna')} />
+          )}
+          {p.lunaMemory && (
+            <Row ico="chat_bubble" tone="blue" title={t('profile.lunaMemory')} sub={String(p.lunaMemory.facts.length)} onClick={() => go('memory')} />
+          )}
           {p.notif.visible && (
             <Row ico="notifications" tone="violet" title={t('profile.notifications')} sub={p.notif.enabled ? t('profile.notifOn') : t('profile.notifOff')} onClick={() => { p.notif.open(); setSheet('notif') }} />
           )}
@@ -125,6 +132,15 @@ export default function ProfilePhone(p) {
             <span>{t('profile.m.email')}</span>
             <input className="pfm-input" type="email" value={p.edit.form.email} placeholder={t('profile.editEmailHint')} onChange={(e) => p.edit.setForm((f) => ({ ...f, email: e.target.value }))} />
           </label>
+          <label className="pfm-field">
+            <span>{t('profile.editGender')}</span>
+            <select className="pfm-input" value={p.edit.form.gender ?? ''} onChange={(e) => p.edit.setForm((f) => ({ ...f, gender: e.target.value }))}>
+              <option value="">{t('profile.gender.none')}</option>
+              <option value="FEMALE">{t('profile.gender.female')}</option>
+              <option value="MALE">{t('profile.gender.male')}</option>
+            </select>
+            <small>{t('profile.genderNote')}</small>
+          </label>
           {p.phone && (
             <div className="pfm-field">
               <span>{t('profile.editPhone')}</span>
@@ -156,6 +172,35 @@ export default function ProfilePhone(p) {
               </span>
             </button>
           ))}
+        </Card>
+      </Screen>
+    )
+  } else if (view === 'luna') {
+    // «Подсказки Луны» (ТЗ v2.0, 7.4): тот же выбор, что окном на компьютере, — экраном, как язык.
+    body = (
+      <Screen title={t('profile.luna')} onBack={back}>
+        <Card>
+          {['often', 'sometimes', 'manual'].map((v) => (
+            <button key={v} type="button" role="radio" aria-checked={v === p.luna?.level} className={`pfm-lang ${v === p.luna?.level ? 'is-on' : ''}`} data-luna={v} onClick={() => p.luna?.choose(v)}>
+              <span>
+                {t(`profile.luna.${v}`)}
+                <small className="pfm-luna__note">{t(`profile.luna.note.${v}`)}</small>
+              </span>
+              <span className="pfm-radio" aria-hidden="true">
+                {v === p.luna?.level && <MaskIcon name="check" />}
+              </span>
+            </button>
+          ))}
+        </Card>
+        <p className="pfm-luna__device">{t('profile.luna.device')}</p>
+      </Screen>
+    )
+  } else if (view === 'memory' && p.lunaMemory) {
+    // «Память Луны» (ТЗ v2.0, 8.1): факты и «удалить» — экраном, как язык.
+    body = (
+      <Screen title={t('profile.lunaMemory')} onBack={back}>
+        <Card>
+          <LunaMemory memory={p.lunaMemory} phone />
         </Card>
       </Screen>
     )
@@ -392,18 +437,19 @@ function SkillsCard({ stats, t }) {
         const done = stat?.done || 0
         const firstTry = stat?.firstTry || 0
         const empty = done === 0
-        const filled = skillBars({ done, firstTry })
-        const pct = empty ? 0 : Math.round(Math.min(1, firstTry / done) * 100)
+        // Формула — как на «Главной» и в Профиле компьютера (levelShare, задания текущего уровня).
+        const pct = levelShare({ done, firstTry })
+        const filled = shareBars(pct)
         const [ico, tone] = SKILL_ICO[skill]
         return (
           <div key={skill} className={`pfm-skill ${empty ? '' : 'is-on'}`} data-skill={skill}>
             <Plate ico={ico} tone={tone} />
             <span className="pfm-skill__t">
               <b>{t('profile.skills.' + skill)}</b>
-              <span>{empty ? t('profile.skills.empty') : t('profile.skills.meta', { done, pct })}</span>
+              <span>{empty ? t('profile.skills.empty') : pct == null ? t('profile.skills.few', { done }) : t('profile.skills.meta', { done, pct })}</span>
               <span className="pfm-skill__segs" aria-hidden="true">
                 {Array.from({ length: SEGMENTS }, (_, i) => (
-                  <i key={i} className={!empty && i < filled ? 'is-on' : ''} />
+                  <i key={i} className={pct != null && i < filled ? 'is-on' : ''} />
                 ))}
               </span>
             </span>

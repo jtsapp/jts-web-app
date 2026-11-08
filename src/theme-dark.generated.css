@@ -24289,8 +24289,73 @@ html[data-theme="dark"] .ge-today__note {
 html[data-theme="dark"] .ge-today__rest {
     color: var(--ih-ink)
 }
+html[data-theme="dark"] .ge-today__low {
+    color: var(--ih-ink-2)
+}
 html[data-theme="dark"] .ge-today__ahead {
     color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ge-today__mins {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ge-today__view {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ge-today__view button {
+    border: 0;
+    background: none;
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ge-today__view button[aria-pressed='true'] {
+    background: var(--dk-card);
+    color: var(--ih-violet);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24)
+}
+html[data-theme="dark"] .ge-today__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ge-today__bar i {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ge-task__lv {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ge-task__why {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ge-task__body .ge-task__why b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ge-task__opens {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ge-sk__tile {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: inherit
+}
+html[data-theme="dark"] .ge-sk__tile[aria-expanded='true'] {
+    border-color: var(--ih-violet);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .ge-sk__tile b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ge-sk__meta {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ge-sk__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ge-sk__bar i {
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .ge-sk__open {
+    border-top: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ge-sk__open h3 {
+    color: var(--ih-ink)
 }
 html[data-theme="dark"] .ge-task {
     border: 1px solid var(--ih-line);
@@ -24373,6 +24438,18 @@ html[data-theme="dark"] .ge-plate--media_practice {
 html[data-theme="dark"] .ge-plate--vocabulary_sr {
     background: var(--dk-acc-tint);
     color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ge-plate--listening {
+    background: var(--dk-blue-tint);
+    color: var(--dk-blue)
+}
+html[data-theme="dark"] .ge-plate--writing {
+    background: var(--dk-page);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .ge-plate--done {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
 }
 html[data-theme="dark"] .ge-skel {
     background: linear-gradient(100deg, var(--dk-page) 30%, var(--dk-acc-tint) 50%, var(--dk-page) 70%) 0 0 / 200% 100%
@@ -24516,6 +24593,126 @@ html[data-theme="dark"] .hm-skills__cta {
     border: 0;
     background: var(--dk-acc);
     color: var(--dk-on-acc)
+}
+/* «Главная» по ТЗ v2.0 «Луна-трекер» (07.11.2026): блоки справа, полоса недели, ссылка на отчёт теста */
+html[data-theme="dark"] .hm-blk__more, html[data-theme="dark"] .hm-blk__link {
+    border: 0;
+    background: none;
+    color: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-blk__btn {
+    border: 1px solid var(--hm-ac, #9047ff);
+    background: var(--hm-card, #ffffff);
+    color: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-blk__btn.is-fill {
+    background: var(--hm-ac, #9047ff);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .hm-blk__more:focus-visible, html[data-theme="dark"] .hm-blk__link:focus-visible, html[data-theme="dark"] .hm-blk__btn:focus-visible, html[data-theme="dark"] .hm-skills__results:focus-visible, html[data-theme="dark"] .pl-results__back:focus-visible {
+    outline: 2px solid var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-blk__plate {
+    background: var(--hm-lav, #efe7ff);
+    color: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-blk__plate::after {
+    background: currentColor
+}
+html[data-theme="dark"] .hm-blk__plate--late, html[data-theme="dark"] .hm-blk__plate--orange {
+    background: var(--hm-down-bg, #fff0dd);
+    color: var(--hm-down, #e57a12)
+}
+html[data-theme="dark"] .hm-blk__plate--check {
+    background: var(--hm-tile, #f8f8f8);
+    color: var(--hm-mut, #8e8e99)
+}
+html[data-theme="dark"] .hm-blk__plate--ok {
+    background: var(--hm-up-bg, #e3f6ea);
+    color: var(--hm-up, #1f9d55)
+}
+html[data-theme="dark"] .hm-blk__row {
+    border-top: 1px solid var(--hm-line, #e8e8ee)
+}
+html[data-theme="dark"] .hm-blk__rowTitle {
+    color: var(--hm-ink, #181818)
+}
+html[data-theme="dark"] .hm-blk__rowSub {
+    color: var(--hm-sec, #5a5a66)
+}
+html[data-theme="dark"] .hm-blk__st--late {
+    color: var(--hm-down, #e57a12)
+}
+html[data-theme="dark"] .hm-blk__st--todo {
+    color: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-blk__st--check {
+    color: var(--hm-mut, #8e8e99)
+}
+html[data-theme="dark"] .hm-blk__st--ok {
+    color: var(--hm-up, #1f9d55)
+}
+html[data-theme="dark"] .hm-week__day b {
+    color: var(--hm-ink, #181818)
+}
+html[data-theme="dark"] .hm-week__day small {
+    color: var(--hm-mut, #8e8e99)
+}
+html[data-theme="dark"] .hm-week__day::after {
+    background: transparent
+}
+html[data-theme="dark"] .hm-week__day.has-lesson::after {
+    background: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-week__day.is-today {
+    background: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-week__day.is-today b, html[data-theme="dark"] .hm-week__day.is-today small {
+    color: #ffffff
+}
+html[data-theme="dark"] .hm-week__day.is-today.has-lesson::after {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .hm-tl__next {
+    background: var(--hm-lav2, #f6f1ff)
+}
+html[data-theme="dark"] .hm-tl__label {
+    color: var(--hm-sec, #5a5a66)
+}
+html[data-theme="dark"] .hm-tl__live {
+    background: var(--hm-up-bg, #e3f6ea);
+    color: var(--hm-up, #1f9d55)
+}
+html[data-theme="dark"] .hm-tl__topic {
+    color: var(--hm-ink, #181818)
+}
+html[data-theme="dark"] .hm-tl__when {
+    color: var(--hm-sec, #5a5a66)
+}
+html[data-theme="dark"] .hm-tl__none {
+    color: var(--hm-sec, #5a5a66)
+}
+html[data-theme="dark"] .hm-tl__pack {
+    color: var(--hm-sec, #5a5a66)
+}
+html[data-theme="dark"] .hm-tl__h3 {
+    color: var(--hm-ink, #181818)
+}
+html[data-theme="dark"] .hm-near__error {
+    color: var(--hm-down, #e57a12)
+}
+html[data-theme="dark"] .hm-skills__results {
+    border: 0;
+    background: none;
+    color: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .pl-results__back {
+    border: 0;
+    background: none;
+    color: var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .pl-results__note {
+    color: var(--hm-sec, #5a5a66)
 }
 @media (min-width: 561px) {
     html[data-theme="dark"] .hm--v2 .hm-card {

@@ -30,7 +30,7 @@ vi.mock('../api.js', () => ({
 
 vi.mock('../practice/skillStats.js', () => ({
   readLocalSkillStats: () => ({}),
-  loadSkillStatsRemote: vi.fn(async () => null),
+  loadSkillStatsRemote: vi.fn(async () => null), readLocalLevelSkillStats: () => ({}), loadLevelSkillStatsRemote: vi.fn(async () => null),
 }))
 
 // Тур меряет подсветку ResizeObserver'ом и скроллит к ней — в jsdom нет ни того, ни другого.
@@ -103,7 +103,7 @@ describe('Цель уровня на «Главной»', () => {
 
     const hello = await screen.findByRole('dialog', { name: 'Добро пожаловать!' })
     fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
-    const step = await screen.findByRole('dialog', { name: 'Здесь виден ваш прогресс' })
+    const step = await screen.findByRole('dialog', { name: 'Здесь виден твой прогресс' })
     expect(within(step).queryAllByRole('radio')).toHaveLength(0)
     expect(screen.queryByRole('dialog', { name: 'Твоя цель' })).toBe(null)
     expect(goalPuts()).toEqual([])
@@ -117,7 +117,7 @@ describe('Цель уровня на «Главной»', () => {
     )
     renderHome()
     fireEvent.click(await screen.findByRole('button', { name: /Цель — A1/ }))
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Ваша цель' })).getByRole('radio', { name: /B1/ }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Твоя цель' })).getByRole('radio', { name: /B1/ }))
     release()
     await waitFor(() => expect(goalPuts()).toEqual([{ target: 'B1', from: 'A0' }]))
     await new Promise((r) => setTimeout(r, 0))
@@ -129,10 +129,10 @@ describe('Цель уровня на «Главной»', () => {
     renderHome()
     fireEvent.click(await screen.findByRole('button', { name: /Цель — B2/ }))
 
-    const dlg = screen.getByRole('dialog', { name: 'Ваша цель' })
+    const dlg = screen.getByRole('dialog', { name: 'Твоя цель' })
     fireEvent.click(within(dlg).getByRole('radio', { name: /A2/ }))
 
-    expect(screen.queryByRole('dialog', { name: 'Ваша цель' })).toBe(null)
+    expect(screen.queryByRole('dialog', { name: 'Твоя цель' })).toBe(null)
     expect(stopLabels()).toEqual(['Старт', 'Уровень A1', 'Финиш · A2'])
     expect(goalPuts()).toEqual([{ target: 'A2', from: 'A0' }])
   })
@@ -142,7 +142,7 @@ describe('Цель уровня на «Главной»', () => {
     serverGoal.value = { target: 'B2', from: 'A1' }
     const { onOpenPricing } = renderHome({ userLevel: 'B2' })
 
-    expect(await screen.findByText('ТЕПЕРЬ ВАШ УРОВЕНЬ')).toBeTruthy()
+    expect(await screen.findByText('ТЕПЕРЬ ТВОЙ УРОВЕНЬ')).toBeTruthy()
     expect(stopLabels()).toEqual(['Старт', 'Уровень A2', 'Уровень B1', 'Финиш · B2'])
     expect(document.querySelector('.hm-level__fill')).toBe(null)
     fireEvent.click(screen.getByRole('button', { name: /Приобрести новый курс/ }))

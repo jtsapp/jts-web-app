@@ -6067,6 +6067,8 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
   font-weight: 700;
   color: #181818;
 }
+/* Откуда проценты навыков — та же строка, что на «Главной» (ТЗ v2.0, 5.5). */
+.pf-skills__src { margin: -4px 0 10px; font-size: 12px; line-height: 1.35; color: var(--muted, #8e8e99); }
 .pf-card {
   background: #fff;
   border-radius: 16px;
@@ -6208,6 +6210,27 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
 .pf-lang--active svg:last-child {
   color: #9047ff;
 }
+/* «Подсказки Луны» (окно Профиля): под названием выбора — что он значит. */
+.pf-luna__note {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--muted, #8b8a97);
+}
+
+/* «Память Луны» (ТЗ v2.0, 8.1): что Луна запомнила об ученике, у каждого факта — «удалить». */
+.pf-mem { padding: 14px 16px; }
+.pf-mem__note { margin: 0 0 8px; font-size: 13px; line-height: 18px; color: #5a5a66; }
+.pf-mem__empty { margin: 0; font-size: 14px; line-height: 20px; color: #5a5a66; }
+.pf-mem__list { list-style: none; margin: 0; padding: 0; }
+.pf-mem__item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #efeff3; }
+.pf-mem__item:first-child { border-top: 0; }
+.pf-mem__fact { flex: 1; min-width: 0; font-size: 15px; line-height: 20px; color: #181818; overflow-wrap: break-word; }
+.pf-mem__until { display: block; margin-top: 2px; font-size: 12px; line-height: 16px; color: #8b8a97; }
+.pf-mem__del { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; background: #f3f3f7; color: #5a5a66; font: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
+.pf-mem__del:hover { background: #ffecec; color: #e5484d; }
 
 /* Тост */
 .pf-toast {
@@ -6478,6 +6501,14 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
   font-weight: 700;
   letter-spacing: 0.6px;
   text-transform: uppercase;
+  color: #a6a5b2;
+}
+/* подпись под полем «Пол»: зачем он нужен (обращение помощника) */
+.pf-field__note {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 16px;
   color: #a6a5b2;
 }
 .pf-input {

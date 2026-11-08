@@ -3,6 +3,7 @@ import PracticeBlock from '../workspace/blocks/PracticeBlock.jsx'
 import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
 import { getCourseCatalogLesson, saveHomeworkAnswer } from '../../api.js'
+import { clearHintTask, hintTask, homeworkHintId, setHintTask } from '../../lib/assistant/hintTask.js'
 import { batchFullyAnswered, exerciseBatches, exerciseBlock, homeworkTimeline, isAnswered, isUnitTestType, revokedEverything, serverAnswers } from './homeworkExercises.js'
 import { groupByContext } from './exerciseContext.js'
 import { sanitizeHtml } from '../workspace/sanitizeHtml.js'
@@ -35,6 +36,11 @@ function ExerciseContext({ context }) {
 }
 
 export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOpenCard, onPartTouched }) {
+  // Ушли с работы — её задание больше не активное для подсказки Луны (hintTask.js).
+  useEffect(() => () => {
+    const t = hintTask()
+    if (t && t.id.startsWith(homeworkHintId(hw?.id, ''))) clearHintTask(t.id)
+  }, [hw?.id])
   const { t, lang } = useI18n()
   const batches = useMemo(() => exerciseBatches(hw), [hw])
   // Одна домашка на занятие (spec §5, §9): части-материалы этой работы встают
@@ -295,7 +301,14 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOp
                   {group.exercises.map((e) => {
                     const key = `hw-${e.id}`
                     return (
-                      <div className="hw-exercise" key={e.id}>
+                      <div
+                        className="hw-exercise"
+                        key={e.id}
+                        // Задание, которого ученик коснулся, — активное для подсказки Луны (hintTask.js): в домашке их на
+                        // экране десяток, и по снимку не понять, о каком речь. Тест юнита — без подсказок.
+                        onPointerDownCapture={() => setHintTask({ id: homeworkHintId(hw.id, e.id), mode: unitTest ? 'test' : 'homework' })}
+                        onFocusCapture={() => setHintTask({ id: homeworkHintId(hw.id, e.id), mode: unitTest ? 'test' : 'homework' })}
+                      >
                         <PracticeBlock
                           block={exerciseBlock(e)}
                           answers={shown}

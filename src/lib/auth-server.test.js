@@ -154,6 +154,19 @@ describe('verifyTokenStatus: признак аккаунта класса', () =
   })
 })
 
+// Пол из Профиля (backend V542) — для обращения помощника. Белый список полей: забытый здесь, он до Луны не доедет.
+describe('verifyTokenStatus: пол ученика', () => {
+  it('MALE / FEMALE доезжают, остальное — null', async () => {
+    stubBackend({ id: 7, name: 'Асель', gender: 'FEMALE' })
+    expect((await verifyTokenStatus('TOK')).user.gender).toBe('FEMALE')
+    stubBackend({ id: 8, name: 'Мирас', gender: 'other' })
+    expect((await verifyTokenStatus('TOK')).user.gender).toBe(null)
+    // старый бэкенд без поля
+    stubBackend({ id: 9, name: 'Дана' })
+    expect((await verifyTokenStatus('TOK')).user.gender).toBe(null)
+  })
+})
+
 // Вердикт «свой ли ученик» выносит бэкенд, здесь он лишь переводится в четыре
 // слова для роута. Ошибиться можно в обе стороны: лишнее «можно» открывает
 // чужого ученика, а сбой связи, принятый за «нельзя», врёт сотруднику про права.

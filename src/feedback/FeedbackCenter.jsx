@@ -15,6 +15,8 @@ const TYPES = [
   ['PLATFORM', 'Жалоба на платформу', 'bug', 'Ошибка сайта или приложения'],
 ]
 const EMPTY = { targets: [], managers: [] }
+// Категория обращения, с которой Луна открывает раздел (lib/assistant/actions.js), — тип формы.
+const DRAFT_TYPE = { teacher: 'TEACHER_COMPLAINT', manager: 'MANAGER_COMPLAINT', platform: 'PLATFORM', review: 'GOOD_REVIEW' }
 
 function Icon({ name, ...props }) {
   const paths = {
@@ -39,7 +41,7 @@ function errorText(error) {
   return error?.serverMessage || 'Не удалось выполнить запрос. Попробуйте ещё раз.'
 }
 
-export default function FeedbackCenter({ token, onBack, userName, userLevel, onNav, onProfile }) {
+export default function FeedbackCenter({ token, onBack, userName, userLevel, onNav, onProfile, initialCategory = null, initialDraft = '' }) {
   const { lang } = useI18n()
   const tr = (source, params) => feedbackText(lang, source, params)
   const [targets, setTargets] = useState(EMPTY)
@@ -64,6 +66,9 @@ export default function FeedbackCenter({ token, onBack, userName, userLevel, onN
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  // Черновик Луны — один раз, при открытии раздела: смена входа (другой токен) начинает с чистой формы.
+  const initial = useRef({ type: DRAFT_TYPE[initialCategory] || null, draft: String(initialDraft || '').slice(0, 2000) })
+  const [drafted, setDrafted] = useState(false)
   const mutation = useRef(false)
   const generation = useRef(0)
   const listRequest = useRef(0)
@@ -100,8 +105,11 @@ export default function FeedbackCenter({ token, onBack, userName, userLevel, onN
   }
   useEffect(() => {
     const scope = ++generation.current
-    setTargets(EMPTY); setItems([]); setSelected(null); setType(null)
-    setChosenTeacherId(''); setBody(''); setFiles([]); setReply(''); setReplyFiles([]); setError(''); setNotice('')
+    const start = initial.current
+    initial.current = { type: null, draft: '' }
+    setTargets(EMPTY); setItems([]); setSelected(null); setType(start.type)
+    setChosenTeacherId(''); setBody(start.type ? start.draft : ''); setFiles([]); setReply(''); setReplyFiles([]); setError(''); setNotice('')
+    setDrafted(Boolean(start.type && start.draft))
     void loadTargets(scope); void loadList(scope)
     return () => { generation.current++ }
     // Requests belong to the signed-in session, not to each render.
@@ -182,7 +190,7 @@ export default function FeedbackCenter({ token, onBack, userName, userLevel, onN
 
   function changeType(next) {
     if (mutation.current) return
-    setType(next); setBody(''); setFiles([]); setError(''); setNotice('')
+    setType(next); setBody(''); setFiles([]); setError(''); setNotice(''); setDrafted(false)
     setChosenTeacherId('')
   }
   function filePicker(forReply = false) {
@@ -226,6 +234,7 @@ export default function FeedbackCenter({ token, onBack, userName, userLevel, onN
             <textarea required rows="4" maxLength={2000} value={body} disabled={locked} onChange={e => setBody(e.target.value)} placeholder={tr('Напишите пару предложений')} />
             <small>{body.length}/2000</small>
           </label>
+          {drafted && <p className="fc__drafted" role="status">{tr('Черновик подготовил помощник по вашим словам — проверьте его и отправьте сами.')}</p>}
           {filePicker()}
           <div className="fc__actions"><button className="fc__submit" type="submit" disabled={locked || !body.trim() || needsTeacher && (!targetUserId || targetsLoading || targetsError)}><Icon name="send" width="18" height="18" />{busy ? tr('Отправляем…') : tr('Отправить')}</button><button className="fc__cancel" type="button" disabled={locked} onClick={() => changeType(null)}>{tr('Отмена')}</button></div>
         </form>

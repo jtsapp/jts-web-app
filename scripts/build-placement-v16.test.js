@@ -50,6 +50,21 @@ describe('build-placement-v16', () => {
     expect(built).toContain("if(app.screen==='speaking'&&allCoreDone())app.screen='result';save();render()")
   })
 
+  // Кейс 35 ТЗ v2.0: на каждом шаге анкеты — «зачем мы спрашиваем» на языке теста.
+  it('анкета: «зачем мы спрашиваем» под подзаголовком шага, ru/kk/en', () => {
+    const vm = require('node:vm')
+    const built = fs.readFileSync(path.join(__dirname, '..', 'public', 'placement', 'v16', 'index.html'), 'utf8')
+    expect(built).toContain('<p class="go-why">${esc(window.JTS_GOALS_WHY(d.step))}</p>')
+    const prelude = built.match(/<script>\/\* jts host prelude[\s\S]*?<\/script>/)[0].replace(/^<script>|<\/script>$/g, '')
+    for (const [lang, word] of [['ru', 'Зачем'], ['kk', 'Неге'], ['en', 'Why']]) {
+      const win = { location: { search: '' }, document: { documentElement: { lang } } }
+      win.window = win
+      vm.runInNewContext(prelude, { ...win, URLSearchParams })
+      for (let step = 0; step < 5; step++) expect(win.JTS_GOALS_WHY(step)).toMatch(new RegExp('^' + word))
+      expect(win.JTS_GOALS_WHY(5)).toBeTruthy()
+    }
+  })
+
   // Скин макета (21.10.2026): патчи вставляют куски шаблонов автора — опечатка в кавычках или ${} сломала бы весь тест
   // у ученика белым экраном, поэтому скрипты страницы после патчей обязаны хотя бы компилироваться.
   it('скрипты страницы после патчей скина компилируются', () => {

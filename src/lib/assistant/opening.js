@@ -12,6 +12,9 @@
 // Отдельным модулем, а не в prompt.js: виджету нужна только пометка, а prompt.js
 // тянет за собой базу знаний — в браузерный бандл ей незачем.
 
+import { isEventTurn } from './events.js'
+import { isHintTurn } from './hintSteps.js'
+
 export const OPENING_MARK = '[ученик открыл окно]'
 
 // Ученик позвал Луну голосом («Луна», «Привет, Луна», lib/assistant/wake/). Тоже служебный
@@ -22,28 +25,32 @@ export const WAKE_MARK = '[ученик позвал голосом]'
 /** Служебный ход «ученик позвал голосом». */
 export const isWakeTurn = (content) => String(content ?? '').trim() === WAKE_MARK
 
-// Ученик застрял (stuck.js): дважды подряд ошибся или полторы минуты ничего не делает
+// Ученик застрял (stuck.js): ответ отмечен неверным или ученик долго ничего не делает
 // на задании, и нажал облачко «Подсказать?». Тоже служебный ход: Луна сразу разбирает
 // задание на экране — без приветствия и без совета раздела (решение 28.10.2026).
-export const STUCK_ERRORS_MARK = '[ученик застрял: две ошибки подряд]'
+// С 08.11.2026 облачко выходит после первой ошибки (ТЗ v2.0, 7.2б), и пометка говорит это;
+// прежнюю «две ошибки подряд» роут принимает от вкладок, открытых до выката.
+export const STUCK_ERRORS_MARK = '[ученик застрял: ответ отмечен неверным]'
 export const STUCK_IDLE_MARK = '[ученик застрял: долго без действий]'
+const STUCK_ERRORS_LEGACY = '[ученик застрял: две ошибки подряд]'
 
 /** Причина «застрял» по служебному ходу или null. */
 export function stuckReason(content) {
   const text = String(content ?? '').trim()
-  return text === STUCK_ERRORS_MARK ? 'errors' : text === STUCK_IDLE_MARK ? 'idle' : null
+  return text === STUCK_ERRORS_MARK || text === STUCK_ERRORS_LEGACY ? 'errors' : text === STUCK_IDLE_MARK ? 'idle' : null
 }
 
 /** Служебный ход для причины из stuck.js. */
 export const stuckMark = (reason) => (reason === 'idle' ? STUCK_IDLE_MARK : STUCK_ERRORS_MARK)
 
 /**
- * Служебный ход — «ученик открыл окно», «позвал голосом» или «застрял», а не вопрос,
- * набранный учеником. На все действуют одни защиты: ни паузы «не по теме», ни отчёта о поломке.
+ * Служебный ход — «ученик открыл окно», «позвал голосом», «застрял» или событие трекера
+ * («[событие: day_start]», events.js), а не вопрос, набранный учеником. На все действуют одни
+ * защиты: ни паузы «не по теме», ни отчёта о поломке.
  */
 export const isOpeningTurn = (content) => {
   const text = String(content ?? '').trim()
-  return text === OPENING_MARK || text === WAKE_MARK || stuckReason(text) != null
+  return text === OPENING_MARK || text === WAKE_MARK || stuckReason(text) != null || isEventTurn(text) || isHintTurn(text)
 }
 
 // Что на экране, решает код, а не модель. Правила «посреди задания — только о

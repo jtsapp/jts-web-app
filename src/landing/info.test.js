@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { INFO_PAGES, infoUrl, ru, kz } from './info.js'
+import { INFO_PAGES, infoUrl, pickInfo, ru, kz } from './info.js'
 import { groupOffers } from './InfoContent.jsx'
 
 // Структура словаря без самих строк: [путь, тип] для каждого листа.
@@ -22,6 +22,12 @@ describe('страницы для покупателя', () => {
     expect(infoUrl('refund', 'ru')).toBe('/info/refund')
     expect(infoUrl('refund', 'en')).toBe('/info/refund')
     expect(infoUrl('refund', 'kz')).toBe('/info/refund?lang=kz')
+  })
+  // Приложение зовёт казахский `kk`, лендинг — `kz` (ТЗ v2.0, кейс 17); английских страниц нет — русские (08.11.2026).
+  it('казахский интерфейс приложения (kk) — казахские страницы, английский — русские', () => {
+    expect(infoUrl('refund', 'kk')).toBe('/info/refund?lang=kz')
+    expect(pickInfo('kk')).toBe(kz)
+    expect(pickInfo('en')).toBe(ru)
   })
   it('прайс разбит по разделам витрины, неизвестное — в «Другие», ничего не теряется', () => {
     const offers = [

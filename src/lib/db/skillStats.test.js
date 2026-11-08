@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { applySkillDeltas } from './skillStats.js'
+import { applySkillDeltas, loadLevelSkillStats } from './skillStats.js'
 
 // Фейковый sql: запоминает запросы, параметры и то, КАКИМ соединением запрос
 // прошёл: `sql` — внешнее, `tx` — то, что sql.begin отдаёт внутрь транзакции,
@@ -8,12 +8,13 @@ import { applySkillDeltas } from './skillStats.js'
 // SQL — на Postgres; здесь контракт: одна транзакция, навыки по одному, затем
 // одна строка суток с суммой пачки — в точке сохранения той же транзакции.
 // failDay — строка суток падает, как падает insert в таблицу, которой нет.
-function makeFakeSql({ failDay = null } = {}) {
+function makeFakeSql({ failDay = null, failLevel = null } = {}) {
   const log = []
   const record = (via) => async (strings, ...vals) => {
     const q = strings.join('?').replace(/\s+/g, ' ').trim().toLowerCase()
     log.push({ via, q, vals })
     if (failDay && q.startsWith('insert into skill_day')) throw failDay
+    if (failLevel && q.startsWith('insert into skill_level_stat')) throw failLevel
     return []
   }
   const sql = record('sql')
@@ -111,6 +112,33 @@ describe('applySkillDeltas', () => {
     expect(log.filter((e) => e.q.startsWith('insert into skill_day')).map((e) => e.via)).toEqual(['sp'])
     // Молча не глотаем: без строки в логе не доехавшую миграцию не заметить.
     expect(errorSpy).toHaveBeenCalledWith('[skillStats] skill_day write failed', missing.message)
+  })
+
+  // ТЗ v2.0, 5.5: попытки ещё и по уровню задания — в своей точке сохранения, как строка суток.
+  it('разбивка по уровню — в точке сохранения той же транзакции; её сбой навык не откатывает', async () => {
+    const { sql, log } = makeFakeSql()
+    await applySkillDeltas('user-7', { grammar: { done: 2, firstTry: 1 } }, sql, { B1: { grammar: { done: 2, firstTry: 1 }, reading: { done: 0, firstTry: 0 } }, junk: { grammar: { done: 5, firstTry: 5 } } })
+    const level = log.filter((e) => e.q.startsWith('insert into skill_level_stat'))
+    expect(level.map((e) => [e.via, e.vals.slice(0, 5)])).toEqual([['sp', ['user-7', 'grammar', 'B1', 2, 1]]])
+
+    const failing = makeFakeSql({ failLevel: new Error('relation "skill_level_stat" does not exist') })
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await expect(applySkillDeltas('user-7', { grammar: { done: 1, firstTry: 1 } }, failing.sql, { B1: { grammar: { done: 1, firstTry: 1 } } })).resolves.toBeUndefined()
+    expect(failing.log.some((e) => e.q.startsWith('insert into skill_stat'))).toBe(true)
+    expect(errorSpy).toHaveBeenCalledWith('[skillStats] skill_level_stat write failed', 'relation "skill_level_stat" does not exist')
+  })
+
+  it('чтение навыков уровня: строки таблицы, нет таблицы — нули, а не ошибка', async () => {
+    const rows = [{ skill: 'grammar', tasks_done: 7, first_try_correct: 5 }, { skill: 'magic', tasks_done: 1, first_try_correct: 1 }]
+    const sql = async () => rows
+    const got = await loadLevelSkillStats('user-7', 'b1', sql)
+    expect(got.grammar).toEqual({ done: 7, firstTry: 5 })
+    expect(got.magic).toBeUndefined()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const broken = async () => { throw new Error('no table') }
+    expect((await loadLevelSkillStats('user-7', 'B1', broken)).grammar).toEqual({ done: 0, firstTry: 0 })
+    expect(errorSpy).toHaveBeenCalled()
+    expect((await loadLevelSkillStats('user-7', 'IELTS', sql)).grammar).toEqual({ done: 0, firstTry: 0 })
   })
 
   it('без БД — no-op', async () => {

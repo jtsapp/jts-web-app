@@ -1,15 +1,17 @@
 import { describe, it, expect, vi } from 'vitest'
-import { backendUserId, dayMinutes, geActivityKey, pushGeActivity } from './geActivity.js'
+import { backendUserId, dayMinutes, focusSkill, geActivityKey, pushGeActivity } from './geActivity.js'
 
 // Минуты дня уходят на бэкенд в план общего курса (спека 2026-10-13, секция 3): только вошедшим, только со служебным
 // ключом, итогом дня, и сбой отправки не роняет запрос, который её вызвал.
 
-// Заглушка sql-тега: на каждый из трёх запросов отдаёт свою строку по имени таблицы.
-function fakeSql({ voice = 0, credits = 0, activity = [] } = {}) {
+// Заглушка sql-тега: на каждый запрос отдаёт свою строку по имени таблицы (минуты дня и навыки для «Стоит подтянуть»).
+function fakeSql({ voice = 0, credits = 0, activity = [], levelSkills = [], skills = [] } = {}) {
   return (strings) => {
     const q = strings.join('?')
     if (q.includes('voice_usage')) return Promise.resolve([{ seconds: voice }])
     if (q.includes('shadowing_assess')) return Promise.resolve([{ used: credits }])
+    if (q.includes('skill_level_stat')) return Promise.resolve(levelSkills)
+    if (q.includes('skill_stat')) return Promise.resolve(skills)
     return Promise.resolve(activity)
   }
 }
@@ -51,11 +53,35 @@ describe('geActivity', () => {
     expect(url).toBe('https://b/integrations/web/ge-activity')
     expect(init.method).toBe('PUT')
     expect(init.headers['X-Ge-Activity-Key']).toBe('secret')
+    // навыков ещё нет — слабого тоже: 'none', бэкенд фокус не ставит
     expect(JSON.parse(init.body)).toEqual({
       userId: 7,
       day: '2026-10-14',
       minutes: { ai_tutor: 20, workbooks: 5, shadowing: 2, media_practice: 0, vocabulary_sr: 0 },
+      focus: 'none',
     })
+  })
+
+  // «Стоит подтянуть» (ТЗ v2.0 «Луна-трекер», кейс 20): тот же расчёт, что у «Сильных и слабых сторон»
+  it('слабый навык уровня последних заданий уходит с итогом дня', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true }))
+    const at = '2026-11-08T10:00:00Z'
+    const levelSkills = [
+      { skill: 'speaking', level: 'A2', tasks_done: 10, first_try_correct: 8, updated_at: at },
+      { skill: 'writing', level: 'A2', tasks_done: 10, first_try_correct: 3, updated_at: at },
+      { skill: 'reading', level: 'A2', tasks_done: 10, first_try_correct: 7, updated_at: at },
+    ]
+    await pushGeActivity('user-7', '2026-11-08', { sql: fakeSql({ levelSkills }), fetchImpl, env, backendUrl: 'https://b' })
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body).focus).toBe('writing')
+  })
+
+  it('focusSkill: слабый — только если правда слабее; мало данных — none', () => {
+    const lv = { speaking: { done: 10, firstTry: 8 }, writing: { done: 10, firstTry: 3 } }
+    expect(focusSkill(lv, null)).toBe('writing')
+    expect(focusSkill({ speaking: { done: 10, firstTry: 5 }, writing: { done: 10, firstTry: 5 } }, null)).toBe('none')
+    expect(focusSkill(null, null)).toBe('none')
+    // заданий уровня мало — по общему итогу (withStartEstimate), как на «Главной»
+    expect(focusSkill({}, { grammar: { done: 20, firstTry: 4 }, vocab: { done: 20, firstTry: 15 } })).toBe('grammar')
   })
 
   it('отказ бэкенда и обрыв сети — не исключение, а ответ', async () => {

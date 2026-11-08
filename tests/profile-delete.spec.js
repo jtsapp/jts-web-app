@@ -49,7 +49,7 @@ test('403: аккаунт сотрудника — объяснение, сес�
   const calls = await withDelete(page, 403)
   await openConfirm(page, viewport)
   await page.locator('.pfd-del').click()
-  await expect(page.locator('.pfd-err')).toHaveText('Аккаунт сотрудника удаляет администратор. Напишите в службу поддержки.')
+  await expect(page.locator('.pfd-err')).toHaveText('Аккаунт сотрудника удаляет администратор. Напиши в службу поддержки.')
   expect(calls).toHaveLength(1)
   expect(await page.evaluate(() => localStorage.getItem('jts_access_token'))).toBe('test-token')
 })

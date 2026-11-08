@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  courseTitles, dayMinutes, dayStatus, isTeacherTask, minutesLabel, monthGrid, mondayOf, plateOf, roadWeek, shiftMonth, taskAction,
+  courseLessons, courseTitles, dayMinutes, dayStatus, isTeacherTask, minutesLabel, monthGrid, mondayOf, movedFrom, plateOf, roadWeek, shiftMonth, taskAction,
   taskRoute, taskTitle, todayView, weekNumber,
 } from './planModel.js'
 import { openNodes } from './courseFrontier.js'
@@ -12,6 +12,20 @@ const t = (key, vars) => (vars ? `${key}:${JSON.stringify(vars)}` : key)
 const task = (id, date, extra = {}) => ({ id, date, kind: 'practice', module: 'ai_tutor', minutes: 15, got: 0, status: 'planned', overdue: false, ...extra })
 
 describe('куда ведёт «Начать»', () => {
+  // ТЗ v2.0, 5.3: свой урок курса — сразу сам урок (код шага тропы), а не тропа уровня.
+  it('урок курса с кодом шага — сам урок; без кода и у преподавателя — тропа', () => {
+    expect(taskRoute({ kind: 'course' }, 'B1', 'L7')).toEqual({ to: 'course', payload: { level: 'B1', lesson: 'L7' } })
+    expect(taskRoute({ kind: 'course', origin: 'teacher', extra: { level: 'A2' } }, 'B1', 'L7')).toEqual({ to: 'course', payload: { level: 'A2' } })
+    const tasks = [
+      { id: 1, date: '2026-10-12', kind: 'course', status: 'completed' },
+      { id: 2, date: '2026-10-13', kind: 'course', status: 'available' },
+      { id: 3, date: '2026-10-14', kind: 'course', status: 'planned' },
+    ]
+    const frontier = [{ code: 'L5', title: 'Shopping' }, { code: 'T2', title: 'Тест юнита' }]
+    expect(courseLessons(tasks, frontier)).toEqual({ 2: 'L5', 3: 'T2' })
+    expect(courseTitles(tasks, frontier)).toEqual({ 2: 'Shopping', 3: 'Тест юнита' })
+  })
+
   it('по виду и разделу', () => {
     expect(taskRoute({ kind: 'course' }, 'B1')).toEqual({ to: 'course', payload: { level: 'B1' } })
     expect(taskRoute({ kind: 'live' })).toEqual({ to: 'lessons' })
@@ -68,6 +82,26 @@ describe('«Сегодня»', () => {
     const v = todayView(plan)
     expect(v.tasks.map((x) => x.id)).toEqual([1, 2])
     expect(v.ahead).toEqual([])
+  })
+
+  it('только свои задачи: занятия, домашка и задачи преподавателя — не в «Сегодня» (ТЗ v2.0 9.1)', () => {
+    const plan = {
+      today,
+      tasks: [
+        task('live:1', today, { kind: 'live' }),
+        task('hw:2', today, { kind: 'homework' }),
+        task(3, today, { kind: 'custom', origin: 'teacher' }),
+        task(4, today, { origin: 'teacher' }), // практика, которую поставил преподаватель
+        task(5, today, { kind: 'course' }),
+        task(6, today),
+        task('hw:7', '2026-10-15', { kind: 'homework' }),
+        task(8, '2026-10-16'),
+      ],
+    }
+    expect(todayView(plan).tasks.map((x) => x.id)).toEqual([5, 6])
+    const done = { ...plan, tasks: plan.tasks.map((x) => (x.id === 5 || x.id === 6 ? { ...x, status: 'completed' } : x)) }
+    // «дальше по плану» тоже без домашки
+    expect(todayView(done).ahead.map((x) => x.id)).toEqual([8])
   })
 
   it('всё сделано — «дальше по плану» из двух ближайших', () => {
@@ -150,5 +184,33 @@ describe('задачи преподавателя', () => {
       { id: 3, kind: 'course', date: '2026-10-14', status: 'available' },
     ]
     expect(courseTitles(tasks, [{ title: 'A' }, { title: 'B' }])).toEqual({ 1: 'A', 3: 'B' })
+  })
+})
+
+// ТЗ v2.0, 5.2: «У меня мало времени» — ушедшее с сегодня строкой «Перенесено», у перенесённой задачи — «перенесено с …».
+describe('«мало времени» в «Сегодня»', () => {
+  const plan = {
+    today: '2026-10-14',
+    shortDay: { minutes: 20 },
+    tasks: [
+      { id: 1, date: '2026-10-14', originalDate: '2026-10-14', kind: 'practice', module: 'ai_tutor', status: 'available', minutes: 15 },
+      { id: 2, date: '2026-10-15', originalDate: '2026-10-14', kind: 'course', status: 'planned', minutes: 30, deferred: true },
+      { id: 3, date: '2026-10-16', originalDate: '2026-10-16', kind: 'practice', module: 'workbooks', status: 'planned', minutes: 15 },
+      { id: 4, date: '2026-10-15', originalDate: '2026-10-14', kind: 'practice', module: 'vocabulary_sr', status: 'completed', minutes: 10, deferred: true },
+    ],
+  }
+
+  it('ушедшее — отдельным списком, не в «Дальше по плану»', () => {
+    expect(todayView(plan).deferred.map((x) => x.id)).toEqual([2])
+    const allDone = { ...plan, tasks: plan.tasks.map((x) => (x.id === 1 ? { ...x, status: 'completed' } : x)) }
+    expect(todayView(allDone).ahead.map((x) => x.id)).toEqual([3])
+    expect(todayView({}).deferred).toEqual([])
+  })
+
+  it('«перенесено с» — у своей открытой задачи с более ранним исходным днём', () => {
+    expect(movedFrom(plan.tasks[1])).toBe('2026-10-14')
+    expect(movedFrom(plan.tasks[0])).toBe(null)
+    expect(movedFrom(plan.tasks[3])).toBe(null)
+    expect(movedFrom({ ...plan.tasks[1], origin: 'teacher' })).toBe(null)
   })
 })

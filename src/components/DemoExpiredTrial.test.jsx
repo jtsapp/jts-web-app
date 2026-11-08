@@ -95,7 +95,7 @@ describe('окно после конца демо', () => {
     requestTrialLesson.mockRejectedValueOnce(new Error('сеть'))
     inApp(<DemoSubscriptionModal onClose={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: 'Записаться на пробный урок' }))
-    expect((await screen.findByRole('alert')).textContent).toBe('Не удалось отправить заявку. Попробуйте ещё раз')
+    expect((await screen.findByRole('alert')).textContent).toBe('Не удалось отправить заявку. Попробуй ещё раз')
     expect(screen.getByRole('button', { name: 'Записаться на пробный урок' })).toBeTruthy()
   })
 
@@ -117,12 +117,12 @@ describe('плашка «Главной» после конца демо', () =>
     expect(onTrial).toHaveBeenCalledTimes(1)
     expect(onOpenAccess).not.toHaveBeenCalled()
     expect(screen.queryByText('Открыть полный доступ')).toBeNull()
-    expect(screen.getByText(/запишитесь на бесплатный пробный урок/)).toBeTruthy()
+    expect(screen.getByText(/запишись на бесплатный пробный урок/)).toBeTruthy()
   })
 
   it('заявка оставлена — кнопки нет, ждём менеджера', async () => {
     const { container } = inApp(<DemoBanner expiresAt={PAST} booked onOpenAccess={() => {}} />)
-    await screen.findByText(/менеджер свяжется с вами/)
+    await screen.findByText(/менеджер свяжется с тобой/)
     expect(container.querySelector('.dm-banner__cta')).toBeNull()
   })
 

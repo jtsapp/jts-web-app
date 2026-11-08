@@ -1,6 +1,7 @@
 // Клиент помощника: один вопрос → потоковый ответ кусками через onDelta.
 
 import { createServiceTailFilter } from './actions.js'
+import { areRewardsEnabled } from '../../config.js'
 
 export class AssistantError extends Error {
   /** @param {'auth'|'rate'|'cooldown'|'unavailable'|'network'} kind */
@@ -21,12 +22,13 @@ export class AssistantError extends Error {
  *   onResponse — ответ пошёл: заголовок Server-Timing роута (замеры звонка Луне)
  * @returns {Promise<{ text: string, offtopic: boolean, reported: boolean,
  *                     action: {kind: 'open'|'tour'|'click', target: string, now: boolean, label?: string}|null }>}
- *   весь видимый ответ; offtopic — сервер ответил стандартным отказом;
+ *   весь видимый ответ; offtopic — сервер ответил стандартным отказом или засчитал «не по теме»
+ *   отказ самой модели (метка в конце ответа — служебный хвост [[ASST_OFFTOPIC]]);
  *   reported — поломку записали в БД; action — Луна предлагает открыть раздел,
  *   провести тур или нажать кнопку экрана (actions.js; у click — подпись кнопки).
  *   Оба — хвост стрима, ученику не показывается.
  */
-export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, bugReported, voice, call, onDelta, onResponse, signal }) {
+export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, bugReported, voice, call, hintKey, awayDays, onDelta, onResponse, signal }) {
   let res
   try {
     res = await fetch('/api/assistant/chat', {
@@ -39,6 +41,12 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
         voice: Boolean(voice),
         // вопрос из звонка Луне — комната звонка: роут даст ему квоту звонка (callUsage.js)
         ...(call ? { call } : {}),
+        // ключ задания — только 3-я ступень подсказки в практике (hintSteps.js); в домашке и тесте его нет вовсе
+        ...(hintKey ? { hintKey } : {}),
+        // сегодня вернулся после перерыва в столько дней (трекер «Луна пишет первой») — для первой реплики окна
+        ...(awayDays ? { awayDays } : {}),
+        // токены и призы включены на этом стенде — тогда в базе знаний Луны их статья (knowledge.js)
+        rewards: areRewardsEnabled(),
       }),
       signal,
     })
@@ -88,5 +96,7 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
     full += tail
     onDelta?.(tail)
   }
-  return { text: full, offtopic, reported: reportedHeader || flag.reported, action: offtopic ? null : flag.action }
+  // Отказ «не по теме» бывает и хвостом стрима: модель поставила метку в конце своего ответа (actions.js).
+  const off = offtopic || flag.offtopic
+  return { text: full, offtopic: off, reported: reportedHeader || flag.reported, action: off ? null : flag.action }
 }

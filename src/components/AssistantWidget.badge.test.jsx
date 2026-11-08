@@ -48,7 +48,7 @@ const renderWidget = () =>
 const badge = () => document.querySelector('.asst__badge')
 const halo = () => document.querySelector('.asst__launcher .asst__halo')
 
-describe('плашка «Слушаю вас» у кнопки помощника', () => {
+describe('плашка «Слушаю тебя» у кнопки помощника', () => {
   let listened
   beforeEach(() => {
     listened = null
@@ -74,7 +74,7 @@ describe('плашка «Слушаю вас» у кнопки помощник�
       wake.onWake({ text: 'луна' })
     })
     expect(badge().dataset.cmd).toBe('listening')
-    expect(badge().textContent).toBe('Слушаю вас')
+    expect(badge().textContent).toBe('Слушаю тебя')
     expect(badge().querySelector('svg')).not.toBeNull()
     expect(badge().classList.contains('is-out')).toBe(false)
     expect(halo().classList.contains('is-off')).toBe(false)

@@ -9,10 +9,11 @@
 // это личное, преподавателю показываем только минуты.
 
 import { getSql } from './sql.js'
-import { loadSkillStats } from './skillStats.js'
+import { loadRecentLevelSkillStats, loadSkillStats } from './skillStats.js'
 import { loadLevelGoal } from './levelGoal.js'
 import { loadEcosystemWeek, buildWeeklySummary } from './ecosystem.js'
-import { rankSkills, skillHighlights } from '../levelProgress.js'
+import { levelSkillHighlights, rankLevelSkills } from '../levelProgress.js'
+import { withStartEstimate } from '../../practice/skillStatsCore.js'
 
 /** Окно календаря — те же полгода, что у бэкенда (StudentActivityService.DAYS). */
 export const ACTIVITY_DAYS = 182
@@ -72,7 +73,7 @@ export function windowStart(now = new Date()) {
  */
 export async function loadStudentAppActivity(profileId, now = new Date(), sql = getSql()) {
   if (!sql) {
-    return { stats: null, goal: null, week: null, voice: [], trainer: [], tasks: [], practice: [], practiceSince: null }
+    return { stats: null, levelStats: null, skillsLevel: null, goal: null, week: null, voice: [], trainer: [], tasks: [], practice: [], practiceSince: null }
   }
   const from = windowStart(now)
   // Читаем ПО ОДНОМУ, а не одним Promise.all: postgres.js открывает новое
@@ -85,6 +86,8 @@ export async function loadStudentAppActivity(profileId, now = new Date(), sql = 
   // минут (кэш в браузере): лишние миллисекунды ожидания дешевле, чем нехватка
   // соединений у живых учеников.
   const stats = await loadSkillStats(profileId, sql)
+  // навыки уровня — та же формула, что у «Главной» ученика (ТЗ v2.0, 5.5); уровень — по последним заданиям
+  const { level: skillsLevel, stats: levelStats } = await loadRecentLevelSkillStats(profileId, sql)
   const goal = await loadLevelGoal(profileId, sql)
   const week = await loadEcosystemWeek(profileId, now, sql)
   // Минуты тьютора — seconds + pool_seconds. Разговор за докупленные минуты
@@ -114,7 +117,7 @@ export async function loadStudentAppActivity(profileId, now = new Date(), sql = 
       `
     : []
   const practice = await sql`select module, updated_at from practice_state where profile_id = ${profileId}`
-  return { stats, goal, week, voice, trainer, tasks, practice, practiceSince }
+  return { stats, levelStats, skillsLevel, goal, week, voice, trainer, tasks, practice, practiceSince }
 }
 
 /** Сутки из трёх таблиц — в одну строку на день; дни без активности не отдаём. */
@@ -187,20 +190,21 @@ function isoOrNull(value) {
 /**
  * Тело ответа ручки. Чистая функция — вся арифметика проверяема без БД.
  *
- * Навыки — тем же rankSkills и skillHighlights, что и у «Главной» ученика:
- * преподаватель и ученик видят одни и те же проценты. done едет рядом: «72%» на
- * трёх заданиях и на трёхстах — разные вещи, и карточке надо их различать.
+ * Навыки — той же формулой, что «Сильные и слабые стороны» у «Главной» ученика (ТЗ v2.0, 5.5): доля верных с первой
+ * попытки в заданиях уровня (skillsLevel), где их меньше пяти — по всем прошлым заданиям (estimate, решение владельца
+ * 07.11.2026), нет и их — percent null («мало данных»). Прежняя формула (точность × объём по всем уровням) давала
+ * преподавателю другие проценты, чем ученику. done едет рядом: «72%» на пяти заданиях и на трёхстах — разные вещи.
  *
  * practiceTrackedSince — с какого момента задания считаются по суткам (null —
  * учёта нет). По нему карточка решает, посчитана ли текущая неделя целиком.
  */
 export function buildStudentAppActivity(raw) {
-  const stats = raw?.stats || {}
-  const ranked = rankSkills(stats)
-  const { strongest, weakest } = skillHighlights(ranked)
+  const ranked = rankLevelSkills(withStartEstimate(raw?.levelStats, raw?.stats))
+  const { strongest, weakest } = levelSkillHighlights(ranked)
   return {
     configured: true,
-    skills: ranked.map(({ skill, percent }) => ({ skill, percent, done: Number(stats?.[skill]?.done) || 0 })),
+    skills: ranked.map(({ skill, percent, done, estimate }) => ({ skill, percent, done, estimate })),
+    skillsLevel: raw?.skillsLevel || null,
     strongest: strongest ? strongest.skill : null,
     weakest: weakest ? weakest.skill : null,
     goal: raw?.goal || null,

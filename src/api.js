@@ -387,8 +387,18 @@ export function removeHomeworkAnswer(token, id, materialId) {
   return authDelete(`/admin/homework/${id}/submission-materials/${materialId}`, token)
 }
 
-export function submitHomework(token, id) {
-  return authPut(`/admin/homework/${id}/submit`, token)
+// hintLevels — ступени подсказки Луны по заданиям работы ({ "<exerciseId>": 1|2 }, ТЗ v2.0 7.2б; backend V543, контракт
+// homework-hint-contract.md): то, что не ушло сразу ручкой …/hint. Тело необязательное — без ступеней PUT пустой, как
+// раньше; прежний бэкенд тело сдачи не читает.
+export function submitHomework(token, id, { hintLevels = null } = {}) {
+  const body = hintLevels && Object.keys(hintLevels).length ? { hintLevels } : null
+  return authPut(`/admin/homework/${id}/submit`, token, body)
+}
+
+// Ступень подсказки Луны по заданию домашки — сразу, как Луна её дала (1 — наводка, 2 — правило и пример; ответа в
+// домашке нет). Сервер хранит максимум, повтор безопасен; штрафа нет, преподаватель видит метку в проверке.
+export function saveHomeworkHint(id, exerciseId, token, hintLevel) {
+  return authPut(`/admin/homework/${id}/exercises/${exerciseId}/hint`, token, { hintLevel })
 }
 
 // Ответ на задание, взятое преподавателем с живого урока. Правильность считает
@@ -783,6 +793,22 @@ export function moveGeTask(token, id, date) {
 /** Ученик отмечает своё задание преподавателя («Своё задание», kind custom) выполненным или снимает отметку. */
 export function markGeTaskDone(token, id, done) {
   return authPut(`/mobile/ge/plan/tasks/${encodeURIComponent(id)}/done`, token, { done: !!done })
+}
+
+/**
+ * «У меня мало времени» (ТЗ v2.0, 5.2): сегодняшний день плана под minutes (5–180; экран даёт 10/20/30), null —
+ * обычный план. Ответ — план, как у getGePlan, плюс replan { minutes, kept, moved } (backend docs/ge/PLAN.md).
+ */
+export async function replanGeDay(token, minutes) {
+  return gePlanShape(await authPost('/mobile/ge/plan/replan', token, { minutes: minutes || null }))
+}
+
+/**
+ * «На сегодня всё» (ТЗ v2.0, 7.2 day_stopped): сделанное засчитывается, оставшиеся свои задачи дня — на следующий учебный
+ * день. Ответ — план, как у getGePlan, плюс stop { done, moved } (backend docs/ge/PLAN.md). Вернуть день — replanGeDay(null).
+ */
+export async function stopGeDay(token) {
+  return gePlanShape(await authPost('/mobile/ge/plan/stop-day', token, {}))
 }
 
 // Работа ученика в самостоятельном уроке: ответы, проверенные карточки и
@@ -2667,11 +2693,12 @@ export async function getIeltsMe(token) {
 // Обновление профиля (PUT /user/update, Bearer). Тело — как UpdateUserRequest
 // мобилки: name обязателен, остальные поля шлём только если заданы, чтобы не
 // затирать то, что уже хранит бэкенд. Возвращает обновлённый UserInfo.
+// gender — 'MALE' | 'FEMALE' | '' (стереть); не передан — бэкенд пол не трогает (backend V542).
 export async function updateUser(token, { name, email, city, gender, birthDate, phone }) {
   const payload = { name }
   if (email) payload.email = email
   if (city) payload.city = city
-  if (gender) payload.gender = gender
+  if (gender != null) payload.gender = gender
   if (birthDate) payload.birthDate = birthDate
   if (phone) payload.phone = normalizePhone(phone)
   let res

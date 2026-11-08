@@ -40,6 +40,8 @@ html[data-theme="dark"] .fc {
 .fc__required { color: #b33b57; }
 .fc__target { margin: 0; padding: 10px 12px; background: var(--fc-soft); border-radius: 11px; color: var(--fc-muted); }
 .fc__target b { color: var(--fc-text); }
+/* Черновик Луны в форме — подсказка, что текст писал не ученик (токены раздела: работает и в тёмной теме). */
+.fc__drafted { margin: 0; padding: 10px 12px; background: var(--fc-soft); border-radius: 11px; color: var(--fc-muted); font-size: 14px; }
 .fc__actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .fc__submit, .fc__cancel { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: fit-content; min-height: 44px; border: 1px solid transparent; border-radius: 12px; background: #8543ee; color: #fff; padding: 10px 18px; font-weight: 650 !important; }
 .fc__submit:hover:not(:disabled) { background: #7332d9; }

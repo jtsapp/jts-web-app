@@ -140,7 +140,7 @@ export default function WorkbookAct({
     // аудирование не попадает в грамматику.
     if (!isFree(act) && ctl.state.total) {
       const skill = skillOf(act)
-      for (let k = 0; k < ctl.state.total; k++) recordSkill(skill, !ctl.state.missed.includes(k))
+      for (let k = 0; k < ctl.state.total; k++) recordSkill(skill, !ctl.state.missed.includes(k), level)
     }
     onDone(last)
   }

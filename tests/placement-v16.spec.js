@@ -97,7 +97,7 @@ async function finishTestThroughBridge(page) {
   const f = await (await frame.elementHandle()).contentFrame()
   // Страница теста загрузилась и мост поставил крючки
   await f.waitForFunction(() => typeof window.JTSPlacementConfig?.openLearning === 'function', null, { timeout: 30000 })
-  await expect(page.frameLocator('.pl-page__frame').getByText('Давайте определим')).toBeVisible()
+  await expect(page.frameLocator('.pl-page__frame').getByText('Давай определим')).toBeVisible()
   return f.evaluate((env) => window.JTSPlacementConfig.openLearning(env, { intent: 'open_existing_roadmap' }), ENVELOPE)
 }
 
@@ -107,10 +107,10 @@ test('ученик без анкеты: закрытый роадмап → те
   await page.goto('/?screen=home')
 
   const locked = page.locator('.ge-locked')
-  await expect(locked).toContainText('Здесь будет ваш маршрут', { timeout: 20000 })
-  // остальная «Главная» работает: маршрута нет, на месте «Сегодня» — «Начните отсюда»
+  await expect(locked).toContainText('Здесь будет твой маршрут', { timeout: 20000 })
+  // остальная «Главная» работает: маршрута нет, на месте «Сегодня» — «Начни отсюда»
   await expect(page.locator('.hm-skills')).toBeVisible()
-  await expect(page.locator('.hm-start')).toContainText('Начните отсюда')
+  await expect(page.locator('.hm-start')).toContainText('Начни отсюда')
   await locked.getByRole('button', { name: 'Пройти тест уровня' }).click()
 
   expect(await finishTestThroughBridge(page)).toEqual({ accepted: true, persisted: true, navigated: true })
@@ -126,13 +126,15 @@ test('ученик без анкеты: закрытый роадмап → те
 
   await expect(page.locator('.ge-goal')).toBeVisible()
   await expect(page.locator('.ge-locked')).toHaveCount(0)
+  await expect(page.locator('.hm-start')).toHaveCount(0)
+  // ТЗ v2.0, 5.5 и 5.7: отчёт теста и «что делать дальше» — своей страницей по ссылке из «Сильных и слабых сторон»
+  await expect(page.locator('.pl-report, .pl-next')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Результаты теста →' }).click()
   const report = page.locator('.pl-report')
   await expect(report).toContainText('Результаты теста уровня')
   await expect(report.locator('.pl-report__level')).toHaveText('B1')
   await expect(report.locator('.pl-report__skill')).toHaveCount(4)
-  // цель и что делать дальше — отдельным блоком под сеткой (макет «Главная · редизайн»)
   await expect(page.locator('.pl-next')).toContainText('Путешествовать без переводчика')
-  await expect(page.locator('.hm-start')).toHaveCount(0)
 })
 
 test('ученик без уровня: тест ставит уровень аккаунта', async ({ page }) => {
@@ -228,11 +230,13 @@ test.describe('пройденный тест не просит пройти ег
 
     // ушёл, так и не открыв итог: закрыл вкладку и вернулся
     await page.goto('/?screen=home')
-    await expect(page.locator('.pl-report__level')).toHaveText('B1', { timeout: 20000 })
-    await expect(page.locator('.pl-report--missing')).toHaveCount(0)
-    await expect(page.locator('.ge-invite')).toContainText('Выберите, как будете заниматься')
+    await expect(page.locator('.ge-invite')).toContainText('Выбери, как будешь заниматься', { timeout: 20000 })
     await expect(page.locator('.ge-locked')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Пройти тест уровня' })).toHaveCount(0)
+    // отчёт — на своей странице (ТЗ v2.0, 5.7)
+    await page.getByRole('button', { name: 'Результаты теста →' }).click()
+    await expect(page.locator('.pl-report__level')).toHaveText('B1', { timeout: 20000 })
+    await expect(page.locator('.pl-report--missing')).toHaveCount(0)
   })
 
   test('пропуск говорения сразу открывает итог', async ({ page }) => {
@@ -274,7 +278,8 @@ test.describe('пройденный тест не просит пройти ег
     expect(state.attempts.at(-1).assessment.overallCEFR).toBe(null)
     expect(state.level).toBe('A2')
 
-    await page.goto('/?screen=home')
+    // отчёт — своей страницей (ТЗ v2.0, 5.7); пересдача — в Профиле, здесь её нет
+    await page.goto('/?screen=placement-results')
     const report = page.locator('.pl-report')
     await expect(report).toContainText('Начать с основ', { timeout: 20000 })
     await expect(report.locator('.pl-report__level')).toHaveText('Foundation')
@@ -283,7 +288,8 @@ test.describe('пройденный тест не просит пройти ег
     await expect(report.locator('.pl-report__skill').first().locator('.pl-report__note')).toContainText(/\d+\D+\d+/)
     await expect(page.locator('.pl-report--missing')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Пройти тест уровня' })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Пройти тест заново' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Пройти тест заново' })).toHaveCount(0)
+    await expect(page.getByText('Пересдать тест можно в Профиле — «Тест на уровень».')).toBeVisible()
   })
 })
 
@@ -368,6 +374,9 @@ test.describe('говорение', () => {
 
     await results.locator('#prLearn').click()
     await page.getByRole('button', { name: 'Учиться самостоятельно' }).click()
+    // отчёт с отзывом — на странице «Результаты теста» (ТЗ v2.0, 5.7); на телефоне ссылки с «Главной» нет — адресом
+    await expect(page.locator('.hm--v2')).toBeVisible({ timeout: 20000 })
+    await page.goto('/?screen=placement-results')
     const report = page.locator('.pl-report')
     await expect(report).toContainText('Отзыв о говорении', { timeout: 20000 })
     await expect(report).toContainText('Ты говоришь связно и уверенно.')
@@ -383,18 +392,20 @@ test.describe('учится до теста v16', () => {
     test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
     await setup(page, { level: 'A2', createdAt: OLD })
     await page.goto('/?screen=home')
-    await expect(page.locator('.ge-invite')).toContainText('Здесь будет ваш маршрут', { timeout: 20000 })
+    await expect(page.locator('.ge-invite')).toContainText('Здесь будет твой маршрут', { timeout: 20000 })
     await expect(page.locator('.ge-locked')).toHaveCount(0)
     await page.locator('.ge-invite').getByRole('button', { name: 'Пройти тест уровня' }).click()
     await expect(page.locator('.pl-page__frame')).toBeVisible()
   })
 
-  test('маршрут есть — он на месте, «Результаты теста уровня» пустые и зовут на тест', async ({ page }) => {
+  test('маршрут есть — он на месте, «Результаты теста» пустые и зовут на тест', async ({ page }) => {
     test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
     const goal = profileFrom({ purpose: 'work', targetLevel: 'B2', deadlineWindow: 'none', dailyMinutes: 30, startMode: null }, 'A2', 'self_study')
     await setup(page, { level: 'A2', createdAt: OLD, profile: goal })
     await page.goto('/?screen=home')
     await expect(page.locator('.ge-goal')).toBeVisible({ timeout: 20000 })
+    // ТЗ v2.0, 5.7: пустой отчёт — на своей странице по ссылке «Результаты теста →»
+    await page.getByRole('button', { name: 'Результаты теста →' }).click()
     const missing = page.locator('.pl-report--missing')
     await expect(missing).toContainText('Не пройден')
     await expect(page.locator('.ge-locked')).toHaveCount(0)
@@ -411,7 +422,7 @@ test.describe('тур', () => {
     await page.goto('/?screen=home')
     await expect(page.locator('.t-tour__intro')).toContainText('Сакен', { timeout: 20000 })
     await page.locator('.t-tour__intro-go').click()
-    await expect(page.locator('.t-tour__title')).toHaveText('Здесь будет ваш маршрут')
+    await expect(page.locator('.t-tour__title')).toHaveText('Здесь будет твой маршрут')
     await page.locator('.t-tour__skip').click()
     await expect(page.locator('.t-tour__pop')).toHaveCount(0)
     await expect(page.locator('.pl-page__frame')).toBeVisible({ timeout: 20000 })

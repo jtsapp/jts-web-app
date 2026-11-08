@@ -68,7 +68,7 @@ describe('GePlanPage', () => {
     getGePlan.mockResolvedValue({ ...plan, state: 'no_route', tasks: [] })
     const onGeRoute = vi.fn()
     renderPage({ onGeRoute })
-    await waitFor(() => expect(screen.getByText(/Выберите, как будете заниматься/)).toBeTruthy())
+    await waitFor(() => expect(screen.getByText(/Выбери, как будешь заниматься/)).toBeTruthy())
     fireEvent.click(screen.getByRole('button', { name: /Выбрать формат/ }))
     expect(onGeRoute).toHaveBeenCalled()
   })

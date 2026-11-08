@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
@@ -27,6 +28,7 @@ const IN_REVIEW = {
 
 /** Логин ученика + бэкенд, отвечающий заготовленными данными. */
 async function signIn(page, homework, assignments = []) {
+  await mockGates(page)
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
   await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', phone: '77001234567', languageLevel: 'B1' } })))
   await page.route('**/admin/homework/my', (r) => r.fulfill(json(homework)))

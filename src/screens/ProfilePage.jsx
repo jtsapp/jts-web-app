@@ -15,7 +15,8 @@ import {
 import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser, getIeltsMe, getIeltsProfile } from '../api.js'
 import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
-import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
+import { loadLevelSkillStatsRemote, readLocalLevelSkillStats } from '../practice/skillStats.js'
+import { skillLevel } from '../practice/skillStatsCore.js'
 import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from '../lib/profileAvatar.js'
 import { shrinkImage } from '../lib/shrinkImage.js'
 import { legalDocumentUrl } from '../lib/legalDocuments.js'
@@ -25,6 +26,9 @@ import { useMediaQuery, MOBILE_QUERY } from '../lib/useMediaQuery.js'
 import ProfileBlocks, { NotificationChannels } from '../matching/ProfileBlocks.jsx'
 import { AXIS_TUTOR_KEYS, temperFor } from '../tutor/tutors.js'
 import ProfilePhone from './profile/ProfilePhone.jsx'
+import { PROACTIVE_LEVELS, useProactiveLevel, writeProactiveLevel } from '../lib/assistant/proactiveSetting.js'
+import { useLunaMemory } from '../lib/assistant/lunaMemory.js'
+import LunaMemory from './profile/LunaMemory.jsx'
 import DeleteAccount from './profile/DeleteAccount.jsx'
 import { useAccountDeletion } from './profile/useAccountDeletion.js'
 
@@ -140,6 +144,11 @@ export default function ProfilePage({
 
   // Модалки
   const [langOpen, setLangOpen] = useState(false)
+  // «Подсказки Луны: часто / иногда / только по запросу» (ТЗ v2.0, 7.4) — настройка устройства (proactiveSetting.js).
+  const [lunaOpen, setLunaOpen] = useState(false)
+  const lunaLevel = useProactiveLevel()
+  // «Память Луны» (ТЗ v2.0, 8.1) — только у ученика: у преподавателя Луны нет.
+  const lunaMemory = useLunaMemory(token, !isTeacher(token))
   const [editOpen, setEditOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
@@ -147,7 +156,8 @@ export default function ProfilePage({
   // Форма редактирования профиля
   // Пола в форме нет намеренно: у бэкенда нет такого поля ни в /user/me, ни в
   // UpdateUserRequest — выбор молча выбрасывался, а тост писал «Сохранено».
-  const [form, setForm] = useState({ name: '', email: '', city: '', birthDate: '' })
+  // gender: null — ещё не пришёл из /user/me (тогда не шлём и бэкенд его не трогает), '' — «не указан».
+  const [form, setForm] = useState({ name: '', email: '', city: '', birthDate: '', gender: null })
   const [saving, setSaving] = useState(false)
   const [editErr, setEditErr] = useState('')
 
@@ -201,19 +211,20 @@ export default function ProfilePage({
     }
   }, [token, userLevel])
 
-  // Рейтинг навыков: сперва локальный мираж (мгновенно, работает и для гостя),
-  // затем серверные агрегаты для залогиненного (источник истины).
+  // Рейтинг навыков — по заданиям текущего уровня, как «Сильные и слабые стороны» на «Главной» (ТЗ v2.0, 5.5):
+  // сперва локальный мираж (мгновенно, работает и для гостя), затем сервер (источник истины).
+  const skillCode = skillLevel(userLevel)
   useEffect(() => {
-    setSkillStats(readLocalSkillStats())
-    if (!token) return
+    setSkillStats(skillCode ? readLocalLevelSkillStats(skillCode) : {})
+    if (!token || !skillCode) return
     let alive = true
-    loadSkillStatsRemote(token).then((s) => {
+    loadLevelSkillStatsRemote(token, skillCode).then((s) => {
       if (alive && s) setSkillStats(s)
     })
     return () => {
       alive = false
     }
-  }, [token])
+  }, [token, skillCode])
 
   function showToast(msg) {
     setToast(msg)
@@ -270,7 +281,7 @@ export default function ProfilePage({
 
   function openEdit() {
     setEditErr('')
-    setForm({ name: name || '', email: '', city: '', birthDate: '' })
+    setForm({ name: name || '', email: '', city: '', birthDate: '', gender: null })
     setEditOpen(true)
     // Сохранённое подтягиваем из профиля: пустое поле читалось бы как «не
     // указано» — ученик вводил email заново, думая, что он пропал. Уже
@@ -285,6 +296,8 @@ export default function ProfilePage({
             email: f.email || me.email || '',
             city: f.city || me.city || '',
             birthDate: f.birthDate || (me.birthDate ? String(me.birthDate).slice(0, 10) : ''),
+            // ключа нет — бэкенд без поля (до V542): пол не показываем выбранным и не шлём
+            gender: f.gender ?? ('gender' in me ? (me.gender === 'MALE' || me.gender === 'FEMALE' ? me.gender : '') : null),
           }))
         })
         .catch(() => {})
@@ -314,6 +327,8 @@ export default function ProfilePage({
         email: form.email.trim(),
         city: form.city.trim(),
         birthDate: form.birthDate,
+        // пол — для обращения помощника (Луна / Айзере): «ты выбрал» / «ты выбрала»; null — не загрузился, не трогаем
+        ...(form.gender != null ? { gender: form.gender } : {}),
       })
       setName(trimmed)
       onUpdateName?.(trimmed)
@@ -386,11 +401,14 @@ export default function ProfilePage({
     { key: 'edit', icon: <PfEditIcon />, title: t('profile.editProfile'), onClick: openEdit },
     { key: 'lang', icon: <PfGlobeIcon />, title: t('profile.language'), trailing: langLabel, onClick: () => setLangOpen(true) },
     { key: 'custom', icon: <PfGiftIcon />, title: t('profile.customization'), onClick: () => setCustomOpen(true) },
+    // Луна — только у ученика: у преподавателя её окна нет (assistantAllowedOn).
+    ...(isTeacher(token) ? [] : [{ key: 'luna', icon: <PfLunaIcon />, title: t('profile.luna'), trailing: t(`profile.luna.${lunaLevel}`), onClick: () => setLunaOpen(true) }]),
   ]
 
-  const openSupport = () => {
-    window.location.href = 'mailto:support@justtostudy.kz'
-  }
+  // «Служба поддержки» — страница «Контакты и реквизиты» (почта, телефон, WhatsApp школы). Раньше здесь было
+  // письмо на support@justtostudy.kz, а такого адреса у школы нет (аудит ТЗ v2.0, 06.11.2026). Жалобы — в Feedback.
+  // Адрес — как у infoUrl (landing/info.js), без импорта: модуль тянет тексты всех страниц покупателя (30 КБ).
+  const openSupport = () => window.open(`/info/contacts${lang === 'kk' ? '?lang=kz' : ''}`, '_blank', 'noopener')
   const openDoc = (kind) => window.open(legalDocumentUrl(kind, lang), '_blank')
 
   const settings = [
@@ -475,6 +493,8 @@ export default function ProfilePage({
           onPickPhoto={() => fileRef.current?.click()}
           edit={{ form, setForm, saving, error: editErr, open: openEdit, save: saveProfile }}
           langLabel={langLabel}
+          luna={{ visible: !isTeacher(token), level: lunaLevel, choose: writeProactiveLevel }}
+          lunaMemory={lunaMemory.status === 'ready' ? lunaMemory : null}
           notif={{
             visible: isTeacher(token) || !isStudentSectionHidden('notifications'),
             enabled: notifEnabled,
@@ -583,7 +603,7 @@ export default function ProfilePage({
         {/* Подбор учителя (ТЗ 08 §2.10): «Мой учитель», «Мои интересы», «Настройки обучения» — сразу после плиток */}
         {blocks}
 
-        <SkillRatings stats={skillStats} loading={skillStats === null} />
+        <SkillRatings stats={skillStats} loading={skillStats === null} level={skillCode} />
 
         {ieltsRows.length > 0 && (
           <>
@@ -613,6 +633,15 @@ export default function ProfilePage({
             <SettingRow key={it.key} item={it} chip last={i === personalization.length - 1} />
           ))}
         </div>
+
+        {lunaMemory.status === 'ready' && (
+          <>
+            <div className="pf-label">{t('profile.lunaMemory')}</div>
+            <div className="pf-card">
+              <LunaMemory memory={lunaMemory} />
+            </div>
+          </>
+        )}
 
         {/* В кадре 4352:13735 значки «Настроек» лежат в таких же сиреневых
             плитках, что и в «Персонализации» — плитка есть у каждой строки
@@ -678,6 +707,33 @@ export default function ProfilePage({
         </Modal>
       )}
 
+      {/* ── «Подсказки Луны» ── */}
+      {lunaOpen && (
+        <Modal onClose={() => setLunaOpen(false)} title={t('profile.luna')}>
+          {PROACTIVE_LEVELS.map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={v === lunaLevel}
+              className={`pf-lang ${v === lunaLevel ? 'pf-lang--active' : ''}`}
+              data-luna={v}
+              onClick={() => {
+                writeProactiveLevel(v)
+                setLunaOpen(false)
+              }}
+            >
+              <span>
+                {t(`profile.luna.${v}`)}
+                <small className="pf-luna__note">{t(`profile.luna.note.${v}`)}</small>
+              </span>
+              {v === lunaLevel && <PfCheckIcon />}
+            </button>
+          ))}
+          <small className="pf-field__note">{t('profile.luna.device')}</small>
+        </Modal>
+      )}
+
       {/* ── Модалка редактирования профиля ── */}
       {editOpen && (
         <Modal onClose={() => setEditOpen(false)} title={t('profile.editTitle')}>
@@ -713,6 +769,19 @@ export default function ProfilePage({
               onChange={(v) => setForm((f) => ({ ...f, birthDate: v }))}
             />
           </div>
+          <label className="pf-field">
+            <span>{t('profile.editGender')}</span>
+            <select
+              className="pf-input"
+              value={form.gender ?? ''}
+              onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
+            >
+              <option value="">{t('profile.gender.none')}</option>
+              <option value="FEMALE">{t('profile.gender.female')}</option>
+              <option value="MALE">{t('profile.gender.male')}</option>
+            </select>
+            <small className="pf-field__note">{t('profile.genderNote')}</small>
+          </label>
           <label className="pf-field">
             <span>{t('profile.editCity')}</span>
             <input
@@ -841,6 +910,15 @@ function PfShareIcon() {
       <circle cx="6" cy="12" r="2.5" />
       <circle cx="18" cy="19" r="2.5" />
       <path d="M8.2 10.8 15.8 6.2M8.2 13.2l7.6 4.6" />
+    </svg>
+  )
+}
+// Облачко реплики — «Подсказки Луны».
+function PfLunaIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
+      <path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4 3v-3H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+      <path d="M8 10h8M8 13h5" />
     </svg>
   )
 }
