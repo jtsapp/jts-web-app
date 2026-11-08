@@ -2615,7 +2615,7 @@ const dict = {
     'tour.practice.tokens.title': 'All rewards',
     'tour.practice.tokens.text': 'Open it to see what earns tokens in practice and lessons, and how many.',
     'tour.practice.grammar.title': 'Grammar and games',
-    'tour.practice.grammar.text': '125 topics by level, speed reading and all the mini-games live in this section.',
+    'tour.practice.grammar.text': '125 topics by level and all the mini-games live in this section.',
     'practice.min': '{n} min',
     'practice.units.one': '{n} unit',
     'practice.units.few': '{n} units',

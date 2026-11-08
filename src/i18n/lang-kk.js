@@ -2615,7 +2615,7 @@ const dict = {
     'tour.practice.tokens.title': 'Барлық есептеулер',
     'tour.practice.tokens.text': 'Аш — жаттығуда және сабақта не үшін қанша токен берілетінін көресің.',
     'tour.practice.grammar.title': 'Грамматика және ойындар',
-    'tour.practice.grammar.text': 'Деңгей бойынша 125 тақырып, жылдам оқу және барлық мини-ойындар осы бөлімде.',
+    'tour.practice.grammar.text': 'Деңгей бойынша 125 тақырып және барлық мини-ойындар осы бөлімде.',
     'practice.min': '{n} min',
     'practice.units.one': '{n} юнит',
     'practice.units.few': '{n} юнит',

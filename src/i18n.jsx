@@ -2663,7 +2663,7 @@ const dict = {
     'tour.practice.tokens.title': 'Все начисления',
     'tour.practice.tokens.text': 'Раскрой — увидишь, за что и сколько токенов начисляют в практике и на уроках.',
     'tour.practice.grammar.title': 'Грамматика и игры',
-    'tour.practice.grammar.text': '125 тем по уровням, скорочтение и все мини-игры собраны в этом разделе.',
+    'tour.practice.grammar.text': '125 тем по уровням и все мини-игры собраны в этом разделе.',
     'practice.min': '{n} min',
     'practice.units.one': '{n} юнит',
     'practice.units.few': '{n} юнита',
