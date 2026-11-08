@@ -147,6 +147,8 @@ test('«Сегодня» на «Главной» по плану → весь п
 
   await page.getByRole('tab', { name: 'Неделя' }).click()
   await expect(page).toHaveURL(/gePlanView=week/)
+  // в воскресенье «завтрашний» воркбук — уже понедельник следующей недели: неделя открыта текущая, листаем вперёд
+  if (new Date(`${today}T12:00:00Z`).getUTCDay() === 0) await page.getByRole('button', { name: 'Вперёд' }).click()
   await page.locator('.ih-wcard', { hasText: 'Воркбук' }).click()
   await page.getByRole('button', { name: /Перенести/ }).click()
   await page.getByLabel('Перенести на').fill(add(2))

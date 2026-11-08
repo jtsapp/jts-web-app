@@ -6,6 +6,7 @@ import { LUNA_CASES } from './luna-cases.js'
 import { SCREENS, PROFILES } from './fixtures.js'
 import { reviewDoc } from './review-doc.js'
 import { openingFocus } from '../../src/lib/assistant/opening.js'
+import { eventMark } from '../../src/lib/assistant/events.js'
 
 // Наборы прогона Луны (run.js) — данные, а не код, но ошибка в них тихо портит замер: вопрос без ключей судья
 // зачтёт как угодно, а опечатка в экране даст ход без снимка.
@@ -49,7 +50,8 @@ describe('кейсы раздела 10 для зонда', () => {
       expect(SCREENS[c.screen], c.id).toBeTruthy()
       expect(PROFILES[c.profile], c.id).toBeTruthy()
       expect(Number.isInteger(c.tz), c.id).toBe(true)
-      expect(Boolean(c.q) !== Boolean(c.ask), `${c.id}: вопрос или служебный ход, одно из двух`).toBe(true)
+      expect([c.q, c.ask, c.event].filter(Boolean).length, `${c.id}: вопрос, служебный ход или событие — одно из трёх`).toBe(1)
+      if (c.event) expect(() => eventMark(c.event.type, c.event.params), c.id).not.toThrow()
     }
   })
 
