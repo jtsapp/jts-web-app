@@ -1,7 +1,7 @@
 import { Fragment, Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { APP_NAV, OPEN_EVENT, navigateTo, setAssistantAvailable } from '../lib/assistant/assistantBus.js'
-import { messageMarkers } from '../lib/assistant/actions.js'
+import { breakAction, messageMarkers } from '../lib/assistant/actions.js'
 import { AssistantError, askAssistant } from '../lib/assistant/client.js'
 import { destinationName, destinationOf } from '../lib/assistant/destinations.js'
 import { isItemRef } from '../lib/assistant/items/refs.js'
@@ -41,6 +41,8 @@ import { installMicArbiter } from '../lib/assistant/wake/micArbiter.js'
 import { hintMark, hintState, isHintAsk, keyAllowed, nextHintStep, noteWrong, recordHint } from '../lib/assistant/hintSteps.js'
 import { hintTask, keyFor } from '../lib/assistant/hintTask.js'
 import { reportHomeworkHint } from '../lib/assistant/homeworkHints.js'
+import { lightenForGap } from '../lib/assistant/gapLite.js'
+import { sectionMapText } from '../lib/assistant/sectionMap.js'
 
 // Помощник по сайту — Луна: плавающая кнопка и окно чата поверх любого экрана
 // ученика. Где он показывается — решает App (lib/assistant/visibility.js).
@@ -332,7 +334,11 @@ function buttonLabel(a, lang, t) {
     case 'dismiss':
       return t(`assistant.btn.${a.target}`)
     case 'nav':
-      return t('assistant.btn.showPlan')
+      return t(a.caption === 'test' ? 'assistant.btn.test' : 'assistant.btn.showPlan')
+    case 'map':
+      return t('assistant.btn.map')
+    case 'hint':
+      return t('assistant.btn.simpler')
     default:
       if (a.caption === 'practice') return t('assistant.btn.practice')
       return a.feedback ? t('assistant.action.openFeedback') : t('assistant.action.open', { name: openName(a, lang) })
@@ -540,7 +546,7 @@ function RichText({ text }) {
 // с кнопкой на следующем обычном экране.
 // proactive — Луна пишет первой (ТЗ v2.0, «Луна-трекер»; lib/assistant/useProactive.js): App включает, тесты окна без
 // него живут по-прежнему. level — уровень ученика: куда ведёт «Начать» у урока курса.
-export default function AssistantWidget({ token, screen, enabled = true, greetOnOpen = false, format = null, proactive = false, level = null }) {
+export default function AssistantWidget({ token, screen, enabled = true, greetOnOpen = false, format = null, proactive = false, level = null, newcomer = false }) {
   const { t, lang } = useI18n()
   const persona = assistantPersona(lang)
   const [open, setOpen] = useState(false)
@@ -808,6 +814,16 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       return
     }
     // Бесплатный пробный урок в демо (7.2г) — та же заявка, что у карточки «Главной» (/mobile/trial-request).
+    // «Показать, что где» (кейсы 24, 35): карта разделов меню строкой окна, без модели.
+    if (action?.kind === 'map') {
+      if (cur?.t) say(sectionMapText(cur.t))
+      return
+    }
+    // «Разобрать проще» после второго простоя (кейс 6): следующая ступень подсказки по заданию.
+    if (action?.kind === 'hint') {
+      takeHintRef.current?.('idle')
+      return
+    }
     if (action?.kind === 'trial') {
       if (!cur?.enabled || !cur.token) return
       requestTrialLesson(cur.token)
@@ -1064,6 +1080,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         bugReported: history.some((m) => m.reported),
         voice,
         hintKey,
+        // Первая реплика окна после перерыва в днях (кейс 12): роут ставит «без нажима» — без этого «уже горит».
+        awayDays: opening && text === OPENING_MARK ? proactiveRef.current?.gapToday?.() || 0 : 0,
         signal: controller.signal,
         onDelta: (chunk) => {
           // Кусок оборванной первой реплики, уже прочитанный до обрыва, не должен
@@ -2046,7 +2064,24 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   const takeStuck = () => {
     const reason = stuck.take()
     if (!reason) return false
+    if (reason === 'idle2') return offerBreak()
     return takeHint(reason)
+  }
+  // Второй уровень простоя (кейс 6, ТЗ 7.2): перерыв 5 минут или разобрать проще — строкой окна без модели: что
+  // предложить, решено, а платный ответ ради двух кнопок не нужен. Дальше по этому простою тишина (stuck.js).
+  const offerBreak = () => {
+    const cur = stateRef.current
+    if (!cur?.enabled) return false
+    const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
+    greetedRef.current = screenStateKey(cur.screen, snapshotScreen(root))
+    showCmd(null)
+    setUnread(false)
+    setOpen(true)
+    setMessages((prev) => [
+      ...prev,
+      { role: 'assistant', content: cur.t('assistant.idle.more'), local: true, actions: [breakAction(5, false), { kind: 'hint', target: 'hint' }] },
+    ])
+    return true
   }
   const dismissStuck = stuck.dismiss
   useEffect(() => {
@@ -2082,7 +2117,17 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     if (cur.open && Date.now() - lastOwnActRef.current < TALKING_MS) return false
     return screenBlocks(ev) == null
   }
+  // «Не заходил 2+ дня» (кейс 12, ТЗ 9.1): сначала сайт сам облегчает план (gapLite.js), потом Луна говорит об этом.
   const deliver = (ev) => {
+    if (ev?.type === 'return_after_gap' && !ev.params?.lite) {
+      const cur = stateRef.current
+      lightenForGap(ev, { token: cur?.token, owner: ownerId ? `user-${ownerId}` : null, summary: proactiveRef.current?.plan().summary })
+        .then((next) => mountedRef.current && deliverNow(next))
+      return
+    }
+    deliverNow(ev)
+  }
+  const deliverNow = (ev) => {
     const cur = stateRef.current
     eventAtRef.current = Date.now()
     const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
@@ -2107,6 +2152,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     screen,
     enabled: enabled && proactiveOn && !call,
     demo: format === 'demo',
+    // Новый ученик без теста (кейс 24): Луна знакомится и ведёт на тест (events.first_visit).
+    newcomer,
     level: proactiveLevel,
     canDeliver,
     deliver,
@@ -2451,7 +2498,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           data-stuck={stuck.offer.reason}
           onClick={takeStuck}
         >
-          <b className="asst__hint-title">{t('assistant.stuck')}</b>
+          <b className="asst__hint-title">{t(stuck.offer.reason === 'idle2' ? 'assistant.stuck.break' : 'assistant.stuck')}</b>
         </button>
       )}
 

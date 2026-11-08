@@ -161,17 +161,35 @@ describe('useStuckWatch', () => {
   })
 
   it('dismiss (окно открылось само) — облачко уходит, пропущенным не считается', async () => {
-    const { result } = watch({ opts: { ignoreLimit: 1 } })
-    await later(STUCK.idleMs + 6000)
-    expect(result.current.offer).toEqual({ reason: 'idle' })
-    act(() => result.current.dismiss())
-    expect(result.current.offer).toBe(null)
-    // Пропуском не засчитано: при ignoreLimit 1 облачко после пропуска больше не вышло бы. Новый простой — после действия.
-    await later(STUCK.cooldownMs)
+    // Простой здесь не нужен — только ошибки.
+    const { result } = watch({ opts: { ignoreLimit: 1, idleMs: 1e9 } })
     press('go')
     markWrong('a')
     await later(900)
     expect(result.current.offer).toEqual({ reason: 'errors' })
+    act(() => result.current.dismiss())
+    expect(result.current.offer).toBe(null)
+    // Пропуском не засчитано: при ignoreLimit 1 облачко после пропуска больше не вышло бы.
+    await later(STUCK.cooldownMs)
+    press('go')
+    markWrong('b')
+    await later(900)
+    expect(result.current.offer).toEqual({ reason: 'errors' })
+  })
+
+  it(`простой: «Подсказать?», ещё ${STUCK.idle2Ms / 1000} с — «Передохнуть?» (idle2), дальше тишина`, async () => {
+    const { result } = watch()
+    await later(STUCK.idleMs + 6000)
+    expect(result.current.offer).toEqual({ reason: 'idle' })
+    // Не нажал — облачко уходит; простой продолжается.
+    await later(STUCK.showMs + 1000)
+    expect(result.current.offer).toBe(null)
+    // Второй уровень — через idle2Ms после первого (часы простоя идут от последнего действия, а не от облачка).
+    await later(STUCK.idleMs + STUCK.idle2Ms + 4000 - (STUCK.idleMs + 6000 + STUCK.showMs + 1000))
+    expect(result.current.offer).toEqual({ reason: 'idle2' })
+    await later(STUCK.showMs + 1000)
+    await later(STUCK.cooldownMs * 2)
+    expect(result.current.offer).toBe(null)
   })
 
   it('окно открыли (active → false) — облачко уходит, пропущенным не считается', async () => {

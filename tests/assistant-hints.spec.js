@@ -89,6 +89,7 @@ test('урок курса: «подскажи» текстом — та же с�
   )
   await page.goto('/?screen=kingdom-interior&level=A1&unlock=1')
   await page.locator('.kt-step:not([disabled])').first().click({ timeout: 20_000 })
+  await expect(page.locator('.cp-step')).toBeVisible({ timeout: 20_000 })
   for (let i = 0; i < 15 && !(await page.locator('.cp-choice:not([disabled])').count()); i++) {
     await unlockStep(page)
     await page.locator('.cp-cta:not([disabled])').click()

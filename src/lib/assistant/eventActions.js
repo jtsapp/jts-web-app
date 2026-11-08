@@ -16,7 +16,9 @@ import { stepDestination } from './planSteps.js'
 export function eventActions(ev, modelAction = null, summary = null) {
   const next = summary?.ready ? summary.next : null
   const out = []
-  for (const name of eventButtons(ev?.type)) {
+  // lite — у события из окна (params) или разобранного из пометки (поле самого события)
+  const lite = Boolean(ev?.params?.lite || ev?.lite)
+  for (const name of eventButtons(ev?.type, lite)) {
     const [kind, arg] = name.split(':')
     if (kind === 'step') {
       if (next) out.push({ kind: 'step', target: 'step', task: next, verb: arg, dest: stepDestination(summary.nextKind) })
@@ -35,6 +37,9 @@ export function eventActions(ev, modelAction = null, summary = null) {
       if (summary?.canReplan && summary.left) {
         out.push({ kind: 'replan', target: 'plan', minutes: Number(arg), now: false, style: ev.type === 'evening_entry' ? 'day' : 'plan' })
       }
+    } else if (kind === 'restore') {
+      // «Вернуть обычный план» — тот же пересчёт с 0 минут, что «Нет, продолжу» у «На сегодня всё»
+      if (summary?.canReplan) out.push({ kind: 'replan', target: 'plan', minutes: 0, now: false })
     } else if (kind === 'showplan') {
       if (summary?.ready) out.push({ kind: 'nav', target: 'ge-plan' })
     } else if (kind === 'practice') {
@@ -44,6 +49,12 @@ export function eventActions(ev, modelAction = null, summary = null) {
       out.push({ kind: 'dismiss', target: arg, decline: arg === 'look' })
     } else if (kind === 'trial') {
       out.push({ kind: 'trial', target: 'trial' })
+    } else if (kind === 'test') {
+      // «Пройти тест уровня» (знакомство, кейс 24) — тест v16, по выходу — «Главная»
+      out.push({ kind: 'nav', target: 'placement', caption: 'test' })
+    } else if (kind === 'tour') {
+      // «Показать, что где» — карта разделов строкой окна (sectionMap.js)
+      out.push({ kind: 'map', target: 'map' })
     }
   }
   // Ни одной кнопки дела (плана нет, бэкенд прежний) — хотя бы предложение модели первой.

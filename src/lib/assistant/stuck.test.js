@@ -19,7 +19,8 @@ describe('createStuckTracker', () => {
   // ТЗ v2.0, 7.2б: облачко — после первого неверного ответа и после 60 с простоя.
   it('по умолчанию — первая же неверная проверка; пометка, что была при входе, — нет', () => {
     expect(STUCK.wrongLimit).toBe(1)
-    expect(STUCK.idleMs).toBe(60_000)
+    // Простой — 90 с: решение владельца 28.10.2026 (ТЗ пишет 60).
+    expect(STUCK.idleMs).toBe(90_000)
     const s = createStuckTracker()
     s.baseline({ screen: 'a', text: wrongPick('like') })
     expect(s.observe({ screen: 'a', text: wrongPick('like'), now: 1 })).toBe(null)
@@ -83,15 +84,27 @@ describe('createStuckTracker', () => {
     expect(s.observe({ screen: 'a', text: wrongPick('like'), now: STUCK.cooldownMs + 10 })).toBe('errors')
   })
 
-  it(`простой ${STUCK.idleMs / 1000} с на задании — idle, один раз на простой`, () => {
+  it(`простой ${STUCK.idleMs / 1000} с на задании — idle, ещё ${STUCK.idle2Ms / 1000} с — idle2, дальше тишина`, () => {
     const s = createStuckTracker()
     expect(s.idle({ screen: 'a', now: STUCK.idleMs - 1, lastActionAt: 0, task: true })).toBe(null)
     expect(s.idle({ screen: 'a', now: STUCK.idleMs, lastActionAt: 0, task: false })).toBe(null)
     expect(s.idle({ screen: 'a', now: STUCK.idleMs, lastActionAt: 0, task: true })).toBe('idle')
-    // Тот же простой тянется дальше — второй раз не напоминаем.
-    expect(s.idle({ screen: 'a', now: STUCK.idleMs + STUCK.cooldownMs, lastActionAt: 0, task: true })).toBe(null)
-    const later = STUCK.idleMs + STUCK.cooldownMs
+    // Второй уровень — того же простоя, паузы облачка не ждёт.
+    expect(s.idle({ screen: 'a', now: STUCK.idleMs + STUCK.idle2Ms - 1, lastActionAt: 0, task: true })).toBe(null)
+    expect(s.idle({ screen: 'a', now: STUCK.idleMs + STUCK.idle2Ms, lastActionAt: 0, task: true })).toBe('idle2')
+    // Дальше тот же простой — тишина: не больше двух уровней.
+    expect(s.idle({ screen: 'a', now: STUCK.idleMs + STUCK.cooldownMs * 3, lastActionAt: 0, task: true })).toBe(null)
+    // Ученик что-то сделал — новый простой, снова с первого уровня (после паузы облачка).
+    const later = STUCK.idleMs + STUCK.idle2Ms + STUCK.cooldownMs
     expect(s.idle({ screen: 'a', now: later + STUCK.idleMs, lastActionAt: later, task: true })).toBe('idle')
+  })
+
+  it('пропущенный второй уровень не выключает облачко на визит', () => {
+    const s = createStuckTracker({ ignoreLimit: 1, cooldownMs: 0 })
+    s.ignored('idle2')
+    expect(s.isOff()).toBe(false)
+    s.ignored('idle')
+    expect(s.isOff()).toBe(true)
   })
 
   it('дважды не нажал — до конца визита облачка нет; нажал — счёт игнора с нуля', () => {

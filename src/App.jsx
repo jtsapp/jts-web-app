@@ -1410,11 +1410,21 @@ export default function App() {
 
   // Итог теста v16 (спека 2026-10-14): конверт — в базу (отчёт «Главной»), уровень — в пустой аккаунт, ответы анкеты —
   // в профиль General English, если анкета ещё не заполнялась (анкета теста заменила нашу). События идут цепочкой.
+  // Итог теста — Луне (кейс 35 ТЗ v2.0): на «Главной» она назовёт уровень, сильное и слабое и первый шаг. Раз на попытку:
+  // итог приходит и при показе, и по «Продолжить». Модуль отчёта — по требованию, в стартовый бандл он не нужен.
+  const announcedAttempt = useRef(null)
+  function announceToLuna(env) {
+    const id = env?.assessment?.attemptId
+    if (!id || announcedAttempt.current === id) return
+    announcedAttempt.current = id
+    import('./lib/assistant/placementEvent.js').then((m) => m.announcePlacement(env)).catch(() => {})
+  }
   function finalizePlacement(env) {
     const run = async () => {
       const st = placementState.current
       if (!st.token || !env) return
       if (await saveAttempt(st.token, env)) setPlacementVersion((v) => v + 1)
+      announceToLuna(env)
       let level = st.needsLevelTest ? null : st.userLevel
       const tested = levelFromEnvelope(env)
       if (st.needsLevelTest && tested) level = await saveTestLevel(tested)
@@ -1977,6 +1987,11 @@ export default function App() {
         // Кнопка окна Луны «Начать: урок курса» / «Показать план» (assistantBus.APP_NAV): шаг плана — тем же путём, что
         // кнопка задачи в «Сегодня». Ключи — только из списка: payload собирает окно, но адрес задачи приходит с бэкенда.
         if (target === APP_NAV) {
+          // «Пройти тест уровня» из окна Луны (знакомство, кейс 24): тест v16, по выходу — «Главная».
+          if (payload?.to === 'placement') {
+            openPlacement('home')
+            return
+          }
           if (!APP_NAV_KEYS.has(payload?.to)) return
           setResume(null)
           setScreenNonce((n) => n + 1)
@@ -2210,7 +2225,7 @@ export default function App() {
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && <LessonFeedbackPrompt key={userIdFromToken(token)} token={token} enabled={isLegalDocumentsScreen(view) && !['live-lesson', 'lesson-workspace'].includes(view)} />}</OptionalPart>
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && !isStudentSectionHidden('my-teacher') && <MatchingPopups token={token} screen={view} onNav={handleNav} />}</OptionalPart>
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && (
-        <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen proactive level={needsLevelTest ? null : userLevel} format={learnerFormat({ demo: isDemoAccount, sections: sectionAccess?.status === 'ready' ? sectionAccess : null })} />
+        <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen proactive level={needsLevelTest ? null : userLevel} newcomer={needsLevelTest && accountCreatedAt != null && !isExistingStudent(accountCreatedAt)} format={learnerFormat({ demo: isDemoAccount, sections: sectionAccess?.status === 'ready' ? sectionAccess : null })} />
       )}</OptionalPart>
     </MobileTabContext.Provider>
     </LegalDocumentsGate>

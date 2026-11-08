@@ -354,7 +354,9 @@ export function parseChatRequest(body) {
 
   // Тест или экзамен на экране — решает окно по разметке (data-assistant-test); в снимке этого не видно.
   const test = body.screen?.test === true
-  return { messages, screen: { id: screenId, text: screenText, ...(test ? { test } : {}) }, lang, pageUrl, userAgent, errors, bugReported, voice, call, rewards, hintKey }
+  // Сегодня ученик вернулся после перерыва в столько дней (трекер окна, proactive.js) — только для первой реплики.
+  const awayDays = Number.isInteger(body.awayDays) && body.awayDays > 0 && body.awayDays < 1000 ? body.awayDays : 0
+  return { messages, screen: { id: screenId, text: screenText, ...(test ? { test } : {}) }, lang, pageUrl, userAgent, errors, bugReported, voice, call, rewards, hintKey, awayDays }
 }
 
 // Язык вопроса, когда он виден уверенно: английский — без кириллицы и хотя бы из трёх
@@ -424,6 +426,14 @@ export function buildContextBlock({ user, screen, lang, studentContext, errors, 
   return `<контекст>\n${lines.join('\n')}\n</контекст>`
 }
 
+// Ученик вернулся после перерыва (кейс 12, ТЗ 9.1) и сам открыл окно. Без указания первая реплика по профилю шла с
+// просроченной домашки — «уже горит», «времени мало» (зонд 08.11, L12 1 из 3). Перерыв знает окно (awayDays), а без
+// него — профиль: за неделю ни одного дня занятий.
+export const GAP_OPENING_HINT =
+  'Ученик вернулся после перерыва в несколько дней. Порадуйся встрече, без упрёков и без нажима: «горит», «срочно», «просрочено», «времени мало» не говори. Предложи один посильный шаг на 10–15 минут и одной фразой — почему он. О возвращении — без рода: «с возвращением», а не «ты вернулась / вернулся».'
+const returnedAfterGap = (awayDays, studentContext) =>
+  awayDays >= 2 || /Последние 7 дней: дней с занятиями 0\b|Последние две недели занятий на сайте не было/.test(String(studentContext || ''))
+
 // Тест или экзамен на экране (screen.test от окна; ТЗ v2.0, 7.2б): только поддержка.
 export const TEST_HINT =
   // «разберём, где ты ошиблась» — род в 8 из 20 (зонд 08.11): готовая фраза без рода.
@@ -455,7 +465,7 @@ const ITEMS_HINTS = { ask: ITEMS_HINT + AMBIGUOUS, guess: ITEMS_GUESS_HINT + AMB
 const SHOWN_ANSWER = /\[верный ответ по заданию:/
 
 /** Разговор для модели: к последнему вопросу ученика приклеен контекст. */
-export function buildTurns({ messages, user, screen, lang, studentContext, errors, pageUrl, voice, today, items, itemsMode = 'ask', hintKey = '' }) {
+export function buildTurns({ messages, user, screen, lang, studentContext, errors, pageUrl, voice, today, items, itemsMode = 'ask', hintKey = '', awayDays = 0 }) {
   const turns = messages.map((m) => ({ role: m.role, content: m.content }))
   const last = turns[turns.length - 1]
   const opening = isOpeningTurn(last.content)
@@ -502,7 +512,13 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
   const langHint = qLang && (qLang !== lang || qLang !== 'ru') ? `\n\nЯзык ответа: ${LANG_NAMES[qLang]} — на нём задан вопрос.` : ''
   const ask = hint
     ? // Пометка — уже сверенная с экраном: на экране домашки модель видит «домашка», что бы ни прислало окно.
-      [hintMark(hint), answerLang, hintInstruction(hint, { key: keyAllowed(hint.mode, hint.step) ? hintKey || null : null, lang })].join('\n')
+      [
+        hintMark(hint),
+        answerLang,
+        hintInstruction(hint, { key: keyAllowed(hint.mode, hint.step) ? hintKey || null : null, lang }),
+        // «какую форму выбрал бы», «ты поняла» — род 2 из 12 (зонд 08.11).
+        ...(lang === 'ru' && !user?.gender ? ['Пол ученика неизвестен: о нём — без рода («попробуй», «что получится?»), а не «ты выбрала / выбрал бы».'] : []),
+      ].join('\n')
     : stuck || hintAsStuck
     ? [
         last.content.trim(),
@@ -516,9 +532,12 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
         focus.unchecked
           ? 'Задание ещё не проверено: не оценивай введённый ответ и не называй правильный ни целиком, ни как вариант на выбор — только подсказка, как его найти.'
           : SHOWN_ANSWER.test(screen?.text || '')
-            ? 'Сайт уже показал верный ответ («верный ответ по заданию») — его можно назвать и объяснить, почему он такой.'
+            ? // Кейс 7 ТЗ: «правило + пример + наводящий вопрос»; без этого — только «went, потому что…» (зонд 08.11, 0 из 3).
+              'Сайт уже показал верный ответ («верный ответ по заданию») — его можно назвать. Разбор: правило простыми словами, один похожий пример на других словах и в конце короткий проверочный вопрос, чтобы ученик закрепил.'
             : 'Верного ответа на экране нет: сайт даёт перепробовать. Не называй правильный ответ ни целиком, ни частью, ни как пример, ни как вариант на выбор — только подсказка, как его найти.',
         'Без советов про другие разделы, без прошлых советов и без метки.',
+        // «Ты ввела» — род в 3 из 3 (зонд 08.11): о вводе ученика — без глагола прошедшего времени.
+        ...(lang === 'ru' && !user?.gender ? ['Пол ученика неизвестен: о том, что он ввёл или выбрал, — без рода: «в поле стоит …», а не «ты ввела …».'] : []),
         'Не больше 4 коротких предложений.',
       ].join('\n')
     : wake
@@ -542,6 +561,7 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
             answerLang,
             ...(focus.task ? ['На экране задание: говори только о нём — без советов про другие разделы, без прошлых советов и без метки. Ошибку из разговоров со Speaking Buddy на то же правило назвать можно.'] : []),
             ...(focus.unchecked ? ['Задание ещё не проверено: не оценивай введённый ответ и не называй правильный — только подсказка.'] : []),
+            ...(returnedAfterGap(awayDays, studentContext) ? [GAP_OPENING_HINT] : []),
             'Не больше 4 коротких предложений.',
           ].join('\n')
         : unchecked

@@ -47,7 +47,7 @@ function mediaPlaying(doc) {
  *
  * @param {{ active: boolean, screen: string|null, canOffer?: () => boolean, onWrong?: () => boolean,
  *           rootSelector?: string, opts?: Partial<typeof STUCK> }} p
- * @returns {{ offer: null | { reason: 'errors'|'idle' }, take: () => ('errors'|'idle'|null), dismiss: () => void }}
+ * @returns {{ offer: null | { reason: 'errors'|'idle'|'idle2' }, take: () => ('errors'|'idle'|'idle2'|null), dismiss: () => void }}
  */
 export function useStuckWatch({ active, screen, canOffer, onWrong, rootSelector = SCREEN_ROOT, opts }) {
   const [offer, setOffer] = useState(null)
@@ -66,9 +66,10 @@ export function useStuckWatch({ active, screen, canOffer, onWrong, rootSelector 
   const drop = useCallback((ignored) => {
     clearTimeout(hideTimer.current)
     if (!offerRef.current) return
+    const { reason } = offerRef.current
     offerRef.current = null
     setOffer(null)
-    if (ignored) tracker.ignored()
+    if (ignored) tracker.ignored(reason)
   }, [tracker])
 
   const show = useCallback(
