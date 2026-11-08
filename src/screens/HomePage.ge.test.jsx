@@ -166,8 +166,9 @@ describe('HomePage — General English', () => {
     renderHome({ geProfile: goal, onNav })
     await waitFor(() => expect(document.querySelector('.ge-today')).toBeTruthy())
     expect(document.querySelector('.hm-recommend')).toBe(null)
-    expect(screen.getByText('Неделя: 1 из 6')).toBeTruthy()
-    expect(screen.getByText('6 / 15 мин')).toBeTruthy()
+    // шапка «Сегодня» по ТЗ v2.0 (5.2): сделанные минуты дня; у начатой практики — тип и «6 / 15 мин»
+    expect(screen.getByText('6 из 30 мин')).toBeTruthy()
+    expect(screen.getByText('Говорение · 6 / 15 мин')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Продолжить' }))
     expect(onNav).toHaveBeenCalledWith('tutor')
     fireEvent.click(screen.getByRole('button', { name: /Весь план/ }))
