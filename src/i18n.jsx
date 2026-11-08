@@ -2295,6 +2295,7 @@ const dict = {
     'schedule.status.inProgress': 'Идёт',
     'schedule.status.paused': 'На паузе',
     'schedule.status.scheduled': 'Запланирован',
+    'schedule.status.frozen': 'На заморозке',
     'schedule.status.overdue': 'Просрочен',
     'schedule.dispute.writeManager': 'Не согласны с отметкой «не пришёл»? Напишите менеджеру в течение 24 часов — он оспорит пропуск.',
     'schedule.dispute.open': 'Оспорить пропуск',

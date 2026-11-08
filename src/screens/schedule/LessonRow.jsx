@@ -7,7 +7,7 @@ export default function LessonRow({ occ, card, onOpenLesson, dispute }) {
   const { t, lang } = useI18n()
   const stateKey = lessonStateKey(occ)
   const live = isLessonLive(occ.lessonStatus)
-  const openable = canOpenLesson(occ.lessonStatus)
+  const openable = !occ.frozen && canOpenLesson(occ.lessonStatus)
   const format = (occ.format || 'ONLINE').toLowerCase()
   const meetingUrl = card?.meetingUrl
   // Тип занятия приезжает догрузкой урока и может ещё не приехать (или не
@@ -33,7 +33,7 @@ export default function LessonRow({ occ, card, onOpenLesson, dispute }) {
           </span>
           {/* Ссылка на звонок — только у уроков, куда ещё можно попасть:
               на отменённом или уже проведённом она звала бы в пустую комнату. */}
-          {!['completed', 'cancelled', 'overdue'].includes(stateKey) && <MeetLink url={meetingUrl} />}
+          {!['completed', 'cancelled', 'overdue', 'frozen'].includes(stateKey) && <MeetLink url={meetingUrl} />}
           {/* «Запланирован» — состояние по умолчанию, оно не несёт информации
               и только шумит в списке. Бейдж появляется, когда с уроком что-то
               случилось: идёт, отменён, проведён, просрочен. */}

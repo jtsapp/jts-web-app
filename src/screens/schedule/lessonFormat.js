@@ -69,6 +69,7 @@ export function canOpenLesson(lessonStatus) {
 // Maps backend lessonStatus (+ wall-clock) to an i18n suffix under schedule.status.*.
 // A SCHEDULED lesson whose end time is in the past is "overdue" (mirrors web-admin).
 export function lessonStateKey(occ, now = new Date()) {
+  if (occ.frozen) return 'frozen'
   switch (occ.lessonStatus) {
     case 'IN_PROGRESS': return 'inProgress'
     case 'PAUSED': return 'paused'

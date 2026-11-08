@@ -50,6 +50,10 @@ describe('lessonFormat', () => {
     expect(lessonStateKey(occ, new Date('2026-08-10T13:00:00'))).toBe('overdue')
   })
 
+  it('frozen attendance is visible even if the group lesson is live', () => {
+    expect(lessonStateKey({ frozen: true, lessonStatus: 'IN_PROGRESS' })).toBe('frozen')
+  })
+
   it('lessonStateKey keeps a future SCHEDULED lesson as scheduled', () => {
     const occ = { scheduledAt: '2026-08-10T11:30:00', durationMinutes: 60, lessonStatus: 'SCHEDULED' }
     expect(lessonStateKey(occ, new Date('2026-08-10T09:00:00'))).toBe('scheduled')

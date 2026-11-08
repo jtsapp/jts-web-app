@@ -2256,6 +2256,7 @@ const dict = {
     'schedule.status.inProgress': 'Live',
     'schedule.status.paused': 'Paused',
     'schedule.status.scheduled': 'Scheduled',
+    'schedule.status.frozen': 'Frozen',
     'schedule.status.overdue': 'Overdue',
     'schedule.dispute.writeManager': 'Disagree with the “didn’t show up” mark? Message your manager within 24 hours — they will dispute it.',
     'schedule.dispute.open': 'Dispute the absence',

@@ -2256,6 +2256,7 @@ const dict = {
     'schedule.status.inProgress': 'Жүріп жатыр',
     'schedule.status.paused': 'Кідіртілді',
     'schedule.status.scheduled': 'Жоспарланған',
+    'schedule.status.frozen': 'Мұздатылған',
     'schedule.status.overdue': 'Мерзімі өтті',
     'schedule.dispute.writeManager': '«Келмеді» белгісімен келіспейсіз бе? 24 сағат ішінде менеджерге жазыңыз — ол даулайды.',
     'schedule.dispute.open': 'Келмегенді даулау',
