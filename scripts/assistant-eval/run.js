@@ -7,7 +7,7 @@
 //   node scripts/assistant-eval/run.js --compare base,after             # было → стало по вопросам
 //
 // Флаги: --set teacher|luna|all; --only id-префиксы через запятую (или темы: grammar, check…); --lang ru|kk|en; --n ответов на вопрос;
-// --conc параллельных запросов (6); --fresh — заново, а не дописывать; --rejudge — те же ответы, новый судья
+// --conc параллельных запросов (6); --effort medium — опыт: Haiku 5.5 с мышлением вместо параметров роута; --fresh — заново, а не дописывать; --rejudge — те же ответы, новый судья
 // (чтобы «до» и «после» судил один судья); --repo — чей промпт гонять (по умолчанию этот репозиторий; так меряют
 // базу: --repo <worktree develop>); --env — файл с ANTHROPIC_API_KEY (по умолчанию .env.local этой копии, потом
 // основной). Ответы — build/assistant-eval/<phase>.jsonl (build/ в .gitignore), сводка — <phase>.summary.md.
@@ -148,6 +148,21 @@ async function ask(job) {
     rewards: job.rewards,
   })
   const systemPrompt = prompt.buildSystemPrompt(assistantPersona(job.ui), { rewards: job.rewards })
+  // --effort medium|high — опыт, а не роут: та же Haiku 5.5 и тот же промпт, но с мышлением (adaptive). Роут держит
+  // мышление выключенным ради скорости голоса, и решение менять это — за владельцем; замер показывает цену и выигрыш.
+  if (args.effort) {
+    const res = await judgeClient.messages.create({
+      model: MODEL,
+      max_tokens: 6000,
+      thinking: { type: 'adaptive' },
+      output_config: { effort: String(args.effort) },
+      system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+      messages: turns,
+    })
+    const u = res.usage || {}
+    addSpend(MODEL, { inputTokens: u.input_tokens, outputTokens: u.output_tokens, cacheReadTokens: u.cache_read_input_tokens, cacheWriteTokens: u.cache_creation_input_tokens })
+    return res.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
+  }
   let raw = ''
   for await (const ev of chatStreamRich({ systemPrompt, messages: turns, model: MODEL, maxOutputTokens: MAX_OUTPUT_TOKENS, task: 'assistant_eval' })) {
     if (ev.type === 'text') raw += ev.text
@@ -184,13 +199,16 @@ function detChecks(job, raw, visible) {
   if (job.answer === 'en' && cyr > lat * 0.1) fails.push('не по-английски')
   if (job.answer !== 'en' && cyr < 20) fails.push('не на языке вопроса')
   if (job.answer === 'kk' && (visible.match(KK_LETTERS) || []).length < 3) fails.push('не по-казахски')
+  // Обращение — вне кавычек: в кавычках перевод фразы («Не могли бы вы перенести урок?» к «Could you…»), а не
+  // обращение к ученику; детектор ловил его, а судья такие ответы засчитывал (08.11.2026).
+  const unquoted = visible.replace(/«[^»]*»|"[^"]*"|“[^”]*”/g, ' ')
   if (job.answer === 'ru') {
-    if (FORMAL.test(visible)) fails.push('«вы»')
-    const imps = (visible.match(IMPERATIVE_V) || []).filter((w) => !NOT_IMPERATIVE.has(w.toLowerCase()))
+    if (FORMAL.test(unquoted)) fails.push('«вы»')
+    const imps = (unquoted.match(IMPERATIVE_V) || []).filter((w) => !NOT_IMPERATIVE.has(w.toLowerCase()))
     if (imps.length) fails.push(`повел. мн.: ${imps.slice(0, 3).join(',')}`)
   }
-  const sizWords = (visible.match(/[а-яәіңғүұқөһ]{2,}(ыңыз|іңіз|ңыз|ңіз)[а-яәіңғүұқөһ]*/gi) || []).filter((w) => !/^маңыз/i.test(w))
-  if (job.answer === 'kk' && (SIZ.test(visible) || sizWords.length)) fails.push('«сіз»')
+  const sizWords = (unquoted.match(/[а-яәіңғүұқөһ]{2,}(ыңыз|іңіз|ңыз|ңіз)[а-яәіңғүұқөһ]*/gi) || []).filter((w) => !/^маңыз/i.test(w))
+  if (job.answer === 'kk' && (SIZ.test(unquoted) || sizWords.length)) fails.push('«сіз»')
   if (c.needMark && !c.needMark.test(raw)) fails.push(`нет метки ${c.markName || ''}`.trim())
   if (c.noMark && c.noMark.test(raw)) fails.push('лишняя метка')
   if (c.forbid && c.forbid.test(visible)) fails.push(`назван ответ (${c.forbid.source})`)
@@ -212,7 +230,8 @@ const TEACHER_JUDGE = `Ты — методист школы английског
 {"correct": true|false, "lang": true|false, "format": true|false, "gender": true|false, "why": "одна короткая фраза по-русски: что не так, или «ок»"}
 
 correct — ответ по существу верный: все обязательные ключевые пункты есть (по смыслу, другими словами можно; пункты «желательно» — плюс, без них ответ не провален), нет фактических ошибок в английском — ни в правиле, ни в примерах, ни в переводе, — нет выдуманных правил, верный вариант не объявлен ошибкой, выполнен критерий зачёта. Мелкая неточность, которая не вводит ученика в заблуждение, и лишние верные сведения — не провал.
-lang — ответ на языке вопроса; английские слова и примеры по-английски допустимы; казахский ответ — без русских слов и русских названий разделов; языки не смешаны.
+lang — ответ на языке вопроса; английские слова и примеры по-английски допустимы; казахский ответ — без русских слов и русских названий разделов; языки не смешаны. Имя ученика в любом написании («Айгерим», «Айгерім») — не смешение языков. Названия разделов сайта по-казахски (Басты бет, Тәжірибе, Үй жұмысы, Сөздік, Оқылым, Тыңдалым, Жазылым, Айтылым) — казахские слова, как в казахском интерфейсе, а не русские.
+Род и обращение к ученику оценивает только поле gender: на correct и lang они не влияют.
 format — ответ следует шаблону для этого вида вопроса (он дан ниже); краткость допустима, пропуск обязательной части — нет.
 gender — false, если помощник обращается к ученику с родовой формой прошедшего времени или прилагательного («ты выбрала», «ты ошибся», «готова?») — пол ученика неизвестен; в казахском и английском рода нет, там true. О себе помощник говорит в женском роде — это нормально. Русский перевод английского примера («я потерял ключи» к «I lost my keys») — не обращение к ученику.
 Имя ученика и его ошибки из разговоров со Speaking Buddy помощник видит в профиле (они даны ниже) — упоминать их не выдумка; неточность — только ссылка на ошибку с другим правилом, если она вводит в заблуждение.
@@ -321,9 +340,12 @@ if (args.rejudge) {
 const todo = jobsOf.flatMap((job) => Array.from({ length: N }, (_, i) => ({ job, i }))).filter(({ job, i }) => !have.has(keyOf(job.set, job.id, i)))
 await pool(todo, async ({ job, i }) => {
   let raw = ''
+  let ms = null // время ответа модели целиком — для сравнения с --effort
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
+      const t0 = Date.now()
       raw = await ask(job)
+      ms = Date.now() - t0
       break
     } catch (err) {
       raw = `__ERROR__ ${err.message}`
@@ -333,7 +355,7 @@ await pool(todo, async ({ job, i }) => {
   const visible = visibleOf(job, raw)
   const det = raw.startsWith('__ERROR__') ? ['ошибка модели'] : detChecks(job, raw, visible)
   const j = raw.startsWith('__ERROR__') ? { correct: false, pass: false, why: raw } : await judge(job, visible, raw)
-  rows.push({ set: job.set, id: job.id, i, topic: job.topic, lang: job.answer, raw, visible, det, judge: j, ok: okOf(job, det, j) })
+  rows.push({ set: job.set, id: job.id, i, topic: job.topic, lang: job.answer, ms, raw, visible, det, judge: j, ok: okOf(job, det, j) })
   save()
   process.stdout.write(rows[rows.length - 1].ok ? '.' : 'x')
 })
@@ -355,6 +377,21 @@ function summarize(list, phase) {
   if (teacher.length) {
     const ok = teacher.filter((r) => r.ok).length
     lines.push(`## Учитель английского (8.3а): верно ${pct(ok, teacher.length)}, цель ТЗ ≥ 95 %`, '')
+    // Разброс: один ответ на вопрос в каждом «прогоне» i — так видно, сколько из разницы двух вариантов — шум.
+    // Контрольные вопросы (holdout) писались до справки по грамматике и при её подборе не смотрелись.
+    const HOLD = new Set(TEACHER_SET.filter((q) => q.holdout).map((q) => q.id))
+    const main = teacher.filter((r) => !HOLD.has(r.id))
+    const hold = teacher.filter((r) => HOLD.has(r.id))
+    const runs = (rs) => [...new Set(rs.map((r) => r.i))].sort((a, b) => a - b).map((i) => {
+      const x = rs.filter((r) => r.i === i)
+      return pct(x.filter((r) => r.ok).length, x.length)
+    }).join(' · ')
+    const part = (title, rs) => rs.length && lines.push(`- ${title}: ${pct(rs.filter((r) => r.ok).length, rs.length)}; по прогонам ${runs(rs)}`)
+    part('Эталон (116 вопросов)', main)
+    part('— из них по-казахски', main.filter((r) => r.lang === 'kk'))
+    part('Контрольные (не участвовали в подборе справки)', hold)
+    part('— из них по-казахски', hold.filter((r) => r.lang === 'kk'))
+    lines.push('')
     lines.push('| Тема | ru | kk | en | Всего верно | Шаблон | Род |', '|---|---|---|---|---|---|---|')
     for (const [topic, title] of Object.entries(TOPICS)) {
       const t = teacher.filter((r) => r.topic === topic)
