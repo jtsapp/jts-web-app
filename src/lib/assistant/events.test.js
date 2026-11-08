@@ -139,3 +139,18 @@ describe('длинная пометка', () => {
     expect(eventHint({ type: 'plan_completed', total: '3', done: '3', dmin: '55', plan: 'ready' })).toMatch(/сделано — 3, 55 мин/)
   })
 })
+
+// Методика (ТЗ v2.0, 8.3): после 25–30 минут без перерыва — пауза. О задании ни слова: ученик может быть посреди него.
+describe('пауза после 25 минут (long_session)', () => {
+  it('пометка с минутами, указание без задания и давления, кнопки «Перерыв 5 мин» и «Нет, продолжу»', () => {
+    const ev = parseEventMark(eventMark('long_session', { run: 27 }))
+    expect(ev).toEqual({ type: 'long_session', run: '27' })
+    const hint = eventHint(ev, 'ru')
+    expect(hint).toContain('без перерыва уже 27 мин')
+    expect(hint).toContain('паузу на 5 минут')
+    expect(hint).toContain('О текущем задании и его ответах ничего не говори')
+    expect(hint).not.toMatch(/Свежие цифры плана/)
+    expect(eventButtons('long_session')).toEqual(['break:5', 'dismiss:keepGoing'])
+    expect(eventHint(ev, 'kk')).toMatch(/по-казахски/)
+  })
+})

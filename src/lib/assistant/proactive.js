@@ -31,6 +31,8 @@ export const PROACTIVE = {
   wanderEveryMs: 10 * 60_000,
   manyTasks: 5, // «задач на день больше 5»
   eveningHour: 18, // «вечером»
+  longRunMs: 25 * 60_000, // 8.3: «после 25–30 минут без перерыва предложить паузу»
+  restMs: 5 * 60_000, // столько без действий (или вкладка скрыта) — уже перерыв, отсчёт подряд сначала
 }
 
 // Настройка в Профиле «Подсказки Луны» (proactiveSetting.js). «Иногда» — то, что важно раз-два в день: начало дня, вечер,
@@ -146,6 +148,27 @@ export function createProactiveTracker({ store = memoryStore(), session = memory
       return s.gapDay === localDay(now) ? Number(s.gapLen) || 0 : 0
     },
 
+    /**
+     * Действие ученика (нажатие, клавиша): сколько он занимается подряд. 25 минут без перерыва дольше 5 минут —
+     * long_session (методика ТЗ 8.3). Отказался — следующее предложение ещё через 25 минут; перерыв — отсчёт сначала.
+     * Подряд живёт на вкладку (sessionStorage), как лимиты: другая вкладка — другой подход.
+     */
+    activity(now) {
+      const s = sess()
+      const fresh = !s.runAt || !s.actAt || now - s.actAt >= o.restMs
+      const runAt = fresh ? now : s.runAt
+      const offeredAt = fresh ? null : s.runOfferAt || null
+      putSess({ runAt, actAt: now, runOfferAt: offeredAt })
+      const since = now - (offeredAt || runAt)
+      if (since < o.longRunMs) return null
+      return { type: 'long_session', params: { run: Math.round((now - runAt) / 60_000) } }
+    },
+
+    /** Ученик взял перерыв (кнопка, [[BREAK N]]): подряд закончилось. */
+    breakStarted() {
+      putSess({ runAt: null, actAt: null, runOfferAt: null })
+    },
+
     /** Ученик здесь (действие, вкладка видна): помним время и день — для следующего прихода. */
     seen(now) {
       put({ lastAt: now, lastDay: localDay(now) })
@@ -214,6 +237,8 @@ export function createProactiveTracker({ store = memoryStore(), session = memory
       if (ev.type === 'return_same_day') patch.homeAt = now
       if (ev.type === 'wandering') patch.wanderAt = now
       if (ev.type === 'demo_trial') patch.trialOffered = true
+      // Пауза предложена — следующее предложение не раньше чем через longRunMs (activity).
+      if (ev.type === 'long_session') patch.runOfferAt = now
       putSess(patch)
       const mark = {}
       // День начат приветствием: «первое открытие за день» больше не повторится.

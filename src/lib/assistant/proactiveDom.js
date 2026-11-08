@@ -7,6 +7,8 @@ import { ARRIVAL_EVENTS } from './events.js'
 import { openingFocus } from './opening.js'
 import { snapshotScreen } from './screenSnapshot.js'
 
+const TASK_OK = new Set(['demo_trial', 'long_session'])
+
 const SCREEN_ROOT = '.scr-in'
 
 // Окно поверх экрана: тур («?»), анкета, окно пробного урока… У всех — aria-modal. Своё окно Луны не в счёт.
@@ -39,7 +41,8 @@ export function screenBlocks(ev, doc = globalThis.document) {
   if (overlayOpen(doc)) return 'overlay'
   if (mediaPlaying(doc)) return 'media'
   if (typing(doc, root)) return 'typing'
-  // Посреди задания — только приход (вернулся на вкладку: «ты остановилась на упражнении 3») и пробный урок после урока.
-  if (!ARRIVAL_EVENTS.has(ev?.type) && ev?.type !== 'demo_trial' && openingFocus(snapshotScreen(root)).task) return 'task'
+  // Посреди задания — только приход (вернулся на вкладку: «ты остановилась на упражнении 3»), пробный урок после урока
+  // и пауза после 25 минут: в игре и уроке следующее задание встаёт сразу, и «не посреди задания» не наступает никогда.
+  if (!ARRIVAL_EVENTS.has(ev?.type) && !TASK_OK.has(ev?.type) && openingFocus(snapshotScreen(root)).task) return 'task'
   return null
 }

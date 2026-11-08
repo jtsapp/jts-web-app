@@ -46,6 +46,13 @@ import { destinationName, destinationOf } from './destinations.js'
 import { pickRecommendation } from './recommend.js'
 import { checkNotes, goalLine, mistakesLine, notesLines, practiceLine, weekLine } from './tracker.js'
 import { formatLine } from './format.js'
+import { loadAnswerTimes, loadItems, loadRecentAnswers, loadWrongAnswers } from '../db/studentModel.js'
+import { normalizeProgram } from '../studentModel/program.js'
+import { buildJournal } from '../studentModel/journal.js'
+import { behaviorOf } from '../studentModel/behavior.js'
+import { paceOf } from '../studentModel/pace.js'
+import { behaviorLine, journalLine, paceLine, reviewAdvice, reviewLine, topicsLine } from '../studentModel/lines.js'
+import { defaultDeps as catalogDeps } from './items/catalog.js'
 
 export const CONTEXT_TTL_MS = 3 * 60 * 1000
 // Дольше этого протухший профиль ответом не служит — вопрос ждёт свежий.
@@ -152,7 +159,10 @@ const ADVICE_REASONS = {
 // нет (решение владельца 07.11.2026: «Сегодня» без задач преподавателя), но и «сначала урок курса» при просрочке —
 // то самое «всё сделано», которое ТЗ запрещает. Строка несёт и метку раздела: без неё Haiku в первой реплике треть
 // раз советовала словами, а кнопку «Открыть» не ставила (замер 15.10.2026).
-export function adviceLine({ homework, occurrences, skillStats, planNext = null, now = Date.now() }) {
+// Повторение по расписанию (модель ученика, 8.3) — после шага плана: следующий шаг всегда из плана, а повторение —
+// когда на сегодня в плане ничего не осталось или плана нет. Раньше прочих правил рекомендации: срок повторения
+// вышел сегодня, а «слабый навык» и «давно без занятия» подождут.
+export function adviceLine({ homework, occurrences, skillStats, planNext = null, review = null, now = Date.now() }) {
   const summary = { weakest: skillStats ? levelSkillHighlights(rankLevelSkills(skillStats)).weakest : null }
   const rec = pickRecommendation({
     summary,
@@ -162,6 +172,7 @@ export function adviceLine({ homework, occurrences, skillStats, planNext = null,
   })
   const homeworkFirst = rec?.nav?.to === 'homework'
   if (planNext && !homeworkFirst) return `Совет сайта, что сделать сейчас: ${planNext.name} — ${planNext.reason} (метка [[OPEN ${planNext.id}]]).`
+  if (review && !homeworkFirst) return `Совет сайта, что сделать сейчас: ${review.name} — ${review.reason} (метка [[OPEN ${review.id}]]).`
   if (!rec) return null
   // nav карточки → раздел Луны: «Практика» с фильтром — свой раздел (grammar).
   const id = rec.nav.payload?.filter || rec.nav.to
@@ -185,7 +196,11 @@ async function loadTracker(profileId, now) {
   const mistakes = await loadTutorMistakes(profileId)
   // Память Луны (миграция 0022): факты ученика о себе, 30 дней.
   const facts = await loadFacts(profileId).catch(() => [])
-  return { raw, activity: buildStudentAppActivity(raw), notes, tutorSessions, mistakes, facts }
+  // Модель ученика (миграция 0024): темы и слова, ошибки заданий и время ответов за 30 дней.
+  const studyItems = await loadItems(profileId).catch(() => [])
+  const studyWrongs = await loadWrongAnswers(profileId).catch(() => [])
+  const studyTimes = await loadAnswerTimes(profileId).catch(() => [])
+  return { raw, activity: buildStudentAppActivity(raw), notes, tutorSessions, mistakes, facts, studyItems, studyWrongs, studyTimes }
 }
 
 /**
@@ -199,6 +214,14 @@ async function loadTracker(profileId, now) {
 export async function loadStudentContext(token, user, now = Date.now(), opts = {}) {
   if (!token || !user?.userId) return null
   const profileId = profileIdForUser(user.userId)
+  const base = await loadProfileText(token, user, profileId, now, opts)
+  // Темп — живой (свой кэш на PACE_TTL_MS): «3 ошибки подряд» через три минуты профиля уже не к месту.
+  const pace = isDbConfigured() ? await livePaceLine(profileId, token, now).catch(() => null) : null
+  const text = [base, pace].filter(Boolean).join('\n')
+  return text || null
+}
+
+async function loadProfileText(token, user, profileId, now, opts) {
   // Ключ кэша — с токенами или без: прогрев звонка (warmStudentContext) флага стенда не знает и не должен оставить
   // в кэше профиль без строки токенов для чата, который её ждёт.
   const key = opts.rewards ? `${profileId}|rewards` : profileId
@@ -252,11 +275,17 @@ async function buildStudentContext(token, profileId, now, user, { rewards = fals
     authGetJson('/mobile/ge/profile', token),
     rewards ? authGetJson('/cabinet/my-tokens', token) : Promise.resolve(null),
     isDbConfigured() && level ? loadLevelSkillStats(profileId, level) : Promise.resolve(null),
+    // Программа «Грамматики · игр» — карта тем модели ученика (общий кэш каталогов Луны, 5 минут).
+    catalogDeps.getJson('/mobile/grammar-games', token),
   ])
   const [
     homework, occurrences, levelProgress, tutorLimit, tracker, ieltsScores, sections,
-    assignments, lessonsSummary, gePlan, geProfile, tokens, levelStats,
+    assignments, lessonsSummary, gePlan, geProfile, tokens, levelStats, ggames,
   ] = results.map(settled)
+  const program = normalizeProgram(ggames)
+  const studyItems = tracker?.studyItems || []
+  // Темп считается отдельно и чаще (livePaceLine) — ему нужны темы и программа из этой сборки.
+  modelCache.set(profileId, { items: studyItems, program })
   // null — работы не загрузились (не «домашки нет»); задания с урока — как в разделе: их сбой работы не прячет.
   const homeworkList = Array.isArray(homework) ? homeworkCards(homework, Array.isArray(assignments) ? assignments : []) : null
   // общий итог навыков — из той же сборки, что карточка преподавателя (raw.stats): старт, пока заданий уровня мало
@@ -287,6 +316,8 @@ async function buildStudentContext(token, profileId, now, user, { rewards = fals
     // Цель — из профиля General English, как на баннере «Главной»; старая цель сайта (level_goal) — только если её нет.
     geGoalLine(geProfile) || goalLine(tracker?.activity?.goal),
     skillStats && level ? skillsLine(skillStats, level) : null,
+    topicsLine({ items: studyItems, program, level, now }),
+    reviewLine({ items: studyItems, program, now }),
     homeworkLine(homeworkList, now),
     scheduleLines(occurrences, now),
     lessonsPackageLine(lessonsSummary),
@@ -295,11 +326,13 @@ async function buildStudentContext(token, profileId, now, user, { rewards = fals
     tutorLine(tutorLimit, weekModules),
     weekModules ? ecosystemLine(weekModules) : null,
     tracker ? weekLine(tracker.activity?.days, now) : null,
+    tracker ? behaviorLine(behaviorOf(tracker.studyTimes)) : null,
     practiceLine(tracker?.activity?.practice, now),
     mistakesLine(tracker?.mistakes),
+    journalLine(buildJournal(tracker?.studyWrongs, { titleOf: (item) => programTitle(program, item) })),
     factsLine(tracker?.facts),
     ieltsLine(ieltsScores),
-    adviceLine({ homework: homeworkList, occurrences, skillStats, planNext: plan.next, now }),
+    adviceLine({ homework: homeworkList, occurrences, skillStats, planNext: plan.next, review: reviewAdvice({ items: studyItems, program, now }), now }),
     notesLines(notes, now),
   ].filter(Boolean)
 
@@ -307,6 +340,29 @@ async function buildStudentContext(token, profileId, now, user, { rewards = fals
   // скажет, что его не видит, вместо плана из одной строки о сбое.
   const useful = lines.filter((l) => !l.startsWith('Домашку загрузить не удалось'))
   return useful.length ? lines.join('\n') : null
+}
+
+// Модель ученика для темпа: темы и программа последней сборки профиля (их хватает на «следующая тема»), темп — кэш на
+// PACE_TTL_MS: окно и голос спрашивают профиль на каждую реплику, а ответы приходят пачками раз в полторы секунды.
+export const PACE_TTL_MS = 20 * 1000
+const modelCache = new Map() // profileId → { items, program }
+const paceCache = new Map() // profileId → { at, line }
+
+function programTitle(program, item) {
+  const id = /^ggame:(L[1-5]-\d{2})$/.exec(String(item || ''))?.[1]
+  return id ? program?.topics?.find((t) => t.id === id)?.title || null : null
+}
+
+/** Строка «Темп сейчас» по ответам последних 90 минут (pace.js) или null. */
+export async function livePaceLine(profileId, token, now = Date.now()) {
+  const hit = paceCache.get(profileId)
+  if (hit && now - hit.at < PACE_TTL_MS) return hit.line
+  const answers = await loadRecentAnswers(profileId)
+  let model = modelCache.get(profileId)
+  if (!model) model = { items: [], program: normalizeProgram(await catalogDeps.getJson('/mobile/grammar-games', token).catch(() => null)) }
+  const line = paceLine({ pace: paceOf(answers, now), program: model.program, items: model.items, now })
+  paceCache.set(profileId, { at: now, line })
+  return line
 }
 
 /** Забыть профиль ученика — записан новый факт памяти или ученик удалил его в Профиле: следующий ответ соберёт свежий. */
@@ -323,4 +379,6 @@ export function dropStudentContext(userId) {
 export function clearStudentContextCache() {
   cache.clear()
   inflight.clear()
+  modelCache.clear()
+  paceCache.clear()
 }

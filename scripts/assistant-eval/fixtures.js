@@ -6,6 +6,11 @@
 // настоящего loadStudentContext на тестовых строках БД (зонд этапа 1, 07.11.2026); остальные — он же с правкой
 // строк формата, домашки и пакета. Ученики выдуманные.
 
+// Модель ученика (ТЗ 8.1, 8.3): строки профиля — настоящими функциями сайта, чтобы зонд мерил то, что видит модель.
+import { journalLine, paceLine, reviewAdvice, reviewLine, topicsLine } from '../../src/lib/studentModel/lines.js'
+import { normalizeProgram } from '../../src/lib/studentModel/program.js'
+import { buildJournal } from '../../src/lib/studentModel/journal.js'
+
 export const TODAY = '2026-11-07'
 
 export const USER = { name: 'Айгерим', languageLevel: 'A2' }
@@ -191,6 +196,28 @@ She ___ to school by bus every day.
 [кнопка #5 «Сдать работу»]`,
   },
   // Урок посреди упражнения: ученик ушёл и вернулся (событие return_after_pause, кейс 2).
+  // «Грамматика · игры»: вопрос темы Past Simple, ответ ещё не выбран (кейсы методики M03, EM).
+  ggameTask: {
+    id: 'grammar-games',
+    text: `Грамматика · игры
+Past Simple (правильные и неправильные глаголы)
+Игра «Выбери форму» · 6 из 10
+She ___ (go) to school yesterday.
+[кнопка #1 «goed»]
+[кнопка #2 «went»]
+[кнопка #3 «gone»]`,
+  },
+  // «Грамматика · игры»: игра темы только что пройдена без ошибок (кейс методики M04 — «сложнее»).
+  ggameDone: {
+    id: 'grammar-games',
+    text: `Грамматика · игры
+Present Simple vs Present Continuous (+ частотность)
+Игра «Выбери форму» пройдена
+10 из 10 верно · ★★★
+[кнопка #1 «Ещё раз»]
+[кнопка #2 «Следующая игра»]
+[кнопка #3 «← Все темы»]`,
+  },
   lessonEx3: {
     id: 'kingdom-interior',
     text: `Урок 4 · A week without the internet
@@ -266,6 +293,59 @@ const DEMO_AFTER = [
   'Последние 7 дней: дней с занятиями 1, заданий 9 (верно с первой попытки 70%), Speaking Buddy 0 мин, тренажёры 0 мин.',
 ].join('\n')
 
+// Модель ученика на 07.11.2026: ступень L3, тема Past Simple слабая и пора повторить, 12 слов к повторению, журнал.
+const MODEL_NOW = Date.parse('2026-11-07T10:00:00Z')
+const MODEL_DAY = 24 * 60 * 60 * 1000
+const MODEL_PROGRAM = normalizeProgram({
+  levels: [{ id: 'L3', range: 'A2 → B1' }],
+  topics: [
+    ['L3-01', 'Question forms (порядок слов: aux + subject + verb)'],
+    ['L3-02', 'Present Simple vs Present Continuous (+ частотность)'],
+    ['L3-07', 'Past Simple (правильные и неправильные глаголы)'],
+    ['L3-08', 'Past Continuous + Past Simple (while / when)'],
+    ['L3-10', 'Articles — a / an, the, нулевой артикль'],
+    ['L3-13', 'Present Perfect vs Past Simple'],
+  ].map(([id, ru]) => ({ id, lv: 'L3', title: { ru } })),
+})
+const MODEL_ITEMS = [
+  { item: 'ggame:L3-02', kind: 'grammar', seen: 14, correct: 12, box: 2, dueAt: MODEL_NOW + 4 * MODEL_DAY, lastAt: MODEL_NOW - 3 * MODEL_DAY },
+  { item: 'ggame:L3-07', kind: 'grammar', seen: 11, correct: 6, box: 1, dueAt: MODEL_NOW - 3600_000, lastAt: MODEL_NOW - 3 * MODEL_DAY },
+  ...['decide', 'borrow', 'expensive', 'journey', 'weather', 'improve', 'enough', 'invite', 'forget', 'arrive', 'quiet', 'during'].map((w) => ({
+    item: `word:${w}`, kind: 'word', title: w, seen: 2, correct: 1, box: 0, dueAt: MODEL_NOW - 3600_000, lastAt: MODEL_NOW - MODEL_DAY,
+  })),
+]
+const MODEL_JOURNAL = journalLine(buildJournal([
+  { source: 'ggame', item: 'ggame:L3-07', example: 'She ___ (buy) a new phone last week. → bought', at: MODEL_NOW - 3 * MODEL_DAY },
+  { source: 'ggame', item: 'ggame:L3-07', example: 'We ___ (see) a film yesterday. → saw', at: MODEL_NOW - 3 * MODEL_DAY - 60_000 },
+  { source: 'ggame', item: 'ggame:L3-07', at: MODEL_NOW - 4 * MODEL_DAY },
+  { source: 'lesson', item: 'lesson:a2:12', title: 'A2 · A day out', example: "They ___ (not / like) the museum. → didn't like", at: MODEL_NOW - 2 * MODEL_DAY },
+  { source: 'vocab', item: 'word:borrow', title: 'borrow', at: MODEL_NOW - MODEL_DAY },
+], { titleOf: (item) => MODEL_PROGRAM.topics.find((t) => `ggame:${t.id}` === item)?.title || null }))
+const MODEL_LINES = [
+  topicsLine({ items: MODEL_ITEMS, program: MODEL_PROGRAM, level: 'A2', now: MODEL_NOW }),
+  reviewLine({ items: MODEL_ITEMS, program: MODEL_PROGRAM, now: MODEL_NOW }),
+  MODEL_JOURNAL,
+]
+// Строки модели — после «Навыков», как их кладёт studentContext.js; журнал — после ошибок Speaking Buddy.
+function withModel(ctx, pace = null) {
+  const lines = ctx.split('\n')
+  const at = lines.findIndex((l) => l.startsWith('Навыки'))
+  lines.splice(at + 1, 0, MODEL_LINES[0], MODEL_LINES[1])
+  const sb = lines.findIndex((l) => l.startsWith('Ошибки из разговоров'))
+  lines.splice(sb + 1, 0, MODEL_LINES[2])
+  if (pace) lines.push(paceLine({ pace, program: MODEL_PROGRAM, items: MODEL_ITEMS, now: MODEL_NOW }))
+  return lines.join('\n')
+}
+const MODEL_ADVICE = reviewAdvice({ items: MODEL_ITEMS, program: MODEL_PROGRAM, now: MODEL_NOW })
+const PACE_STREAK = { verdict: 'easier', why: 'streak', item: 'ggame:L3-07', n: 9, accuracy: 0.44, streak: 3 }
+const PACE_LOW = { verdict: 'easier', why: 'low', item: 'ggame:L3-07', n: 14, accuracy: 0.57 }
+const PACE_HIGH = { verdict: 'harder', why: 'fast', item: 'ggame:L3-02', n: 10, accuracy: 1, streak: 10 }
+// Self Study без домашки и без шага плана на сегодня: «Совет сайта» — повторение по расписанию (adviceLine).
+const SELF_DONE = withModel(SELF)
+  .replace(/^План на сегодня.*$/m, 'План на сегодня (тот же, что блок «Сегодня» на Главной): всё сделано — урок курса 30 мин, разговор со Speaking Buddy 15 мин, слова в «Словаре» 10 мин. Сделано 55 из 55 мин.')
+  // «Совет сайта» — тем же правилом, что adviceLine в studentContext.js: шага плана нет, повторение по расписанию.
+  .replace(/^Совет сайта.*$/m, `Совет сайта, что сделать сейчас: ${MODEL_ADVICE.name} — ${MODEL_ADVICE.reason} (метка [[OPEN ${MODEL_ADVICE.id}]]).`)
+
 export const PROFILES = {
   teacher: TEACHER,
   many: MANY,
@@ -278,4 +358,10 @@ export const PROFILES = {
   newcomer: [FORMAT.teacher, 'Уровень курса: не определён — теста уровня ещё не было.', 'Навыки: мало данных.'].join('\n'),
   // Сразу после теста (кейс 35): уровень есть, цель и срок из анкеты, план собран.
   afterTest: TEACHER.replace('пройдено 18%', 'пройдено 0%'),
+  // Модель ученика (кейсы методики M*): строки тем, повторения и журнала; темп — по кейсу.
+  teacherModel: withModel(TEACHER),
+  modelStreak: withModel(TEACHER, PACE_STREAK),
+  modelLow: withModel(TEACHER, PACE_LOW),
+  modelHigh: withModel(TEACHER, PACE_HIGH),
+  selfDone: SELF_DONE,
 }

@@ -224,3 +224,39 @@ describe('будний день вечером', () => {
     expect(createProactiveTracker().arrival({ now: at(19), summary: ready() }).params.wd).toBe(false)
   })
 })
+
+// Методика (ТЗ v2.0, 8.3): «после 25–30 минут без перерыва предложить паузу».
+describe('подряд без перерыва (long_session)', () => {
+  it('25 минут действий без перерыва дольше 5 минут — пауза; после предложения — ещё через 25', () => {
+    const { t } = tracker()
+    let ev = null
+    for (let m = 0; m <= 24; m += 2) ev = t.activity(at(10, m))
+    expect(ev).toBeNull()
+    ev = t.activity(at(10, 25))
+    expect(ev).toEqual({ type: 'long_session', params: { run: 25 } })
+    t.shown(ev, at(10, 25))
+    expect(t.activity(at(10, 27))).toBeNull()
+    for (let m = 29; m <= 49; m += 4) t.activity(at(10, m))
+    expect(t.activity(at(10, 50))).toEqual({ type: 'long_session', params: { run: 50 } })
+  })
+
+  it('перерыв 5+ минут без действий или взятый перерыв — отсчёт сначала', () => {
+    const { t } = tracker()
+    for (let m = 0; m <= 20; m += 4) t.activity(at(10, m))
+    // 6 минут без действий
+    expect(t.activity(at(10, 26))).toBeNull()
+    expect(t.activity(at(10, 50))).toBeNull()
+    const b = tracker().t
+    for (let m = 0; m <= 24; m += 4) b.activity(at(11, m))
+    b.breakStarted()
+    expect(b.activity(at(11, 26))).toBeNull()
+  })
+
+  it('пауза — только при подсказках «часто»; лимит 3 минут между сообщениями действует', () => {
+    expect(levelAllows('often', 'long_session')).toBe(true)
+    expect(levelAllows('sometimes', 'long_session')).toBe(false)
+    const { t } = tracker({}, { lastAt: at(10, 24) })
+    expect(t.allow({ type: 'long_session', params: { run: 25 } }, { now: at(10, 25) })).toBe(false)
+    expect(t.allow({ type: 'long_session', params: { run: 28 } }, { now: at(10, 28) })).toBe(true)
+  })
+})

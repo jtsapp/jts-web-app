@@ -26,6 +26,7 @@ import { ieltsScope, practiceCard, progressResults, sortIeltsSets } from './voca
 import VocabPractice from './vocab/VocabPractice.jsx'
 import { practiceCardsOf } from './vocab/practiceCards.js'
 import { topVocabMisses } from './vocab/vocabMisses.js'
+import DueReview, { useDueWords } from './vocab/DueReview.jsx'
 import { VOCAB_LEARNED_EVENT, VOCAB_MISSES_EVENT } from '../practice/practiceKeys.js'
 import { learnedCount, learnedKeys, learnedInCards, vocabKey, recordVocabLearned, forgetVocabLearned } from './vocab/vocabLearned.js'
 import { IconSpeaker, IconPlay, IconRefresh, IconTrash, IconX } from './vocab/VocabIcons.jsx'
@@ -128,6 +129,8 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   const [practiceScopeId, setPracticeScopeId] = useState(null)
   const [toast, setToast] = useState('')
   const [topMiss, setTopMiss] = useState([])
+  // Слова к повторению по расписанию (модель ученика): перечитываются, когда ученик вернулся на главную словаря.
+  const dueWords = useDueWords(token, screen === 'home' ? `home:${practiceCards ? practiceCards.length : 0}` : null)
   const [learnedTick, setLearnedTick] = useState(0)
   const scopeReq = useRef(0)
   // IELTS Vocabulary: наборы из банка IELTS и их прогресс на сервере — только у учеников IELTS (аккаунт IELTS или
@@ -562,6 +565,8 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       <p className="vp-lead">{t('vocab.home.pickWay')}</p>
       {indexLoading && <p className="vp-state">…</p>}
       {indexError && !levels.length && !ieltsSets.length && !indexLoading && <p className="vp-state">{t('vocab.home.empty')}</p>}
+
+      <DueReview t={t} vlang={vlang} words={dueWords} speak={speak} onStart={(cards) => startPractice(cards, t('vocab.home.due'), 'home')} />
 
       <IeltsShelf
         t={t}
