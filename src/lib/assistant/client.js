@@ -20,7 +20,7 @@ export class AssistantError extends Error {
  *           onDelta: (text: string) => void, signal?: AbortSignal,
  *           onResponse?: (r: {serverTiming: string}) => void }} args
  *   onResponse — ответ пошёл: заголовок Server-Timing роута (замеры звонка Луне)
- * @returns {Promise<{ text: string, offtopic: boolean, reported: boolean,
+ * @returns {Promise<{ text: string, offtopic: boolean, reported: boolean, model: string|null,
  *                     action: {kind: 'open'|'tour'|'click', target: string, now: boolean, label?: string}|null }>}
  *   весь видимый ответ; offtopic — сервер ответил стандартным отказом или засчитал «не по теме»
  *   отказ самой модели (метка в конце ответа — служебный хвост [[ASST_OFFTOPIC]]);
@@ -98,5 +98,12 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
   }
   // Отказ «не по теме» бывает и хвостом стрима: модель поставила метку в конце своего ответа (actions.js).
   const off = offtopic || flag.offtopic
-  return { text: full, offtopic: off, reported: reportedHeader || flag.reported, action: off ? null : flag.action }
+  return {
+    text: full,
+    offtopic: off,
+    reported: reportedHeader || flag.reported,
+    action: off ? null : flag.action,
+    // какая модель ответила — для журнала оценок (ratingClient.js)
+    model: res.headers.get('x-assistant-model') || null,
+  }
 }

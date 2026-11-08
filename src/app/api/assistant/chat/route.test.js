@@ -218,11 +218,16 @@ describe('POST /api/assistant/chat', () => {
     const ask = (userId, content, extra = {}) => ({ ...question(userId), messages: [{ role: 'user', content }], screen: { id: 'home', text: 'Главная' }, ...extra })
 
     it('вопрос учителю — Sonnet 5.5 с effort учителя, справка по сайту — Haiku 5.5', async () => {
-      await (await post(ask(3101, 'Объясни present perfect'))).text()
+      let res = await post(ask(3101, 'Объясни present perfect'))
+      await res.text()
       expect(calls.at(-1)).toMatchObject({ model: 'claude-sonnet-5-5', effort: 'low' })
-      await (await post(ask(3102, 'Где мои домашки?'))).text()
+      // журнал оценок (#877) пишет модель из заголовка — она должна совпадать с той, что ответила
+      expect(res.headers.get('x-assistant-model')).toBe('claude-sonnet-5-5')
+      res = await post(ask(3102, 'Где мои домашки?'))
+      await res.text()
       expect(calls.at(-1).model).toBe('claude-haiku-5-5')
       expect(calls.at(-1).effort).toBeUndefined()
+      expect(res.headers.get('x-assistant-model')).toBe('claude-haiku-5-5')
     })
 
     it('в живом звонке и на служебном ходе — Haiku', async () => {
@@ -244,6 +249,8 @@ describe('POST /api/assistant/chat', () => {
       }
       let res = await post(ask(3105, 'Объясни present perfect'))
       expect(res.status).toBe(200)
+      // ответила Haiku — в журнал оценок уходит она, а не выбранная сначала Sonnet
+      expect(res.headers.get('x-assistant-model')).toBe('claude-haiku-5-5')
       expect(await res.text()).toBe('Present Perfect — это…')
       expect(calls.slice(-2).map((c) => c.model)).toEqual(['claude-sonnet-5-5', 'claude-haiku-5-5'])
       // отказ классификатора до первого слова: поток кончился пустым
