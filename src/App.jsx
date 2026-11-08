@@ -42,6 +42,8 @@ import { isTourSeen, syncTourMarks, tourMarksReady, useTourMarks } from './lib/t
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
 import { useStudentSections, refreshStudentSections } from './lib/studentSections.js'
+// Формат ученика для готовых вопросов Луны (chips.js) — из тех же разделов, что у меню.
+import { learnerFormat } from './lib/assistant/format.js'
 import StudentSectionGate from './components/StudentSectionGate.jsx'
 import { useStudentExams } from './lib/useStudentExams.js'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile, saveGeProfile } from './api.js'
@@ -2182,7 +2184,7 @@ export default function App() {
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && <LessonFeedbackPrompt key={userIdFromToken(token)} token={token} enabled={isLegalDocumentsScreen(view) && !['live-lesson', 'lesson-workspace'].includes(view)} />}</OptionalPart>
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && !isStudentSectionHidden('my-teacher') && <MatchingPopups token={token} screen={view} onNav={handleNav} />}</OptionalPart>
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && (
-        <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
+        <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen format={learnerFormat({ demo: isDemoAccount, sections: sectionAccess?.status === 'ready' ? sectionAccess : null })} />
       )}</OptionalPart>
     </MobileTabContext.Provider>
     </LegalDocumentsGate>

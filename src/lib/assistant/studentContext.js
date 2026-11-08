@@ -39,6 +39,7 @@ import { listIeltsScores } from '../db/ielts.js'
 import { destinationName, destinationOf } from './destinations.js'
 import { pickRecommendation } from './recommend.js'
 import { checkNotes, goalLine, mistakesLine, notesLines, practiceLine, weekLine } from './tracker.js'
+import { formatLine } from './format.js'
 
 export const CONTEXT_TTL_MS = 3 * 60 * 1000
 // Дольше этого протухший профиль ответом не служит — вопрос ждёт свежий.
@@ -133,7 +134,8 @@ function tutorLine(limit, ecosystemWeek) {
     if (limit.totalLimitSeconds) parts.push(`пул тарифа ${Math.round(limit.totalLimitSeconds / 60)} мин`)
   }
   const weekMin = ecosystemWeek?.ai_tutor?.actualMinutes
-  if (Number.isFinite(weekMin)) parts.push(`на этой неделе уже позанимался ${weekMin} мин`)
+  // Без рода («позанимался»): пол ученика неизвестен, а модель повторяет слова профиля.
+  if (Number.isFinite(weekMin)) parts.push(`на этой неделе занятий ${weekMin} мин`)
   if (!parts.length) return null
   return `Speaking Buddy: ${parts.join(', ')}.`
 }
@@ -213,10 +215,10 @@ export async function loadStudentContext(token, user, now = Date.now()) {
   const age = cached ? now - cached.at : Infinity
   if (age < CONTEXT_TTL_MS) return cached.text
   if (age < CONTEXT_STALE_MS) {
-    refresh(token, profileId, now).catch(() => {})
+    refresh(token, profileId, now, user).catch(() => {})
     return cached.text
   }
-  return refresh(token, profileId, now)
+  return refresh(token, profileId, now, user)
 }
 
 /** Начать сборку профиля заранее и не ждать её (звонок Луне — при выдаче токена). */
@@ -224,10 +226,10 @@ export function warmStudentContext(token, user) {
   loadStudentContext(token, user).catch(() => {})
 }
 
-function refresh(token, profileId, now) {
+function refresh(token, profileId, now, user) {
   let pending = inflight.get(profileId)
   if (!pending) {
-    pending = buildStudentContext(token, profileId, now)
+    pending = buildStudentContext(token, profileId, now, user)
       .then((text) => {
         cache.set(profileId, { at: now, text })
         return text
@@ -238,7 +240,7 @@ function refresh(token, profileId, now) {
   return pending
 }
 
-async function buildStudentContext(token, profileId, now) {
+async function buildStudentContext(token, profileId, now, user) {
   const results = await Promise.allSettled([
     authGetJson('/admin/homework/my', token),
     authGetJson('/admin/lessons/occurrences', token),
@@ -246,8 +248,10 @@ async function buildStudentContext(token, profileId, now) {
     fetchTutorLimitOverride(token),
     isDbConfigured() ? loadTracker(profileId, now) : Promise.resolve(null),
     isDbConfigured() ? listIeltsScores(profileId, IELTS_HISTORY_LIMIT) : Promise.resolve(null),
+    // Формат — та же ручка, что у меню (format.js); демо уже известно из /user/me токена.
+    user?.isDemoAccount ? Promise.resolve(null) : authGetJson('/cabinet/my-sections', token),
   ])
-  const [homework, occurrences, levelProgress, tutorLimit, tracker, ieltsScores] = results.map(settled)
+  const [homework, occurrences, levelProgress, tutorLimit, tracker, ieltsScores, sections] = results.map(settled)
   const skillStats = tracker?.raw?.stats || null
   const weekModules = tracker?.activity?.week?.modules || null
 
@@ -265,6 +269,7 @@ async function buildStudentContext(token, profileId, now) {
   }
 
   const lines = [
+    formatLine({ demo: Boolean(user?.isDemoAccount), sections }),
     levelProgress?.level
       ? `Уровень курса: ${levelProgress.level}${levelProgress.next ? `, цель ${levelProgress.next}` : ''}${
           typeof levelProgress.percent === 'number' ? `, пройдено ${levelProgress.percent}%` : ''

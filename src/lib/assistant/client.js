@@ -1,6 +1,7 @@
 // Клиент помощника: один вопрос → потоковый ответ кусками через onDelta.
 
 import { createServiceTailFilter } from './actions.js'
+import { areRewardsEnabled } from '../../config.js'
 
 export class AssistantError extends Error {
   /** @param {'auth'|'rate'|'cooldown'|'unavailable'|'network'} kind */
@@ -39,6 +40,8 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
         voice: Boolean(voice),
         // вопрос из звонка Луне — комната звонка: роут даст ему квоту звонка (callUsage.js)
         ...(call ? { call } : {}),
+        // токены и призы включены на этом стенде — тогда в базе знаний Луны их статья (knowledge.js)
+        rewards: areRewardsEnabled(),
       }),
       signal,
     })

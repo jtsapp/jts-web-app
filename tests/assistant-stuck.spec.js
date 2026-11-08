@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 import { unlockStep } from './helpers/course-steps.js'
 
 // «Застряли? Подсказать?» (lib/assistant/stuck.js, useStuckWatch.js) на настоящем
@@ -17,6 +18,8 @@ async function setup(page) {
     // Вводное облачко «Я Луна…» — для тех, кто ни разу не открывал окно; здесь оно мешало бы.
     localStorage.setItem('jts_assistant_met', '1')
   })
+  // Замки кабинета (документы, разделы тарифа) — иначе они встают поверх экрана (helpers/login.js).
+  await mockGates(page)
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 7, name: 'Айгерім', role: 'STUDENT', phone: '77001234567', languageLevel: 'A1' } })),
   )

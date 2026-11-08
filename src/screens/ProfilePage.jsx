@@ -388,9 +388,10 @@ export default function ProfilePage({
     { key: 'custom', icon: <PfGiftIcon />, title: t('profile.customization'), onClick: () => setCustomOpen(true) },
   ]
 
-  const openSupport = () => {
-    window.location.href = 'mailto:support@justtostudy.kz'
-  }
+  // «Служба поддержки» — страница «Контакты и реквизиты» (почта, телефон, WhatsApp школы). Раньше здесь было
+  // письмо на support@justtostudy.kz, а такого адреса у школы нет (аудит ТЗ v2.0, 06.11.2026). Жалобы — в Feedback.
+  // Адрес — как у infoUrl (landing/info.js), без импорта: модуль тянет тексты всех страниц покупателя (30 КБ).
+  const openSupport = () => window.open(`/info/contacts${lang === 'kk' ? '?lang=kz' : ''}`, '_blank', 'noopener')
   const openDoc = (kind) => window.open(legalDocumentUrl(kind, lang), '_blank')
 
   const settings = [

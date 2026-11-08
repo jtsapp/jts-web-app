@@ -193,6 +193,13 @@ export const DESTINATIONS = [
     id: 'homework', nav: 'homework', screen: 'homework',
     name: { ru: 'Домашняя работа', kk: 'Үй жұмысы', en: 'Homework' },
   },
+  // Отзывы и жалобы (аудит ТЗ v2.0, 06.11.2026: на «хочу пожаловаться» Луна слала на
+  // несуществующий support@, о разделе не знала). На проде раздел открыт ученикам.
+  {
+    id: 'feedback', nav: 'feedback', screen: 'feedback',
+    name: { ru: 'Feedback', kk: 'Feedback', en: 'Feedback' },
+    about: 'отзывы и жалобы: хороший отзыв о преподавателе, жалоба на преподавателя, менеджера или платформу',
+  },
   {
     id: 'profile', nav: 'profile', screen: 'profile',
     name: { ru: 'Профиль', kk: 'Профиль', en: 'Profile' },

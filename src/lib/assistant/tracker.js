@@ -255,7 +255,7 @@ export function practiceLine(areas, now = Date.now()) {
     ;(days > STALE_SECTION_DAYS ? stale : fresh).push(`${name} (${ago(t, now)})`)
   }
   const parts = []
-  if (stale.length) parts.push(`давно не открывал — ${stale.slice(0, 4).join(', ')}`)
+  if (stale.length) parts.push(`давно не открыты — ${stale.slice(0, 4).join(', ')}`)
   if (fresh.length) parts.push(`недавно — ${fresh.slice(0, 4).join(', ')}`)
   return parts.length ? `Разделы Практики, где ученик уже бывал: ${parts.join('; ')}.` : null
 }
