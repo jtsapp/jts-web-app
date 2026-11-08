@@ -20,7 +20,7 @@ const api = vi.hoisted(() => ({
   getCurrentUser: vi.fn(async () => ({})),
 }))
 vi.mock('../api.js', () => api)
-vi.mock('../practice/skillStats.js', () => ({ readLocalSkillStats: () => null, loadSkillStatsRemote: vi.fn(async () => null) }))
+vi.mock('../practice/skillStats.js', () => ({ readLocalSkillStats: () => null, loadSkillStatsRemote: vi.fn(async () => null), readLocalLevelSkillStats: () => null, loadLevelSkillStatsRemote: vi.fn(async () => null) }))
 
 import ProfilePage from './ProfilePage.jsx'
 

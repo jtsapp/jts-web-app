@@ -159,6 +159,8 @@ export default function ProfilePage({
   const lunaLevel = useProactiveLevel()
   // «Память Луны» (ТЗ v2.0, 8.1) — только у ученика: у преподавателя Луны нет.
   const lunaMemory = useLunaMemory(token, !isTeacher(token))
+  // язык разборов SAT — бывший шаг «время на занятия» (ТЗ SAT 21.10, задача 3.1): блок есть только у начавших SAT
+  const [satLang, setSatLang] = useState(null)
   const [editOpen, setEditOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
@@ -662,6 +664,24 @@ export default function ProfilePage({
             <SettingRow key={it.key} item={it} chip last={i === personalization.length - 1} />
           ))}
         </div>
+
+        {/* «Язык объяснений» SAT — карточкой с тремя вариантами прямо на странице (17:10151), а не строкой с окном:
+            выбор из трёх виден сразу, и подпись объясняет, что вопросы останутся английскими */}
+        {satLang && (
+          <section className="pf-card pf-satlang">
+            <h2 id="pf-satlang-title">{t('profile.satExplain')}</h2>
+            <p>{t('profile.satExplainSub')}</p>
+            <div className="pf-satlang__opts" role="radiogroup" aria-labelledby="pf-satlang-title">
+              {SAT_EXPLAIN.map((o) => (
+                <button key={o.code} type="button" role="radio" aria-checked={o.code === satLang} lang={o.code}
+                  className={`pf-satlang__opt ${o.code === satLang ? 'is-on' : ''}`} onClick={() => pickSatLang(o.code)}>
+                  <span><b>{o.label}</b><small>{o.sub}</small></span>
+                  {o.code === satLang ? <CheckCircleIcon size={22} /> : <RadioOffIcon size={22} />}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {lunaMemory.status === 'ready' && (
           <>
