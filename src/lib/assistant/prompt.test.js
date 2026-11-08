@@ -123,7 +123,7 @@ describe('контекст вопроса', () => {
     const turn = (user) => buildTurns({ messages: [{ role: 'user', content: 'что мне делать?' }], user, screen: { id: 'home', text: '' }, lang: 'ru' }).at(-1).content
     expect(turn({ gender: 'FEMALE' })).toMatch(/женский пол.*«ты выбрала»/)
     expect(turn({ gender: 'MALE' })).toMatch(/мужской пол.*«ты выбрал»/)
-    expect(turn({})).toMatch(/на «ты» и без рода/)
+    expect(turn({})).toMatch(/на «ты». О прошлом и состоянии ученика пиши через «у тебя»/)
   })
 
   // ТЗ v2.0, 5.2: «20» в ответ на её «Сколько есть: 10, 20 или 30 минут?» — то же указание пересчёта, что у «мало времени».
