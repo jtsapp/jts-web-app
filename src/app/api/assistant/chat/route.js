@@ -211,7 +211,7 @@ export async function POST(request) {
         verdict = classifyStart(head)
       }
     }
-    return { gen, head, verdict, finished }
+    return { gen, head, verdict, finished, model }
   }
 
   const modelAt = performance.now()
@@ -231,14 +231,15 @@ export async function POST(request) {
     limiter.refund(key)
     return json(502, { error: 'model_failed' })
   }
-  const { gen, head, finished } = reply
+  // answeredModel — модель, которая на самом деле ответила: у вопроса учителю это Sonnet, а после её сбоя — Haiku.
+  const { gen, head, finished, model: answeredModel } = reply
   let { verdict } = reply
 
   marks.model = since(modelAt)
   marks.total = since(startedAt)
   // x-assistant-model — какая модель ответила: окно кладёт её в журнал оценок (/api/assistant/rating, ТЗ 8.5).
   // Заголовком, а не хвостом стрима: тело ответа и его тесты не меняются.
-  const timingHeaders = { 'server-timing': serverTiming(marks), 'x-assistant-model': MODEL }
+  const timingHeaders = { 'server-timing': serverTiming(marks), 'x-assistant-model': answeredModel }
 
   // Модель закончила на обрывке метки («[[OFF») — ответа по теме тут нет.
   if (finished && verdict === 'undecided' && head.trim()) verdict = 'offtopic'
