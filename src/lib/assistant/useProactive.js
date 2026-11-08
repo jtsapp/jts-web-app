@@ -44,6 +44,10 @@ const WAIT_ARRIVAL_MS = 10 * 60_000
 const WAIT_OTHER_MS = 3 * 60_000
 // Знакомство и итог теста ждут «Главную» дольше: тест и выбор формата идут своими экранами.
 const WAIT_HOME_MS = 30 * 60_000
+// Пауза после 25 минут (long_session) ждёт подходящего момента до 30-й минуты — «после 25–30 минут» ТЗ 8.3.
+const WAIT_LONG_MS = 5 * 60_000
+// Подряд считается по действиям, но писать отметку на каждое нажатие незачем.
+const ACT_EVERY_MS = 15_000
 
 // Хранилища трекера: localStorage — по аккаунту на устройстве, sessionStorage — на вкладку (proactive.js, шапка).
 function webStore(kind, key) {
@@ -129,7 +133,10 @@ export function useProactive({ token, owner, screen, enabled, demo = false, newc
       const cur = pendingRef.current
       const t = now()
       if (cur && t < cur.until && ARRIVAL_EVENTS.has(cur.ev.type) && !ARRIVAL_EVENTS.has(ev.type)) return
-      pendingRef.current = { ev, until: t + (HOME_ONLY.has(ev.type) ? WAIT_HOME_MS : ARRIVAL_EVENTS.has(ev.type) ? WAIT_ARRIVAL_MS : WAIT_OTHER_MS) }
+      const wait = HOME_ONLY.has(ev.type) ? WAIT_HOME_MS : ARRIVAL_EVENTS.has(ev.type) ? WAIT_ARRIVAL_MS : ev.type === 'long_session' ? WAIT_LONG_MS : WAIT_OTHER_MS
+      // Пауза, которая уже ждёт в очереди, своего срока не продлевает: каждое нажатие снова отдаёт то же событие.
+      if (ev.type === 'long_session' && cur?.ev.type === 'long_session' && t < cur.until) return
+      pendingRef.current = { ev, until: t + wait }
     },
     [now],
   )
@@ -213,16 +220,25 @@ export function useProactive({ token, owner, screen, enabled, demo = false, newc
       lastSeen = t
       tracker.seen(t)
     }
+    // Подряд без перерыва (long_session, методика ТЗ 8.3) — только по действиям: открытая вкладка без нажатий — не учёба.
+    let lastAct = 0
+    const act = () => {
+      mark()
+      const t = now()
+      if (!arrivedRef.current || document.hidden || live.current.breakEndsAt || t - lastAct < ACT_EVERY_MS) return
+      lastAct = t
+      enqueue(tracker.activity(t))
+    }
     const id = setInterval(mark, SEEN_EVERY_MS)
     const opts2 = { capture: true, passive: true }
-    document.addEventListener('pointerdown', mark, opts2)
-    document.addEventListener('keydown', mark, opts2)
+    document.addEventListener('pointerdown', act, opts2)
+    document.addEventListener('keydown', act, opts2)
     return () => {
       clearInterval(id)
-      document.removeEventListener('pointerdown', mark, opts2)
-      document.removeEventListener('keydown', mark, opts2)
+      document.removeEventListener('pointerdown', act, opts2)
+      document.removeEventListener('keydown', act, opts2)
     }
-  }, [active, tracker, now])
+  }, [active, tracker, now, enqueue])
 
   // Переход на экран: дорисовался — смотрим, есть ли задание; на «Главной» и не чаще PLAN_EVERY_MS — свежий план.
   useEffect(() => {
@@ -326,9 +342,11 @@ export function useProactive({ token, owner, screen, enabled, demo = false, newc
       if (breakKey) writeBreak(breakKey, until)
       // Своё «перерыв» снимает событие в очереди: оно о том, что было до.
       pendingRef.current = null
+      // Перерыв — конец подхода: отсчёт «25 минут подряд» после него сначала.
+      tracker?.breakStarted()
       setBreakEndsAt(until)
     },
-    [breakKey, now],
+    [breakKey, now, tracker],
   )
   // Закончить раньше — перерыв окончен сразу, со следующим шагом.
   const endBreak = useCallback(() => {

@@ -15,7 +15,9 @@
 //   приходит только их число — тостом прототипа), уровень — cfg.level по
 //   профилю, язык — приложения (api.setLang), звук — настройка устройства
 //   (api.setSound); localStorage прототипа и «режим преподавателя» убраны;
-// - HOOK.mist не подключён: ошибки не сохраняются (решение 25.10.2026);
+// - HOOK.mist прототипа — cfg.onMistake(тема, вопрос, верный ответ): с 08.11.2026 ошибка идёт в журнал модели ученика
+//   Луны (ТЗ v2.0, 8.1; 30 дней, только пример «вопрос → ответ»). Решение 25.10.2026 «ошибки игр не сохраняются»
+//   этим пересмотрено только для журнала: своего списка ошибок у игр по-прежнему нет;
 //   HOOK.popBtn — своя кнопка «В словарь» (cfg.addWord);
 // - голос — cfg.speak (Soniox), а не speechSynthesis; автоозвучка выключена,
 //   как в прототипе;
@@ -38,7 +40,7 @@ import { esc, wrapEN, lookUp, norm, trail, sentOf } from './text.js'
  * @param {object} cfg  см. docs/superpowers/plans/2026-10-25-grammar-games-web.md, Task 4
  */
 export function mountGrammarGames(root, cfg) {
-const { index, loadTopic, loadGloss, onResult = () => null, onAnswer = () => {}, speak = () => {}, stopVoice = () => {}, addWord = null, asset, initialTopic = null, scrollTop = () => {} } = cfg
+const { index, loadTopic, loadGloss, onResult = () => null, onAnswer = () => {}, onMistake = () => {}, speak = () => {}, stopVoice = () => {}, addWord = null, asset, initialTopic = null, scrollTop = () => {} } = cfg
 const doc = root.ownerDocument
 const SR = root.getRootNode()
 const ac = new AbortController()
@@ -138,9 +140,10 @@ const topicStars=tp=>gamesOf(tp).reduce((a,g)=>a+starsOf(tp.id,g),0);
 const topicMax=tp=>gamesOf(tp).length*3;
 function unlocked(){return true;}
 function starStr(n,max=3){let h='';for(let i=0;i<max;i++)h+=`<span class="${i<n?'y':''}">★</span>`;return h;}
-// Решение 25.10.2026: ошибки игр нигде не сохраняются и никуда не уходят — крючок прототипа пустой.
-function mist(){}
-function answered(ok){try{onAnswer(!!ok);}catch{/* рейтинг навыка — не повод ронять игру */}}
+// Крючок ошибки прототипа: (вопрос, варианты, верный) → журнал модели ученика (см. шапку). Тема — открытая сейчас.
+function mist(q,opts,right){try{onMistake(G.topic,String(q??''),String(right??''));}catch{/* журнал — не повод ронять игру */}}
+// Тема — вторым аргументом: по ней модель ученика ведёт карту тем и повторение (рейтинг навыка её не читает).
+function answered(ok){try{onAnswer(!!ok,G.topic);}catch{/* рейтинг навыка — не повод ронять игру */}}
 const plain=html=>{const d=doc.createElement('div');d.innerHTML=html;return d.textContent.replace(/\s+/g,' ').trim();};
 // Кнопка разметки: имя действия и аргументы в data-*, обработчик один — на корне (см. шапку файла).
 const act=(name,...args)=>`data-act="${name}"${args.length?` data-args="${esc(JSON.stringify(args))}"`:''}`;

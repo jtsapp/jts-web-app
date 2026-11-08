@@ -9,6 +9,7 @@
 // «+N% за неделю» от чужого процента.
 import { clearLocalLessonProgress } from '../learning/lessonProgress.js'
 import { clearLocalSkillStats } from '../practice/skillStats.js'
+import { clearStudyLog } from '../practice/studyLog.js'
 import { clearWeeklySnapshot } from './levelProgress.js'
 import { clearLocalPractice } from '../practice/practiceSync.js'
 import { clearCatalogStorage } from './catalogCacheKeys.js'
@@ -16,6 +17,8 @@ import { clearCatalogStorage } from './catalogCacheKeys.js'
 export function clearAccountLeftovers() {
   clearLocalLessonProgress()
   clearLocalSkillStats()
+  // Ответы модели ученика, ещё не ушедшие на сервер: после выхода их отправил бы следующий вошедший.
+  clearStudyLog()
   clearWeeklySnapshot()
   // Кэш каталогов — копия сервера, ключи по ученику: после выхода он только
   // занимал бы общую квоту localStorage (на ней же токен и черновики домашки).

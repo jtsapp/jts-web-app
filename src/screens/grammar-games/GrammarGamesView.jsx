@@ -18,10 +18,25 @@ import { speakGrammar, stopGrammar } from '../../practice/grammar-games/voice.js
 import { GRAMMAR_GAMES_SOUND_KEY } from '../../practice/practiceKeys.js'
 import { ownerOf } from '../../practice/progressStore.js'
 import { recordSkill } from '../../practice/skillStats.js'
+import { attachStudyExample, recordStudy } from '../../practice/studyLog.js'
 import { saveReadingKeyword } from '../../practice/reading/saveKeyword.js'
 import { useGrammarGamesData } from './useGrammarGamesData.js'
 
 const ASSET = { img: mascotUrl, emoji: emojiUrl, emojiList: EMOJI_LIST }
+
+// Название темы для журнала модели ученика — из шапок списка (как у движка: title по языкам или строкой).
+function topicTitle(index, id) {
+  const tp = (index?.topics || []).find((x) => x?.id === id)
+  const tt = tp?.title
+  return (typeof tt === 'object' ? tt?.ru || tt?.en : tt) || null
+}
+
+// Пример ошибки для журнала: «вопрос → верный ответ» без разметки (вопрос у части игр — html прототипа).
+function mistakeExample(q, right) {
+  const text = String(q || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  const ans = String(right || '').trim()
+  return text && ans ? `${text} → ${ans}` : text || ans || null
+}
 
 // Раздел открывается только после гидратации (экран — из state-машины App, вкладка — по клику или из сессии),
 // поэтому настройку устройства можно прочитать сразу при первом рендере.
@@ -71,7 +86,14 @@ export default function GrammarGamesView({ token, userLevel, initialTopic = null
       loadTopic,
       loadGloss,
       onResult: (topicId, game, stars) => submit(topicId, game, stars),
-      onAnswer: (ok) => recordSkill('grammar', ok),
+      onAnswer: (ok, topicId) => {
+        recordSkill('grammar', ok)
+        // Модель ученика Луны (ТЗ v2.0, 8.1 и 8.3): тема — вещь карты тем и интервального повторения.
+        if (topicId) recordStudy({ source: 'ggame', item: `ggame:${topicId}`, ok, title: topicTitle(index, topicId) })
+      },
+      onMistake: (topicId, q, right) => {
+        if (topicId) attachStudyExample(`ggame:${topicId}`, mistakeExample(q, right))
+      },
       lang: now.lang,
       level: now.level,
       sound: now.sound,

@@ -24,6 +24,7 @@ import { answerDiffNote } from './answerDiff.js'
 import { PERSONAS, assistantPersona } from './persona.js'
 import { phraseLang } from './phraseLang.js'
 import { addressHint, questionHints } from './turnHints.js'
+import { modelHints } from '../studentModel/turnHint.js'
 import { REPORT_BUG_MARKER, createReportFilter, splitReport } from './report.js'
 import { eventHint, parseEventMark } from './events.js'
 import { ANSWER, hintInstruction, hintMark, keyAllowed, parseHintMark } from './hintSteps.js'
@@ -585,6 +586,8 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
   const hints = [
     addressHint(qLang || lang, user?.gender),
     ...(service ? [] : questionHints({ question: last.content, studentContext, unchecked, previous: prevReply, answerLang: qLang || lang })),
+    // Модель ученика (ТЗ 8.3): совет методики и повторение после плана — рядом с вопросом (studentModel/turnHint.js).
+    ...(service || event ? [] : modelHints({ studentContext, screenText: screen?.text })),
   ].filter(Boolean)
   const askHinted = hints.length ? `${askItems}\n\n${hints.join('\n')}` : askItems
   const context = focus.task || wake || stuck || rawHint ? withoutAdvice(studentContext) : studentContext

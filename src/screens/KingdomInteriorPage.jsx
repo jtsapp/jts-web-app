@@ -691,6 +691,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               title={open.steps.title}
               subtitle={open.steps.blurb}
               passRatio={open.steps.passRatio ?? null}
+              lessonCode={open.code}
               // Память «где остановился» — по уровню и коду урока, и только на
               // первой попытке: «Пройти снова» начинает с нуля осознанно.
               resumeKey={open.attempt === 0 ? `${level}:${open.code}` : undefined}

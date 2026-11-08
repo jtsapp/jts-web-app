@@ -16,6 +16,8 @@ import TappableHtml from '../screens/workspace/TappableHtml.jsx'
 import TranslatePopover from '../screens/workspace/TranslatePopover.jsx'
 import { readResume, saveResume, clearResume } from '../lib/lessonResume.js'
 import { clearHintTask, setHintTask } from '../lib/assistant/hintTask.js'
+import { recordSkill } from '../practice/skillStats.js'
+import { recordStudy } from '../practice/studyLog.js'
 import { transcriptFor } from './courseTranscripts.js'
 
 // Пошаговый плеер урока (макет Figma «Обучение», секции Warm-up … Wrap).
@@ -181,6 +183,31 @@ export function stageLabel(stage, t) {
 // Предложение шага «впиши пропуск» целиком: в макете оно стоит вопросом, а поле
 // ответа — отдельным блоком под ним. Пропуск дорисовываем только если его нет в
 // самих данных — у части уроков он уже стоит внутри половинки.
+// Навык ответа урока — по стадии (данные курса пишут её по-русски). До 08.11.2026 ответы курса в навыки не шли вовсе:
+// новый плеер, в отличие от старого LessonPlayer, recordSkill не звал, и «Сильные и слабые стороны» не видели главной
+// программы. Разминка и Итоги — без навыка: там вопросы о себе и повторение, а не задание навыка.
+const STAGE_SKILL = {
+  Слова: 'vocab',
+  Грамматика: 'grammar',
+  Практика: 'grammar',
+  Чтение: 'reading',
+  Аудирование: 'listening',
+  Говорение: 'speaking',
+}
+
+/** Навык шага урока или null. */
+export function stageSkill(stage) {
+  return STAGE_SKILL[String(stage || '').trim()] || null
+}
+
+// Текст задания для журнала ошибок модели ученика: вопрос без разметки и верный ответ.
+function mistakeExample(step) {
+  const q = step.type === 'gap' ? gapSentence(step) : step.prompt || step.sub || step.title || ''
+  const text = String(q).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  const ans = expectedAnswer(step)
+  return text && ans ? `${text} → ${ans}` : text || null
+}
+
 function gapSentence(step) {
   const before = String(step.before || '').trim()
   const after = String(step.after || '').trim()
@@ -224,7 +251,8 @@ function shuffle(arr, seed) {
 // resumeKey — адрес урока для памяти «где остановился» (см. lib/lessonResume.js).
 // Передаёт только тропа «Обучения»: там урок длинный и проходится в одиночку;
 // каталог и живой урок ведёт преподаватель, и позицию там помнить незачем.
-export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, token, catalogLessonId, resumeKey, onExit, onVocab, onDone }) {
+// lessonCode — код урока тропы (5, T3, X2): по нему модель ученика узнаёт урок в журнале ошибок (practice/studyLog.js).
+export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, token, catalogLessonId, lessonCode, resumeKey, onExit, onVocab, onDone }) {
   const { t, lang } = useI18n()
   const { pop, openWord, openLimit, close, onSave } = useTapTranslate({ token, lang, source: `course:${level}`, catalogLessonId })
   const [idx, setIdx] = useState(0)
@@ -311,6 +339,23 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
     setHintTask({ id: hintId, mode: exam ? 'test' : 'practice', getKey: () => expectedAnswer(step) })
     return () => clearHintTask(hintId)
   }, [hintId, step, exam])
+  // Ответ шага — в навык (по стадии) и в модель ученика Луны (ТЗ v2.0, 8.1 и 8.3): журнал ошибок, темп и поведение.
+  // В тесте юнита пример ошибки не пишем: Луна не должна знать ответы теста даже задним числом.
+  const lessonKey = lessonCode || catalogLessonId || null
+  const reportAnswer = (s, ok) => {
+    const skill = stageSkill(s?.stage)
+    if (skill) recordSkill(skill, ok, level)
+    const lvl = String(level || '').toLowerCase()
+    if (!lessonKey || !/^[a-c][0-2]$/.test(lvl)) return
+    recordStudy({
+      source: 'lesson',
+      item: `lesson:${lvl}:${lessonKey}`,
+      ok,
+      level,
+      title: `${lvl.toUpperCase()} · ${title || lessonKey}`,
+      example: ok || exam ? null : mistakeExample(s),
+    })
+  }
   const reportDone = () => {
     if (endedRef.current) return
     endedRef.current = true
@@ -429,6 +474,7 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           level={level}
           onAdvance={advance}
           onGraded={(ok) => {
+            reportAnswer(step, ok)
             if (ok) {
               setCorrect((c) => c + 1)
               setPoints((p) => p + REWARD)

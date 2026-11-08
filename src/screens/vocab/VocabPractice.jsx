@@ -22,6 +22,7 @@ import { recordVocabMisses, clearVocabMiss } from './vocabMisses.js'
 import { recordVocabLearned, vocabKey, learnedKeys } from './vocabLearned.js'
 import { saveStudentVocab } from '../../api.js'
 import { recordSkill } from '../../practice/skillStats.js'
+import { flushStudy, recordStudy } from '../../practice/studyLog.js'
 import {
   IconSpeaker,
   IconCheck,
@@ -503,6 +504,23 @@ export default function VocabPractice({ cards, lang: uiLang, title, onExit, spea
       // звался только в старой сессии словаря, которую никто не открывает, и
       // навык от практики не рос вообще (ревью 08.10.2026).
       for (const a of answers) if (a.key) recordSkill('vocab', !!a.ok)
+      // Модель ученика Луны (ТЗ v2.0, 8.1 и 8.3): слово — вещь интервального повторения. Перевод и пример — в строку
+      // вещи: по ним блок «Повторить по расписанию» соберёт тренировку без каталога. Пачкой в конце — паузы нет.
+      for (const a of answers) {
+        const w = a.key ? byKey[a.key] : null
+        if (!w) continue
+        recordStudy({
+          source: 'vocab',
+          item: `word:${a.key}`,
+          ok: !!a.ok,
+          title: w.word,
+          gap: null,
+          extra: { ru: w.translationRu, kk: w.translationKz, example: w.example },
+          example: a.ok ? null : `${w.word} → ${w.translationRu || w.translationKz || ''}`,
+        })
+      }
+      // Сразу, а не через полторы секунды: ученик вернётся на главную словаря, и блок повторения должен увидеть сдвиг.
+      flushStudy()
       // Наружу — сами слова, а не ключи: у карточек «Моего словаря» ключ — id
       // записи, а /saved/learned отмечает по слову, и номера там не находились.
       const okWords = okKeys.map((k) => byKey[k]?.word).filter(Boolean)
