@@ -31,8 +31,15 @@ const MAX_OUTPUT_TOKENS = 4096;
 // принимает, а мышление выключается только при effort не выше high — без
 // effort модель берёт medium. low — как у прямого вызова в агенте
 // (ANTHROPIC_BRAIN_EFFORT): короче реплики, меньше тулов, быстрее первый токен.
-const NO_PREFILL_BRAIN = /^claude-haiku-5/;
+const NO_PREFILL_BRAIN = /^claude-(haiku-5|sonnet-5-5)/;
 const VOICE_BRAIN_EFFORT = "low";
+// Sonnet 5.5 — ответы учителя у Луны (lib/assistant/model.js, 08.11.2026). thinking:disabled она не принимает
+// (400): самое низкое мышление у неё — between_tools, и только при effort не выше high. Без тулов это и есть «без
+// мышления»: блоков thinking в ответе нет, первые слова идут сразу.
+const BETWEEN_TOOLS_MODEL = /^claude-sonnet-5-5\b/;
+function thinkingFor(model) {
+  return BETWEEN_TOOLS_MODEL.test(model) ? { type: "between_tools" } : { type: "disabled" };
+}
 // Разбор IELTS Writing и Speaking — Sonnet 5.5 (решение владельца 02.10.2026). Отдельно от DEFAULT_GRADING_MODEL:
 // остальные грейдеры (Аркада, Ситуации, шэдоуинг, проверка письма) идут через тот же structured() со старым
 // способом вызова, а Sonnet 5.5 его не принимает — см. structuredViaOutputFormat ниже.
@@ -97,7 +104,8 @@ function toRichMessages(turns) {
  *
  * @param {{ systemPrompt: string, messages: any[], tools?: any[],
  *           temperature?: number, model?: string, maxOutputTokens?: number,
- *           task?: string }} args  task — метка в строке llm_cost (по умолчанию voice_brain)
+ *           task?: string, effort?: string }} args  task — метка в строке llm_cost (по умолчанию voice_brain);
+ *           effort — для Haiku 5.5 и Sonnet 5.5 (по умолчанию low), не выше high: мышление у них выключено
  */
 export async function* chatStreamRich(args) {
   const client = getClient();
@@ -159,8 +167,8 @@ export async function* chatStreamRich(args) {
   const stream = client.messages.stream({
     model,
     max_tokens: args.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
-    thinking: { type: "disabled" },
-    ...(NO_PREFILL_BRAIN.test(model) ? { output_config: { effort: VOICE_BRAIN_EFFORT } } : {}),
+    thinking: thinkingFor(model),
+    ...(NO_PREFILL_BRAIN.test(model) ? { output_config: { effort: args.effort || VOICE_BRAIN_EFFORT } } : {}),
     system,
     messages,
     ...(tools ? { tools } : {}),
@@ -219,8 +227,8 @@ export async function* chatStreamRich(args) {
   // Завершающее событие — для диагностики пустых ответов в brain-роуте:
   // stop_reason говорит, кончилась ли модель сама (end_turn) или её что-то
   // оборвало (max_tokens / refusal). Потребители, которым это не нужно,
-  // просто игнорируют тип "done".
-  yield { type: "done", stopReason: final?.stop_reason ?? null };
+  // просто игнорируют тип "done". usage — для прогона качества Луны: цена каждого ответа (scripts/assistant-eval).
+  yield { type: "done", stopReason: final?.stop_reason ?? null, usage: final?.usage ?? null };
 }
 
 // ---------------------------------------------------------------------------
