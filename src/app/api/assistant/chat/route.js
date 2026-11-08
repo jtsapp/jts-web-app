@@ -13,6 +13,8 @@
 // стандартный отказ с заголовком x-assistant-offtopic, основной лимит
 // ученика возвращается, а вопрос идёт в отдельный счётчик (rateLimit.js).
 // Задержки это не добавляет: первые токены клиент ждал бы и так.
+// Метку в конце своего отказа (так модель пишет после правила REMEMBER, 08.11.2026) вырезает фильтр действий, а
+// засчитывает serviceTail — служебным хвостом [[ASST_OFFTOPIC]] вместо заголовка.
 
 import { bearerFromRequest, verifyTokenStatus } from '@/lib/auth-server.js'
 import { chatStreamRich, hasAnthropicKey } from '@/lib/anthropic.js'
@@ -41,7 +43,7 @@ import {
   fallbackBugSummary,
   shouldAutoReportBug,
 } from '@/lib/assistant/report.js'
-import { actionTail, createActionFilter } from '@/lib/assistant/actions.js'
+import { OFFTOPIC_STREAM_MARKER, actionTail, createActionFilter } from '@/lib/assistant/actions.js'
 import { createScriptFixer } from '@/lib/assistant/mixedScript.js'
 import { clickAllowed } from '@/lib/assistant/clickPolicy.js'
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
@@ -280,7 +282,17 @@ export async function POST(request) {
     }
     return action || (opening ? inferAdviceOffer(shown, studentContext) : null)
   }
+  // Отказ «не по теме» меткой в конце ответа (actions.js, OFFTOPIC_MARK). Свой отказ модели ученик уже видит, поэтому
+  // стандартного нет — только учёт, как у метки в начале: основной лимит назад, вопрос — в счётчик «не по теме», окно
+  // не берёт эту пару в историю. Ни действия, ни заметки, ни памяти, ни поломки: ученик спрашивал не про учёбу.
+  // Служебный ход (открытие окна, позывной, «Подсказать?», событие) — не слова ученика: там метку просто вырезали.
+  const lateOfftopic = () => actions.offtopic() && !opening && !wake && !stuck && !hint && !event
   const serviceTail = async () => {
+    if (lateOfftopic()) {
+      limiter.refund(key)
+      offtopic.record(key)
+      return OFFTOPIC_STREAM_MARKER
+    }
     const action = await finalAction()
     await saveNote(action)
     await saveMemory()

@@ -202,7 +202,8 @@ function detChecks(job, raw, visible) {
   const fails = []
   const c = job.src
   if (c.offtopic) {
-    if (prompt.classifyStart(raw) !== 'offtopic') fails.push('нет [[OFFTOPIC]]')
+    // С 08.11.2026 сайт засчитывает и метку в конце своего отказа модели (actions.js, OFFTOPIC_MARK) — так и меряем.
+    if (prompt.classifyStart(raw) !== 'offtopic' && !/\[\[\s*OFFTOPIC\s*\]\]/i.test(raw)) fails.push('нет [[OFFTOPIC]]')
     return fails
   }
   if (prompt.classifyStart(raw) === 'offtopic') return ['ложный [[OFFTOPIC]]']

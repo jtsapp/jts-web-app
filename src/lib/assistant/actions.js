@@ -103,6 +103,14 @@ const STOP_TAIL = /\[\[ASST_ACTION stop (now|offer)\]\]/
 export const stopAction = (now) => ({ kind: 'stop', target: 'plan', now: Boolean(now) })
 
 export const SERVICE_PREFIX = '[[ASST_'
+
+// «Не по теме» не первой строкой (ТЗ v2.0, кейс 16; приёмочный прогон 08.11.2026). После правила REMEMBER (#867)
+// модель пишет отказ своими словами — коротко и с возвратом к плану, как и просит ТЗ, — а [[OFFTOPIC]] ставит последней
+// строкой (5 из 9 ответов). Роут ловит метку только в начале ответа (classifyStart), и такая доезжала до ученика
+// текстом «[[OFFTOPIC]]», а вопрос не шёл в счётчик «не по теме». Теперь фильтр её вырезает и запоминает, роут
+// засчитывает по концу ответа и шлёт окну служебный хвост OFFTOPIC_STREAM_MARKER (вместо заголовка: ответ уже идёт).
+const OFFTOPIC_MARK = /^\[\[\s*OFFTOPIC\s*\]\]$/i
+export const OFFTOPIC_STREAM_MARKER = '[[ASST_OFFTOPIC]]'
 const ACTION_TAIL = /\[\[ASST_ACTION (open|click) ([A-Za-z0-9_.-]+) (now|offer)(?: «([^«»[\]]{1,80})»)?\]\]/
 
 /** Подпись кнопки с номером ref в снимке экрана; нет такой кнопки — null. */
@@ -191,6 +199,7 @@ const MAX_REMEMBER_MARK = 400
 export function createActionFilter({ screenText = '', items = null } = {}) {
   let hold = ''
   let action = null
+  let offtopic = false
   const facts = []
   return {
     push(chunk) {
@@ -221,6 +230,10 @@ export function createActionFilter({ screenText = '', items = null } = {}) {
         }
         const mark = s.slice(0, j + 2)
         s = s.slice(j + 2)
+        if (OFFTOPIC_MARK.test(mark)) {
+          offtopic = true
+          continue
+        }
         const rm = REMEMBER_MARK.exec(mark)
         if (rm) {
           if (facts.length < MAX_FACTS) facts.push(rm[1].trim())
@@ -274,6 +287,10 @@ export function createActionFilter({ screenText = '', items = null } = {}) {
     facts() {
       return facts.slice()
     },
+    /** Была ли метка [[OFFTOPIC]] не в начале ответа (см. OFFTOPIC_MARK). */
+    offtopic() {
+      return offtopic
+    },
   }
 }
 
@@ -289,6 +306,10 @@ export function createServiceTailFilter() {
     flush: inner.flush,
     get reported() {
       return tail().includes(REPORTED_STREAM_MARKER)
+    },
+    /** Роут засчитал ответ отказом «не по теме» по метке в конце (OFFTOPIC_STREAM_MARKER). */
+    get offtopic() {
+      return tail().includes(OFFTOPIC_STREAM_MARKER)
     },
     get action() {
       const fb = FEEDBACK_TAIL.exec(tail())

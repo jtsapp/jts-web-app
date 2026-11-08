@@ -22,7 +22,8 @@ export class AssistantError extends Error {
  *   onResponse — ответ пошёл: заголовок Server-Timing роута (замеры звонка Луне)
  * @returns {Promise<{ text: string, offtopic: boolean, reported: boolean,
  *                     action: {kind: 'open'|'tour'|'click', target: string, now: boolean, label?: string}|null }>}
- *   весь видимый ответ; offtopic — сервер ответил стандартным отказом;
+ *   весь видимый ответ; offtopic — сервер ответил стандартным отказом или засчитал «не по теме»
+ *   отказ самой модели (метка в конце ответа — служебный хвост [[ASST_OFFTOPIC]]);
  *   reported — поломку записали в БД; action — Луна предлагает открыть раздел,
  *   провести тур или нажать кнопку экрана (actions.js; у click — подпись кнопки).
  *   Оба — хвост стрима, ученику не показывается.
@@ -95,5 +96,7 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
     full += tail
     onDelta?.(tail)
   }
-  return { text: full, offtopic, reported: reportedHeader || flag.reported, action: offtopic ? null : flag.action }
+  // Отказ «не по теме» бывает и хвостом стрима: модель поставила метку в конце своего ответа (actions.js).
+  const off = offtopic || flag.offtopic
+  return { text: full, offtopic: off, reported: reportedHeader || flag.reported, action: off ? null : flag.action }
 }

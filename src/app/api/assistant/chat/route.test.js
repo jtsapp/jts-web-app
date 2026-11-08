@@ -289,6 +289,58 @@ describe('POST /api/assistant/chat', () => {
       expect(res.headers.get('x-assistant-offtopic')).toBeNull()
       expect(await res.text()).toBe('[пример] Is Clare reading?')
     })
+
+    // Кейс 16 ТЗ v2.0 (приёмочный прогон 08.11.2026): свой отказ модели и метка последней строкой.
+    describe('метка в конце своего отказа', () => {
+      const lateStream = (tail = '\n\n[[OFFTOPIC]]') => {
+        streamImpl = async function* () {
+          yield { type: 'text', text: 'Это вопрос не по теме. Вернёмся к домашке «Unit 4»?' }
+          yield { type: 'text', text: '\n[[OPEN homework]]' }
+          yield { type: 'text', text: tail }
+        }
+      }
+
+      it('ученик метки не видит, окно получает хвост «не по теме», кнопки и заметки нет', async () => {
+        saveAdviceNote.mockClear()
+        lateStream()
+        const res = await post(question(2606))
+        expect(res.status).toBe(200)
+        expect(res.headers.get('x-assistant-offtopic')).toBeNull()
+        expect(await res.text()).toBe('Это вопрос не по теме. Вернёмся к домашке «Unit 4»?\n\n\n[[ASST_OFFTOPIC]]')
+        expect(saveAdviceNote).not.toHaveBeenCalled()
+      })
+
+      it('считается в лимит «не по теме»: после пяти за сутки — пауза', async () => {
+        const body = question(2607)
+        for (let i = 0; i < 5; i += 1) {
+          lateStream()
+          await (await post(body)).text()
+        }
+        const paused = await post(body)
+        expect(paused.status).toBe(429)
+        expect((await paused.json()).error).toBe('offtopic_cooldown')
+      })
+
+      it('основной лимит не тратит', async () => {
+        const body = question(2608)
+        for (let i = 0; i < 4; i += 1) {
+          lateStream()
+          await (await post(body)).text()
+        }
+        streamImpl = async function* () {
+          yield { type: 'text', text: 'ok' }
+        }
+        for (let i = 0; i < 20; i += 1) expect((await post(body)).status).toBe(200)
+      })
+
+      it('в первой реплике окна метку только вырезает — ни отказа, ни паузы', async () => {
+        lateStream()
+        const res = await post({ ...question(2609), messages: [{ role: 'user', content: '[ученик открыл окно]' }] })
+        const text = await res.text()
+        expect(text).not.toContain('[[OFFTOPIC]]')
+        expect(text).not.toContain('[[ASST_OFFTOPIC]]')
+      })
+    })
   })
 
   it('модель упала до первого слова — 502, и лимит не потрачен', async () => {

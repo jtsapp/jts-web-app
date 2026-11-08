@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { actionMarker, actionTail, buttonOnScreen, createActionFilter, createServiceTailFilter } from './actions.js'
+import { OFFTOPIC_STREAM_MARKER, actionMarker, actionTail, buttonOnScreen, createActionFilter, createServiceTailFilter } from './actions.js'
 import { REPORTED_STREAM_MARKER } from './report.js'
 
 // Прогнать текст через фильтр кусками заданного размера — как стрим модели.
@@ -285,5 +285,45 @@ describe('перерыв и «На сегодня всё»', () => {
     expect(actionMarker({ kind: 'lowtime', target: 'plan' })).toBe('')
     expect(actionMarker({ kind: 'trial', target: 'trial' })).toBe('')
     expect(actionMarker({ kind: 'step', dest: 'tutor' })).toBe('[[OPEN tutor]]')
+  })
+})
+
+// Кейс 16 ТЗ v2.0 (приёмочный прогон 08.11.2026): после правила REMEMBER модель пишет свой отказ и ставит
+// [[OFFTOPIC]] последней строкой — ученик видел метку текстом.
+describe('метка «не по теме» в конце ответа', () => {
+  const answer = 'Это вопрос не по теме: я помогаю с английским и сайтом JTS. Вернёмся к домашке «Unit 4».\n\n[[OFFTOPIC]]'
+
+  it('вырезается на любом разрезе стрима и запоминается', () => {
+    for (const size of [1, 2, 3, 7, 500]) {
+      const f = createActionFilter()
+      let out = ''
+      for (let i = 0; i < answer.length; i += size) out += f.push(answer.slice(i, i + size))
+      out += f.flush()
+      expect(out).toBe('Это вопрос не по теме: я помогаю с английским и сайтом JTS. Вернёмся к домашке «Unit 4».\n\n')
+      expect(f.offtopic()).toBe(true)
+      expect(f.action()).toBeNull()
+    }
+  })
+
+  it('прощает регистр и пробелы внутри скобок; без метки — не отказ', () => {
+    const f = createActionFilter()
+    expect(f.push('Нет.\n[[ offtopic ]]') + f.flush()).toBe('Нет.\n')
+    expect(f.offtopic()).toBe(true)
+    const g = createActionFilter()
+    g.push('Present Perfect — это have + V3.')
+    g.flush()
+    expect(g.offtopic()).toBe(false)
+  })
+
+  it('служебный хвост окну: отказ засчитан, действия нет, на экран не выходит', () => {
+    const f = createServiceTailFilter()
+    const shown = f.push('Это вопрос не по теме.' + OFFTOPIC_STREAM_MARKER) + f.flush()
+    expect(shown).toBe('Это вопрос не по теме.')
+    expect(f.offtopic).toBe(true)
+    expect(f.action).toBeNull()
+    const g = createServiceTailFilter()
+    g.push('Ответ.' + actionTail({ kind: 'open', target: 'practice-speaking', now: false }))
+    g.flush()
+    expect(g.offtopic).toBe(false)
   })
 })
