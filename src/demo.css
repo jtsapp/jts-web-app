@@ -3669,3 +3669,562 @@ button.hm-level__goal:focus-visible {
 /* Строка-источник «Сильных и слабых сторон» и «мало данных» вместо процента (ТЗ v2.0, 5.5). */
 .hm-skills__src { margin: 4px 0 0; font-size: 12px; line-height: 1.35; color: var(--hm-mut, #8e8e99); }
 .hm-skill__pct--few { font-size: 12px; font-weight: 500; color: var(--hm-mut, #8e8e99); }
+
+/* ==================== «Главная» по ТЗ v2.0 «Луна-трекер» (07.11.2026), разделы 5.1 и 5.4–5.7 ====================
+   Прототип «JTS Главная с Луной»: баннер цели ~230, «Уроки с преподавателем» / «Ближайшее», строка-источник и ссылка
+   «Результаты теста →», «Свободная практика» в ряд. Только шире 560 px: телефон — по макету приложения
+   (src/mobile/home.css), новые блоки на нём скрыты, а его карточки расписания, домашки и пробного урока рисует
+   HomePage. Цвета — токенами --hm-* (тёмная тема переопределяет их в theme-dark.css). */
+
+/* Обёртки клеток сетки: на компьютере и телефоне растворены — карточки остаются прямыми детьми колонок, как раньше
+   (телефонный порядок `order` и раскладки колонок держатся на этом). Клетками они становятся только на планшете. */
+.hm-slot {
+  display: contents;
+}
+
+/* ---------- общий вид блоков справа ---------- */
+.hm--v2 .hm-blk {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hm-blk__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+.hm-blk__head--sub {
+  margin-top: 4px;
+}
+.hm-blk__more,
+.hm-blk__link {
+  border: 0;
+  padding: 0;
+  background: none;
+  font-family: inherit;
+  font-weight: 700;
+  color: var(--hm-ac, #9047ff);
+  cursor: pointer;
+}
+.hm-blk__more {
+  margin-left: auto;
+  font-size: 13px;
+}
+.hm-blk__link {
+  flex: none;
+  font-size: 13px;
+}
+.hm-blk__more:hover,
+.hm-blk__link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.hm-blk__link:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.hm-blk__btn {
+  flex: none;
+  height: 36px;
+  padding: 0 18px;
+  border: 1px solid var(--hm-ac, #9047ff);
+  border-radius: 14px;
+  background: var(--hm-card, #ffffff);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--hm-ac, #9047ff);
+  cursor: pointer;
+}
+.hm-blk__btn.is-fill {
+  background: var(--hm-ac, #9047ff);
+  color: #ffffff;
+}
+.hm-blk__btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.hm-blk__btn:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.hm-blk__more:focus-visible,
+.hm-blk__link:focus-visible,
+.hm-blk__btn:focus-visible,
+.hm-skills__results:focus-visible,
+.pl-results__back:focus-visible {
+  outline: 2px solid var(--hm-ac, #9047ff);
+  outline-offset: 2px;
+}
+
+/* плашка 36 r10 со значком маской; цвет — тон строки */
+.hm-blk__plate {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--hm-lav, #efe7ff);
+  color: var(--hm-ac, #9047ff);
+}
+.hm-blk__plate::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  background: currentColor;
+  -webkit-mask: var(--hm-ico) center / contain no-repeat;
+  mask: var(--hm-ico) center / contain no-repeat;
+}
+.hm-blk__plate--late,
+.hm-blk__plate--orange {
+  background: var(--hm-down-bg, #fff0dd);
+  color: var(--hm-down, #e57a12);
+}
+.hm-blk__plate--check {
+  background: var(--hm-tile, #f8f8f8);
+  color: var(--hm-mut, #8e8e99);
+}
+.hm-blk__plate--ok {
+  background: var(--hm-up-bg, #e3f6ea);
+  color: var(--hm-up, #1f9d55);
+}
+
+/* строки событий и домашки: плашка · текст · действие, разделитель сверху */
+.hm-blk__rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hm-blk__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--hm-line, #e8e8ee);
+}
+.hm-blk__row:last-child {
+  padding-bottom: 0;
+}
+.hm-blk__rowText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.hm-blk__rowTitle {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  color: var(--hm-ink, #181818);
+  overflow-wrap: break-word;
+}
+.hm-blk__rowSub {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--hm-sec, #5a5a66);
+}
+.hm-blk__st {
+  font-style: normal;
+  font-weight: 700;
+}
+.hm-blk__st--late {
+  color: var(--hm-down, #e57a12);
+}
+.hm-blk__st--todo {
+  color: var(--hm-ac, #9047ff);
+}
+.hm-blk__st--check {
+  color: var(--hm-mut, #8e8e99);
+}
+.hm-blk__st--ok {
+  color: var(--hm-up, #1f9d55);
+}
+
+/* ---------- полоса недели: число и день, сегодня — фиолетовая плашка, точка — день с уроком ---------- */
+.hm-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hm-week__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 0;
+  border-radius: 14px;
+  text-align: center;
+}
+.hm-week__day b {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 800;
+  color: var(--hm-ink, #181818);
+}
+.hm-week__day small {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  color: var(--hm-mut, #8e8e99);
+}
+.hm-week__day::after {
+  content: '';
+  width: 5px;
+  height: 5px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: transparent;
+}
+.hm-week__day.has-lesson::after {
+  background: var(--hm-ac, #9047ff);
+}
+.hm-week__day.is-today {
+  background: var(--hm-ac, #9047ff);
+}
+.hm-week__day.is-today b,
+.hm-week__day.is-today small {
+  color: #ffffff;
+}
+.hm-week__day.is-today.has-lesson::after {
+  background: #ffffff;
+}
+
+/* ---------- «Уроки с преподавателем» ---------- */
+.hm-tl__next {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--hm-lav2, #f6f1ff);
+}
+.hm-tl__nextText {
+  display: flex;
+  flex: 1 1 140px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.hm-tl__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--hm-sec, #5a5a66);
+}
+.hm-tl__live {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--hm-up-bg, #e3f6ea);
+  font-style: normal;
+  font-weight: 700;
+  color: var(--hm-up, #1f9d55);
+}
+.hm-tl__topic {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 800;
+  color: var(--hm-ink, #181818);
+  overflow-wrap: break-word;
+}
+.hm-tl__when {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--hm-sec, #5a5a66);
+}
+.hm-tl__none {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--hm-sec, #5a5a66);
+}
+.hm-tl__pack {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--hm-sec, #5a5a66);
+}
+.hm-tl__hw {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hm-tl__h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 800;
+  color: var(--hm-ink, #181818);
+}
+.hm-near__error {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--hm-down, #e57a12);
+}
+
+/* ---------- «Сильные и слабые стороны»: ссылка на отчёт теста (ТЗ 5.5) ---------- */
+.hm-skills__results {
+  align-self: flex-start;
+  border: 0;
+  padding: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--hm-ac, #9047ff);
+  cursor: pointer;
+}
+.hm-skills__results:hover {
+  text-decoration: underline;
+}
+
+/* ---------- страница «Результаты теста» ---------- */
+.pl-page-results {
+  display: flex;
+  flex-direction: column;
+}
+.pl-results__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  /* справа — кнопки угла (.learn__bell висит поверх абсолютом), как у заголовка «Главной» */
+  padding-right: 300px;
+}
+.pl-results__back {
+  border: 0;
+  padding: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--hm-ac, #9047ff);
+  cursor: pointer;
+}
+.pl-results__note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--hm-sec, #5a5a66);
+}
+
+/* ---------- баннер цели ниже: ~230 вместо 325 (ТЗ 5.1, прототип: колонка маскота 230, облачко у его головы) ---------- */
+@media (min-width: 1180px) {
+  .hm--v2 .ge-goal {
+    grid-template-columns: 230px minmax(0, 1fr);
+    gap: 0;
+    min-height: 226px;
+  }
+  .hm--v2 .ge-goal .ih-gb__mascot img {
+    position: absolute;
+    left: 10px;
+    bottom: -14px;
+    width: 220px;
+  }
+  /* облачко абсолютом в колонке 230: без max-content ширина считалась от остатка колонки (50 px), и фраза шла столбиком */
+  .hm--v2 .ge-goal .ih-gb__bubble {
+    top: 18px;
+    left: 180px;
+    width: max-content;
+    max-width: 210px;
+    padding: 12px 16px;
+    font-size: 15px;
+  }
+  /* слева — место под облачко, оно стоит поверх начала колонки пути */
+  .hm--v2 .ge-goal .ih-gb__journey {
+    gap: 4px;
+    padding: 16px 28px 12px 180px;
+  }
+  .hm--v2 .ge-goal .ih-gb__exam h2 {
+    font-size: 28px;
+  }
+  .hm--v2 .ge-goal .ih-gb__date {
+    font-size: 16px;
+  }
+}
+@media (min-width: 561px) {
+  .hm--v2 .ge-goal .ih-gb__exam h2 {
+    line-height: 34px;
+  }
+  .hm--v2 .ge-goal .ih-gb__track {
+    width: 100%;
+    max-width: 440px;
+    min-height: 96px;
+    margin: 0 auto;
+    padding: 0 12px;
+  }
+  .hm--v2 .ge-goal .ih-gb__node--a {
+    width: 52px;
+    height: 52px;
+    font-size: 16px;
+  }
+  .hm--v2 .ge-goal .ih-gb__node--now {
+    width: 62px;
+    height: 62px;
+    font-size: 20px;
+  }
+  /* метка «Сейчас» висит под узлом и высоту дорожки не растит — как в прототипе (nowtag абсолютом) */
+  .hm--v2 .ge-goal .ih-gb__now {
+    position: relative;
+    padding-top: 0;
+  }
+  .hm--v2 .ge-goal .ih-gb__nowtag {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .hm--v2 .ge-goal .ih-gb__star {
+    width: 72px;
+    height: 72px;
+    font-size: 16px;
+  }
+  .hm--v2 .ge-goal .ih-gb__foot {
+    justify-content: center;
+    padding: 4px 0 0;
+  }
+}
+/* Уже 1180 сайдбар (280) оставляет баннеру меньше 840: маскот с облачком не помещаются рядом с путём. Без маскота
+   (ТЗ 6), облачко — строкой над путём. */
+@media (min-width: 561px) and (max-width: 1179px) {
+  .hm--v2 .ge-goal {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    min-height: 0;
+  }
+  .hm--v2 .ge-goal .ih-gb__mascot {
+    min-height: 0;
+    padding: 16px 20px 0;
+  }
+  .hm--v2 .ge-goal .ih-gb__mascot img {
+    display: none;
+  }
+  .hm--v2 .ge-goal .ih-gb__bubble {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  .hm--v2 .ge-goal .ih-gb__journey {
+    gap: 4px;
+    padding: 12px 20px 14px;
+  }
+  .hm--v2 .ge-goal .ih-gb__exam h2 {
+    font-size: 24px;
+  }
+  .hm--v2 .ge-goal .ih-gb__date {
+    font-size: 15px;
+  }
+}
+
+/* ---------- «Свободная практика»: четыре плитки в ряд (ТЗ 5.6), значок над подписью ----------
+   По ширине самой карточки, а не окна: в колонке «Главной» рядом с правой (на 1180–1360) четыре плитки по 100 px не
+   вместили бы подписей, а на планшете карточка во всю ширину и места хватает. */
+@media (min-width: 561px) {
+  .hm--v2 .hm-prac {
+    container: hmprac / inline-size;
+  }
+}
+@container hmprac (min-width: 600px) {
+  .hm--v2 .hm-prac__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .hm--v2 .hm-prac__tile {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 8px;
+    min-height: 0;
+    padding: 14px;
+  }
+  .hm--v2 .hm-prac__img {
+    width: 48px;
+    height: 48px;
+  }
+  .hm--v2 .hm-prac__text b {
+    font-size: 14px;
+    line-height: 18px;
+  }
+}
+
+/* ---------- планшет (ТЗ 6): «Сегодня» во всю ширину, под ним уроки и навыки рядом, ниже практика ----------
+   Колонки растворяются, клетками сетки становятся обёртки .hm-slot. Пустая клетка (плана ещё нет) места не держит. */
+@media (min-width: 561px) and (max-width: 1179px) {
+  .hm--v2 .hm-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hm--v2 .hm-grid__main,
+  .hm--v2 .hm-grid__side {
+    display: contents;
+  }
+  .hm--v2 .hm-slot {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+  }
+  .hm--v2 .hm-slot:empty {
+    display: none;
+  }
+  .hm--v2 .hm-slot--today {
+    grid-column: 1 / -1;
+    order: 1;
+  }
+  .hm--v2 .hm-slot--lessons {
+    order: 2;
+  }
+  .hm--v2 .hm-slot--skills {
+    order: 3;
+  }
+  .hm--v2 .hm-slot--prac {
+    grid-column: 1 / -1;
+    order: 4;
+  }
+  /* одна из пары пуста (у IELTS навыков нет) — оставшаяся во всю ширину */
+  .hm--v2 .hm-slot--lessons:has(+ .hm-slot--skills:empty),
+  .hm--v2 .hm-slot--lessons:empty + .hm-slot--skills {
+    grid-column: 1 / -1;
+  }
+}
+/* узкий планшет и окно без сайдбара: две колонки по 230 тесны — одна колонка в порядке ТЗ: Сегодня → уроки → навыки →
+   практика (телефон ≤560 — свой порядок макета приложения) */
+@media (min-width: 561px) and (max-width: 999px) {
+  .hm--v2 .hm-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hm--v2 .hm-slot--lessons,
+  .hm--v2 .hm-slot--skills {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------- телефон: блоки компьютера не рисуются (макет приложения) ---------- */
+@media (max-width: 560px) {
+  .hm .hm-tl,
+  .hm .hm-near,
+  .hm .hm-skills__results {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .pl-results__head {
+    padding-right: 0;
+  }
+}

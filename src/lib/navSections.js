@@ -28,6 +28,7 @@ const NAV_FULL = [
   { key: 'practice', label: 'nav.practice', ico: 'auto_stories' },
   { key: 'tutor', label: 'nav.tutor', ico: 'auto_awesome' },
   { key: 'lessons', label: 'nav.lessons', ico: 'videocam' },
+  // Значок — сколько работ ждут ученика: просроченные и заданные (ТЗ v2.0, 5.4; useHomeworkBadge в useMenuItems).
   { key: 'homework', label: 'nav.homework', ico: 'assignment' },
   // IELTS вернулся в меню вместе с хабом раздела (макет Screen MS, 01.10.2026).
   // Пунктов стало восемь — на низких экранах их ужимает CSS (.sb в styles.css).

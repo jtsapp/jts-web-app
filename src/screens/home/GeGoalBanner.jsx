@@ -5,13 +5,18 @@ import { formatDate } from '../../ielts/format.js'
 import { ArrowForwardIcon, EditIcon, EventIcon } from '../../ielts/icons.jsx'
 import { goalBannerState, sayKey } from '../../ge/homeState.js'
 import { formatTerm } from '../../ge/route.js'
+import { dayMonth } from '../../lib/localDate.js'
 
 /**
  * Блок цели «Главной» General English — по образцу GoalBanner раздела IELTS («IELTS new», GoalJourney): маскот с
  * репликой, срок и дорожка «старт → сейчас → цель» тремя узлами без оси. Под дорожкой — прежние строки карточки
  * уровня («ещё N материалов», «+N% за неделю»): их считает сервер, и терять их при смене вида незачем.
+ *
+ * ТЗ v2.0, 5.1: метка «Сейчас» — в уроках курса («урок 4 из 40», step — courseStep из homeBlocks.js), а не процентом;
+ * тропы нет — прежний процент. Облачко — от прогресса дня (day — dayProgress): начал день — «уже N мин», закрыл план —
+ * похвала. Реплики о сроке («завтра срок», «срок прошёл», «укажи срок») важнее, их день не перебивает.
  */
-export default function GeGoalBanner({ profile, option, planLine, week, onEdit, onOpenRoute, onBuy }) {
+export default function GeGoalBanner({ profile, option, planLine, week, step = null, day = null, onEdit, onOpenRoute, onBuy }) {
   const { t, lang } = useI18n()
   const [seed] = useState(() => Math.random())
   const s = goalBannerState({ deadline: profile.deadline, journey: profile.journey, fit: option?.fit ?? null })
@@ -19,10 +24,19 @@ export default function GeGoalBanner({ profile, option, planLine, week, onEdit, 
   const j = profile.journey || {}
   const cur = j.current || {}
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
-  const fmt = (iso) => (iso ? formatDate(`${iso}T00:00:00`, lang) : '')
+  // казахский — своими названиями месяцев: Intl в Chrome отдавал «M04 16» (lib/localDate.js)
+  const fmt = (iso) => (!iso ? '' : lang === 'kk' ? dayMonth(new Date(`${iso}T00:00:00`), 'kk') : formatDate(`${iso}T00:00:00`, lang))
   const monthYear = (iso) =>
     new Intl.DateTimeFormat(loc, { month: 'long', year: 'numeric' }).format(new Date(`${iso}T00:00:00`)).replace(/\s?г\.$/, '')
   const sayVars = { level: profile.targetLevel, term: option ? formatTerm(option.units, t, lang) : '' }
+  const dayKey =
+    day && (s.say === 'onTrack' || s.say === 'late') ? (day.allDone ? 'geGoal.say.dayDone' : day.done > 0 ? 'geGoal.say.day' : null) : null
+  const bubble = dayKey ? t(dayKey, { n: String(day.done) }) : t(sayKey(s.say, seed), sayVars)
+  const nowTag = step
+    ? t(step.allDone ? 'geGoal.nowAll' : 'geGoal.nowLesson', { n: String(step.n), total: String(step.total) })
+    : typeof cur.percent === 'number'
+      ? t('geGoal.nowPct', { percent: String(cur.percent) })
+      : t('geGoal.now')
 
   let title
   let sub = null
@@ -75,7 +89,7 @@ export default function GeGoalBanner({ profile, option, planLine, week, onEdit, 
       <section className="ih-gb is-clickable ge-goal" aria-label={t('geGoal.aria')} onClick={onBlockClick}>
         <img className="ih-gb__bg" src="/ielts/mascot/goal-bg.webp" alt="" aria-hidden="true" />
         <div className="ih-gb__mascot">
-          <p className="ih-gb__bubble">{t(sayKey(s.say, seed), sayVars)}</p>
+          <p className="ih-gb__bubble">{bubble}</p>
           <img src="/ielts/mascot/cheer.webp" alt="" aria-hidden="true" width="300" height="237" />
         </div>
         <div className="ih-gb__journey">
@@ -90,7 +104,7 @@ export default function GeGoalBanner({ profile, option, planLine, week, onEdit, 
             <li className="ih-gb__line ih-gb__line--done" aria-hidden="true" />
             <li className="ih-gb__now" aria-label={t('geGoal.now')}>
               <span className="ih-gb__node ih-gb__node--now">{cur.level || '—'}</span>
-              <span className="ih-gb__nowtag">{typeof cur.percent === 'number' ? t('geGoal.nowPct', { percent: String(cur.percent) }) : t('geGoal.now')}</span>
+              <span className="ih-gb__nowtag">{nowTag}</span>
             </li>
             <li className="ih-gb__line ih-gb__line--todo" aria-hidden="true" />
             <li className="ih-gb__star" aria-label={t('geGoal.goal')}>

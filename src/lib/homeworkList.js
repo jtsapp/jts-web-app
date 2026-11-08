@@ -63,3 +63,11 @@ export function openHomework(cards, now = new Date()) {
     .filter((h) => OPEN_STATES.has(h.state))
     .sort((a, b) => dueTime(a) - dueTime(b))
 }
+
+// Значок пункта меню «Домашняя работа» (ТЗ v2.0, 5.4): просроченные и заданные. «На доработку» — тоже задано: работа
+// снова ждёт ученика (OPEN_STATES). Сданное и проверенное в значок не идёт — с ним ученику делать нечего.
+
+/** Сколько работ ждут ученика — число на значке меню. */
+export function homeworkBadgeCount(cards, now = new Date()) {
+  return withStates(cards, now).filter((h) => OPEN_STATES.has(h.state)).length
+}

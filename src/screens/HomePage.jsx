@@ -13,10 +13,11 @@ import { GoalDialog } from './home/GoalPicker.jsx'
 import IeltsHomeCard from './home/IeltsHomeCard.jsx'
 import GeGoalBanner from './home/GeGoalBanner.jsx'
 import GeStartHero, { GeFinishHero, StartHereCard } from './home/GeStartHero.jsx'
-import { PlacementNext, PlacementResults, usePlacementReport } from './home/PlacementReport.jsx'
-import { withProfileGoal } from '../placement/reportModel.js'
-import { placementCollapseKey } from './home/placementCollapse.js'
+import { usePlacementReport } from './home/PlacementReport.jsx'
 import GeTodayCard from './home/GeTodayCard.jsx'
+import { NearCard, TeacherLessonsCard } from './home/LessonsBlocks.jsx'
+import { courseStep, dayProgress, homeFormat, teacherPlanToday } from './home/homeBlocks.js'
+import { useCourseProgress, useLessonsSummary } from './home/useHomeData.js'
 import TourSections from './home/TourSections.jsx'
 import TemperInvite from './home/TemperInvite.jsx'
 import { armTemperInvite, closeTemperInvite, isTemperInvitePending, temperInviteKey } from './home/temperInvite.js'
@@ -27,9 +28,12 @@ import { homeTopState } from '../ge/homeState.js'
 import { routeOptions } from '../ge/route.js'
 import { loadLevelSkillStatsRemote, loadSkillStatsRemote, readLocalLevelSkillStats, readLocalSkillStats } from '../practice/skillStats.js'
 import { skillLevel } from '../practice/skillStatsCore.js'
-import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMyHomework, getMyMaterialAssignments, getLevelProgress, getIeltsPlan } from '../api.js'
-import { homeworkCards, openHomework } from '../lib/homeworkList.js'
-import { ieltsHomeworkCards } from './homework/ieltsHomework.js'
+import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getLevelProgress } from '../api.js'
+import { openHomework } from '../lib/homeworkList.js'
+import { loadMyHomework } from '../lib/myHomework.js'
+import { useStudentSections } from '../lib/studentSections.js'
+import { usePhoneWidth } from '../lib/usePhoneWidth.js'
+import { dayMonth } from '../lib/localDate.js'
 import { pickRecommendation } from '../lib/assistant/recommend.js'
 import { pickFeaturedOccurrence } from './schedule/liveNow.js'
 import { parseLessonDate, lessonTimeRange, dayLabelKey } from './schedule/lessonFormat.js'
@@ -37,6 +41,12 @@ import { parseLessonDate, lessonTimeRange, dayLabelKey } from './schedule/lesson
 // «Главная» демо-аккаунта (макет демо-доступа, экран 1): срок демо, свой
 // уровень с прогрессом до следующего, сильные и слабые стороны, вход на
 // пробный урок.
+//
+// С ТЗ v2.0 «Луна-трекер» (07.11.2026) на компьютере и планшете «Главная» — по прототипу «JTS Главная с Луной»: баннер
+// цели ниже и с «урок N из M», «Сегодня» и «Свободная практика» слева, справа «Уроки с преподавателем» (у Self Study и
+// демо — «Ближайшее») и «Сильные и слабые стороны» со ссылкой на отчёт теста. «Что делать дальше», «Задания для вас» и
+// длинный отчёт теста ушли на страницу «Результаты теста» (PlacementResultsPage). Телефон (≤560) — по макету
+// приложения, как был: у него свои карточки расписания, домашки и пробного урока (решение владельца 07.11.2026).
 //
 // Экран сводит уже существующие данные, а не заводит новые: уровень — тот же,
 // что в сайдбаре и на карте королевств, проценты навыков — тот же рейтинг, что
@@ -188,10 +198,9 @@ export default function HomePage({
   // Нет ручки (старый бэкенд) или план не собран — карточка прежняя.
   const gePlan = useGePlan(token, { enabled: geTop === 'goal', level: summary.level || userLevel })
   const geToday = gePlan.status === 'ready' && gePlan.plan?.state === 'ready'
-  // Отчёт теста уровня — одни данные на две карточки: «Результаты теста уровня» в колонке и «Что делать дальше» внизу.
+  // Отчёт теста уровня живёт своей страницей (PlacementResultsPage, ТЗ v2.0, 5.7); здесь он нужен ради даты теста в
+  // строке-источнике «Сильных и слабых сторон» («Уровень A2 (тест 20 октября)»).
   const placement = usePlacementReport(ieltsAccount ? null : token, placementVersion)
-  // Цель в блоке «Что делать дальше» — та же, что на баннере (профиль GE), а не предложенная тестом в день прохождения.
-  const report = geTarget ? { ...placement, view: withProfileGoal(placement.view, geTarget) } : placement
   // Срок выбранного формата — для реплики маскота («идём по плану» / «не успеваем»). Та же формула, что на маршруте.
   // Без useMemo: три вызова калькулятора дешевле, а ручную мемоизацию React Compiler здесь сохранить не может.
   const geCur = geProfile?.journey?.current || {}
@@ -237,7 +246,7 @@ export default function HomePage({
       { ...top, art: { src: '/assets/first-login/coach-progress.webp', w: 252, h: 236 }, width: 576, textWidth: 330 },
       isDemoAccount
         ? {
-            selector: '.hm-trial',
+            selector: ['.hm-near__trial', '.hm-trial'],
             title: t('tour.home.trial.title'),
             text: t('tour.home.trial.text'),
             art: { src: '/assets/first-login/coach-trial.webp', w: 274, h: 260 },
@@ -245,7 +254,7 @@ export default function HomePage({
             textWidth: 277,
           }
         : {
-            selector: ['.hm-sched', '.hm-hw'],
+            selector: ['.hm-tl', '.hm-near', '.hm-sched', '.hm-hw'],
             title: t('tour.home.lessons.title'),
             text: t('tour.home.lessons.text'),
             art: { src: '/assets/first-login/coach-schedule.webp', w: 227, h: 235 },
@@ -313,20 +322,15 @@ export default function HomePage({
 
   // Домашка — из тех же источников, что раздел «Домашняя работа» (lib/homeworkList.js): работы, задания с урока и
   // домашние задания IELTS (живут в плане IELTS, а не в /admin/homework/my). Раньше «Главная» не грузила задания с
-  // урока и писала «Заданий нет» при просроченном. Задания с урока и IELTS — как в разделе: их сбой работы не прячет.
+  // урока и писала «Заданий нет» при просроченном. Загрузка общая со значком меню (lib/myHomework.js): число у пункта
+  // «Домашняя работа» и список в блоке не расходятся.
   useEffect(() => {
     if (!token) return
     let alive = true
-    // Каждый вызов — внутри цепочки: синхронный сбой (ручки нет в моке теста) становится отказом, а не падением экрана.
-    const call = (fn) => Promise.resolve().then(fn)
-    Promise.all([
-      call(() => getMyHomework(token)),
-      call(() => getMyMaterialAssignments(token)).catch(() => []),
-      ieltsAccount ? call(() => getIeltsPlan(token)).then(ieltsHomeworkCards).catch(() => []) : Promise.resolve([]),
-    ])
-      .then(([hw, assignments, ielts]) => {
+    loadMyHomework(token, { ielts: ieltsAccount })
+      .then((cards) => {
         if (!alive) return
-        setHomework([...homeworkCards(hw, assignments), ...ielts])
+        setHomework(cards)
         setHomeworkState('ready')
       })
       .catch(() => { if (alive) setHomeworkState('error') })
@@ -379,6 +383,25 @@ export default function HomePage({
       setSending(false)
     }
   }
+
+  // Блоки новой «Главной» (ТЗ v2.0, 5.1 и 5.4). Телефон рисует свои карточки по макету приложения, поэтому новые блоки
+  // и их запросы — только шире 560 px. Формат ученика — то же правило, что у меню и Луны (homeFormat).
+  const phone = usePhoneWidth()
+  const sections = useStudentSections(token)
+  const format = homeFormat({ demo: isDemoAccount, sections, occurrences, homework })
+  const lessonsSummary = useLessonsSummary(token, !phone && format === 'teacher')
+  // Уровень, который ученик проходит, — для «урок N из M» и ближайшего теста курса. Без теста уровня его нет: тропа A1
+  // «по умолчанию» назвала бы чужой урок.
+  const courseLevel = ieltsAccount || levelUnknown ? null : geProfile?.journey?.current?.level || summary.level || null
+  const course = useCourseProgress(phone ? null : courseLevel, token)
+  const step = geTop === 'goal' && course ? courseStep(course.trail, course.done) : null
+  const day = dayProgress(gePlan.plan)
+  const teacherToday = teacherPlanToday(gePlan.plan)
+  // «Уровень A2 (тест 20 октября)»: дата — только если уровень и сейчас тот, что дал тест. Уровень поставил менеджер или
+  // преподаватель — дата теста про другой уровень, и строка бы врала.
+  const testView = placement.view
+  const testAt = testView?.completedAt && (!testView.overall || testView.overall === skillCode) ? new Date(testView.completedAt) : null
+  const testDate = testAt ? dayMonth(testAt, lang) || null : null
 
   // Прирост за неделю — от снимка в localStorage (истории на бэкенде нет,
   // см. levelProgress.js). Считаем в эффекте: снимок трогает localStorage, а
@@ -526,9 +549,10 @@ export default function HomePage({
       onProfile={onProfile}
       onHelp={levelUnknown ? undefined : tour.start}
     >
-      {/* Макет «Главная · редизайн» (21.10.2026): заголовок, баннер маршрута во всю ширину, ниже две колонки —
-          слева «Сегодня», практика и результаты теста, справа расписание с домашкой (у демо — пробный урок) и
-          сильные и слабые стороны, — и внизу во всю ширину «Что делать дальше». */}
+      {/* ТЗ v2.0 (прототип «JTS Главная с Луной»): заголовок, баннер цели во всю ширину, ниже две колонки — слева
+          «Сегодня» и «Свободная практика», справа «Уроки с преподавателем» (у Self Study и демо — «Ближайшее») и
+          «Сильные и слабые стороны». Обёртки .hm-slot на компьютере растворены (display: contents); на планшете они —
+          клетки сетки: «Сегодня» во всю ширину, под ним уроки и навыки рядом, ниже практика (demo.css). */}
       <div className="hm hm--v2">
         <header className="hm-top">
           <h1 className="hm-top__title">{t('nav.home')}</h1>
@@ -560,6 +584,8 @@ export default function HomePage({
                 option={geOption}
                 planLine={null}
                 week={0}
+                step={step}
+                day={day}
                 onEdit={() => onGeEdit?.()}
                 onOpenRoute={() => onGeRoute?.()}
                 onBuy={() => onOpenPricing?.()}
@@ -586,6 +612,7 @@ export default function HomePage({
             {/* «Сегодня»: план по дням, если он собран; пока плана нет (тест, формат) — «Начните отсюда» (решение
                 владельца 21.10.2026); у прежней «Главной» — подсказка дня. План или профиль ещё в пути — пусто, а не
                 подсказка, которая через секунду сменится на «Сегодня». */}
+            <div className="hm-slot hm-slot--today">
             {geToday ? (
               <GeTodayCard plan={gePlan.plan} frontier={gePlan.frontier} level={summary.level || userLevel} token={token} onReload={gePlan.reload} onNav={onNav} />
             ) : !geLoaded || (geTop === 'goal' && gePlan.status === 'loading') ? null : geMode && geTop !== 'goal' ? (
@@ -593,15 +620,46 @@ export default function HomePage({
             ) : isDemoAccount ? null : (
               <RecommendCard t={t} summary={levelSkills} homework={homework} occurrences={occurrences} onNav={onNav} />
             )}
-            <PracticeToday t={t} lang={lang} token={token} onNav={onNav} />
-            {/* Отчёт теста уровня v16; теста нет — тот же блок пустым и зовёт на тест (решение владельца 21.10.2026). */}
-            {!ieltsAccount && <PlacementResults report={report} onRetake={onStartLevelTest} collapseKey={placementCollapseKey(tourKey)} token={token} />}
+            </div>
+            <div className="hm-slot hm-slot--prac">
+              <PracticeToday t={t} lang={lang} token={token} onNav={onNav} />
+            </div>
           </div>
 
           <div className="hm-grid__side">
-            {/* Пробный урок: назначенное занятие → заявка → приглашение. Платящему он не нужен — у него уже есть и
-                преподаватель, и уроки, а «Записаться на пробный» рядом с расписанием читается как ошибка. */}
-            {isDemoAccount ? (
+            <div className="hm-slot hm-slot--lessons">
+            {/* Компьютер и планшет: «Уроки с преподавателем» или «Ближайшее» (ТЗ 5.4); формат ещё не ясен — пусто, а не
+                «Ближайшее», которое через секунду сменится уроками. Телефон — свои карточки ниже. */}
+            {!phone ? (
+              format === 'teacher' ? (
+                <TeacherLessonsCard
+                  token={token}
+                  occurrences={occurrences}
+                  summary={lessonsSummary}
+                  homework={homework}
+                  homeworkState={token ? homeworkState : 'ready'}
+                  onRetryHomework={retryHomework}
+                  teacherToday={teacherToday}
+                  onNav={onNav}
+                  onOpenLesson={onOpenLesson}
+                />
+              ) : format ? (
+                <NearCard
+                  demo={format === 'demo'}
+                  occurrences={occurrences}
+                  course={course}
+                  level={courseLevel}
+                  trial={trial}
+                  sending={sending}
+                  failed={failed}
+                  onBook={book}
+                  onNav={onNav}
+                  onOpenLesson={onOpenLesson}
+                />
+              ) : null
+            ) : isDemoAccount ? (
+              // Пробный урок телефона: назначенное занятие → заявка → приглашение. Платящему он не нужен — у него уже
+              // есть и преподаватель, и уроки, а «Записаться на пробный» рядом с расписанием читается как ошибка.
               <TrialCard
                 t={t}
                 lang={lang}
@@ -618,19 +676,22 @@ export default function HomePage({
                 <HomeworkCard t={t} lang={lang} items={homework} state={token ? homeworkState : 'ready'} onRetry={retryHomework} onNav={onNav} />
               </>
             )}
+            </div>
+            <div className="hm-slot hm-slot--skills">
             {!ieltsAccount && (
               <SkillsCard
                 t={t}
                 summary={levelSkills}
                 hasData={hasData}
                 levelUnknown={levelUnknown}
+                testDate={testDate}
                 onTest={geMode ? onGeStart : onStartLevelTest}
+                onResults={() => onNav?.('placement-results')}
               />
             )}
+            </div>
           </div>
         </div>
-
-        {!ieltsAccount && <PlacementNext report={report} onNav={onNav} onRetake={onStartLevelTest} />}
       </div>
       {tour.open && (
         <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps()} storageKey={tourStorageKey} onFinish={finishTour} />
@@ -990,8 +1051,13 @@ const SKILL_ROWS = ['speaking', 'listening', 'vocab', 'grammar', 'writing']
  * Сильные и слабые стороны (макет: строка навыка — название, тренд и процент, под ней полоса; ниже две плашки
  * «Сильнее всего» и «Стоит подтянуть»). Без теста — те же строки с «???» и пустыми полосами и приглашение пройти тест
  * (кадр «новый ученик»); тест есть, а заданий в практике нет — та же заглушка с прежним текстом и без кнопки.
+ *
+ * ТЗ v2.0, 5.5: под заголовком одна строка-источник «Уровень A2 (тест 20 октября) · % верных…» (testDate — дата теста,
+ * если уровень и сейчас тот, что дал тест), внизу одна ссылка «Результаты теста →» — полный отчёт своей страницей.
+ * Ссылка — только компьютеру и планшету: телефон по макету приложения её не рисует (demo.css).
  */
-function SkillsCard({ t, summary, hasData, levelUnknown, onTest }) {
+function SkillsCard({ t, summary, hasData, levelUnknown, testDate = null, onTest, onResults }) {
+  const estimate = summary.ranked?.some((r) => r.estimate)
   const rows = hasData ? summary.ranked : SKILL_ROWS.map((skill) => ({ skill, percent: null }))
   // Задания уровня по навыку есть, но меньше пяти — «мало данных», а не «???» (тот — у ученика без теста).
   const few = (percent) => hasData && percent == null
@@ -1002,7 +1068,9 @@ function SkillsCard({ t, summary, hasData, levelUnknown, onTest }) {
           всем прошлым заданиям навыка (withStartEstimate), и подпись это говорит. */}
       {summary.level && (
         <p className="hm-skills__src">
-          {t(summary.ranked?.some((r) => r.estimate) ? 'home.skills.sourceEstimate' : 'home.skills.source', { level: summary.level })}
+          {testDate
+            ? t(estimate ? 'home.skills.sourceTestEstimate' : 'home.skills.sourceTest', { level: summary.level, date: testDate })
+            : t(estimate ? 'home.skills.sourceEstimate' : 'home.skills.source', { level: summary.level })}
         </p>
       )}
       <div className="hm-skills__list">
@@ -1075,12 +1143,17 @@ function SkillsCard({ t, summary, hasData, levelUnknown, onTest }) {
           )}
         </div>
       )}
+      {onResults && (
+        <button type="button" className="hm-skills__results" onClick={() => onResults()}>
+          {t('home.skills.results')}
+        </button>
+      )}
     </section>
   )
 }
 
 /**
- * Практика на сегодня — четыре входа в разделы, а не подобранные задания.
+ * Свободная практика (ТЗ v2.0, 5.6; раньше «Практика на сегодня») — четыре входа в разделы, а не подобранные задания.
  *
  * Подборки на бэкенде нет: ни ручки, ни признака «что человеку сегодня
  * полезнее». Изобретать её на клиенте значило бы выдавать случайный выбор за

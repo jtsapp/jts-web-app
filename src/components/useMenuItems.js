@@ -7,6 +7,7 @@ import { matchingView } from '../matching/matchingState.js'
 import { useStudentSections, refreshStudentSections } from '../lib/studentSections.js'
 import { useStudentExams } from '../lib/useStudentExams.js'
 import { useContractsBadge } from '../contracts/useContracts.js'
+import { useHomeworkBadge } from '../lib/myHomework.js'
 
 // Подбора учителя на стенде нет или он ещё не ответил — «Мой учитель» в меню не ставим.
 const MATCHING_HIDDEN = new Set(['idle', 'loading', 'unavailable'])
@@ -26,7 +27,9 @@ export function useMenuItems(token) {
   const matching = matchingView(useMatching(isStudentSectionHidden('my-teacher') ? null : studentToken))
   const myTeacher = !teacher && !MATCHING_HIDDEN.has(matching.status)
   const contractsToSign = useContractsBadge(isStudentSectionHidden('contracts') ? null : studentToken)
-  const badges = { 'my-teacher': matching.badge || 0, contracts: contractsToSign }
+  // «Домашняя работа» — сколько работ ждут ученика (ТЗ v2.0, 5.4); у кого раздела в меню нет, значок не виден.
+  const homeworkWaiting = useHomeworkBadge(teacher || isStudentSectionHidden('homework') ? null : studentToken, { ielts: ieltsAccount })
+  const badges = { 'my-teacher': matching.badge || 0, contracts: contractsToSign, homework: homeworkWaiting }
   return { items: menuItems({ teacher, ieltsAccount, exams, rewards, myTeacher, sections }), teacher, ieltsAccount, badges,
     sections, retrySections: () => refreshStudentSections(studentToken) }
 }

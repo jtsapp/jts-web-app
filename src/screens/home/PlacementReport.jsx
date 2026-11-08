@@ -10,8 +10,12 @@ import { retakeArgs, speakingMissing, withSpeakingResult } from '../../placement
  * Отчёт последнего теста уровня v16 на «Главной» (указание руководителя 14.10.2026: «после теста все данные — очень
  * детальные отчёты — в этом разделе»). С редизайна «Главной» (макет «Главная · редизайн», 21.10.2026) он в двух
  * местах: карточка «Результаты теста уровня» в колонке (общий уровень и четыре навыка) и блок «Что делать дальше»
- * во всю ширину внизу (цель, на что сделать упор, задания «Практики»). Данные одни — HomePage спрашивает их один раз
+ * во всю ширину внизу (цель, на что сделать упор, задания «Практики»). Данные одни — экран спрашивает их один раз
  * (usePlacementReport) и раздаёт обоим. Причины и пояснения пишет сам тест на языке прохождения — показываем как есть.
+ *
+ * С ТЗ v2.0 «Луна-трекер» (5.5 и 5.7) обе карточки живут на своей странице (PlacementResultsPage, ?screen=placement-results):
+ * «Главная» показывает только ссылку «Результаты теста →» в «Сильных и слабых сторонах», а сам хук берёт ради даты теста
+ * в строке-источнике.
  *
  * version — счётчик сохранённых итогов из App: тест сохранил новый итог — отчёт перечитывается.
  */
@@ -65,10 +69,12 @@ function CollapseToggle({ collapsed, onToggle, bodyId }) {
   )
 }
 
-export function PlacementResults({ report, onRetake, collapseKey, token }) {
+// collapsible — «Скрыть / Показать» (жалоба 02.11.2026 на «Главной»); на своей странице отчёта сворачивать незачем.
+export function PlacementResults({ report, onRetake, collapseKey, token, collapsible = true }) {
   const { t, lang } = useI18n()
   const { loaded, view } = report
-  const [collapsed, toggle] = usePlacementCollapsed(collapseKey)
+  const [stored, toggle] = usePlacementCollapsed(collapsible ? collapseKey : null)
+  const collapsed = collapsible && stored
   // Пересдача говорения без уровня — окно говорения поверх «Главной» (решение владельца 03.11.2026).
   const [retaking, setRetaking] = useState(false)
   const [retakeFailed, setRetakeFailed] = useState(false)
@@ -93,7 +99,7 @@ export function PlacementResults({ report, onRetake, collapseKey, token }) {
             {t('placement.report.title')}
           </h2>
           <span className="pl-report__status">{t('placement.report.missingStatus')}</span>
-          <CollapseToggle collapsed={collapsed} onToggle={toggle} bodyId="pl-missing-body" />
+          {collapsible && <CollapseToggle collapsed={collapsed} onToggle={toggle} bodyId="pl-missing-body" />}
         </div>
 
         {!collapsed && (
@@ -142,7 +148,7 @@ export function PlacementResults({ report, onRetake, collapseKey, token }) {
           {t('placement.report.title')}
         </h2>
         {when && <span className="pl-report__date">{when}</span>}
-        <CollapseToggle collapsed={collapsed} onToggle={toggle} bodyId="pl-report-body" />
+        {collapsible && <CollapseToggle collapsed={collapsed} onToggle={toggle} bodyId="pl-report-body" />}
       </div>
 
       {!collapsed && (

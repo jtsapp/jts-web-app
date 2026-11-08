@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { homeworkCards, materialCardBase, openHomework, withStates } from './homeworkList.js'
+import { homeworkBadgeCount, homeworkCards, materialCardBase, openHomework, withStates } from './homeworkList.js'
 
 // Один список домашки для «Главной», раздела и Луны (аудит ТЗ v2.0, 06.11.2026: «Главная» писала «всё сделано» при
 // просроченном материале с урока, Луна видела одну работу из трёх).
@@ -52,5 +52,21 @@ describe('homeworkList', () => {
       ['no-due', 'assigned'],
     ])
     expect(withStates(cards, now).find((c) => c.id === 'sent').state).toBe('submitted')
+  })
+})
+
+// Значок «Домашней работы» в меню (ТЗ v2.0, 5.4): просрочено + задано, на доработку — тоже ждёт ученика.
+describe('homeworkBadgeCount', () => {
+  it('считает только работы, которые ждут ученика', () => {
+    const now = new Date(2026, 10, 7)
+    const cards = [
+      { id: 1, status: 'ASSIGNED', dueDate: '2026-10-01' },
+      { id: 2, status: 'ASSIGNED' },
+      { id: 3, status: 'NEEDS_REVISION' },
+      { id: 4, status: 'SUBMITTED' },
+      { id: 5, status: 'COMPLETED', grade: 5 },
+    ]
+    expect(homeworkBadgeCount(cards, now)).toBe(3)
+    expect(homeworkBadgeCount(null, now)).toBe(0)
   })
 })

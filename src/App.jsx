@@ -110,6 +110,8 @@ const CompleteRegistrationPage = lazyScreen(() => import('./screens/CompleteRegi
 const PlacementPage = lazyScreen(() => import('./screens/PlacementPage.jsx'))
 const LearningPage = lazyScreen(() => import('./screens/LearningPage.jsx'))
 const HomePage = lazyScreen(() => import('./screens/HomePage.jsx'))
+// Полный отчёт теста уровня — своей страницей по ссылке из «Сильных и слабых сторон» (ТЗ v2.0, 5.5 и 5.7).
+const PlacementResultsPage = lazyScreen(() => import('./screens/PlacementResultsPage.jsx'))
 const PricingPage = lazyScreen(() => import('./screens/PricingPage.jsx'))
 const MinutesTopUpPage = lazyScreen(() => import('./screens/MinutesTopUpPage.jsx'))
 const PracticePage = lazyScreen(() => import('./screens/PracticePage.jsx'))
@@ -236,6 +238,8 @@ const PERSISTABLE_SCREENS = new Set([
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
   // Анкета, маршрут и план General English (спеки 2026-10-12 и 2026-10-13): данные берут у бэкенда сами
   'ge-onboarding', 'ge-route', 'ge-plan',
+  // Полный отчёт теста уровня (ТЗ v2.0, 5.7): отчёт экран берёт у сервера сам, F5 остаётся на нём
+  'placement-results',
   // Тест уровня v16: прогон тест хранит сам (localStorage с пространством профиля), F5 продолжает с того же места
   'placement',
   // SAT: хаб держит вкладку в ?satTab= сам (docs/sat/PLAN.md)
@@ -1855,6 +1859,7 @@ export default function App() {
       } else setScreen('kingdom')
     }
     else if (key === 'ge-plan') setScreen('ge-plan')
+    else if (key === 'placement-results') setScreen('placement-results')
     // Практика открывается и с домашней работы: payload несёт адрес юнита,
     // который задал преподаватель.
     else if (key === 'practice') { setPracticeTarget(payload || null); setScreen('practice') }
@@ -2470,6 +2475,19 @@ export default function App() {
             setTempers((prev) => ({ ...prev, ...patch }))
             saveTutorPrefs(token, { tutorTempers: patch })
           }}
+        />
+      )
+    case 'placement-results':
+      return (
+        <PlacementResultsPage
+          token={token}
+          userName={name}
+          userLevel={userLevel}
+          geTarget={(!ieltsAccount && geProfile?.targetLevel) || null}
+          placementVersion={placementVersion}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+          onStartTest={() => openPlacement('home')}
         />
       )
     case 'minutes':

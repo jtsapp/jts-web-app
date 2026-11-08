@@ -22,6 +22,7 @@ const NAV_OF = {
   home: 'home',
   'ge-plan': 'home',
   'ge-route': 'home',
+  'placement-results': 'home',
   services: 'services',
   profile: '',
   kingdom: 'learning',
