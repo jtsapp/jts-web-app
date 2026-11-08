@@ -455,6 +455,10 @@
           "title": "Just to Listen"
         },
         {
+          "id": "speedReading",
+          "title": "Скорочтение"
+        },
+        {
           "id": "cartoons",
           "title": "Cartoon World"
         },
@@ -561,10 +565,6 @@
         {
           "id": "topics",
           "title": "Темы по уровням"
-        },
-        {
-          "id": "speedReading",
-          "title": "Скорочтение"
         },
         {
           "id": "listening",
@@ -841,7 +841,7 @@
     },
     "practice": {
       "title": "Практика: обзор и лимиты",
-      "hash": "lqpcl0"
+      "hash": "13w4ztp"
     },
     "grammar": {
       "title": "Практика: Грамматика",
@@ -909,7 +909,7 @@
     },
     "speed-reading": {
       "title": "Практика: Скорочтение",
-      "hash": "wguqoz"
+      "hash": "1e41jb1"
     },
     "library": {
       "title": "Практика: Книжки, сказки, комиксы, мемы, караоке",
