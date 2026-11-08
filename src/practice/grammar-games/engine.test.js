@@ -157,6 +157,25 @@ describe('«Грамматика · игры»: связь с приложени
     expect($$('.gcard.g-pick.done .stars .y')).toHaveLength(3)
   })
 
+  // Луна (lib/assistant/screenSnapshot.js, opening.js): пока идёт раунд — непроверенное задание, ответ не называть.
+  it('раунд игры помечен для Луны заданием; тема и итог — нет', async () => {
+    vi.useFakeTimers()
+    mount()
+    const app = () => root.querySelector('#app')
+    await api.go('topic', 'L1-01')
+    expect(app().hasAttribute('data-assistant-task')).toBe(false)
+    await api.go('game', 'pick')
+    expect(app().getAttribute('data-assistant-task')).toMatch(/^игра:/)
+    const n = api.snapshot().R.items.length
+    for (let i = 0; i < n; i++) {
+      const { R } = api.snapshot()
+      root.querySelector(`#o${R.items[R.i].opts.findIndex((o) => o.ok)}`).click()
+      vi.advanceTimersByTime(1100)
+    }
+    expect(api.snapshot().view).toBe('result')
+    expect(app().hasAttribute('data-assistant-task')).toBe(false)
+  })
+
   it('смена языка перерисовывает экран без пересоздания', async () => {
     mount()
     await api.go('topic', 'L1-01')

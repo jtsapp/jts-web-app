@@ -29,6 +29,7 @@
 //   снимает всё;
 // - починка: строка разбирается на слова до экранирования (text.js, wrapEN).
 // Каждый ответ в игре — cfg.onAnswer(верно?) → рейтинг навыка «грамматика».
+// Пока идёт раунд, #app помечен data-assistant-task — Луна видит непроверенное задание и ответ не называет.
 // Прокрутку на смене вида делает приложение — cfg.scrollTop(вид): во вкладке Практики раздел стоит под карточками
 // навыков, и хаб показывается с верха страницы, а тема и игра — с верха раздела.
 
@@ -208,7 +209,10 @@ function go(v,a,b){loadSeq++;stopLoops();closeModal();hidePop();
 function openTopic(id,tab){const seq=++loadSeq;G.view='loading';G.loading=id;G.loadTab=tab;render();scrollTop(G.view);
  return Promise.resolve().then(()=>loadTopic(id)).then(body=>{if(dead||seq!==loadSeq)return;if(!body||body.id!==id)throw new Error('тема не та');TMAP[id]=body;G.topic=id;G.tab=tab;G.view='topic';render();},
   ()=>{if(dead||seq!==loadSeq)return;G.view='loadfail';render();});}
-function render(){const a=$('app');if(G.view==='hub')a.innerHTML=vHub();else if(G.view==='topic')a.innerHTML=G.tab==='rule'?vRule():vQuest();else if(G.view==='game')startGame();else if(G.view==='result')a.innerHTML=vResult();else if(G.view==='loading')a.innerHTML=vWait(false);else if(G.view==='loadfail')a.innerHTML=vWait(true);}
+// Идёт раунд — для Луны это непроверенное задание (data-assistant-task, lib/assistant/screenSnapshot.js): варианты здесь
+// просто кнопки, «Проверить» нет, и без пометки она на «помоги» называла ответ текущего вопроса (зонд M03, 08.11.2026).
+const TASK_NOTE='игра: вариант выбирают нажатием, ответ засчитывается сразу';
+function render(){const a=$('app');if(G.view==='game')a.setAttribute('data-assistant-task',TASK_NOTE);else a.removeAttribute('data-assistant-task');if(G.view==='hub')a.innerHTML=vHub();else if(G.view==='topic')a.innerHTML=G.tab==='rule'?vRule():vQuest();else if(G.view==='game')startGame();else if(G.view==='result')a.innerHTML=vResult();else if(G.view==='loading')a.innerHTML=vWait(false);else if(G.view==='loadfail')a.innerHTML=vWait(true);}
 function vWait(fail){return `<button class="back" ${act('go','hub')}>${t('back')}</button><div class="stage gg-wait" ${fail?'role="alert"':'role="status"'}><img src="${fail?IMG.sleep:IMG.read}" alt=""><p class="sub">${t(fail?'loadFail':'loading')}</p>${fail?`<button class="btn" ${act('retryTopic')}>${t('retry')}</button>`:''}</div>`;}
 /* ================= HUB ================= */
 function vHub(){const total=TOPICS.reduce((a,tp)=>a+topicStars(tp),0);
