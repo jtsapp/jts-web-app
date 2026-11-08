@@ -153,6 +153,9 @@
     "placement": [
       "placement"
     ],
+    "placement-results": [
+      "home"
+    ],
     "practice": [
       "practice"
     ],
@@ -790,7 +793,7 @@
     },
     "placement": {
       "title": "Тест уровня",
-      "hash": "1g17cpj"
+      "hash": "svaixs"
     },
     "level": {
       "title": "Уровень английского и звания",
@@ -798,7 +801,7 @@
     },
     "home": {
       "title": "Главная",
-      "hash": "apm9m8"
+      "hash": "1s866sv"
     },
     "course-map": {
       "title": "Повторение: карта курса",
