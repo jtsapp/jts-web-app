@@ -118,6 +118,16 @@ describe('перерыв и «На сегодня всё»', () => {
     expect(hintsFor('на сегодня всё, нет времени', { studentContext: PLAN })).not.toMatch(/REPLAN/)
   })
 
+  // Эталон учителя 08.11.2026: «Переведи: I am tired» получало указание о перерыве, а фраза для перевода — «рассказ о себе».
+  it('«устал» внутри текста для перевода или проверки — не перерыв и не факт о себе', () => {
+    for (const q of ['Переведи: I am tired', 'Как по-английски «я устал»?', 'Проверь: I am very tired after work today']) {
+      expect(hintsFor(q, { studentContext: PLAN })).not.toMatch(/BREAK/)
+    }
+    expect(hintsFor('Переведи: Я работаю учителем в школе')).not.toMatch(/REMEMBER/)
+    expect(hintsFor('Я работаю учителем в школе')).toMatch(/REMEMBER/)
+    expect(hintsFor('я устала, хочу перерыв', { studentContext: PLAN })).toMatch(/BREAK/)
+  })
+
   it('«да» на её «Перерыв?» — та же метка с _NOW', () => {
     expect(hintsFor('да', { studentContext: PLAN, previous: 'Сделаем паузу?\n[[BREAK 10]]' })).toMatch(/\[\[BREAK_NOW N\]\] с теми же минутами/)
     expect(hintsFor('давай', { studentContext: PLAN, previous: 'Закончим?\n[[STOP_DAY]]' })).toMatch(/\[\[STOP_DAY_NOW\]\]/)
