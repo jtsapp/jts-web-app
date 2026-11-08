@@ -148,7 +148,7 @@ describe('HomeworkPage', () => {
 
     fireEvent.click(submit)
 
-    await waitFor(() => expect(api.submitHomework).toHaveBeenCalledWith('TOK', 7))
+    await waitFor(() => expect(api.submitHomework).toHaveBeenCalledWith('TOK', 7, { hintLevels: {} }))
     await waitFor(() => expect(container.querySelector('.hw-badge--submitted')).not.toBeNull())
   })
 
@@ -482,7 +482,7 @@ describe('HomeworkPage: работа из части-материала', () => 
 
     await тронутьРамку(frame)
     fireEvent.click(кнопкаСдачи())
-    await waitFor(() => expect(api.submitHomework).toHaveBeenCalledWith('TOK', 7))
+    await waitFor(() => expect(api.submitHomework).toHaveBeenCalledWith('TOK', 7, { hintLevels: {} }))
   })
 
   // Касание помнится вместе с id работы — тот же приём, что у черновика ответов:

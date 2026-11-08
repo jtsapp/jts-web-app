@@ -37,7 +37,8 @@ export function assistantChips({ kind, format = null, rewards = false }) {
   if (kind === 'test') return [{ key: 'assistant.suggest.page' }, bug]
   if (kind === 'task') {
     return [
-      { key: 'assistant.suggest.hint', ask: 'assistant.suggest.hintAsk' },
+      // hint — не текст модели, а ступень подсказки по счёту задания (hintSteps.js, ТЗ 7.2б): решает окно.
+      { key: 'assistant.suggest.hint', ask: 'assistant.suggest.hintAsk', hint: true },
       { key: 'assistant.suggest.ruleShort' },
       { key: 'assistant.suggest.whyWrongShort' },
       bug,

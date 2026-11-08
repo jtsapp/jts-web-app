@@ -387,8 +387,18 @@ export function removeHomeworkAnswer(token, id, materialId) {
   return authDelete(`/admin/homework/${id}/submission-materials/${materialId}`, token)
 }
 
-export function submitHomework(token, id) {
-  return authPut(`/admin/homework/${id}/submit`, token)
+// hintLevels — ступени подсказки Луны по заданиям работы ({ "<exerciseId>": 1|2 }, ТЗ v2.0 7.2б; backend V543, контракт
+// homework-hint-contract.md): то, что не ушло сразу ручкой …/hint. Тело необязательное — без ступеней PUT пустой, как
+// раньше; прежний бэкенд тело сдачи не читает.
+export function submitHomework(token, id, { hintLevels = null } = {}) {
+  const body = hintLevels && Object.keys(hintLevels).length ? { hintLevels } : null
+  return authPut(`/admin/homework/${id}/submit`, token, body)
+}
+
+// Ступень подсказки Луны по заданию домашки — сразу, как Луна её дала (1 — наводка, 2 — правило и пример; ответа в
+// домашке нет). Сервер хранит максимум, повтор безопасен; штрафа нет, преподаватель видит метку в проверке.
+export function saveHomeworkHint(id, exerciseId, token, hintLevel) {
+  return authPut(`/admin/homework/${id}/exercises/${exerciseId}/hint`, token, { hintLevel })
 }
 
 // Ответ на задание, взятое преподавателем с живого урока. Правильность считает

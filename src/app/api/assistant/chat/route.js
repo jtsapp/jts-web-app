@@ -32,7 +32,8 @@ import {
   parseEventMark,
 } from '@/lib/assistant/prompt.js'
 import { createOfftopicGuard, createRateLimiter } from '@/lib/assistant/rateLimit.js'
-import { loadStudentContext } from '@/lib/assistant/studentContext.js'
+import { dropStudentContext, loadStudentContext } from '@/lib/assistant/studentContext.js'
+import { saveFacts } from '@/lib/db/assistantFacts.js'
 import { assistantPersona } from '@/lib/assistant/persona.js'
 import {
   REPORTED_STREAM_MARKER,
@@ -47,6 +48,7 @@ import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
 import { adviceText, inferAdviceOffer } from '@/lib/assistant/tracker.js'
 import { isLiveAssistantCall } from '@/lib/assistant/callUsage.js'
 import { itemIntentForTurns } from '@/lib/assistant/items/intent.js'
+import { parseHintMark } from '@/lib/assistant/hintSteps.js'
 import { buildItemCatalog, resolveItem } from '@/lib/assistant/items/catalog.js'
 
 export const runtime = 'nodejs'
@@ -123,6 +125,9 @@ export async function POST(request) {
   // Событие трекера («Луна пишет первой», lib/assistant/events.js): строка лога — сколько каких событий, без текста.
   const event = parseEventMark(parsed.messages[parsed.messages.length - 1].content)
   if (event) console.info('[assistant]', JSON.stringify({ kind: 'event', type: event.type }))
+  // Ступень подсказки (lib/assistant/hintSteps.js): сколько каких ступеней и был ли ключ — без текста задания и ключа.
+  const hint = parseHintMark(parsed.messages[parsed.messages.length - 1].content)
+  if (hint) console.info('[assistant]', JSON.stringify({ kind: 'hint', step: hint.step, mode: hint.mode, key: Boolean(parsed.hintKey) }))
   const studentTurns = parsed.messages.filter((m) => !(m.role === 'user' && isOpeningTurn(m.content)))
   const lastText = parsed.messages[parsed.messages.length - 1].content
   const pause = offtopic.blockedFor(key)
@@ -252,7 +257,7 @@ export async function POST(request) {
   // не опасное и не ответ за ученика на непроверенном задании. Метку модели сверяем с
   // его же репликой: RULES это просят, но держит их модель через раз.
   const finalAction = async () => {
-    if (focusTask || wake || stuck) return null
+    if (focusTask || wake || stuck || hint) return null
     const action = actions.action()
     // Ответ на событие: кнопки ставит окно по таблице событий (events.js) — перерыв, «мало времени», «На сегодня всё»
     // модели не доверяем, даже если указание она пропустила. Остаётся только её предложение открыть раздел: оно нужно,
@@ -275,6 +280,7 @@ export async function POST(request) {
   const serviceTail = async () => {
     const action = await finalAction()
     await saveNote(action)
+    await saveMemory()
     return actionTail(action) + ((await saveReport()) ? REPORTED_STREAM_MARKER : '')
   }
   // Заметка Луны-трекера (lib/db/assistantTracker.js): совет — это её предложение
@@ -288,6 +294,17 @@ export async function POST(request) {
     // Обращение в Feedback — тоже не совет: Луна помогает написать, а не зовёт учиться.
     if (action?.kind !== 'open' || action.item || action.feedback || (action.now && !opening)) return
     await saveAdviceNote(key, { target: action.target, advice: adviceText(shown) }).catch(() => false)
+  }
+  // Память Луны (ТЗ v2.0, 8.1; lib/assistant/facts.js): факт из метки [[REMEMBER …]] — только из ответа на слова
+  // ученика, не на служебный ход (открытие окна, событие, подсказка): там ученик о себе ничего не говорил. Что
+  // чувствительно, отсекает saveFacts. Записали — профиль из кэша долой: следующий ответ уже знает факт.
+  const saveMemory = async () => {
+    if (opening) return
+    const facts = actions.facts()
+    if (!facts.length) return
+    const n = await saveFacts(key, facts).catch(() => 0)
+    console.info('[assistant]', JSON.stringify({ kind: 'fact', proposed: facts.length, saved: n }))
+    if (n) dropStudentContext(auth.user.userId)
   }
   const first = visible(head) + (finished ? visibleTail() : '')
   const saveReport = async () => {

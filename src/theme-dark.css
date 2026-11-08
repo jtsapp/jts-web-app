@@ -551,3 +551,30 @@ html[data-theme="dark"] .pfm-luna__note,
 html[data-theme="dark"] .pfm-luna__device {
   color: var(--dk-text-2);
 }
+/* «Память Луны» (ТЗ v2.0, 8.1). */
+html[data-theme="dark"] .pf-mem__note,
+html[data-theme="dark"] .pf-mem__empty,
+html[data-theme="dark"] .pf-mem__until,
+html[data-theme="dark"] .pfm-mem__note,
+html[data-theme="dark"] .pfm-mem__empty,
+html[data-theme="dark"] .pfm-mem__until {
+  color: var(--dk-text-2);
+}
+html[data-theme="dark"] .pf-mem__fact,
+html[data-theme="dark"] .pfm-mem__fact {
+  color: var(--dk-text);
+}
+html[data-theme="dark"] .pf-mem__item,
+html[data-theme="dark"] .pfm-mem__item {
+  border-color: var(--dk-line);
+}
+html[data-theme="dark"] .pf-mem__del,
+html[data-theme="dark"] .pfm-mem__del {
+  background: var(--dk-chip);
+  color: var(--dk-text-2);
+}
+html[data-theme="dark"] .pf-mem__del:hover,
+html[data-theme="dark"] .pfm-mem__del:hover {
+  background: var(--dk-red-tint);
+  color: var(--dk-red);
+}

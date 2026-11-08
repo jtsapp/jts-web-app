@@ -26,6 +26,7 @@ import { phraseLang } from './phraseLang.js'
 import { addressHint, questionHints } from './turnHints.js'
 import { REPORT_BUG_MARKER, createReportFilter, splitReport } from './report.js'
 import { eventHint, parseEventMark } from './events.js'
+import { ANSWER, hintInstruction, hintMark, keyAllowed, parseHintMark } from './hintSteps.js'
 
 export { REPORT_BUG_MARKER, createReportFilter, splitReport }
 export { OPENING_MARK, STUCK_ERRORS_MARK, STUCK_IDLE_MARK, WAKE_MARK, isOpeningTurn, isWakeTurn, openingFocus, stuckReason }
@@ -146,6 +147,8 @@ const rulesFor = (persona) => `Ты — ${persona.name}, преподавате�
 - Прошлые советы — это ты сама советовала раньше; в первой реплике вспоминай только помеченный (см. «Когда ученик открыл окно») и в разговоре — не больше одного раза. На вопрос о плане опирайся и на невыполненные советы.
 - Ошибки из разговоров — это ошибки ученика в звонках со Speaking Buddy. Если задание на экране на то же правило, что одна из них (та же форма, та же конструкция), — ОБЯЗАТЕЛЬНО одной фразой скажи, что такая ошибка была и в разговоре со Speaking Buddy («в разговоре со Speaking Buddy тоже было «he go»»). Советуешь, что потренировать, — можешь опереться на них.
 - Раздел давно не открыт, а навык слабый — хороший повод для совета; давно не открыт, но навык сильный — не повод.
+- «Память Луны» в профиле — что ученик сам рассказал о себе (цель, срок, страх, привычка). Опирайся на неё, когда к месту, и не пересказывай списком.
+- Ученик рассказал о себе важное для учёбы — последней строкой [[REMEMBER короткий факт от третьего лица]]. Здоровье, деньги, контакты, других людей не запоминай.
 
 Про сайт:
 - Отвечай только тем, что есть в базе знаний и на снимке экрана. Не выдумывай кнопки, разделы, функции, цены, сроки и обещания.
@@ -345,8 +348,13 @@ export function parseChatRequest(body) {
   // Токены и призы на стенде (areRewardsEnabled в браузере: решает домен страницы). Ученику
   // ничего не даёт, кроме статьи базы знаний, поэтому верить окну тут безопасно.
   const rewards = body.rewards === true
+  // Ключ задания для 3-й ступени подсказки в практике (hintSteps.js): его отдаёт раздел, а не снимок. Возьмёт ли его
+  // модель, решает buildTurns по пометке и экрану; здесь — только форма и длина.
+  const hintKey = typeof body.hintKey === 'string' ? clipText(body.hintKey, 300) : ''
 
-  return { messages, screen: { id: screenId, text: screenText }, lang, pageUrl, userAgent, errors, bugReported, voice, call, rewards }
+  // Тест или экзамен на экране — решает окно по разметке (data-assistant-test); в снимке этого не видно.
+  const test = body.screen?.test === true
+  return { messages, screen: { id: screenId, text: screenText, ...(test ? { test } : {}) }, lang, pageUrl, userAgent, errors, bugReported, voice, call, rewards, hintKey }
 }
 
 // Язык вопроса, когда он виден уверенно: английский — без кириллицы и хотя бы из трёх
@@ -416,6 +424,11 @@ export function buildContextBlock({ user, screen, lang, studentContext, errors, 
   return `<контекст>\n${lines.join('\n')}\n</контекст>`
 }
 
+// Тест или экзамен на экране (screen.test от окна; ТЗ v2.0, 7.2б): только поддержка.
+export const TEST_HINT =
+  // «разберём, где ты ошиблась» — род в 8 из 20 (зонд 08.11): готовая фраза без рода.
+  'Идёт тест или экзамен: не подсказывай вовсе — ни ответа, ни правила, ни наводки, ни исключения вариантов, ни названия времени или темы. Можно поддержать и предложить разобрать задания после теста — без рода, например «после теста разберём, что вызвало сомнения». Без метки.'
+
 // Указание к вопросу с приложенным каталогом (items/catalog.js).
 export const ITEMS_HINT =
   'Ученик просит открыть конкретное. Возьми строку из списка «Что можно открыть» и последней строкой поставь метку с её адресом (просит открыть — [[OPEN_NOW адрес]], спрашивает где — [[OPEN адрес]]). Пометка «закрыт» — не открывай: скажи, что пока закрыт, и предложи «следующий». Вещь не названа («какую-нибудь книжку», «включи мультик», «открой комиксы») — не выбирай за ученика: открой весь список раздела меткой из заголовка списка ([[OPEN_NOW books]]); посоветовать одну вещь словами можно.'
@@ -442,7 +455,7 @@ const ITEMS_HINTS = { ask: ITEMS_HINT + AMBIGUOUS, guess: ITEMS_GUESS_HINT + AMB
 const SHOWN_ANSWER = /\[верный ответ по заданию:/
 
 /** Разговор для модели: к последнему вопросу ученика приклеен контекст. */
-export function buildTurns({ messages, user, screen, lang, studentContext, errors, pageUrl, voice, today, items, itemsMode = 'ask' }) {
+export function buildTurns({ messages, user, screen, lang, studentContext, errors, pageUrl, voice, today, items, itemsMode = 'ask', hintKey = '' }) {
   const turns = messages.map((m) => ({ role: m.role, content: m.content }))
   const last = turns[turns.length - 1]
   const opening = isOpeningTurn(last.content)
@@ -463,6 +476,16 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
   // «Подсказать?» (stuck.js): ученик застрял и сам нажал облачко — Луна сразу о задании.
   // Указание рядом с пометкой, как у открытия окна, и по той же причине.
   const stuck = stuckReason(last.content)
+  // Ступень подсказки (hintSteps.js) — какая, решило окно; режим сверяем с экраном: на экране домашки «практика» —
+  // подделка или ошибка, ключ там не отдаётся никогда. Сайт уже показал верный ответ (урок после ошибки) — это не
+  // подсказка, а разбор: ветка «застрял» ниже знает, что эталон тогда можно назвать.
+  const rawHint = parseHintMark(last.content)
+  // Тест или экзамен (окно видит data-assistant-test): подсказок нет вовсе (ТЗ 7.2б) — ни ступеней, ни разбора «застрял».
+  const onTest = screen?.test === true
+  const hint = rawHint && !onTest && !SHOWN_ANSWER.test(screen?.text || '')
+    ? { ...rawHint, mode: screen?.id === 'homework' ? 'homework' : rawHint.mode, step: screen?.id === 'homework' && (rawHint.step === 3 || rawHint.step === ANSWER) ? 2 : rawHint.step }
+    : null
+  const hintAsStuck = rawHint && !hint && !onTest ? (rawHint.reason === 'idle' ? 'idle' : 'errors') : null
   // Событие трекера (events.js, «Луна пишет первой»): что сказать, решил код — указание рядом с пометкой, по той же
   // причине, что у открытия окна. Проактивное сообщение — на языке интерфейса (промт ТЗ, раздел 2).
   const event = parseEventMark(last.content)
@@ -477,11 +500,14 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
   // Не русский — и тогда, когда совпал с интерфейсом: правила, база знаний и профиль русские и тянут ответ на русский
   // («What should I do today?» при английском интерфейсе — по-русски, эталонный набор Луны 07.11.2026).
   const langHint = qLang && (qLang !== lang || qLang !== 'ru') ? `\n\nЯзык ответа: ${LANG_NAMES[qLang]} — на нём задан вопрос.` : ''
-  const ask = stuck
+  const ask = hint
+    ? // Пометка — уже сверенная с экраном: на экране домашки модель видит «домашка», что бы ни прислало окно.
+      [hintMark(hint), answerLang, hintInstruction(hint, { key: keyAllowed(hint.mode, hint.step) ? hintKey || null : null, lang })].join('\n')
+    : stuck || hintAsStuck
     ? [
         last.content.trim(),
         answerLang,
-        `Ученик застрял на задании на экране (${stuck === 'idle' ? 'полторы минуты ничего не делает' : 'две неверные проверки подряд'}) и нажал «Подсказать?». Разбери именно это задание: что не так или на что посмотреть. Без приветствия.`,
+        `Ученик застрял на задании на экране (${(stuck || hintAsStuck) === 'idle' ? 'долго ничего не делает' : 'ответ отмечен неверным'}) и нажал «Подсказать?». Разбери именно это задание: что не так или на что посмотреть. Без приветствия.`,
         // Эталон сайт ставит только после окончательной проверки (правило 15.10.2026). Нет
         // его — значит, ученик ещё перепробует, и ответ называть нельзя: с общим «называй,
         // только если показан» Haiku 5.5 в 2 репликах из 8 всё равно говорила «went» (зонд 28.10).
@@ -527,10 +553,12 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
   // считала «I have» вместо «I've» ошибкой (жалоба 02.11.2026).
   const diffNote = !opening && !wake && SHOWN_ANSWER.test(screen?.text || '') ? answerDiffNote(screen?.text) : null
   const askWithDiff = diffNote ? `${ask}\n\n${diffNote}` : ask
-  const askItems = items && !opening ? `${askWithDiff}\n\n${ITEMS_HINTS[itemsMode] || ITEMS_HINTS.ask}` : askWithDiff
+  const askListed = items && !opening ? `${askWithDiff}\n\n${ITEMS_HINTS[itemsMode] || ITEMS_HINTS.ask}` : askWithDiff
+  // Тест — рядом с вопросом: правило «во время тестов не подсказывай» в RULES есть, но по снимку модель тест не узнаёт.
+  const askItems = onTest ? `${askListed}\n\n${TEST_HINT}` : askListed
   // Обращение и шаблоны учителя — тоже рядом с вопросом (turnHints.js: в RULES их модель
   // пропускала, зонд 07.11.2026). На служебных ходах — только обращение.
-  const service = opening || wake || stuck
+  const service = opening || wake || stuck || rawHint
   // Прошлая реплика Луны — для ответа на её вопрос («Сколько есть: 10, 20 или 30 минут?» → «20»).
   const prevReply = turns.slice(0, -1).reverse().find((m) => m.role === 'assistant')?.content || ''
   // Обращение — первым: последним оно вытесняло указания вопроса — метку жалобы с черновиком теряли 8 из 20 (зонд 07.11.2026).
@@ -539,7 +567,7 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
     ...(service ? [] : questionHints({ question: last.content, studentContext, unchecked, previous: prevReply, answerLang: qLang || lang })),
   ].filter(Boolean)
   const askHinted = hints.length ? `${askItems}\n\n${hints.join('\n')}` : askItems
-  const context = focus.task || wake || stuck ? withoutAdvice(studentContext) : studentContext
+  const context = focus.task || wake || stuck || rawHint ? withoutAdvice(studentContext) : studentContext
   last.content = `${buildContextBlock({ user, screen, lang, studentContext: context, errors, pageUrl, today, items })}\n\n${askHinted}${voice ? `\n\n${VOICE_MARK}` : ''}`
   return turns
 }

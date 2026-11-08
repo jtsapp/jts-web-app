@@ -635,6 +635,19 @@
     color: #5a5a66;
   }
 
+  /* «Память Луны» (ТЗ v2.0, 8.1): что Луна запомнила об ученике, у каждого факта — «удалить». */
+  .pfm-mem { padding: 14px 16px; }
+  .pfm-mem__note { margin: 0 0 8px; font-size: 13px; line-height: 18px; color: #5a5a66; }
+  .pfm-mem__empty { margin: 0; font-size: 14px; line-height: 20px; color: #5a5a66; }
+  .pfm-mem__list { list-style: none; margin: 0; padding: 0; }
+  .pfm-mem__item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #efeff3; }
+  .pfm-mem__item:first-child { border-top: 0; }
+  .pfm-mem__fact { flex: 1; min-width: 0; font-size: 15px; line-height: 20px; color: #181818; overflow-wrap: break-word; }
+  .pfm-mem__until { display: block; margin-top: 2px; font-size: 12px; line-height: 16px; color: #8b8a97; }
+  .pfm-mem__del { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; background: #f3f3f7; color: #5a5a66; font: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
+  .pfm-mem__del:hover { background: #ffecec; color: #e5484d; }
+  .pfm-mem { padding: 4px 0; }
+
   /* ---------- Удаление: содержимое общее с окном десктопа (.pfd в styles.css), кнопки — у низа экрана ---------- */
   .pfm .pfd {
     flex: 1;

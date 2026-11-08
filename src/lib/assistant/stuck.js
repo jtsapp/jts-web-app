@@ -1,6 +1,6 @@
 // «Застряли? Подсказать?» (28.10.2026, решение владельца): когда ученик ошибся
-// дважды подряд или полторы минуты ничего не делает на задании, у кнопки Луны
-// выходит облачко. Здесь — только счёт «пора или нет», без DOM и таймеров:
+// (с 08.11 — с первого раза, см. STUCK) или долго ничего не делает на задании,
+// у кнопки Луны выходит облачко. Здесь — только счёт «пора или нет», без DOM и таймеров:
 // снимки экрана и время приносит useStuckWatch.js.
 //
 // Ошибку видно по той же разметке, по которой Луна читает задание
@@ -13,7 +13,10 @@
 // на одном задании: в уроках «Обучения» после ошибки сайт показывает ответ и
 // ведёт дальше, и двух ошибок на одном задании там не бывает.
 
-export const STUCK = { wrongLimit: 2, idleMs: 90_000, cooldownMs: 180_000, ignoreLimit: 2, showMs: 12_000 }
+// ТЗ v2.0, 7.2б (08.11.2026): «Подсказать?» — после ПЕРВОГО неверного ответа и после 60 с без действий (было две
+// ошибки и 90 с). Дальше ступени ведёт окно (hintSteps.js): второй неверный ответ на задании, где подсказка уже была,
+// сам даёт следующую ступень — для этого счётчик ошибок (wrongs) виден снаружи.
+export const STUCK = { wrongLimit: 1, idleMs: 60_000, cooldownMs: 180_000, ignoreLimit: 2, showMs: 12_000 }
 
 const WRONG_TOKEN = /\[[^\]]*отмечено как неверное[^\]]*\]|\[верный ответ по заданию: [^\]]*\]/g
 const RIGHT_TOKEN = /\[[^\]]*отмечено как верное[^\]]*\]/g
@@ -35,6 +38,7 @@ export function createStuckTracker(opts = {}) {
   let idleFor = null // простой, о котором уже сказали (его lastActionAt)
   let ignoredInRow = 0
   let off = false
+  let wrongs = 0 // всех неверных проверок за визит — по росту окно видит «ещё одна ошибка»
 
   // Новый экран — новый счёт; его пометки (text) — то, что было до ученика.
   const enter = (id, text = '') => {
@@ -55,16 +59,21 @@ export function createStuckTracker(opts = {}) {
       screen = null
       enter(id, text)
     },
-    /** Снимок после действия ученика: 'errors' — пора предложить подсказку. */
-    observe({ screen: id, text, now }) {
+    /**
+     * Снимок после действия ученика: 'errors' — пора предложить подсказку. quiet — только счёт (окно открыто, другое
+     * облачко): ошибку видно для ступеней подсказки, а облачко и его пауза не тратятся.
+     */
+    observe({ screen: id, text, now, quiet = false }) {
       enter(id)
       const m = verdictMarks(text)
       // Пометка неверного появилась или сменилась (новый вариант, новый ввод) — это
       // новая проверка. Та же — ученик нажал что-то другое («Послушать»).
-      if (m.wrong && m.wrong !== last.wrong) errors++
-      else if (m.right && m.right !== last.right && !m.wrong) errors = 0
+      if (m.wrong && m.wrong !== last.wrong) {
+        errors++
+        wrongs++
+      } else if (m.right && m.right !== last.right && !m.wrong) errors = 0
       last = m
-      if (errors < o.wrongLimit || !canShow(now)) return null
+      if (quiet || errors < o.wrongLimit || !canShow(now)) return null
       show(now)
       return 'errors'
     },
@@ -86,5 +95,6 @@ export function createStuckTracker(opts = {}) {
       if (ignoredInRow >= o.ignoreLimit) off = true
     },
     isOff: () => off,
+    wrongs: () => wrongs,
   }
 }

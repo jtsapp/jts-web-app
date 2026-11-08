@@ -27,7 +27,7 @@ export class AssistantError extends Error {
  *   провести тур или нажать кнопку экрана (actions.js; у click — подпись кнопки).
  *   Оба — хвост стрима, ученику не показывается.
  */
-export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, bugReported, voice, call, onDelta, onResponse, signal }) {
+export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, bugReported, voice, call, hintKey, onDelta, onResponse, signal }) {
   let res
   try {
     res = await fetch('/api/assistant/chat', {
@@ -40,6 +40,8 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
         voice: Boolean(voice),
         // вопрос из звонка Луне — комната звонка: роут даст ему квоту звонка (callUsage.js)
         ...(call ? { call } : {}),
+        // ключ задания — только 3-я ступень подсказки в практике (hintSteps.js); в домашке и тесте его нет вовсе
+        ...(hintKey ? { hintKey } : {}),
         // токены и призы включены на этом стенде — тогда в базе знаний Луны их статья (knowledge.js)
         rewards: areRewardsEnabled(),
       }),

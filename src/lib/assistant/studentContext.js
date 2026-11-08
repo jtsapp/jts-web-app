@@ -39,6 +39,8 @@ import { homeworkCards } from '../homeworkList.js'
 import { geGoalLine, gePlanToday, homeworkLine, lessonsPackageLine, tokensLine } from './contextLines.js'
 import { buildStudentAppActivity, loadStudentAppActivity } from '../db/studentActivity.js'
 import { loadAdviceNotes, loadTutorMistakes, loadTutorSessionsSince, markAdviceDone } from '../db/assistantTracker.js'
+import { loadFacts } from '../db/assistantFacts.js'
+import { factsLine } from './facts.js'
 import { listIeltsScores } from '../db/ielts.js'
 import { destinationName, destinationOf } from './destinations.js'
 import { pickRecommendation } from './recommend.js'
@@ -181,7 +183,9 @@ async function loadTracker(profileId, now) {
   const oldestOpen = notes.filter((n) => !n.doneAt).map((n) => n.createdAt).sort()[0]
   const tutorSessions = oldestOpen ? await loadTutorSessionsSince(profileId, oldestOpen) : []
   const mistakes = await loadTutorMistakes(profileId)
-  return { raw, activity: buildStudentAppActivity(raw), notes, tutorSessions, mistakes }
+  // Память Луны (миграция 0022): факты ученика о себе, 30 дней.
+  const facts = await loadFacts(profileId).catch(() => [])
+  return { raw, activity: buildStudentAppActivity(raw), notes, tutorSessions, mistakes, facts }
 }
 
 /**
@@ -293,6 +297,7 @@ async function buildStudentContext(token, profileId, now, user, { rewards = fals
     tracker ? weekLine(tracker.activity?.days, now) : null,
     practiceLine(tracker?.activity?.practice, now),
     mistakesLine(tracker?.mistakes),
+    factsLine(tracker?.facts),
     ieltsLine(ieltsScores),
     adviceLine({ homework: homeworkList, occurrences, skillStats, planNext: plan.next, now }),
     notesLines(notes, now),
@@ -302,6 +307,16 @@ async function buildStudentContext(token, profileId, now, user, { rewards = fals
   // скажет, что его не видит, вместо плана из одной строки о сбое.
   const useful = lines.filter((l) => !l.startsWith('Домашку загрузить не удалось'))
   return useful.length ? lines.join('\n') : null
+}
+
+/** Забыть профиль ученика — записан новый факт памяти или ученик удалил его в Профиле: следующий ответ соберёт свежий. */
+export function dropStudentContext(userId) {
+  if (!userId) return
+  const profileId = profileIdForUser(userId)
+  for (const key of [profileId, `${profileId}|rewards`]) {
+    cache.delete(key)
+    inflight.delete(key)
+  }
 }
 
 /** Для тестов и на случай смены ученика на этой же вкладке процесса. */

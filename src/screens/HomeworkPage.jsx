@@ -18,6 +18,7 @@ import { materialCard } from './homework/materialAssignments.js'
 import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot, useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { rememberPlace, resumeOf } from '../lib/navStack.js'
+import { homeworkHintLevels } from '../lib/assistant/homeworkHints.js'
 
 /**
  * Экран «Домашняя работа» ученика: история заданий слева, открытое задание справа.
@@ -292,7 +293,9 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, initia
         const { correct } = gradeQuestion(exercise.question, answer)
         await saveHomeworkAnswer(selected.id, exercise.id, token, answer, correct)
       }
-      replace(await submitHomework(token, selected.id))
+      // Ступени подсказки Луны по заданиям (homeworkHints.js) — то, что не ушло сразу, уходит со сдачей.
+      const hintLevels = homeworkHintLevels(selected.id, (selected.exercises || []).map((e) => e.id))
+      replace(await submitHomework(token, selected.id, { hintLevels }))
     } catch (e) {
       // Статус не двигаем: работа, сданная без ответов, выглядит проверяемой,
       // а проверять в ней нечего.
