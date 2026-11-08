@@ -107,10 +107,10 @@ test('ученик без анкеты: закрытый роадмап → те
   await page.goto('/?screen=home')
 
   const locked = page.locator('.ge-locked')
-  await expect(locked).toContainText('Здесь будет ваш маршрут', { timeout: 20000 })
-  // остальная «Главная» работает: маршрута нет, на месте «Сегодня» — «Начните отсюда»
+  await expect(locked).toContainText('Здесь будет твой маршрут', { timeout: 20000 })
+  // остальная «Главная» работает: маршрута нет, на месте «Сегодня» — «Начни отсюда»
   await expect(page.locator('.hm-skills')).toBeVisible()
-  await expect(page.locator('.hm-start')).toContainText('Начните отсюда')
+  await expect(page.locator('.hm-start')).toContainText('Начни отсюда')
   await locked.getByRole('button', { name: 'Пройти тест уровня' }).click()
 
   expect(await finishTestThroughBridge(page)).toEqual({ accepted: true, persisted: true, navigated: true })
@@ -230,7 +230,7 @@ test.describe('пройденный тест не просит пройти ег
 
     // ушёл, так и не открыв итог: закрыл вкладку и вернулся
     await page.goto('/?screen=home')
-    await expect(page.locator('.ge-invite')).toContainText('Выберите, как будете заниматься', { timeout: 20000 })
+    await expect(page.locator('.ge-invite')).toContainText('Выбери, как будешь заниматься', { timeout: 20000 })
     await expect(page.locator('.ge-locked')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Пройти тест уровня' })).toHaveCount(0)
     // отчёт — на своей странице (ТЗ v2.0, 5.7)
@@ -392,7 +392,7 @@ test.describe('учится до теста v16', () => {
     test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
     await setup(page, { level: 'A2', createdAt: OLD })
     await page.goto('/?screen=home')
-    await expect(page.locator('.ge-invite')).toContainText('Здесь будет ваш маршрут', { timeout: 20000 })
+    await expect(page.locator('.ge-invite')).toContainText('Здесь будет твой маршрут', { timeout: 20000 })
     await expect(page.locator('.ge-locked')).toHaveCount(0)
     await page.locator('.ge-invite').getByRole('button', { name: 'Пройти тест уровня' }).click()
     await expect(page.locator('.pl-page__frame')).toBeVisible()

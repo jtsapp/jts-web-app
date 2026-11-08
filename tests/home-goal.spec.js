@@ -64,7 +64,7 @@ test('первый заход: тур без вопроса о цели, цел�
   await page.getByRole('dialog', { name: 'Жесткий режим общения' }).getByRole('button', { name: 'Оставить обычный режим' }).click()
 
   await page.locator('.hm-level__goal').click()
-  const dlg = page.getByRole('dialog', { name: 'Ваша цель' })
+  const dlg = page.getByRole('dialog', { name: 'Твоя цель' })
   await dlg.getByRole('radio', { name: /B2/ }).click()
   await expect.poll(() => labels(page)).toEqual(['Старт', 'A1', 'A2', 'B1', 'Финиш · B2'])
   await expect(page.locator('.hm-level__goal')).toContainText('Цель — B2')
@@ -86,7 +86,7 @@ test('медаль открывает смену цели', async ({ page }) => 
   await expect(page.locator('.hm-level__goal')).toBeVisible({ timeout: 20000 })
 
   await page.locator('.hm-level__goal').click()
-  const dlg = page.getByRole('dialog', { name: 'Ваша цель' })
+  const dlg = page.getByRole('dialog', { name: 'Твоя цель' })
   await expect(dlg).toBeVisible()
   await dlg.getByRole('radio', { name: /B1/ }).click()
 

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { gateReply } from './helpers/login.js'
+import { INFO_PAGES, ru as infoRu } from '../src/landing/info.js'
 
 // ТЗ v2.0 «Луна-трекер», раздел 10 «Тест-кейсы» — то, что проверяется экраном (этап 5). Номер кейса — в имени теста
 // (`кейс 3`, `кейс 17`…); сводка, чем покрыт каждый из 44, — docs/assistant-eval/tz-v2-test-cases.md. Остальные экранные
@@ -144,6 +145,10 @@ const RU_MARKERS = [
   'Откроется', 'Зачем', 'мало времени', 'Результаты теста', 'Подключиться', 'Осталось уроков', 'Просрочено',
   'Тарифы и цены', 'Оплата и получение доступа', 'Возврат средств', 'Контакты и реквизиты',
 ]
+// Подвал «Покупателям» при английском интерфейсе — русский: английских страниц нет (решение владельца 08.11.2026
+// «Оставить русские»), ссылки ведут на русские страницы под русскими подписями. Только эти строки и пропускаем.
+const RU_FOOTER_LINKS = new Set(INFO_PAGES.map((p) => infoRu.nav[p]))
+const isRuFooterLink = (line) => RU_FOOTER_LINKS.has(line.replace('↗', '').trim())
 
 for (const format of ['teacher', 'self', 'demo']) {
   test(`кейс 17: английский интерфейс, ${format} — на «Главной» и в плане нет кириллицы`, async ({ page }, info) => {
@@ -152,7 +157,7 @@ for (const format of ['teacher', 'self', 'demo']) {
     // все строки с кириллицей с обоих экранов и ширин — одним списком: падение сразу показывает всё
     const found = {}
     const cyr = async (key) => {
-      found[key] = (await learnText(page)).split('\n').filter((l) => CYRILLIC.test(l))
+      found[key] = (await learnText(page)).split('\n').filter((l) => CYRILLIC.test(l) && !isRuFooterLink(l))
     }
     for (const [w, h] of [[1440, 900], [834, 1112]]) {
       await page.setViewportSize({ width: w, height: h })

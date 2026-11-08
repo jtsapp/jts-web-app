@@ -103,7 +103,7 @@ describe('удаление аккаунта — компьютер', () => {
     const { onAccountDeleted } = renderProfile()
     openDesktopDialog()
     fireEvent.click(confirmButton())
-    expect((await findError()).textContent).toBe('Аккаунт сотрудника удаляет администратор. Напишите в службу поддержки.')
+    expect((await findError()).textContent).toBe('Аккаунт сотрудника удаляет администратор. Напиши в службу поддержки.')
     expect(onAccountDeleted).not.toHaveBeenCalled()
     expect(confirmButton().disabled).toBe(false)
     fireEvent.click(screen.getByText('Оставить аккаунт'))

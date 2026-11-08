@@ -56,9 +56,9 @@ test('C1 без анкеты: сверху «финиш курса», кнопк
   await page.goto('/?screen=home')
   const hero = page.locator('.ge-finish')
   await expect(hero).toBeVisible({ timeout: 20000 })
-  await expect(hero.getByRole('heading', { name: 'Вы дошли до финиша курса' })).toBeVisible()
+  await expect(hero.getByRole('heading', { name: 'Ты на финише курса' })).toBeVisible()
   await expect(hero).toContainText('C1 — вершина General English')
-  // прежней карточки уровня на компьютере нет, «Начните отсюда» не предлагаем — теста и маршрута у финиша нет
+  // прежней карточки уровня на компьютере нет, «Начни отсюда» не предлагаем — теста и маршрута у финиша нет
   await expect(page.locator('.hm-level')).toBeHidden()
   await expect(page.locator('.hm-start')).toHaveCount(0)
   // фон и маскот баннера — картинки; снимок до их загрузки показывал пустую плашку
