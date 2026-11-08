@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ARRIVAL_EVENTS, EVENT_IDS, SURVIVE_DISMISS, eventButtons, eventHint, eventMark, isEventTurn, parseEventMark } from './events.js'
+import { ARRIVAL_EVENTS, EVENT_IDS, HOME_ONLY, SURVIVE_DISMISS, eventButtons, eventHint, eventMark, isEventTurn, parseEventMark } from './events.js'
 import { isOpeningTurn } from './opening.js'
 
 describe('пометка события', () => {
@@ -32,7 +32,8 @@ describe('пометка события', () => {
   })
 
   it('7.1 — приход; «закрыл плашку трижды» переживают приход и закрытый шаг', () => {
-    expect([...ARRIVAL_EVENTS].sort()).toEqual(['break_over', 'day_start', 'return_after_gap', 'return_after_pause', 'return_same_day'])
+    // Знакомство и итог теста (кейсы 24, 35) — тоже приход: их не вытесняет «шаг закрыт» и не держит пауза 3 минуты.
+    expect([...ARRIVAL_EVENTS].sort()).toEqual(['break_over', 'day_start', 'first_visit', 'placement_done', 'return_after_gap', 'return_after_pause', 'return_same_day'])
     expect(SURVIVE_DISMISS.has('step_completed')).toBe(true)
     expect(SURVIVE_DISMISS.has('wandering')).toBe(false)
   })
@@ -44,7 +45,8 @@ describe('указание к событию', () => {
       const hint = eventHint(parseEventMark(eventMark(type)), 'ru')
       expect(hint).toMatch(/Ты пишешь первой/)
       expect(hint).toMatch(/метки \[\[…\]\] не ставь/)
-      expect(hint).toMatch(/до 220 символов/)
+      // Знакомство и итог теста (кейсы 24, 35) — длиннее: им 2–4 предложения.
+      expect(hint).toMatch(HOME_ONLY.has(type) ? /до 400 символов/ : /до 220 символов/)
       expect(hint).toMatch(/Пиши по-русски/)
     }
   })
@@ -111,7 +113,7 @@ describe('указание: правила по замеру', () => {
   })
 
   it('вернулся после паузы — задание не пересказывать; блуждает — не пересказывать, что делал', () => {
-    expect(eventHint({ type: 'return_after_pause' })).toMatch(/Само задание не пересказывай и варианты ответа не называй/)
+    expect(eventHint({ type: 'return_after_pause' })).toMatch(/Само задание не пересказывай; ни одного английского слова из задания и его вариантов не пиши/)
     expect(eventHint({ type: 'wandering' })).toMatch(/Начни прямо с вопроса «Подсказать, с чего начать\?»/)
     expect(eventHint({ type: 'return_after_gap', days: '4' })).toMatch(/Ни одного шага плана и его минут не называй/)
   })

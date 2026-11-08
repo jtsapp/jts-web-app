@@ -13,10 +13,13 @@
 // на одном задании: в уроках «Обучения» после ошибки сайт показывает ответ и
 // ведёт дальше, и двух ошибок на одном задании там не бывает.
 
-// ТЗ v2.0, 7.2б (08.11.2026): «Подсказать?» — после ПЕРВОГО неверного ответа и после 60 с без действий (было две
-// ошибки и 90 с). Дальше ступени ведёт окно (hintSteps.js): второй неверный ответ на задании, где подсказка уже была,
-// сам даёт следующую ступень — для этого счётчик ошибок (wrongs) виден снаружи.
-export const STUCK = { wrongLimit: 1, idleMs: 60_000, cooldownMs: 180_000, ignoreLimit: 2, showMs: 12_000 }
+// ТЗ v2.0, 7.2б (08.11.2026): «Подсказать?» — после ПЕРВОГО неверного ответа (было две ошибки). Дальше ступени ведёт
+// окно (hintSteps.js): второй неверный ответ на задании, где подсказка уже была, сам даёт следующую ступень — для этого
+// счётчик ошибок (wrongs) виден снаружи.
+// Простой — два уровня (ТЗ 7.2, кейс 6): первый — «Подсказать?» через idleMs (ТЗ пишет 60 с, владелец 28.10.2026
+// поставил 90 — оставляем его), второй — ещё через idle2Ms «Передохнуть?» (перерыв 5 минут или разобрать проще); дальше
+// тишина до действия ученика: не больше двух уровней на шаг.
+export const STUCK = { wrongLimit: 1, idleMs: 90_000, idle2Ms: 60_000, cooldownMs: 180_000, ignoreLimit: 2, showMs: 12_000 }
 
 const WRONG_TOKEN = /\[[^\]]*отмечено как неверное[^\]]*\]|\[верный ответ по заданию: [^\]]*\]/g
 const RIGHT_TOKEN = /\[[^\]]*отмечено как верное[^\]]*\]/g
@@ -36,6 +39,7 @@ export function createStuckTracker(opts = {}) {
   let errors = 0
   let shownAt = -Infinity
   let idleFor = null // простой, о котором уже сказали (его lastActionAt)
+  let idle2For = null // …и второй уровень этого же простоя
   let ignoredInRow = 0
   let off = false
   let wrongs = 0 // всех неверных проверок за визит — по росту окно видит «ещё одна ошибка»
@@ -77,20 +81,35 @@ export function createStuckTracker(opts = {}) {
       show(now)
       return 'errors'
     },
-    /** Ученик ничего не делает с lastActionAt: 'idle' — один раз на простой. */
+    /**
+     * Ученик ничего не делает с lastActionAt: 'idle' — первый уровень, 'idle2' — второй (тот же простой ещё idle2Ms
+     * после первого). Каждый — один раз на простой; второй не ждёт паузы облачка: это продолжение того же простоя.
+     */
     idle({ screen: id, now, lastActionAt, task }) {
       enter(id)
-      if (!task || now - lastActionAt < o.idleMs || idleFor === lastActionAt || !canShow(now)) return null
-      idleFor = lastActionAt
+      if (!task || off) return null
+      const quiet = now - lastActionAt
+      if (idleFor !== lastActionAt) {
+        if (quiet < o.idleMs || !canShow(now)) return null
+        idleFor = lastActionAt
+        show(now)
+        return 'idle'
+      }
+      if (idle2For === lastActionAt || quiet < o.idleMs + o.idle2Ms) return null
+      idle2For = lastActionAt
       show(now)
-      return 'idle'
+      return 'idle2'
     },
     /** Ученик нажал облачко. */
     taken() {
       ignoredInRow = 0
     },
-    /** Облачко ушло без нажатия: дважды подряд — до конца визита его нет, оно мешает. */
-    ignored() {
+    /**
+     * Облачко ушло без нажатия: дважды подряд — до конца визита его нет, оно мешает. Второй уровень простоя в счёт не
+     * идёт: он и так последний на этот простой, а «выключить облачко на весь визит» из-за него — лишнее.
+     */
+    ignored(reason) {
+      if (reason === 'idle2') return
       ignoredInRow++
       if (ignoredInRow >= o.ignoreLimit) off = true
     },

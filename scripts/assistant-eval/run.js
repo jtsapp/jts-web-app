@@ -73,6 +73,8 @@ const { createActionFilter } = await imp('src/lib/assistant/actions.js')
 // События «Луна пишет первой» (ТЗ 7.1–7.2): пометка — настоящей eventMark сайта, как её шлёт окно.
 // У develop без этапа 3 модуля нет: базу меряют без событий (--only L).
 const events = existsSync(path.join(REPO, 'src/lib/assistant/events.js')) ? await imp('src/lib/assistant/events.js') : null
+// Ступени подсказки (этап 4) — у репозитория без них кейсы HINT_* не гоняются.
+const hintSteps = existsSync(path.join(REPO, 'src/lib/assistant/hintSteps.js')) ? await imp('src/lib/assistant/hintSteps.js') : null
 const { knowledgeText } = await import(pathToFileURL(path.join(ROOT, 'src/lib/assistant/knowledge.js')).href)
 const Anthropic = (await import('@anthropic-ai/sdk')).default
 const judgeClient = new Anthropic()
@@ -117,6 +119,8 @@ function profileAt(level) {
 }
 
 const SERVICE_TURNS = { OPENING: () => prompt.OPENING_MARK, STUCK_ERRORS: () => prompt.STUCK_ERRORS_MARK, STUCK_IDLE: () => prompt.STUCK_IDLE_MARK }
+// HINT — пометка ступени подсказки, как её шлёт окно (hintSteps.hintMark): поле hint кейса — { step, mode, reason }.
+const serviceTurn = (c) => (c.ask === 'HINT' ? hintSteps.hintMark(c.hint) : SERVICE_TURNS[c.ask]())
 
 /** Вопрос набора → всё, что нужно ходу: экран, профиль, язык интерфейса, текст хода. */
 function teacherJob(q) {
@@ -130,10 +134,12 @@ function teacherJob(q) {
 
 function lunaJob(c) {
   const ui = c.ui || 'ru'
-  const content = c.event ? events.eventMark(c.event.type, c.event.params) : c.ask ? SERVICE_TURNS[c.ask]() : c.q
+  const content = c.event ? events.eventMark(c.event.type, c.event.params) : c.ask ? serviceTurn(c) : c.q
   return {
     set: 'luna', id: c.id, topic: `tz${c.tz}`, ui, answer: c.answer || ui, content, screen: SCREENS[c.screen],
     profile: PROFILES[c.profile], user: USER, rewards: Boolean(c.rewards), history: c.history, src: c,
+    // ключ задания — как его шлёт окно на 3-й ступени практики (hintTask.keyFor)
+    hintKey: c.hintKey || '',
   }
 }
 
@@ -149,6 +155,7 @@ async function ask(job) {
     voice: false,
     today: TODAY,
     rewards: job.rewards,
+    hintKey: job.hintKey || '',
   })
   const systemPrompt = prompt.buildSystemPrompt(assistantPersona(job.ui), { rewards: job.rewards })
   // --effort medium|high — опыт, а не роут: та же Haiku 5.5 и тот же промпт, но с мышлением (adaptive). Роут держит

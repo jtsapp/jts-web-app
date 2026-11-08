@@ -170,3 +170,57 @@ test('Профиль: выбор «Подсказки Луны» сохраня�
   await expect(row).toContainText('Иногда')
   expect(await page.evaluate(() => localStorage.getItem('jts_luna_proactive'))).toBe('sometimes')
 })
+
+// Кейс 12 ТЗ v2.0 (этап 5): не заходил 2+ дня — план облегчает сам сайт (gapLite.js), Луна говорит об этом, под ответом
+// «Начать» и «Вернуть обычный план».
+test('не заходил 3 дня: сайт сам облегчает план до 15 минут, кнопка «Вернуть обычный план»', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'окно само открывается только на компьютере')
+  const calls = await setup(page, { reply: () => 'Привет, Айгерім! Рада видеть. План на сегодня лёгкий — около 15 минут.' })
+  // Прошлый заход — 3 дня назад: трекер помнит его по аккаунту.
+  await page.addInitScript(() => localStorage.setItem('jts_luna_seen:user-7', JSON.stringify({ lastDay: '2026-11-04', startDay: '2026-11-04', lastAt: 0 })))
+  const replans = []
+  await page.route(/\/mobile\/ge\/plan\/replan/, (r) => {
+    replans.push(JSON.parse(r.request().postData()))
+    const minutes = replans.at(-1).minutes
+    return r.fulfill(json(minutes ? { ...PLAN, shortDay: { minutes }, tasks: [PLAN.tasks[1], { ...PLAN.tasks[0], deferred: true, date: '2026-11-09' }] } : PLAN))
+  })
+  await page.goto('/?screen=home')
+  const dialog = page.getByRole('dialog', { name: 'Луна' })
+  await expect(dialog).toBeVisible({ timeout: 20_000 })
+  expect(replans[0]).toEqual({ minutes: 15 })
+  expect(lastMark(calls)).toMatch(/^\[событие: return_after_gap; days=3; .*lite=1\]$/)
+  const acts = dialog.locator('.asst__acts .asst__action')
+  await expect(acts.nth(1)).toHaveText('Вернуть обычный план')
+  await acts.nth(1).click()
+  await expect.poll(() => replans.at(-1)).toEqual({ minutes: null })
+})
+
+// Кейс 24 ТЗ v2.0 (этап 5): новый ученик без теста — Луна знакомится и ведёт на тест; «Показать, что где» — карта разделов.
+test('новый ученик без теста: знакомство, «Пройти тест уровня» и карта разделов', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'окно само открывается только на компьютере')
+  await page.clock.install({ time: MORNING })
+  // Тест не пройден (уровня нет), аккаунт заведён после выхода теста v16 — значит, новый ученик.
+  await loginAsStudent(page, { level: null, createdAt: '2026-11-06T08:00:00Z' })
+  await page.addInitScript((token) => {
+    window.__jtsProactive = true
+    localStorage.setItem('jts_access_token', token)
+    localStorage.setItem('lang', 'ru')
+    localStorage.setItem('jts_assistant_met', '1')
+  }, TOKEN)
+  const chat = []
+  await page.route('**/api/assistant/chat', async (r) => {
+    chat.push(JSON.parse(r.request().postData()))
+    await r.fulfill({ status: 200, contentType: 'text/plain; charset=utf-8', body: 'Привет! Я Луна. Начнём с теста уровня.' })
+  })
+  await page.route('**/api/assistant/speak', (r) => r.fulfill(json({ error: 'tts_failed' }, 502)))
+  await page.goto('/?screen=home')
+  const dialog = page.getByRole('dialog', { name: 'Луна' })
+  await expect(dialog).toBeVisible({ timeout: 20_000 })
+  expect(chat.at(-1).messages.at(-1).content).toBe('[событие: first_visit]')
+  const acts = dialog.locator('.asst__acts .asst__action')
+  await expect(acts).toHaveText(['Пройти тест уровня', 'Показать, что где'])
+  await acts.nth(1).click()
+  await expect(dialog.getByText('Где что на сайте:')).toBeVisible()
+  await expect(dialog.locator('.asst__msg--bot').last()).toContainText('Практика —')
+  expect(chat).toHaveLength(1)
+})

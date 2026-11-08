@@ -38,7 +38,7 @@ export const PROACTIVE = {
 // поставил сам, и «перерыв кончился» — ответ на его действие.
 const LEVEL_EVENTS = {
   often: null, // все
-  sometimes: new Set(['day_start', 'return_after_gap', 'evening_entry', 'plan_completed', 'break_over', 'demo_trial']),
+  sometimes: new Set(['day_start', 'return_after_gap', 'evening_entry', 'plan_completed', 'break_over', 'demo_trial', 'first_visit', 'placement_done']),
   manual: new Set(['break_over']),
 }
 
@@ -103,10 +103,16 @@ export function createProactiveTracker({ store = memoryStore(), session = memory
   const isMany = (summary, day) => summary?.ready && summary.total > o.manyTasks && summary.left > 0 && get().manyDay !== day
 
   // Первое за день: «не заходил 2 дня», вечер без шагов, много задач — или обычное начало дня.
-  function firstOfDay({ now, day, hour, summary }) {
+  function firstOfDay({ now, day, hour, summary, newcomer = false }) {
     const s = get()
+    // Новый ученик без теста (кейс 24): вместо «начала дня» — знакомство, пока оно не состоялось.
+    if (newcomer && !s.introDone) return { type: 'first_visit', params: {} }
     const gap = s.lastDay ? daysBetween(s.lastDay, day) : 0
-    if (gap >= o.gapDays) return { type: 'return_after_gap', params: { days: gap, ...planParams(summary) } }
+    if (gap >= o.gapDays) {
+      // Помним до конца дня: окно, открытое самим учеником, тоже должно знать, что он вернулся после перерыва (кейс 12).
+      put({ gapDay: day, gapLen: gap })
+      return { type: 'return_after_gap', params: { days: gap, ...planParams(summary) } }
+    }
     if (isEvening(hour, summary, day)) return { type: 'evening_entry', params: { first: true, wd: weekday(now), ...planParams(summary) } }
     if (isMany(summary, day)) return { type: 'many_tasks', params: { first: true, ...planParams(summary) } }
     return { type: 'day_start', params: planParams(summary) }
@@ -123,15 +129,21 @@ export function createProactiveTracker({ store = memoryStore(), session = memory
      * Ученик пришёл: страница открылась (mount) или вкладка снова видна (visible, awayMs — сколько была скрыта).
      * Вызывать ДО seen(): решение — по прошлому заходу.
      */
-    arrival({ now, hour = new Date(now).getHours(), summary = null, kind = 'mount', awayMs = 0 }) {
+    arrival({ now, hour = new Date(now).getHours(), summary = null, kind = 'mount', awayMs = 0, newcomer = false }) {
       const day = localDay(now)
       const s = get()
-      if (s.startDay !== day) return firstOfDay({ now, day, hour, summary })
+      if (s.startDay !== day) return firstOfDay({ now, day, hour, summary, newcomer })
       if (kind === 'mount') {
         const away = s.lastAt ? now - s.lastAt : 0
         return away >= o.sameDayPauseMs ? sameDayReturn({ now, day, hour, summary, awayMs: away }) : null
       }
       return awayMs >= o.pauseMs ? sameDayReturn({ now, day, hour, summary, awayMs }) : null
+    },
+
+    /** Сегодня ученик вернулся после перерыва в столько дней (0 — нет). */
+    gapToday(now) {
+      const s = get()
+      return s.gapDay === localDay(now) ? Number(s.gapLen) || 0 : 0
     },
 
     /** Ученик здесь (действие, вкладка видна): помним время и день — для следующего прихода. */
@@ -142,11 +154,13 @@ export function createProactiveTracker({ store = memoryStore(), session = memory
     /**
      * Переход на экран (уже нарисованный: task — на нём задание). Вернёт return_same_day или wandering, иначе null.
      */
-    visit({ now, screen, task = false, summary = null }) {
+    visit({ now, screen, task = false, summary = null, newcomer = false }) {
       const prev = visits[visits.length - 1]
       if (prev?.screen === 'home' && screen !== 'home') leftHomeAt = now
       visits = [...visits.filter((v) => now - v.at <= o.wanderMs), { screen, at: now, task }]
       if (screen === 'home') {
+        // Знакомство не состоялось (тур, сразу тест) — при возвращении на «Главную» (кейс 24).
+        if (newcomer && !get().introDone) return { type: 'first_visit', params: {} }
         const away = leftHomeAt != null ? now - leftHomeAt : 0
         const lastHome = sess().homeAt || 0
         const ready = prev && prev.screen !== 'home' && away >= o.homeAwayMs && now - lastHome >= o.homeEveryMs
@@ -208,6 +222,8 @@ export function createProactiveTracker({ store = memoryStore(), session = memory
       if (greets || ((ev.type === 'evening_entry' || ev.type === 'many_tasks') && ev.params?.first)) mark.startDay = day
       if (ev.type === 'evening_entry') mark.eveningDay = day
       if (ev.type === 'many_tasks') mark.manyDay = day
+      // Знакомство — один раз; итог теста его отменяет: ученик уже здесь и уже с уровнем.
+      if (ev.type === 'first_visit' || ev.type === 'placement_done') mark.introDone = true
       if (Object.keys(mark).length) put(mark)
     },
 

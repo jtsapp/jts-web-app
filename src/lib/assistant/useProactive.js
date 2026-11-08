@@ -24,11 +24,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { getGePlan, getTrialRequestState } from '../../api.js'
 import { GE_PLAN_CHANGED } from '../../ge/plan/replan.js'
-import { ARRIVAL_EVENTS } from './events.js'
-import { createProactiveTracker } from './proactive.js'
+import { ARRIVAL_EVENTS, HOME_ONLY } from './events.js'
+import { createProactiveTracker, planParams } from './proactive.js'
 import { daySummary } from './planSteps.js'
 import { snapshotScreen } from './screenSnapshot.js'
 import { openingFocus } from './opening.js'
+import { PLACEMENT_DONE_EVENT, takePlacementDone } from './placementDone.js'
 
 export const LESSON_DONE_EVENT = 'jts:lesson-done'
 
@@ -41,6 +42,8 @@ const SEEN_EVERY_MS = 60_000
 // Сколько событие ждёт в очереди: приход — дольше (тур, окно поверх экрана), остальное — пока к месту.
 const WAIT_ARRIVAL_MS = 10 * 60_000
 const WAIT_OTHER_MS = 3 * 60_000
+// Знакомство и итог теста ждут «Главную» дольше: тест и выбор формата идут своими экранами.
+const WAIT_HOME_MS = 30 * 60_000
 
 // Хранилища трекера: localStorage — по аккаунту на устройстве, sessionStorage — на вкладку (proactive.js, шапка).
 function webStore(kind, key) {
@@ -95,7 +98,7 @@ function writeBreak(key, until) {
  *           level?: 'often'|'sometimes'|'manual', canDeliver: (ev) => boolean, deliver: (ev) => void,
  *           opts?: object, now?: () => number }} p
  */
-export function useProactive({ token, owner, screen, enabled, demo = false, level = 'often', canDeliver, deliver, opts, now = Date.now }) {
+export function useProactive({ token, owner, screen, enabled, demo = false, newcomer = false, level = 'often', canDeliver, deliver, opts, now = Date.now }) {
   const tracker = useMemo(
     () =>
       owner
@@ -112,7 +115,7 @@ export function useProactive({ token, owner, screen, enabled, demo = false, leve
   // Свежие значения для слушателей и таймеров: они живут дольше одного рендера.
   const live = useRef({})
   useLayoutEffect(() => {
-    live.current = { token, screen, enabled, demo, level, canDeliver, deliver, tracker, breakEndsAt }
+    live.current = { token, screen, enabled, demo, newcomer, level, canDeliver, deliver, tracker, breakEndsAt }
   })
   const planRef = useRef({ plan: null, summary: null, at: 0 })
   const pendingRef = useRef(null) // { ev, until }
@@ -126,7 +129,7 @@ export function useProactive({ token, owner, screen, enabled, demo = false, leve
       const cur = pendingRef.current
       const t = now()
       if (cur && t < cur.until && ARRIVAL_EVENTS.has(cur.ev.type) && !ARRIVAL_EVENTS.has(ev.type)) return
-      pendingRef.current = { ev, until: t + (ARRIVAL_EVENTS.has(ev.type) ? WAIT_ARRIVAL_MS : WAIT_OTHER_MS) }
+      pendingRef.current = { ev, until: t + (HOME_ONLY.has(ev.type) ? WAIT_HOME_MS : ARRIVAL_EVENTS.has(ev.type) ? WAIT_ARRIVAL_MS : WAIT_OTHER_MS) }
     },
     [now],
   )
@@ -159,7 +162,7 @@ export function useProactive({ token, owner, screen, enabled, demo = false, leve
       if (!alive || arrivedRef.current === owner) return
       arrivedRef.current = owner
       const t = now()
-      enqueue(tracker.arrival({ now: t, summary: planRef.current.summary, kind: 'mount' }))
+      enqueue(tracker.arrival({ now: t, summary: planRef.current.summary, kind: 'mount', newcomer: live.current.newcomer }))
       // Перерыв, начатый до перезагрузки, мог кончиться, пока страницы не было.
       const until = breakKey ? readBreak(breakKey) : null
       if (until && until <= t) {
@@ -230,7 +233,7 @@ export function useProactive({ token, owner, screen, enabled, demo = false, leve
       const task = Boolean(root) && (openingFocus(snapshotScreen(root)).task || Boolean(root.closest?.('[data-assistant-test]')))
       let ev = null
       if (screen === 'home' || now() - planRef.current.at >= PLAN_EVERY_MS) ev = await fetchPlan()
-      const visit = tracker.visit({ now: now(), screen, task, summary: planRef.current.summary })
+      const visit = tracker.visit({ now: now(), screen, task, summary: planRef.current.summary, newcomer: live.current.newcomer })
       enqueue(ev || visit)
     }, SETTLE_MS)
     return () => clearTimeout(id)
@@ -264,6 +267,23 @@ export function useProactive({ token, owner, screen, enabled, demo = false, leve
     return () => window.removeEventListener(LESSON_DONE_EVENT, on)
   }, [active, fetchPlan, enqueue])
 
+  // Тест уровня пройден (кейс 35, ТЗ 7.2в): App шлёт итог (уровень, сильное и слабое, цель) — Луна скажет его на «Главной»
+  // вместе с первым шагом свежего плана.
+  // Итог ждёт в sessionStorage (placementDone.js): тест шёл на экране без Луны, и трекер тогда спал.
+  useEffect(() => {
+    if (!active) return undefined
+    const take = () => {
+      const detail = takePlacementDone()
+      if (!detail) return
+      fetchPlan({ baseline: true }).then(() => {
+        enqueue({ type: 'placement_done', params: { ...detail, ...planParams(planRef.current.summary) } })
+      })
+    }
+    take()
+    window.addEventListener(PLACEMENT_DONE_EVENT, take)
+    return () => window.removeEventListener(PLACEMENT_DONE_EVENT, take)
+  }, [active, fetchPlan, enqueue])
+
   // Перерыв: по концу — событие со следующим шагом.
   useEffect(() => {
     if (!active || !breakEndsAt) return undefined
@@ -287,6 +307,8 @@ export function useProactive({ token, owner, screen, enabled, demo = false, leve
         pendingRef.current = null
         return
       }
+      // Знакомство и итог теста — только на «Главной» (events.HOME_ONLY): ждут её в очереди.
+      if (HOME_ONLY.has(p.ev.type) && cur.screen !== 'home') return
       // На перерыве — только его конец: ученик сам попросил тишины.
       if (cur.breakEndsAt && p.ev.type !== 'break_over') return
       if (!cur.tracker?.allow(p.ev, { now: t, level: cur.level })) return
@@ -318,6 +340,7 @@ export function useProactive({ token, owner, screen, enabled, demo = false, leve
   const dismissed = useCallback(() => tracker?.dismissed(), [tracker])
   const engaged = useCallback(() => tracker?.engaged(), [tracker])
   const plan = useCallback(() => planRef.current, [])
+  const gapToday = useCallback(() => tracker?.gapToday(now()) || 0, [tracker, now])
 
-  return { breakEndsAt, startBreak, endBreak, dismissed, engaged, plan }
+  return { breakEndsAt, startBreak, endBreak, dismissed, engaged, plan, gapToday }
 }
