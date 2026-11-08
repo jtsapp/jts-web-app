@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import HomePage from './HomePage.jsx'
-import { getMyHomework } from '../api.js'
+import { getDemoAccess, getMyHomework } from '../api.js'
 
 // Пробный урок: состояние заявки и расписание отдаём готовыми. Обе величины
 // в изменяемых переменных — vi.mock поднимается наверх файла, и подменить его
@@ -122,7 +122,7 @@ describe('Главная демо-аккаунта', () => {
 
     // «Ещё примерно 4 урока» было выдумкой: плана «сколько уроков до B2» у
     // приложения нет. Материалы уровня — есть, и их можно пересчитать.
-    expect(await screen.findByText('Ещё 11 материалов — и вы перейдёте на уровень B2')).toBeTruthy()
+    expect(await screen.findByText('Ещё 11 материалов — и ты перейдёшь на уровень B2')).toBeTruthy()
   })
 
   it('пока сервер не ответил, полосы и подписи нет', () => {
@@ -175,7 +175,7 @@ describe('Главная демо-аккаунта', () => {
     const onStartLevelTest = vi.fn()
     const { container } = renderHome({ levelUnknown: true, onStartLevelTest })
 
-    expect(screen.getByText('Прогресс вашего обучения недоступен')).toBeTruthy()
+    expect(screen.getByText('Прогресс твоего обучения недоступен')).toBeTruthy()
     // На компьютере карточки уровня нет; телефонная (скрыта на компьютере CSS) — с «?» и кнопкой теста.
     expect(container.querySelector('.hm-level:not(.hm-level--phone)')).toBeNull()
 
@@ -193,7 +193,7 @@ describe('Главная демо-аккаунта', () => {
     const pcts = [...container.querySelectorAll('.hm-skill__pct')].map((n) => n.textContent)
     expect(pcts).toEqual(['???', '???', '???', '???', '???'])
     expect(container.querySelector('.hm-skill__fill')).toBeNull()
-    expect(screen.getByText('Пройдите тест уровня и здесь появится ваш профиль навыков')).toBeTruthy()
+    expect(screen.getByText('Пройди тест уровня, и здесь появится твой профиль навыков')).toBeTruthy()
 
     fireEvent.click(container.querySelector('.hm-skills__cta'))
     expect(onStartLevelTest).toHaveBeenCalledTimes(1)
@@ -253,7 +253,7 @@ describe('Главная демо-аккаунта', () => {
     const { container } = renderHome({ token: 'T' })
     expect([...container.querySelectorAll('.hm-skill__pct')].every((n) => n.textContent === '???')).toBe(true)
     expect(container.querySelector('.hm-skills__tags')).toBeNull()
-    expect(screen.getByText(/Пройдите несколько заданий/)).toBeTruthy()
+    expect(screen.getByText(/Пройди несколько заданий/)).toBeTruthy()
     // Нулевой прогресс — не повод обещать переход: план остаётся честным.
     await waitFor(() => expect(container.querySelector('.hm-level__fill')).not.toBeNull())
     expect(container.querySelector('.hm-level__fill').style.width).toBe('0%')
@@ -476,6 +476,9 @@ describe('«Уроки с преподавателем» (компьютер)', 
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T10:00:00`
   }
   beforeEach(() => {
+    // Ученик с преподавателем — не демо: у демо меню прячет «Уроки» и «Домашнюю работу» (ТЗ v2.0, 4.2), а /user/me
+    // в этом файле по умолчанию отвечает «демо».
+    getDemoAccess.mockImplementation(async () => ({ isDemo: false, expiresAt: null }))
     mySections.value = { known: true, format: 'GROUP', allowed: ['lessons', 'homework', 'practice', 'speaking', 'vocabulary', 'review'] }
     occurrences.value = [{ lessonId: 7, teacherName: 'Айгерим', durationMinutes: 60, lessonStatus: 'SCHEDULED', scheduledAt: tomorrowAt() }]
     homework.value = [
@@ -486,6 +489,7 @@ describe('«Уроки с преподавателем» (компьютер)', 
     ]
   })
   afterEach(() => {
+    getDemoAccess.mockImplementation(async () => ({ isDemo: true, expiresAt: null }))
     mySections.value = { known: false, allowed: [] }
     occurrences.value = []
     homework.value = []
@@ -621,7 +625,7 @@ describe('«Главная» телефона', () => {
     const goal = container.querySelector('.hm-level__goal')
     expect(goal.textContent).toContain('Изменить')
     fireEvent.click(goal)
-    expect(screen.getByText('Ваша цель')).toBeTruthy()
+    expect(screen.getByText('Твоя цель')).toBeTruthy()
   })
 
   it('расписание: семь дней, точка у дня с уроком, нажатие выбирает день', async () => {

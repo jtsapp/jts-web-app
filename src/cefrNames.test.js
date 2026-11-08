@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /**
- * Подписи ступеней на карточке «ВАШ УРОВЕНЬ».
+ * Подписи ступеней на карточке «ТВОЙ УРОВЕНЬ».
  *
  * Они были сдвинуты на ступень вниз: A1 подписан Beginner, A2 — Elementary.
  * Ученица с закреплённым A2 видела «A2 · Elementary», хотя преподаватель открыл
