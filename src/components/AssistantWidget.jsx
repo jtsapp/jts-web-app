@@ -43,6 +43,8 @@ import { hintTask, keyFor } from '../lib/assistant/hintTask.js'
 import { reportHomeworkHint } from '../lib/assistant/homeworkHints.js'
 import { lightenForGap } from '../lib/assistant/gapLite.js'
 import { sectionMapText } from '../lib/assistant/sectionMap.js'
+import { REASONS as RATE_REASONS, actionKey } from '../lib/assistant/ratingShape.js'
+import { actionKeys, createRatingBook, newRatingId } from '../lib/assistant/ratingClient.js'
 
 // Помощник по сайту — Луна: плавающая кнопка и окно чата поверх любого экрана
 // ученика. Где он показывается — решает App (lib/assistant/visibility.js).
@@ -51,6 +53,11 @@ import { sectionMapText } from '../lib/assistant/sectionMap.js'
 // экранами разговор не сбрасывают: можно спросить на уроке, открыть «Практику»
 // и продолжить. Разговор живёт только в памяти вкладки и сбрасывается при
 // смене ученика — хранить его дольше незачем.
+//
+// Оценка ответов (08.11.2026, ТЗ v2.0, 8.5): под каждым ответом модели — 👍/👎, на 👎 — причина фишками и поле
+// (RateRow). Каждый дописанный ответ уходит строкой журнала без снимка экрана и без ПД (lib/assistant/ratingClient.js →
+// /api/assistant/rating), оценка и нажатая кнопка под ответом — в ту же строку. Из журнала — еженедельный разбор
+// (scripts/assistant-eval/weekly-review.js). Строки окна без модели (перерыв, итог пересчёта) не оцениваются.
 //
 // Снимок экрана снимается в момент отправки вопроса из `.scr-in` — обёртки
 // текущего экрана в App. Сам виджет лежит вне неё и в снимок не попадает
@@ -541,6 +548,74 @@ function RichText({ text }) {
   )
 }
 
+// 👍/👎 под ответом Луны (ТЗ 8.5). Оценка одна, её можно сменить; 👎 записывается сразу, а причина фишками и
+// комментарий — по желанию, кнопкой «Готово» (не «Отправить»: так уже зовётся кнопка вопроса в окне): не стал
+// объяснять — оценка всё равно не потерялась.
+// Эмодзи — в aria-hidden: у кнопки имя из подписи, а текст пузыря для тестов и снимков не меняется.
+function RateRow({ m, t, onRate, onReasons }) {
+  const [picked, setPicked] = useState(() => m.reasons || [])
+  const [comment, setComment] = useState('')
+  const toggle = (r) => setPicked((p) => (p.includes(r) ? p.filter((x) => x !== r) : [...p, r]))
+  const submit = () => onReasons(picked, comment.trim())
+  return (
+    <>
+      <div className="asst__rate" role="group" aria-label={t('assistant.rate.group')}>
+        {['up', 'down'].map((r) => (
+          <button
+            key={r}
+            type="button"
+            className={`asst__rate-btn${m.rating === r ? ' is-on' : ''}`}
+            aria-pressed={m.rating === r}
+            aria-label={t(`assistant.rate.${r}`)}
+            title={t(`assistant.rate.${r}`)}
+            onClick={() => onRate(r)}
+          >
+            <span aria-hidden="true">{r === 'up' ? '👍' : '👎'}</span>
+          </button>
+        ))}
+        {m.rateThanks && <span className="asst__rate-thanks">{t('assistant.rate.thanks')}</span>}
+      </div>
+      {m.rating === 'down' && m.rateWhy && (
+        <div className="asst__rate-why">
+          <p className="asst__rate-ask">{t('assistant.rate.why')}</p>
+          <div className="asst__rate-reasons">
+            {RATE_REASONS.map((r) => (
+              <button
+                key={r}
+                type="button"
+                className={`asst__rate-reason${picked.includes(r) ? ' is-on' : ''}`}
+                aria-pressed={picked.includes(r)}
+                onClick={() => toggle(r)}
+              >
+                {t(`assistant.rate.reason.${r}`)}
+              </button>
+            ))}
+          </div>
+          <div className="asst__rate-form">
+            <input
+              className="asst__rate-comment"
+              type="text"
+              value={comment}
+              maxLength={500}
+              placeholder={t('assistant.rate.comment')}
+              aria-label={t('assistant.rate.comment')}
+              onChange={(e) => setComment(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter' || e.nativeEvent?.isComposing) return
+                e.preventDefault()
+                submit()
+              }}
+            />
+            <button type="button" className="asst__rate-send" onClick={submit}>
+              {t('assistant.rate.send')}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // enabled=false — экран, где помощника быть не должно (экзамен, живой урок):
 // окно закрывается и кнопка пропадает, но разговор остаётся и вернётся вместе
 // с кнопкой на следующем обычном экране.
@@ -640,6 +715,48 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   const proactiveRef = useRef(null)
   // Кнопки ответа на событие (eventActions ниже): send зовёт их через ref — они читают свежий план трекера.
   const eventActionsRef = useRef(null)
+
+  // Журнал ответов и их оценки (ТЗ 8.5, ratingClient.js): запись на ответ модели, id — m.rid. chatRef — разговор
+  // (новый на «Новый чат» и при смене ученика), turn — номер ответа в нём: из них разбор собирает диалог.
+  const ratingsRef = useRef(null)
+  if (ratingsRef.current == null) ratingsRef.current = createRatingBook()
+  const chatRef = useRef(null)
+  if (chatRef.current == null) chatRef.current = { id: newRatingId('c'), turn: 0 }
+  const newChat = useCallback(() => {
+    chatRef.current = { id: newRatingId('c'), turn: 0 }
+  }, [])
+  const setRate = useCallback((rid, patch) => setMessages((prev) => prev.map((x) => (x.rid === rid ? { ...x, ...patch } : x))), [])
+  // Ответ дописан — строка журнала уходит сразу, а под ответом появляются 👍/👎 (m.done): раньше их нечем записать.
+  const logAnswer = useCallback((rid, fields) => {
+    const cur = stateRef.current
+    if (!rid || !cur?.token) return
+    const chat = chatRef.current
+    chat.turn += 1
+    ratingsRef.current.open(rid, { chat: chat.id, turn: chat.turn, screen: cur.screen || null, lang: cur.lang, ...fields }, cur.token)
+    setRate(rid, { done: true })
+  }, [setRate])
+  // Дописать поле в уже отправленную строку (первый звук пришёл позже текста, нажата кнопка под ответом).
+  const resendAnswer = useCallback((rid, fields) => {
+    const book = ratingsRef.current
+    const e = rid ? book.patch(rid, fields) : null
+    if (e?.sent) book.send(rid, stateRef.current?.token)
+  }, [])
+  // 👍 — сразу и без вопросов; 👎 — сразу, плюс раскрывается необязательная причина (повторное 👎 раскрывает её снова).
+  const rateAnswer = useCallback((rid, rating) => {
+    const e = ratingsRef.current.get(rid)
+    if (!e) return
+    if (rating === 'down' && e.rating === 'down') {
+      setRate(rid, { rateWhy: true, rateThanks: false })
+      return
+    }
+    if (rating === e.rating) return
+    resendAnswer(rid, rating === 'up' ? { rating, reasons: [], comment: '' } : { rating })
+    setRate(rid, rating === 'up' ? { rating, reasons: [], rateWhy: false, rateThanks: false } : { rating, rateWhy: true, rateThanks: false })
+  }, [resendAnswer, setRate])
+  const rateReasons = useCallback((rid, reasons, comment) => {
+    resendAnswer(rid, { reasons, comment })
+    setRate(rid, { reasons, rateWhy: false, rateThanks: true })
+  }, [resendAnswer, setRate])
 
   // Озвучиваемый ответ: сообщение с этим vid видно до символа shown (см. шапку).
   // null — всё видно. Отдельно от messages: разговор уходит в историю
@@ -912,8 +1029,9 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       openingRef.current = null
       pendingEventRef.current = null
       dropCallRef.current?.()
+      newChat()
     },
-    [token, stopVoice, dropDeferred],
+    [token, stopVoice, dropDeferred, newChat],
   )
 
   useEffect(() => {
@@ -989,7 +1107,10 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     const stamp = () =>
       setMessages((prev) => prev.map((m) => (m.role === 'assistant' && m.vid === vid ? { ...m, timing: { ...timing } } : m)))
     const history = [...base, { role: 'user', content: text, ...(voice ? { voice: true } : {}), ...(opening ? { opening: true } : {}) }]
-    setMessages([...history, { role: 'assistant', content: '', ...(vid ? { vid } : {}) }])
+    // rid — строка журнала оценок (logAnswer ниже); firstMs — от вопроса до первого куска текста.
+    const rid = newRatingId()
+    let firstMs = null
+    setMessages([...history, { role: 'assistant', content: '', rid, ...(vid ? { vid } : {}) }])
     // Пары «вопрос не по теме — отказ» модели не нужны: они только удлиняют
     // каждый следующий запрос. На экране остаются, в запрос не идут.
     // Метку действия возвращаем в её ответ: на «да» модель должна видеть, ЧТО
@@ -1038,6 +1159,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         onSound: () => {
           timing.soundMs = since()
           stamp()
+          // Голос часто начинает звучать раньше, чем дописан текст: тогда звук уедет с первой записью журнала.
+          resendAnswer(rid, { soundMs: timing.soundMs })
         },
         // Чужой звук («послушать» у слова) оборвал Луну — она молчит, текст целиком.
         onInterrupt: () => {
@@ -1087,6 +1210,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           // Кусок оборванной первой реплики, уже прочитанный до обрыва, не должен
           // дописаться в ответ на вопрос, который её перебил.
           if (controller.signal.aborted) return
+          if (firstMs == null && chunk.trim()) firstMs = since()
           if (timing && timing.textMs == null) timing.textMs = since()
           setMessages((prev) => {
             const next = prev.slice()
@@ -1171,6 +1295,19 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           return next
         })
       }
+      // Строка журнала оценок (ТЗ 8.5): ответ дописан. Отказ «не по теме» — тоже ответ Луны, его тоже оценивают.
+      if (mountedRef.current) {
+        logAnswer(rid, {
+          question: text,
+          answer: fallback || reply.text,
+          channel: voice ? 'voice' : 'text',
+          model: reply.model || null,
+          offtopic: Boolean(reply.offtopic),
+          firstMs,
+          soundMs: timing?.soundMs ?? null,
+          actions: actionKeys(extras?.length ? extras : action ? [action] : []),
+        })
+      }
       // Без голоса ответ кончился, когда дописан.
       if (!speaker) afterReply?.()
     } catch (err) {
@@ -1211,7 +1348,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         if (opening) openingRef.current = null
       }
     }
-  }, [t, stopVoice, perform, releaseHold, runDeferred, dropDeferred, takeSnapshot, showCmd])
+  }, [t, stopVoice, perform, releaseHold, runDeferred, dropDeferred, takeSnapshot, showCmd, logAnswer, resendAnswer])
 
   // ── Звонок ───────────────────────────────────────────────────────────
   // Выполнить «открываю…» звонка: Луна договорила (или ждать уже нечего).
@@ -1311,8 +1448,10 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           return
         }
       }
+      // Строка журнала оценок — через ту же очередь черновика: выброшенный агентом ход следа не оставит.
+      const rid = newRatingId()
       ui(() => {
-        setMessages([...history, { role: 'assistant', content: '' }])
+        setMessages([...history, { role: 'assistant', content: '', rid }])
         setError(null)
         setCallNote(null)
         setCallThinking(true)
@@ -1330,10 +1469,12 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       // приходила агенту через 1.7–2.2 с).
       const chunker = createSpeechChunker({ firstMin: CALL_FIRST_MIN, firstMax: CALL_FIRST_MAX })
       let firstPhrase = true
+      let phraseMs = null
       const speak = (phrase) => {
         if (firstPhrase) {
           firstPhrase = false
-          sender.timing({ ...timing, phrase: Math.round(performance.now() - askedAt) })
+          phraseMs = Math.round(performance.now() - askedAt)
+          sender.timing({ ...timing, phrase: phraseMs })
         }
         sender.phrase(callSpeech(phrase))
       }
@@ -1402,6 +1543,19 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
             return next
           }))
         }
+        // Задержка звонка — до первой фразы агенту (её же агент пишет в строку LATENCY luna).
+        ui(() =>
+          logAnswer(rid, {
+            question: raw,
+            answer: fallback || reply.text,
+            channel: 'call',
+            model: reply.model || null,
+            offtopic: Boolean(reply.offtopic),
+            firstMs: phraseMs,
+            soundMs: null,
+            actions: actionKeys(action ? [action] : []),
+          }),
+        )
       } catch (err) {
         if (err?.name === 'AbortError' || !mine()) return
         // Слова ученика остаются на экране, а вместо ответа — что не вышло. Эта
@@ -1434,7 +1588,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         }
       }
     },
-    [t, runCallAction, takeSnapshot, press],
+    [t, runCallAction, takeSnapshot, press, logAnswer],
   )
 
   // Агент передумал (ученик перебил) — ответ больше не нужен. drop — черновик
@@ -1817,6 +1971,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     setMessages([])
     setError(null)
     setBusy(false)
+    // Новый разговор и в журнале оценок: разбор собирает диалог по нему.
+    newChat()
     inputRef.current?.focus()
   }
 
@@ -2291,12 +2447,25 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                           type="button"
                           className={`asst__action asst__action--${a.kind}${j > 0 ? ' asst__action--alt' : ''}`}
                           disabled={voiceBusy}
-                          onClick={() => perform(a, { gesture: true })}
+                          onClick={() => {
+                            // Нажатие кнопки под ответом — в строку журнала этого ответа (ТЗ 8.5).
+                            resendAnswer(m.rid, { clicked: actionKey(a) })
+                            perform(a, { gesture: true })
+                          }}
                         >
                           {buttonLabel(a, lang, t)}
                         </button>
                       ))}
                     </div>
+                  )}
+                  {m.rid && m.done && !m.local && !partial && (
+                    <RateRow
+                      key={m.rid}
+                      m={m}
+                      t={t}
+                      onRate={(r) => rateAnswer(m.rid, r)}
+                      onReasons={(reasons, comment) => rateReasons(m.rid, reasons, comment)}
+                    />
                   )}
                   {m.reported && <p className="asst__reported">{t('assistant.reported')}</p>}
                   {m.voiceFailed && <p className="asst__voice-failed">{t('assistant.voice.failed')}</p>}

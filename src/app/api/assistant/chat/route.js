@@ -209,7 +209,9 @@ export async function POST(request) {
 
   marks.model = since(modelAt)
   marks.total = since(startedAt)
-  const timingHeaders = { 'server-timing': serverTiming(marks) }
+  // x-assistant-model — какая модель ответила: окно кладёт её в журнал оценок (/api/assistant/rating, ТЗ 8.5).
+  // Заголовком, а не хвостом стрима: тело ответа и его тесты не меняются.
+  const timingHeaders = { 'server-timing': serverTiming(marks), 'x-assistant-model': MODEL }
 
   // Модель закончила на обрывке метки («[[OFF») — ответа по теме тут нет.
   if (finished && verdict === 'undecided' && head.trim()) verdict = 'offtopic'
