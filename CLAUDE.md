@@ -1380,7 +1380,7 @@ web-admin «Ученики IELTS», позже биллинг; ручка `/mobi
 **SAT — тот же замок, что у IELTS (backend V341).** `/mobile/sat/me` отдаёт `{access, onboarded, diagnosticDone}`; пока
 хоть один шаг не пройден, хаб SAT рисует вместо вкладок `src/sat/tabs/SatStartView.jsx` (главы → диагностика → доступ от
 менеджера, без маскота IELTS). Замок на сервере — `SatAccessInterceptor` (открыты me, profile, taxonomy, diagnostic/**,
-plan и plan/rebuild); менеджер открывает доступ в web-admin «Ученики → SAT · доступ». Тарифы экзаменов — свои у SAT и
+schedule, program, roadmap и bluebook); менеджер открывает доступ в web-admin «Ученики → SAT · доступ». Тарифы экзаменов — свои у SAT и
 IELTS: `?screen=sat-pricing|ielts-pricing` (`src/screens/ExamPricingPage.jsx`, состав и цены — общий `/catalog/offers`, `OfferCatalog.jsx`;
 пакеты на месяц и по баллам, кнопка по-прежнему пишет менеджеру). Банк SAT грузится выгрузкой прототипа
 (`scripts/sat/export-sat.js`): с 13.10.2026 в неё входят и материалы College Board (лицензия), метка `licensed`.
@@ -1504,9 +1504,10 @@ clone», страница SAT. Банк вопросов — в JTS-бэкенд
 (`useSatSession`), маркер — смещениями в тексте (`highlight.js`). Стенд — `?screen=sat-run&satSample=study|diagnostic|exam`.
 Диагностика и план (фаза 4): `?screen=sat-diagnostic&satDiag=intro|report|time` (`src/screens/SatDiagnosticPage.jsx`,
 `src/sat/diagnostic/`), вкладка «План» — `src/sat/tabs/PlanTab.jsx` + `src/sat/plan/`. Набор диагностики, отчёт и план
-считает бэкенд (`modules/sat/planning/`, контракт — `backend/docs/sat/TEST_FORMAT.md` §7); `src/sat/model/plan.js` повторяет
-правила недель только для показа (сводка Figma 10 до сборки), и `plan.test.js` держит его на том же примере, что SatPlannerTest.
-Учебный режим (фаза 5): `?screen=sat-study&satLesson=<занятие>` → `satSession=<id>` (`src/screens/SatStudyPage.jsx`,
+считает бэкенд (`modules/sat/planning/`, контракт — `backend/docs/sat/TEST_FORMAT.md` §7). Своего плана с выбором дней
+больше нет (удалён 23.10.2026): занятия ставит расписание группы, фазы — `SatRoadmap`; `src/sat/model/plan.js` — только
+календарь (даты, сетка месяца) для «Недели»/«Месяца».
+Учебный режим (фаза 5): сессию собирает вызывающий экран, адрес — `?screen=sat-study&satSession=<id>` (`src/screens/SatStudyPage.jsx`,
 `src/sat/study/`). Помощь (подсказка, решение до ответа) записывает сервер и сам ставит её в попытку — клиентской
 `helpType` он верит только вверх; AI-тьютор — заглушка `src/sat/ai/` до флага `SAT_AI` (решение A плана).
 «Сегодня», «Практика», «Прогресс», «Ошибки» (фаза 6) — `src/sat/tabs/`, данные — `/mobile/sat/today|progress|errors`;
@@ -1517,16 +1518,26 @@ clone», страница SAT. Банк вопросов — в JTS-бэкенд
 Прохождение и его фаза живут на сервере (`SatMockService`, `TEST_FORMAT.md` §10): набор модуля 2 выбирается только по
 проверенному модулю 1, часы модуля и перерыва — стена часов сервера, и черновик устройства берёт конец модуля у него
 (`syncWallClock`). Итог — диапазон «внутренняя оценка JTS», не балл. Модули — на экране от 1024 px.
+Bluebook Test 6 / 8 / 10 (дизайн NEW 2, 30.10.2026): баллы — экран во всё окно `?screen=sat-bluebook&satBluebook=<n>`
+(`src/screens/SatBluebookPage.jsx`, сохранить можно, только когда Total = Math + R&W), сравнение после Test 8 / 10 —
+`?screen=sat-compare&satCompare=<n>` (`SatComparePage.jsx`); открываются из карточки теста в «Плане» и из строки
+таблицы «Результаты», выход — туда же (`satTab`, `satPhase` остаются в адресе). Правила (заголовок сравнения, статус
+домена, шкала графика) — `src/sat/model/compare.js` под тестами. Отклонённый куратором результат (`reviewStatus:
+REJECTED`) виден в таблице с пометкой, но в траекторию и «Примерный балл» не идёт; Δ берётся с сервера как есть
+и считается внутри одного источника (решение 08.11.2026): Bluebook ↔ Bluebook, симуляция ↔ симуляция (по серединам
+диапазонов, на экране «≈+40»), первая строка источника — «—».
 Курс «36 юнитов» (фаза 8): вкладка «Материалы» (`src/sat/tabs/MaterialsTab.jsx`) и юнит во всё окно
 `?screen=sat-unit&satUnit=U1` (`src/screens/SatUnitPage.jsx`: урок по частям, набор практики, доска `src/sat/course/`,
 Desmos). Тексты — статика из выгрузки прототипа: `node scripts/sat/export-sat.js && node scripts/sat/build-course.js`
 пишут `src/sat/data/course.json` и `public/sat/course/<код>.json`; руками их не править. Набор юнита — вопросы банка
 kind=lesson с кодом юнита (сессия kind=unit, `GET /mobile/sat/course`); все 360 вопросов наборов прототипа сейчас в
 списке проверки College Board, поэтому юниты пишут «набор готовится».
-Словарь (фаза 9): `src/sat/tabs/VocabTab.jsx` + `src/sat/vocab/`; колода и игры — статика `public/sat/vocab/`, гид по
-Desmos — `src/sat/data/desmosGuide.json` (`node scripts/sat/build-reference.js`). Расписание SM-2, свои слова и цель —
-`/mobile/sat/vocab` (`dueAt` — миллисекунды эпохи, не LocalDateTime); очередь дня считает `src/sat/model/vocab.js`.
-Игры расписание не трогают и на сервер не пишут.
+Своего словаря в SAT больше нет (дизайн NEW 2, 30.10.2026: «Словарь переедет в раздел словарь»): вкладка и
+`src/sat/vocab/` удалены, блок «Выучить слова» на «Сегодня» ведёт в общий «Словарь». Статика `public/sat/vocab/` и
+`/mobile/sat/vocab` бэкенда остались. Гид по Desmos — `src/sat/data/desmosGuide.json` (`node scripts/sat/build-reference.js`).
+23 урока гида — плоский список с фильтром по тегу (`src/sat/model/desmosTags.js`, тег по id урока: json
+перезаписывает выгрузка). Карточка «Недельный тест» на «Сегодня» скрыта (08.11.2026), механизм `sat-weekly` остался;
+набор практики «Сегодня» — 10 вопросов (`TODAY_SIZE`), в «Практике» — 5/10/20/22/27.
 Подписки на SAT пока нет: раздел открыт любому вошедшему, проверка продукта — перед продом.
 
 **Экосистема минут (Roadmap) — своей таблицы у сводки нет.** Недельная сводка

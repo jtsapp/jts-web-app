@@ -1648,6 +1648,30 @@ html[data-theme="dark"] .pf-card {
     background: var(--dk-card);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08)
 }
+html[data-theme="dark"] .pf-satlang h2 {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .pf-satlang p {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .pf-satlang__opt {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .pf-satlang__opt small {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .pf-satlang__opt svg {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .pf-satlang__opt.is-on {
+    border: 2px solid var(--dk-acc);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .pf-satlang__opt.is-on svg {
+    color: var(--dk-acc-text)
+}
 html[data-theme="dark"] .pf-row {
     border: none;
     background: transparent
@@ -1695,6 +1719,9 @@ html[data-theme="dark"] .pf-modal__grab {
 }
 html[data-theme="dark"] .pf-modal__title {
     color: var(--ink)
+}
+html[data-theme="dark"] .pf-note {
+    color: var(--dk-text-2)
 }
 html[data-theme="dark"] .pf-lang {
     border: 1px solid var(--dk-line);
@@ -9758,7 +9785,49 @@ html[data-theme="dark"] .st-college {
 }
 html[data-theme="dark"] .st-college.is-top {
     border-color: var(--ih-violet, #9047ff);
-    background: var(--dk-page)
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-colleges__head span {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-college__score {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-college__score b {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-college__score b.is-none, html[data-theme="dark"] .st-college__score.is-none {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-college__meta a {
+    color: inherit
+}
+html[data-theme="dark"] .st-college__extra {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-college__skew {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-college__bar.is-empty {
+    background: none
+}
+html[data-theme="dark"] .st-college__use {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-college__use:hover {
+    border-color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-goal__countries button {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-goal__countries button.is-on {
+    border-color: var(--dk-line-strong);
+    background: var(--dk-ink-bg);
+    color: #fff
 }
 html[data-theme="dark"] .st-college__name > span {
     color: var(--ih-muted, #8a8a8a)
@@ -9779,6 +9848,10 @@ html[data-theme="dark"] .st-band--below {
     background: var(--dk-page);
     color: var(--ih-ink-2, #4a4a55)
 }
+html[data-theme="dark"] .st-band--pass {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
 html[data-theme="dark"] .st-college__bar {
     background: var(--dk-chip)
 }
@@ -9793,6 +9866,15 @@ html[data-theme="dark"] .st-range--near {
 }
 html[data-theme="dark"] .st-range--below {
     background: var(--dk-raised)
+}
+html[data-theme="dark"] .st-mark {
+    background: var(--dk-raised)
+}
+html[data-theme="dark"] .st-mark--pass {
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .st-mark--near {
+    background: var(--dk-yellow-soft)
 }
 html[data-theme="dark"] .st-you {
     background: var(--ih-violet, #9047ff)
@@ -9988,6 +10070,16 @@ html[data-theme="dark"] .st-q__skill {
 html[data-theme="dark"] mark.st-hl {
     background: var(--dk-yellow-tint);
     color: inherit
+}
+html[data-theme="dark"] mark.st-hl:focus-visible {
+    outline: 2px solid var(--ih-violet)
+}
+html[data-theme="dark"] .st-hltip {
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+html[data-theme="dark"] .st-hltip svg {
+    color: #ffe58a
 }
 html[data-theme="dark"] .st-opt {
     border: 1px solid var(--st-line);
@@ -10209,6 +10301,18 @@ html[data-theme="dark"] .st-chip--marked {
     background: var(--dk-yellow-tint);
     color: var(--dk-yellow)
 }
+html[data-theme="dark"] .st-chip--right {
+    background: var(--dk-green-tint);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-chip--wrong {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-chip--none {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
 html[data-theme="dark"] .st-navdlg__n {
     border: 1px solid var(--st-edge);
     background: var(--dk-card);
@@ -10237,6 +10341,13 @@ html[data-theme="dark"] .st-navdlg__warn {
 }
 html[data-theme="dark"] .st-navdlg__warn svg {
     color: var(--st-red)
+}
+html[data-theme="dark"] .st-navdlg__note {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-navdlg__note svg {
+    color: var(--ih-muted)
 }
 html[data-theme="dark"] .st-navdlg__finish {
     border: 0;
@@ -10469,71 +10580,92 @@ html[data-theme="dark"] .st-how li {
 html[data-theme="dark"] .st-how b {
     color: var(--ih-ink)
 }
-html[data-theme="dark"] .st-road__map {
-    background: linear-gradient(180deg, var(--dk-page) 0%, var(--dk-acc-tint) 100%)
-}
-html[data-theme="dark"] .st-road__track {
-    stroke: var(--dk-acc-on)
-}
-html[data-theme="dark"] .st-road__passed {
-    stroke: color-mix(in oklab, var(--dk-acc-text) 35%, transparent)
-}
-html[data-theme="dark"] .st-road__dash {
-    stroke: #fff
-}
-html[data-theme="dark"] .st-road__nav {
-    color: var(--ih-ink-2)
-}
-html[data-theme="dark"] .st-road__arrow {
-    border: 0
-}
-html[data-theme="dark"] .st-road__node circle {
-    fill: #fff;
-    stroke: var(--dk-acc-text)
-}
-html[data-theme="dark"] .st-road__node circle.is-done {
-    fill: var(--ih-green);
-    stroke: #fff
-}
-html[data-theme="dark"] .st-road__node circle.is-here {
-    fill: var(--ih-violet);
-    stroke: #fff
-}
-html[data-theme="dark"] .st-road__node.is-open circle.is-next {
-    stroke: var(--ih-violet)
-}
-html[data-theme="dark"] .st-road__node:focus-visible {
-    outline: none
-}
-html[data-theme="dark"] .st-road__node:focus-visible circle {
-    stroke: var(--ih-ink)
-}
-html[data-theme="dark"] .st-road__num {
-    fill: var(--ih-violet)
-}
-html[data-theme="dark"] .st-road__num.is-here {
-    fill: #fff
-}
-html[data-theme="dark"] .st-road__star {
-    fill: var(--dk-acc-text)
-}
-html[data-theme="dark"] .st-road__star.is-on {
-    fill: #f2a516
-}
-html[data-theme="dark"] .st-road__here {
-    background: var(--ih-ink);
-    color: #fff
-}
-html[data-theme="dark"] .st-road__exam {
-    border: 1px solid var(--st-line);
-    background: var(--dk-card)
-}
-html[data-theme="dark"] .st-road__exam small {
+html[data-theme="dark"] .st-road__rhythm p {
     color: var(--ih-muted)
 }
-html[data-theme="dark"] .st-road__examicon {
-    background: var(--dk-yellow-tint);
-    color: var(--dk-yellow)
+html[data-theme="dark"] .st-road__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-road__bar i {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .st-strip__body {
+    border: 0;
+    background: none;
+    color: inherit
+}
+html[data-theme="dark"] button.st-strip__body:focus-visible {
+    outline: 2px solid var(--ih-violet)
+}
+html[data-theme="dark"] .st-strip__mark em {
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-strip__line {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-strip__line.is-on {
+    background: var(--ih-green)
+}
+html[data-theme="dark"] .st-strip__line.is-none {
+    background: transparent
+}
+html[data-theme="dark"] .st-strip__dot {
+    border: 2px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-strip__pt.is-done .st-strip__dot {
+    border-color: var(--ih-green);
+    background: var(--ih-green);
+    color: var(--dk-on-bright)
+}
+html[data-theme="dark"] .st-strip__pt.is-current .st-strip__dot {
+    border-color: var(--ih-violet);
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-strip__pt.is-warn .st-strip__dot {
+    border-color: var(--dk-orange);
+    background: var(--dk-orange);
+    color: var(--dk-on-bright)
+}
+html[data-theme="dark"] .st-strip__pt.is-end .st-strip__dot {
+    border-color: var(--dk-line-strong);
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+html[data-theme="dark"] .st-strip__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-strip__bar i {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .st-strip__pt.is-done .st-strip__bar i {
+    background: var(--ih-green)
+}
+html[data-theme="dark"] .st-strip__open {
+    border: 2px dashed var(--dk-acc-line)
+}
+html[data-theme="dark"] .st-strip__pt.is-current .st-strip__open {
+    border-color: var(--ih-violet);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-strip__pt.is-done .st-strip__open {
+    border-color: var(--ih-green);
+    background: var(--ih-green)
+}
+html[data-theme="dark"] .st-strip__labels b {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-strip__pt.is-done .st-strip__labels b, html[data-theme="dark"] .st-strip__pt.is-current .st-strip__labels b, html[data-theme="dark"] .st-strip__pt.is-warn .st-strip__labels b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-strip__labels small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-strip__labels .st-strip__count {
+    color: var(--ih-ink-2)
 }
 html[data-theme="dark"] .st-road__eyebrow {
     color: var(--ih-violet)
@@ -10557,29 +10689,8 @@ html[data-theme="dark"] .st-road__boxes p {
 html[data-theme="dark"] .st-road__done {
     color: var(--ih-green)
 }
-html[data-theme="dark"] .st-phases__tile {
-    background: var(--ih-soft)
-}
-html[data-theme="dark"] .st-phases__tile small {
-    color: var(--ih-muted)
-}
-html[data-theme="dark"] .st-phases__tile.is-done {
-    background: var(--dk-page)
-}
-html[data-theme="dark"] .st-phases__tile.is-done b {
-    color: var(--ih-green)
-}
-html[data-theme="dark"] .st-phases__tile.is-here {
-    background: var(--ih-violet)
-}
-html[data-theme="dark"] .st-phases__tile.is-here b {
-    color: #fff
-}
-html[data-theme="dark"] .st-phases__tile.is-here small {
-    color: var(--dk-acc-on)
-}
-html[data-theme="dark"] .st-phases__prog {
-    color: var(--ih-ink-2)
+html[data-theme="dark"] .st-week__prog {
+    color: var(--ih-ink)
 }
 html[data-theme="dark"] .st-week__nav {
     border: 0;
@@ -10607,7 +10718,7 @@ html[data-theme="dark"] .st-week__day.is-today .st-week__dayhead small, html[dat
     color: var(--ih-violet)
 }
 html[data-theme="dark"] .st-lesson {
-    border: 1.5px solid var(--ih-ink);
+    border: 1px solid var(--st-line);
     background: var(--dk-card);
     color: var(--ih-ink)
 }
@@ -10620,15 +10731,19 @@ html[data-theme="dark"] .st-lesson__acts {
 html[data-theme="dark"] .st-lesson__st {
     color: var(--ih-ink-2)
 }
+html[data-theme="dark"] .st-lesson:hover, html[data-theme="dark"] .st-lesson:focus-visible {
+    border-color: var(--ih-ink)
+}
 html[data-theme="dark"] .st-lesson.is-done {
-    border-color: transparent;
-    background: var(--dk-page)
+    border-color: var(--st-line);
+    background: var(--dk-green-tint)
 }
 html[data-theme="dark"] .st-lesson.is-done .st-lesson__st {
     color: var(--ih-green)
 }
 html[data-theme="dark"] .st-lesson.is-next {
-    border-color: var(--ih-violet)
+    border-color: var(--ih-violet);
+    box-shadow: inset 0 0 0 1px var(--ih-violet)
 }
 html[data-theme="dark"] .st-lesson.is-next .st-lesson__st {
     color: var(--ih-violet)
@@ -10647,7 +10762,7 @@ html[data-theme="dark"] .st-lesson.is-moved .st-lesson__st {
     color: var(--dk-yellow)
 }
 html[data-theme="dark"] .st-legend {
-    background: var(--ih-soft);
+    background: var(--dk-page);
     color: var(--ih-ink-2)
 }
 html[data-theme="dark"] .st-legend i {
@@ -10662,34 +10777,12 @@ html[data-theme="dark"] .st-legend.is-next {
     color: var(--ih-violet)
 }
 html[data-theme="dark"] .st-legend.is-skipped {
+    background: var(--ih-soft);
     color: var(--ih-muted)
 }
 html[data-theme="dark"] .st-legend.is-moved {
     background: var(--dk-yellow-tint);
     color: var(--dk-yellow)
-}
-html[data-theme="dark"] .st-lmenu {
-    border: 1px solid var(--st-line);
-    background: var(--dk-card);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
-    outline: none
-}
-html[data-theme="dark"] .st-lmenu__goal {
-    color: var(--ih-muted)
-}
-html[data-theme="dark"] .st-lmenu__item {
-    border: 0;
-    background: none;
-    color: var(--ih-ink)
-}
-html[data-theme="dark"] .st-lmenu__item:hover:not(:disabled) {
-    background: var(--ih-soft)
-}
-html[data-theme="dark"] .st-lmenu__item.is-start {
-    color: var(--ih-violet)
-}
-html[data-theme="dark"] .st-lmenu__move input {
-    border: 1px solid var(--dk-line)
 }
 html[data-theme="dark"] .st-month__badge {
     background: var(--dk-acc-tint);
@@ -10704,17 +10797,11 @@ html[data-theme="dark"] .st-month__label {
 html[data-theme="dark"] .st-month__label i {
     background: currentColor
 }
-html[data-theme="dark"] .st-month__label.is-deep {
+html[data-theme="dark"] .st-month__label.is-foundations2 {
     color: var(--st-rw)
 }
-html[data-theme="dark"] .st-month__label.is-timed {
-    color: var(--dk-green)
-}
-html[data-theme="dark"] .st-month__label.is-mocks {
+html[data-theme="dark"] .st-month__label.is-challenge {
     color: var(--dk-yellow)
-}
-html[data-theme="dark"] .st-month__label.is-refinement {
-    color: var(--ih-ink-2)
 }
 html[data-theme="dark"] .st-month__cell {
     border: 1px solid transparent;
@@ -10748,23 +10835,8 @@ html[data-theme="dark"] .st-mlesson.is-skipped {
     color: var(--ih-muted)
 }
 html[data-theme="dark"] .st-month__exam {
-    background: var(--ih-ink);
+    background: var(--dk-ink-bg);
     color: #fff
-}
-html[data-theme="dark"] .st-month__mark small {
-    color: var(--ih-muted)
-}
-html[data-theme="dark"] .st-month__markicon {
-    background: var(--ih-soft);
-    color: var(--ih-ink-2)
-}
-html[data-theme="dark"] .st-month__markicon.is-violet {
-    background: var(--dk-acc-tint);
-    color: var(--ih-violet)
-}
-html[data-theme="dark"] .st-month__markicon.is-gold {
-    background: var(--dk-yellow-tint);
-    color: var(--dk-yellow)
 }
 html[data-theme="dark"] .st-side {
     background: var(--dk-card);
@@ -10797,6 +10869,12 @@ html[data-theme="dark"] .st-hint__more {
 }
 html[data-theme="dark"] .st-verdict {
     color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-verdict.is-wrong > svg {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-verdict.is-right > svg {
+    color: var(--ih-green)
 }
 html[data-theme="dark"] .st-verdict.is-wrong {
     background: var(--st-red-tint)
@@ -10964,8 +11042,7 @@ html[data-theme="dark"] .st-header__streak {
     color: var(--dk-orange)
 }
 html[data-theme="dark"] .st-resume {
-    border: 1px solid var(--dk-acc-line);
-    background: var(--dk-acc-tint)
+    background: var(--st-tint)
 }
 html[data-theme="dark"] .st-resume span {
     color: var(--ih-ink-2)
@@ -10979,14 +11056,6 @@ html[data-theme="dark"] .st-resume__btn {
     background: var(--ih-violet);
     color: var(--dk-on-acc)
 }
-html[data-theme="dark"] .st-next__chip {
-    background: var(--ih-soft);
-    color: var(--ih-ink-2)
-}
-html[data-theme="dark"] .st-next__chip.is-violet {
-    background: var(--st-tint);
-    color: var(--ih-violet)
-}
 html[data-theme="dark"] .st-next__icon {
     background: var(--st-rw-tint);
     color: var(--st-rw)
@@ -10995,50 +11064,10 @@ html[data-theme="dark"] .st-next__icon.is-math {
     background: var(--st-math-tint);
     color: var(--st-math)
 }
-html[data-theme="dark"] .st-next__act {
-    background: var(--dk-page)
-}
-html[data-theme="dark"] .st-next__acthead {
-    color: var(--ih-violet)
-}
-html[data-theme="dark"] .st-next__acthead small {
-    color: var(--ih-muted)
-}
-html[data-theme="dark"] .st-next__act > span {
-    color: var(--ih-ink-2)
-}
-html[data-theme="dark"] .st-next__act > small {
-    color: var(--ih-muted)
-}
-html[data-theme="dark"] .st-next__foot > svg {
-    color: var(--ih-violet)
-}
-html[data-theme="dark"] .st-next__foot p {
-    color: var(--ih-ink-2)
-}
-html[data-theme="dark"] .st-where__bar span {
-    color: var(--ih-muted)
-}
-html[data-theme="dark"] .st-where__bar i {
-    background: var(--dk-chip)
-}
-html[data-theme="dark"] .st-where__bar .is-done i {
-    background: var(--ih-green)
-}
-html[data-theme="dark"] .st-where__bar .is-here i {
-    background: var(--ih-violet)
-}
-html[data-theme="dark"] .st-where__bar .is-here small {
-    color: var(--ih-ink)
-}
-html[data-theme="dark"] .st-where__bar em {
-    color: var(--dk-muted)
-}
-html[data-theme="dark"] .st-where__bar em .is-on {
-    color: #f5a524
-}
-html[data-theme="dark"] .st-where p {
-    color: var(--ih-ink-2)
+html[data-theme="dark"] .st-where__open {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card);
+    color: var(--ih-ink, #181818)
 }
 html[data-theme="dark"] .st-exam {
     background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc));
@@ -11563,14 +11592,6 @@ html[data-theme="dark"] .st-traj__month {
 html[data-theme="dark"] .st-mocks__src i {
     background: currentColor
 }
-html[data-theme="dark"] .st-mocks__src.is-sim {
-    background: var(--dk-yellow-tint);
-    color: var(--dk-yellow)
-}
-html[data-theme="dark"] .st-mocks__src.is-paper {
-    background: var(--st-rw-tint);
-    color: var(--st-rw)
-}
 html[data-theme="dark"] .st-mocks__papers li {
     border-top: 1px solid var(--st-line)
 }
@@ -11738,9 +11759,6 @@ html[data-theme="dark"] .st-mrev__ai {
 }
 html[data-theme="dark"] .st-soon {
     background: var(--dk-card)
-}
-html[data-theme="dark"] .st-mrev__planNote {
-    color: var(--ih-green)
 }
 html[data-theme="dark"] .st-mrev__bottom {
     background: var(--dk-card);
@@ -12025,198 +12043,6 @@ html[data-theme="dark"] .st-wb__input {
     background: color-mix(in oklab, var(--dk-card) 90%, transparent);
     outline: none
 }
-html[data-theme="dark"] .st-vc__status {
-    background: var(--dk-page);
-    color: var(--dk-text-2)
-}
-html[data-theme="dark"] .st-vc__status.is-learning {
-    background: var(--dk-yellow-tint);
-    color: var(--dk-yellow)
-}
-html[data-theme="dark"] .st-vc__status.is-mastered {
-    background: var(--dk-green-tint);
-    color: var(--dk-green)
-}
-html[data-theme="dark"] .st-vc__bar {
-    background: var(--dk-chip)
-}
-html[data-theme="dark"] .st-vc__bar i {
-    background: var(--ih-violet, #9047ff)
-}
-html[data-theme="dark"] .st-vc__left {
-    background: var(--st-tint);
-    color: var(--ih-violet, #9047ff)
-}
-html[data-theme="dark"] .st-vc__card {
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12)
-}
-html[data-theme="dark"] .st-vc__card:focus-visible {
-    outline: 2px solid var(--ih-violet, #9047ff)
-}
-html[data-theme="dark"] .st-vc__state.is-review {
-    background: var(--dk-yellow-tint);
-    color: var(--dk-yellow)
-}
-html[data-theme="dark"] .st-vc__state.is-new {
-    background: var(--st-rw-tint);
-    color: var(--st-rw)
-}
-html[data-theme="dark"] .st-vc__say {
-    border: 0;
-    background: none;
-    color: var(--ih-violet, #9047ff)
-}
-html[data-theme="dark"] .st-vc__say:hover {
-    background: var(--st-tint)
-}
-html[data-theme="dark"] .st-vc__word small {
-    color: var(--ih-muted, #8a8a8a)
-}
-html[data-theme="dark"] .st-vc__ru {
-    color: var(--ih-violet, #9047ff)
-}
-html[data-theme="dark"] .st-vc__ex {
-    background: var(--dk-page);
-    color: var(--dk-text-2)
-}
-html[data-theme="dark"] .st-vc__ex svg {
-    color: var(--ih-muted, #8a8a8a)
-}
-html[data-theme="dark"] .st-vc__hint {
-    color: var(--ih-muted, #8a8a8a)
-}
-html[data-theme="dark"] .st-vc__grade {
-    border: 0
-}
-html[data-theme="dark"] .st-vc__grade small {
-    color: var(--dk-text-2)
-}
-html[data-theme="dark"] .st-vc__grade.is-again {
-    background: var(--st-red-tint);
-    color: var(--st-red)
-}
-html[data-theme="dark"] .st-vc__grade.is-hard {
-    background: var(--dk-yellow-tint);
-    color: var(--dk-yellow)
-}
-html[data-theme="dark"] .st-vc__grade.is-good {
-    background: var(--dk-green-tint);
-    color: var(--dk-green)
-}
-html[data-theme="dark"] .st-vc__grade.is-easy {
-    background: var(--st-tint);
-    color: var(--ih-violet, #9047ff)
-}
-html[data-theme="dark"] .st-vocab__plus {
-    border: 0;
-    background: var(--ih-violet, #9047ff);
-    color: var(--dk-on-acc)
-}
-html[data-theme="dark"] .st-vocab__mine li small {
-    color: var(--ih-muted, #8a8a8a)
-}
-html[data-theme="dark"] .st-vocab__fab {
-    border: 0;
-    background: var(--ih-ink, #181818);
-    color: #fff;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.44)
-}
-html[data-theme="dark"] .st-wl__search {
-    border: 1px solid var(--st-edge)
-}
-html[data-theme="dark"] .st-wl__bar select {
-    border: 1px solid var(--st-edge);
-    background: var(--dk-card)
-}
-html[data-theme="dark"] .st-wl__row {
-    border-bottom: 1px solid var(--st-line)
-}
-html[data-theme="dark"] .st-wl__word small {
-    color: var(--ih-muted, #8a8a8a)
-}
-html[data-theme="dark"] .st-aw label {
-    color: var(--dk-text-2)
-}
-html[data-theme="dark"] .st-aw input, html[data-theme="dark"] .st-aw textarea {
-    border: 1px solid var(--st-edge)
-}
-html[data-theme="dark"] .st-vg__card {
-    color: inherit
-}
-html[data-theme="dark"] .st-vg__card:hover {
-    border-color: var(--ih-violet, #9047ff)
-}
-html[data-theme="dark"] .st-vg__card span:not(.st-vg__icon) {
-    color: var(--dk-text-2)
-}
-html[data-theme="dark"] .st-vg__card small {
-    color: var(--ih-muted, #8a8a8a)
-}
-html[data-theme="dark"] .st-vg__icon {
-    background: var(--st-tint);
-    color: var(--ih-violet, #9047ff)
-}
-html[data-theme="dark"] .st-vg__clock {
-    background: var(--dk-page)
-}
-html[data-theme="dark"] .st-vg__tile {
-    border: 1px solid var(--st-line);
-    background: var(--dk-card)
-}
-html[data-theme="dark"] .st-vg__tile.is-on {
-    border: 2px solid var(--ih-violet, #9047ff);
-    background: var(--st-tint)
-}
-html[data-theme="dark"] .st-vg__tile.is-done, html[data-theme="dark"] .st-vg__tile:disabled {
-    border-color: var(--dk-green-line);
-    background: var(--dk-green-tint);
-    color: var(--dk-green)
-}
-html[data-theme="dark"] .st-vg__tile.is-miss {
-    border-color: var(--st-red);
-    background: var(--st-red-tint)
-}
-html[data-theme="dark"] .st-vg__done {
-    color: var(--dk-green)
-}
-html[data-theme="dark"] .st-vg__done b {
-    color: var(--ih-ink, #181818)
-}
-html[data-theme="dark"] .st-vg__reg p {
-    background: var(--dk-page)
-}
-html[data-theme="dark"] .st-vg__reg small {
-    color: var(--ih-muted, #8a8a8a)
-}
-html[data-theme="dark"] .st-vg__opt {
-    border: 1px solid var(--st-line);
-    background: var(--dk-card)
-}
-html[data-theme="dark"] .st-vg__opt:hover:not(:disabled) {
-    border-color: var(--ih-violet, #9047ff)
-}
-html[data-theme="dark"] .st-vg__opt:disabled {
-    color: var(--dk-muted)
-}
-html[data-theme="dark"] .st-vg__opt.is-right {
-    border: 2px solid var(--dk-green);
-    background: var(--dk-green-tint);
-    color: var(--dk-green)
-}
-html[data-theme="dark"] .st-vg__opt.is-wrong {
-    border: 2px solid var(--st-red);
-    background: var(--st-red-tint);
-    color: var(--st-red)
-}
-html[data-theme="dark"] .st-vg__note {
-    background: var(--dk-green-tint)
-}
-html[data-theme="dark"] .st-vg__note.is-wrong {
-    background: var(--st-red-tint)
-}
-html[data-theme="dark"] .st-vg__note p {
-    color: var(--dk-text-2)
-}
 html[data-theme="dark"] .st-dg__count {
     background: var(--dk-green-tint);
     color: var(--dk-green)
@@ -12236,8 +12062,18 @@ html[data-theme="dark"] .st-dg__item.is-on {
 html[data-theme="dark"] .st-dg__item.is-done svg {
     color: var(--dk-green)
 }
-html[data-theme="dark"] .st-dg__lesson {
-    color: var(--ih-violet, #9047ff)
+html[data-theme="dark"] .st-dg__tag {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-dg__tag.is-on {
+    border-color: var(--dk-line-strong);
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+html[data-theme="dark"] .st-dg__num {
+    color: var(--dk-muted)
 }
 html[data-theme="dark"] .st-dg__mark {
     border: 0;
@@ -12248,37 +12084,18 @@ html[data-theme="dark"] .st-dg__mark.is-on {
     background: var(--dk-green-tint);
     color: var(--dk-green)
 }
-html[data-theme="dark"] .st-dg__steps li {
-    background: var(--dk-page)
-}
-html[data-theme="dark"] .st-dg__steps li > span {
-    background: var(--dk-card)
-}
-html[data-theme="dark"] .st-dg__steps code, html[data-theme="dark"] .st-dg__expr code {
-    background: var(--dk-card);
-    color: var(--st-math)
-}
 html[data-theme="dark"] .st-dg__note {
     background: var(--dk-page);
     color: var(--dk-text-2)
 }
-html[data-theme="dark"] .st-dg__expr {
-    border: 1px solid var(--st-line);
-    background: var(--dk-page)
-}
-html[data-theme="dark"] .st-dg__expr small {
-    color: var(--dk-green)
-}
 html[data-theme="dark"] .st-dg__video iframe {
     border: 0
 }
-html[data-theme="dark"] .st-dg__poster {
-    border: 0;
-    background: var(--ih-ink, #181818);
-    color: #fff
-}
 html[data-theme="dark"] .st-dg__credit a {
     color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-dg__credit .st-dg__yt {
+    color: inherit
 }
 html[data-theme="dark"] .st-dg__calc {
     border: 1px solid var(--st-line);
@@ -12287,16 +12104,26 @@ html[data-theme="dark"] .st-dg__calc {
 html[data-theme="dark"] .st-dg__calc iframe {
     border: 0
 }
-html[data-theme="dark"] .st-dg__load {
-    border: 0;
-    background: none;
+html[data-theme="dark"] .st-dg__ex h2 {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-dg__exlist li {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-dg__exn {
+    background: var(--dk-acc-tint);
     color: var(--ih-violet, #9047ff)
 }
-html[data-theme="dark"] .st-dg__load small {
-    color: var(--ih-muted, #8a8a8a)
+html[data-theme="dark"] .st-dg__extext b {
+    color: var(--dk-text)
 }
-html[data-theme="dark"] .st-dg__ex {
-    background: var(--dk-page)
+html[data-theme="dark"] .st-dg__extext small {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-dg__exgo {
+    border: 0;
+    background: var(--dk-acc-tint);
+    color: var(--ih-violet, #9047ff)
 }
 html[data-theme="dark"] .st-start__icon {
     background: linear-gradient(135deg, var(--dk-acc-tint), var(--dk-page));
@@ -12381,17 +12208,6 @@ html[data-theme="dark"] .st-wkr__passage {
 html[data-theme="dark"] .st-wkr__xp {
     border-left: 3px solid var(--ih-violet);
     background: var(--st-tint)
-}
-html[data-theme="dark"] .st-dash__btn {
-    border: 0;
-    background: none;
-    color: inherit
-}
-html[data-theme="dark"] .st-dash__btn:hover .st-dash__tile {
-    border-color: var(--ih-violet)
-}
-html[data-theme="dark"] .st-dash__label {
-    color: var(--ih-muted)
 }
 html[data-theme="dark"] .st-heat__grid i.is-pad {
     background: transparent
@@ -12498,33 +12314,11 @@ html[data-theme="dark"] .st-iconbtn:hover {
     color: var(--st-red);
     border-color: var(--st-red)
 }
-html[data-theme="dark"] .st-mocks__src.is-simulation i {
-    background: var(--ih-violet)
-}
-html[data-theme="dark"] .st-mocks__src.is-bluebook i {
-    background: var(--dk-blue)
-}
-html[data-theme="dark"] .st-mocks__src.is-official i {
-    background: var(--dk-green)
-}
-html[data-theme="dark"] .st-traj__dot.is-simulation {
-    fill: var(--ih-violet)
-}
-html[data-theme="dark"] .st-traj__dot.is-bluebook {
-    fill: var(--dk-blue)
-}
-html[data-theme="dark"] .st-traj__dot.is-official {
-    fill: var(--dk-green)
-}
 html[data-theme="dark"] .st-scoreform__total {
     background: var(--dk-acc-tint)
 }
 html[data-theme="dark"] .st-scoreform__total small {
     color: var(--ih-violet)
-}
-html[data-theme="dark"] .st-mocks__src.is-jts i, html[data-theme="dark"] .st-traj__dot.is-jts {
-    background: var(--ih-violet);
-    fill: var(--ih-violet)
 }
 html[data-theme="dark"] .st-papers__row {
     border: 0;
@@ -12576,8 +12370,1005 @@ html[data-theme="dark"] .exam-demo__chip.is-out {
     background: var(--dk-page);
     color: var(--dk-red)
 }
-html[data-theme="dark"] .st-road__node, html[data-theme="dark"] .st-road__node:focus, html[data-theme="dark"] .st-road__node:focus-visible, html[data-theme="dark"] .st-road__svg:focus {
+html[data-theme="dark"] .st-road__chip.is-warn {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-bb, html[data-theme="dark"] .st-self {
+    border-top: 1px solid var(--ih-line, #eaecf0)
+}
+html[data-theme="dark"] .st-self__offer {
+    color: var(--ih-muted, #667085)
+}
+html[data-theme="dark"] .st-timing.is-tight {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-timing.is-tight > svg {
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-timing__more {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-timing.is-line {
+    border: 1px solid var(--dk-acc-line);
+    background: var(--st-tint);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-timing.is-line > svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-timing__what {
+    border: 0;
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-timing.is-short {
+    border: 1px solid var(--ih-violet);
+    background: var(--st-tint);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-timing__top p {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-timing__icon, html[data-theme="dark"] .st-timing__close {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-timing__icon {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-timing__close {
+    border: 0;
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-timing__opts li {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-timing__opts li > span {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-timing__opts small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-timing__manager {
+    border: 0;
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-timing__foot small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-filters__reset {
+    border: 0;
+    background: none;
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-filters--counted .st-sess__filters button {
+    border: 0;
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-filters--counted .st-sess__filters button.is-on {
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .st-filters__n {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-filters--counted button.is-on .st-filters__n {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-filters__hint {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-el__head h1 {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elbanner {
+    background: var(--dk-acc-tint);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-elbanner svg {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-elcnt__tile {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-elcnt__tile b {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elcnt__tile.is-ok b {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-elcnt__tile.is-open b {
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-elcnt__tile span {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-elcnt.is-wide .st-elcnt__tile {
+    background: var(--dk-card);
+    border: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-elcnt.is-wide .st-elcnt__tile b {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elcnt__bar > i {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-elcnt__bar > i > i {
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .st-pill__btn {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-pill__btn b {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-pill__btn svg {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-pill.is-set .st-pill__btn {
+    border-color: var(--ih-violet, #9047ff);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-pill__pop {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24)
+}
+html[data-theme="dark"] .st-pill__opt {
+    border: 0;
+    background: none;
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-pill__opt:hover, html[data-theme="dark"] .st-pill__opt:focus-visible {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-pill__opt.is-on {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-pill__dates label {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-pill__dates input {
+    border: 1px solid var(--dk-line);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-el__table {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-el__table th {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-el__table td {
+    border-top: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-el__table tbody tr:hover td, html[data-theme="dark"] .st-el__table tbody tr:focus-visible td {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-el__table tbody tr.is-open td {
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-el__table tbody tr:focus-visible {
+    outline: 2px solid var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-elchip--src i {
+    background: currentColor
+}
+html[data-theme="dark"] .st-elchip--status.is-open {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elchip--status.is-reviewed {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-elchip.is-time, html[data-theme="dark"] .st-elicon.is-time {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-elreasons__row > i.is-time > i {
+    background: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-elchip.is-calculation, html[data-theme="dark"] .st-elicon.is-calculation {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-elreasons__row > i.is-calculation > i {
+    background: var(--dk-orange)
+}
+html[data-theme="dark"] .st-elchip.is-knowledge, html[data-theme="dark"] .st-elicon.is-knowledge {
+    background: var(--dk-red-tint);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-elreasons__row > i.is-knowledge > i {
+    background: var(--dk-red)
+}
+html[data-theme="dark"] .st-elchip.is-misread, html[data-theme="dark"] .st-elicon.is-misread {
+    background: var(--dk-blue-tint);
+    color: var(--dk-blue)
+}
+html[data-theme="dark"] .st-elreasons__row > i.is-misread > i {
+    background: var(--dk-blue)
+}
+html[data-theme="dark"] .st-elchip.is-strategy, html[data-theme="dark"] .st-elicon.is-strategy {
+    background: var(--dk-blue-tint);
+    color: var(--dk-blue)
+}
+html[data-theme="dark"] .st-elreasons__row > i.is-strategy > i {
+    background: var(--dk-blue)
+}
+html[data-theme="dark"] .st-elchip.is-careless, html[data-theme="dark"] .st-elicon.is-careless {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .st-elreasons__row > i.is-careless > i {
+    background: var(--dk-acc)
+}
+html[data-theme="dark"] .st-elchip.is-unanswered, html[data-theme="dark"] .st-elicon.is-unanswered {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-elreasons__row > i.is-unanswered > i {
+    background: var(--dk-ink-bg)
+}
+html[data-theme="dark"] .st-elchip.is-trend, html[data-theme="dark"] .st-elicon.is-trend {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-elreasons__row > i.is-trend > i {
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .st-elchip--src.is-practice {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-elchip--src.is-simulation {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-elchip--src.is-paper {
+    background: var(--dk-blue-tint);
+    color: var(--dk-blue)
+}
+html[data-theme="dark"] .st-elchip--src.is-diagnostic {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .st-elchip--src.is-daily {
+    background: var(--dk-blue-tint);
+    color: var(--dk-blue)
+}
+html[data-theme="dark"] .st-elchip--src.is-weekly {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-elchip--diff.is-d1 {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-elchip--diff.is-d2 {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-elchip--diff.is-d3 {
+    background: var(--dk-page);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-drawer {
+    background: rgba(24, 24, 24, 0.4)
+}
+html[data-theme="dark"] .st-drawer__panel {
+    background: var(--dk-card);
+    box-shadow: -12px 0 32px rgba(0, 0, 0, 0.24)
+}
+html[data-theme="dark"] .st-elr__passage {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-elr__stem {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elr__ans {
+    border: 1px solid;
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elr__why {
+    color: var(--ih-muted, #4a4a55)
+}
+html[data-theme="dark"] .st-elr__ans.is-bad {
+    border-color: var(--dk-red);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-elr__ans.is-bad svg, html[data-theme="dark"] .st-elr__ans.is-bad small {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-elr__ans.is-ok {
+    border-color: var(--dk-green);
+    background: var(--dk-green-tint)
+}
+html[data-theme="dark"] .st-elr__ans.is-ok svg, html[data-theme="dark"] .st-elr__ans.is-ok small {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-elr__reason {
+    background: var(--dk-page);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elr__xp {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elr__spr {
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .st-elr__ok {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-elr__bad {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-elwork {
+    border: 1px solid var(--dk-acc-line);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-elwork h3 {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elwork__row {
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elreasons h2 {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elreasons__row {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elreasons__row > i {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-elreasons__row small {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-elbars h3 {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elbars__row {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-elbars__row b {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elbars__row > i {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-elbars__row > i.is-violet > i {
+    background: var(--dk-acc)
+}
+html[data-theme="dark"] .st-elbars__row > i.is-orange > i {
+    background: var(--dk-orange)
+}
+html[data-theme="dark"] .st-elbars__row > i.is-grey > i {
+    background: var(--dk-raised)
+}
+html[data-theme="dark"] .st-elempty__icon {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-elempty h2 {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elempty p {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-elempty__steps li {
+    background: var(--dk-page);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-elempty__steps li + li::before {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-elempty__steps span {
+    background: var(--dk-acc-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-rail__n.is-right, html[data-theme="dark"] .st-navdlg__n.is-right, html[data-theme="dark"] .st-bank__cell.is-right, html[data-theme="dark"] .st-bank__sw.is-right {
+    background: var(--ih-green);
+    border-color: var(--ih-green);
+    color: var(--dk-on-bright)
+}
+html[data-theme="dark"] .st-rail__n.is-wrong, html[data-theme="dark"] .st-navdlg__n.is-wrong, html[data-theme="dark"] .st-bank__cell.is-wrong, html[data-theme="dark"] .st-bank__sw.is-wrong {
+    border: 2px solid var(--st-red);
+    background: var(--dk-card);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-rail__n.is-none, html[data-theme="dark"] .st-bank__cell.is-none, html[data-theme="dark"] .st-bank__sw.is-none {
+    border: 1px dashed var(--dk-line-strong);
+    background: var(--dk-card);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-navdlg__n.is-none {
+    border: 2px dashed var(--dk-line-strong);
+    background: var(--dk-card);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-rail__n.is-here.is-none {
+    border: 2px solid var(--ih-violet);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-bank__legend span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-bank__legend b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-bank__sw {
+    border: 1px solid transparent
+}
+html[data-theme="dark"] .st-bank__topic {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-bank__head {
+    border: 0;
+    background: none;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-bank__head > svg {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-bank__bar {
+    background: var(--st-edge)
+}
+html[data-theme="dark"] .st-bank__bar i {
+    background: var(--ih-green)
+}
+html[data-theme="dark"] .st-bank__pill {
+    background: var(--dk-card);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-bank__label {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-bank__cell {
+    border: 1px solid transparent
+}
+html[data-theme="dark"] .st-bank__more {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-bank__all {
+    border: 0;
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-bankp__sub {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-bankp__ring circle {
+    fill: none
+}
+html[data-theme="dark"] .st-bankp__track {
+    stroke: var(--dk-muted)
+}
+html[data-theme="dark"] .st-bankp__arc {
+    stroke: var(--ih-violet)
+}
+html[data-theme="dark"] .st-bankp__ring small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-bankp__note {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-bankp__note svg {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-bankq__hints {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-teach {
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+html[data-theme="dark"] .st-teach__tag {
+    background: var(--dk-ink-bg);
+    color: var(--dk-acc-on)
+}
+html[data-theme="dark"] .st-teach h2 {
+    color: #fff
+}
+html[data-theme="dark"] .st-teach__when {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-teach__who i {
+    background: var(--dk-acc-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-teach__who b {
+    color: #fff
+}
+html[data-theme="dark"] .st-teach__who span {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-teach__btn {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-teach__join small {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-tasks__chip {
+    background: var(--dk-page);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-tasks__chip.is-violet {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-tasks__topicIcon {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-tasks__topicIcon.is-math {
+    background: var(--st-math-tint);
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-tasks__topic span {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-tasks__goal {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-tasks__goal svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-task {
+    border: 2px solid transparent;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-task.is-partial {
+    border-color: var(--ih-violet);
+    background: var(--st-tint)
+}
+html[data-theme="dark"] .st-task.is-done {
+    background: var(--dk-green-tint)
+}
+html[data-theme="dark"] .st-task__n {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-task.is-partial .st-task__n {
+    border-color: var(--ih-violet);
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-task.is-done .st-task__n {
+    border-color: var(--dk-green);
+    background: var(--dk-green);
+    color: var(--dk-on-bright)
+}
+html[data-theme="dark"] .st-task.is-done .st-task__text b {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-task__text small, html[data-theme="dark"] .st-third__text small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-task__bar {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-task__bar i {
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-task__bar em {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .st-task__time {
+    background: var(--dk-card);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-task.is-partial .st-task__time, html[data-theme="dark"] .st-third .st-task__time {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-task__go {
+    border: 1px solid var(--dk-acc-line);
+    background: var(--dk-card);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-task.is-done .st-task__go {
+    border-color: transparent;
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-third {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-third.is-mock {
+    border: 2px solid var(--dk-line-strong)
+}
+html[data-theme="dark"] .st-third.is-clear {
+    border-color: var(--dk-green-line);
+    background: var(--dk-green-tint)
+}
+html[data-theme="dark"] .st-third__n {
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+html[data-theme="dark"] .st-third__eyebrow {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-third__rare {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-third__icon {
+    background: var(--st-orange-tint);
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-third.is-mock .st-third__icon {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-third.is-clear .st-third__icon {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-third.is-mock .st-task__time, html[data-theme="dark"] .st-third.is-mock .st-task__go {
+    border-color: var(--dk-line-strong);
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+html[data-theme="dark"] .st-third__note {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-third__note svg {
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-tasks__cta {
+    border: 0;
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-self7__head > div > span {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-self7__row {
+    border: 0;
+    background: var(--dk-page);
+    color: inherit
+}
+html[data-theme="dark"] .st-self7__row:hover {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-self7__row.is-errors .st-self7__n {
+    background: var(--st-orange-tint);
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-self7__row.is-weak .st-self7__n {
+    background: var(--st-math-tint);
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-self7__row.is-bank .st-self7__n {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-self7__row.is-bluebook .st-self7__n {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-self7__text small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-self7__go {
+    background: var(--dk-card);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-self7__offer {
+    border-top: 1px solid var(--st-line);
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mocks__src.is-simulation {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-mocks__src.is-bluebook {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-mocks__src.is-official {
+    background: var(--dk-page);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-mocks__src.is-paper {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-mocks__src.is-jts {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-mocks__tr.is-rejected .st-mocks__total b, html[data-theme="dark"] .st-mocks__tr.is-rejected > span[role='cell'] > b {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mocks__add {
+    border: 0;
+    background: var(--ih-ink, #181818);
+    color: #fff
+}
+html[data-theme="dark"] .st-mocks__add:hover {
+    background: var(--dk-ink-bg)
+}
+html[data-theme="dark"] .st-review.is-pending {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-review.is-approved {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-review.is-rejected {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-traj__line {
+    stroke: var(--st-rw)
+}
+html[data-theme="dark"] .st-traj__range {
+    fill: #f2a516
+}
+html[data-theme="dark"] .st-traj__dot.is-real {
+    fill: var(--st-rw)
+}
+html[data-theme="dark"] .st-traj__dot.is-sim {
+    fill: #f2a516
+}
+html[data-theme="dark"] .st-traj__dot.is-paper {
+    fill: var(--dk-green)
+}
+html[data-theme="dark"] .st-traj__dot.is-other {
+    fill: var(--ih-violet)
+}
+html[data-theme="dark"] .st-traj__goalPill {
+    fill: var(--st-tint)
+}
+html[data-theme="dark"] .st-legend i {
+    background: currentColor
+}
+html[data-theme="dark"] .st-legend.is-real {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-legend.is-sim {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-legend.is-paper {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-legend.is-other {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-scoreform__date, html[data-theme="dark"] .st-scoreform__input {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-scoreform__date {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-scoreform .st-scoreform__date input, html[data-theme="dark"] .st-scoreform .st-scoreform__input input {
+    border: 0;
+    background: transparent;
     outline: none
+}
+html[data-theme="dark"] .st-scoreform__input small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-scoreform__date:focus-within, html[data-theme="dark"] .st-scoreform__input:focus-within {
+    border-color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-scoreform__input.is-bad {
+    border-color: var(--st-red)
+}
+html[data-theme="dark"] .st-scoreform__round {
+    border: 0;
+    background: none;
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-pstat__score.is-rejected {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-bbstate p {
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-bbstate.is-pending {
+    background: var(--dk-yellow-tint)
+}
+html[data-theme="dark"] .st-bbstate.is-pending b {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-bbstate.is-approved {
+    background: var(--dk-green-tint)
+}
+html[data-theme="dark"] .st-bbstate.is-approved b {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-bbstate.is-rejected {
+    background: var(--st-red-tint)
+}
+html[data-theme="dark"] .st-bbstate.is-rejected b {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-bb__scores dt {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-bbform__lead {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-bbform__steps li::before {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-bbform__steps span {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-bbform__open {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-bbform__note {
+    background: var(--st-tint);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-bbform__note svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-bbform__ok {
+    background: var(--dk-green-tint);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-bbform__ok svg {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-bbform__warn {
+    background: var(--dk-yellow-tint);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-bbform__warn svg {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-bbform__input {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-bbform__input:focus-within {
+    border-color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-bbform__input.is-bad {
+    border-color: var(--st-red);
+    background: var(--st-red-tint)
+}
+html[data-theme="dark"] .st-bbform__input input {
+    border: 0;
+    background: transparent;
+    color: var(--ih-ink, #181818);
+    outline: none
+}
+html[data-theme="dark"] .st-bbform__input small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-bbform__err {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-bbform__auto {
+    border: 0;
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-cmp__eyebrow {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-cmp__lead {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-cmp__next {
+    border: 1px solid var(--dk-acc-line);
+    background: var(--st-tint)
+}
+html[data-theme="dark"] .st-cmp__nextCard {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-cmp__nextCard small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-cmp__nextIcon {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-cmp__chip {
+    background: var(--dk-page);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-cmp__chip.is-violet {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-cmp__tick, html[data-theme="dark"] .st-cmp__x {
+    fill: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-cmp__goal {
+    stroke: var(--ih-violet)
+}
+html[data-theme="dark"] .st-cmp__goalText {
+    fill: var(--ih-violet)
+}
+html[data-theme="dark"] .st-cmp__line {
+    fill: none;
+    stroke: var(--dk-green)
+}
+html[data-theme="dark"] .st-cmp__dot {
+    fill: #fff;
+    stroke: var(--dk-green)
+}
+html[data-theme="dark"] .st-cmp__dot.is-last {
+    fill: var(--dk-green)
+}
+html[data-theme="dark"] .st-cmp__chart.is-flat .st-cmp__line {
+    stroke: var(--dk-muted)
+}
+html[data-theme="dark"] .st-cmp__chart.is-flat .st-cmp__dot {
+    stroke: var(--dk-muted)
+}
+html[data-theme="dark"] .st-cmp__chart.is-flat .st-cmp__dot.is-last {
+    fill: var(--dk-muted)
+}
+html[data-theme="dark"] .st-cmp__val {
+    fill: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-cmp__delta {
+    background: var(--dk-page);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-cmp__delta.is-up {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-cmp__domains li {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-cmp__bar i {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-cmp__bar em {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .st-cmp__domains li.is-closed .st-cmp__bar em {
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .st-cmp__status.is-closed {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-cmp__status.is-left {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-cmp__status.is-new {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-cmp__prioTitle {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-cmp__pills span {
+    background: var(--ih-ink, #181818);
+    color: #fff
 }
 /*  grammar.css  */
 html[data-theme="dark"] .gr-search {

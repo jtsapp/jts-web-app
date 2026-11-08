@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { addSatPlanSkill, getSatMockReview, getSatProfile } from '../api.js'
+import { getSatMockReview, getSatProfile, startSatSession } from '../api.js'
 import { loadToken } from '../lib/session.js'
 import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
@@ -7,9 +7,10 @@ import HtmlBlock from '../sat/question/HtmlBlock.jsx'
 import AnswerChoices from '../sat/question/AnswerChoices.jsx'
 import { pick } from '../sat/model/profile.js'
 import { moduleNo, reviewList, shortClock, unanswered } from '../sat/model/mock.js'
-import { domainName, skillName } from '../sat/names.js'
+import { domainName, skillName, skillSection } from '../sat/names.js'
+import { moduleSize } from '../sat/model/practice.js'
 import { ArrowBackIcon, BookmarkIcon, PlusIcon } from '../sat/icons.jsx'
-import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, InfoIcon, MenuBookIcon } from '../ielts/icons.jsx'
+import { ChevronLeftIcon, ChevronRightIcon, InfoIcon, MenuBookIcon } from '../ielts/icons.jsx'
 import { errorText } from '../lib/examQuota.js'
 
 const FILTERS = ['all', 'wrong', 'blank']
@@ -53,7 +54,6 @@ export default function SatMockReviewPage({ token, onNav }) {
   const [at, setAt] = useState(0)
   const [explainLang, setExplainLang] = useState('ru')
   const [busy, setBusy] = useState(false)
-  const [inPlan, setInPlan] = useState({}) // skillId → { added, date } после «Добавить навык в план»
 
   useEffect(() => {
     let alive = true
@@ -82,16 +82,21 @@ export default function SatMockReviewPage({ token, onNav }) {
     onNav?.(data?.paperId || data?.paperTitle ? 'sat-papers' : 'sat')
   }
   const toResult = () => onNav?.('sat-mock')
-  // навык встаёт в ближайшее занятие плана (сервер: SatPlanSkills); новых дней не появляется
-  const addToPlan = async (skillId) => {
+  // «Все мои ошибки» — страница «Работа над ошибками» хаба (задача 9): ошибки пробника уже там, вместе с остальными
+  const toErrors = () => {
+    setParams({ satTab: 'errors', satMock: null })
+    onNav?.('sat')
+  }
+  // занятия ведёт группа, своего плана у студента нет (ТЗ 21.10): навык из разбора — сразу в практику, как в «Работе над ошибками»
+  const practiceSkill = async (skillId) => {
     setBusy(true)
     setError(null)
     try {
-      const r = await addSatPlanSkill(authToken, skillId)
-      setInPlan((m) => ({ ...m, [skillId]: { added: r.added, date: r.lesson?.date } }))
+      const s = await startSatSession(authToken, { mode: 'skills', skillIds: [skillId], count: moduleSize(skillSection(skillId)) })
+      setParams({ satSession: s.id, satMock: null })
+      onNav?.('sat-study')
     } catch (e) {
       setError(errorText(e, t))
-    } finally {
       setBusy(false)
     }
   }
@@ -138,6 +143,7 @@ export default function SatMockReviewPage({ token, onNav }) {
         </div>
         {sel && <span className="st-mrev__mod"><MenuBookIcon size={18} />{modLabel(t, sel.module)}</span>}
         <div className="st-mrev__right">
+          <button type="button" className="ih-btn ih-btn--outline" onClick={toErrors}>{t('sat.el.allMine')}</button>
           <button type="button" className="ih-btn ih-btn--outline" onClick={toResult}>{t('sat.mock.toResult')}</button>
         </div>
       </header>
@@ -239,19 +245,9 @@ export default function SatMockReviewPage({ token, onNav }) {
                 </>
               )}
               <span className="st-spacer" />
-              {inPlan[item.skillId] && (
-                <p className="st-mrev__planNote" role="status">
-                  <CheckIcon size={18} />
-                  {t(inPlan[item.skillId].added ? 'sat.mock.skillAdded' : 'sat.mock.skillAlready', {
-                    date: inPlan[item.skillId].date
-                      ? new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'long' }).format(new Date(`${inPlan[item.skillId].date}T00:00`))
-                      : '',
-                  })}
-                </p>
-              )}
-              <button type="button" className="ih-btn ih-btn--outline st-mrev__practice" disabled={busy || !!inPlan[item.skillId]}
-                onClick={() => addToPlan(item.skillId)}>
-                <PlusIcon size={20} />{t('sat.mock.addSkillToPlan')}
+              <button type="button" className="ih-btn ih-btn--outline st-mrev__practice" disabled={busy}
+                onClick={() => practiceSkill(item.skillId)}>
+                <PlusIcon size={20} />{t('sat.el.train')}
               </button>
             </>
           )}

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { UserIcon } from '../components/icons.jsx'
 import SkillRatings from '../components/SkillRatings.jsx'
+import { CheckCircleIcon, RadioOffIcon } from '../ielts/icons.jsx'
 import { useI18n, LANGS } from '../i18n.jsx'
 import {
   computeKingdoms,
@@ -12,7 +13,7 @@ import {
   levelIndex,
   ROLE_BY_LEVEL,
 } from '../kingdoms.js'
-import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser, getIeltsMe, getIeltsProfile } from '../api.js'
+import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser, getIeltsMe, getIeltsProfile, getSatMeCached, getSatProfile, saveSatProfile } from '../api.js'
 import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadLevelSkillStatsRemote, readLocalLevelSkillStats } from '../practice/skillStats.js'
@@ -72,6 +73,15 @@ function nextRoleFor(level) {
   const nxt = ROLE_BY_LEVEL[next]
   return nxt && nxt.key !== cur?.key ? nxt : null
 }
+
+// Языки разборов SAT: вопросы и варианты всегда на английском, как на экзамене
+// Язык разборов SAT («NEW 2», 17:10151): название и подпись — на самом этом языке, при любом языке интерфейса,
+// как список языков приложения: ученик ищет глазами свой язык, а не его перевод.
+const SAT_EXPLAIN = [
+  { code: 'ru', label: 'Русский', sub: 'Объяснения на русском' },
+  { code: 'kk', label: 'Қазақша', sub: 'Түсіндірмелер қазақ тілінде' },
+  { code: 'en', label: 'English', sub: 'Explanations in English' },
+]
 
 export default function ProfilePage({
   userName,
@@ -149,6 +159,8 @@ export default function ProfilePage({
   const lunaLevel = useProactiveLevel()
   // «Память Луны» (ТЗ v2.0, 8.1) — только у ученика: у преподавателя Луны нет.
   const lunaMemory = useLunaMemory(token, !isTeacher(token))
+  // язык разборов SAT — бывший шаг «время на занятия» (ТЗ SAT 21.10, задача 3.1): блок есть только у начавших SAT
+  const [satLang, setSatLang] = useState(null)
   const [editOpen, setEditOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
@@ -183,6 +195,25 @@ export default function ProfilePage({
       setNotifEnabled(isSoundEnabled())
     } catch {}
   }, [])
+
+  useEffect(() => {
+    if (!token) return
+    let alive = true
+    Promise.resolve(getSatMeCached(token))
+      .then((me) => (me?.onboarded ? getSatProfile(token) : null))
+      .then((p) => alive && p?.exists && setSatLang(p.explainLang || 'ru'))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [token])
+
+  const pickSatLang = (code) => {
+    if (code === satLang) return
+    const prev = satLang
+    setSatLang(code)
+    saveSatProfile(token, { explainLang: code }).catch(() => setSatLang(prev))
+  }
 
   // «Дней подряд» и «уроков пройдено» считает сервер: серия — по входам; уроки — занятия с
   // преподавателем, а если их нет — «Самостоятельно» (не складываются, чтобы не считать дважды).
@@ -633,6 +664,24 @@ export default function ProfilePage({
             <SettingRow key={it.key} item={it} chip last={i === personalization.length - 1} />
           ))}
         </div>
+
+        {/* «Язык объяснений» SAT — карточкой с тремя вариантами прямо на странице (17:10151), а не строкой с окном:
+            выбор из трёх виден сразу, и подпись объясняет, что вопросы останутся английскими */}
+        {satLang && (
+          <section className="pf-card pf-satlang">
+            <h2 id="pf-satlang-title">{t('profile.satExplain')}</h2>
+            <p>{t('profile.satExplainSub')}</p>
+            <div className="pf-satlang__opts" role="radiogroup" aria-labelledby="pf-satlang-title">
+              {SAT_EXPLAIN.map((o) => (
+                <button key={o.code} type="button" role="radio" aria-checked={o.code === satLang} lang={o.code}
+                  className={`pf-satlang__opt ${o.code === satLang ? 'is-on' : ''}`} onClick={() => pickSatLang(o.code)}>
+                  <span><b>{o.label}</b><small>{o.sub}</small></span>
+                  {o.code === satLang ? <CheckCircleIcon size={22} /> : <RadioOffIcon size={22} />}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {lunaMemory.status === 'ready' && (
           <>

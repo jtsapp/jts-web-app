@@ -4,7 +4,7 @@ import { KEYS } from '../question/session.js'
 import { pick } from '../model/profile.js'
 
 /** Решение по шагам: у Math разбор банка — абзац алгебры, по предложениям он читается как 1, 2, 3 (steps прототипа). */
-function steps(html) {
+export function steps(html) {
   // без lookbehind `(?<=…)`: его не разбирает Safari до 16.4 (src/lib/safariSyntax.test.js)
   const parts = String(html || '').replace(/([.!?])\s+(?=[A-Z(А-Я])/g, '$1\u0000').split('\u0000')
   return parts.length > 1 ? parts : null

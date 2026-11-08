@@ -1910,30 +1910,79 @@ export function submitSatDiagnostic(token, id, body) {
   return authPost(`/mobile/sat/diagnostic/${encodeURIComponent(id)}/submit`, token, body)
 }
 
-export function getSatPlan(token) {
-  return authGet('/mobile/sat/plan', token)
+/** Фазы плана по ТЗ 21.10 — одна структура для дашборда, «Плана» и счётчиков: { roadmap, examDate, inGroup, selfPrep, tests }. */
+export function getSatRoadmap(token) {
+  return authGet('/mobile/sat/roadmap', token)
 }
 
-/** Дни (1 = пн) и минуты: первый раз строит план, дальше пересобирает недели впереди. */
-export function saveSatPlan(token, body) {
-  return authPut('/mobile/sat/plan', token, body)
+/** Занятия группы студента: { inGroup, groups, lessons, attended, lessonCount, packages }. */
+export function getSatSchedule(token) {
+  return authGet('/mobile/sat/schedule', token)
 }
 
-export function rebuildSatPlan(token) {
-  return authPost('/mobile/sat/plan/rebuild', token, {})
+/** «Все вопросы» (задача 8): банк секции по навыкам, клетка [id, сложность, 1 · 0 · null]. */
+export function getSatBank(token, section) {
+  return authGet(`/mobile/sat/bank?section=${encodeURIComponent(section)}`, token)
 }
 
-/** { status: 'done' | 'skipped' | 'planned' } или { date: 'ГГГГ-ММ-ДД' } — перенести. */
-export function updateSatLesson(token, lessonId, body) {
-  return authPatch(`/mobile/sat/plan/lessons/${encodeURIComponent(lessonId)}`, token, body)
+/** Разбор уже решённого вопроса банка: { question, given, correct, answer, explanation, distractors }. */
+export function getSatBankReview(token, qid) {
+  return authGet(`/mobile/sat/bank/questions/${encodeURIComponent(qid)}/review`, token)
 }
 
-/** Навык из разбора пробника — в ближайшее занятие плана → { added, lesson, plan }; added=false — уже есть на неделе. */
-export function addSatPlanSkill(token, skillId) {
-  return authPost('/mobile/sat/plan/skills', token, { skillId })
+/** Вопрос банка без ключа — решать по одному (режим «Все вопросы»). */
+export function getSatQuestion(token, qid) {
+  return authGet(`/mobile/sat/questions/${encodeURIComponent(qid)}`, token)
 }
 
-/** Учебная сессия: { lessonId } — занятие плана; { skillIds, count } — по навыкам. Незаконченное занятие продолжается. */
+/** Подсказка index (с нуля) к вопросу банка вне сессии. */
+export function getSatQuestionHint(token, qid, index) {
+  return authGet(`/mobile/sat/questions/${encodeURIComponent(qid)}/hints/${index}`, token)
+}
+
+/** «Задания на сегодня» (задача 11): { practiceToday, openErrors, reviewedToday, mock, weakSkill } — факты дня. */
+export function getSatTodayTasks(token, skills = [], section) {
+  const q = new URLSearchParams()
+  skills.forEach((s) => q.append('skills', s))
+  if (section) q.set('section', section)
+  return authGet(`/mobile/sat/today-tasks?${q.toString()}`, token)
+}
+
+/** «Работа над ошибками» (задача 9): { items, stats } — неверные и неотвеченные с причиной и источником. */
+export function getSatErrorLog(token) {
+  return authGet('/mobile/sat/error-log', token)
+}
+
+/** Разбор ошибки: { item, question, given, answer, explanation, distractors }. */
+export function getSatErrorReview(token, id) {
+  return authGet(`/mobile/sat/error-log/${encodeURIComponent(id)}`, token)
+}
+
+/** Уроки гида по Desmos, отмеченные «изучено» (задача 17): [id]. */
+export function getSatGuideStudied(token) {
+  return authGet('/mobile/sat/guide/studied', token)
+}
+
+export function markSatGuideStudied(token, lessonId, studied) {
+  return authPut(`/mobile/sat/guide/studied/${encodeURIComponent(lessonId)}`, token, { studied })
+}
+
+/** Перенести отметки из браузера в аккаунт — только добавляет. */
+export function importSatGuideStudied(token, lessonIds) {
+  return authPost('/mobile/sat/guide/studied/import', token, { lessonIds })
+}
+
+/** Bluebook Test 6 → 8 → 10: баллы с приростом и снимки карты доменов. */
+export function getSatBluebook(token) {
+  return authGet('/mobile/sat/bluebook', token)
+}
+
+/** Ввести баллы теста 6, 8 или 10: { rw, math, takenOn } — уходит на подтверждение куратору. */
+export function submitSatBluebook(token, test, body) {
+  return authPost(`/mobile/sat/bluebook/${encodeURIComponent(test)}`, token, body)
+}
+
+/** Учебная сессия: { mode, skillIds, count } — практика по навыкам, { unitCode } — набор юнита (продолжается, если не закончен). */
 export function startSatSession(token, body) {
   return authPost('/mobile/sat/sessions', token, body)
 }
@@ -2009,29 +2058,6 @@ export function startSatDaily(token) {
 /** Сдать проверку разом: { answers, times }. */
 export function submitSatDaily(token, id, body) {
   return authPost(`/mobile/sat/daily/${encodeURIComponent(id)}/submit`, token, body)
-}
-
-/** Словарь SAT: дневная цель, оценено сегодня, расписание SM-2 по слову, свои слова (колода — public/sat/vocab). */
-export function getSatVocab(token) {
-  return authGet('/mobile/sat/vocab', token)
-}
-
-/** Оценить карточку: 0 «Снова», 3 «Трудно», 4 «Хорошо», 5 «Легко». */
-export function gradeSatVocab(token, wordId, grade) {
-  return authPost('/mobile/sat/vocab/grade', token, { wordId, grade })
-}
-
-export function setSatVocabGoal(token, goal) {
-  return authPut('/mobile/sat/vocab/goal', token, { goal })
-}
-
-/** Своё слово: { word, definition, example, ru }. */
-export function addSatVocabWord(token, body) {
-  return authPost('/mobile/sat/vocab/words', token, body)
-}
-
-export function deleteSatVocabWord(token, id) {
-  return authDelete(`/mobile/sat/vocab/words/${encodeURIComponent(id)}`, token)
 }
 
 /** Курс «36 юнитов»: размер набора каждого юнита и что ученик в нём сделал. */

@@ -679,15 +679,120 @@
   background: #f8f8f8;
   font: inherit;
   text-align: left;
-  cursor: pointer;
 }
 .st-college.is-top {
   border-color: var(--ih-violet, #9047ff);
-  background: #fbf8ff;
+  background: #f2ebff;
 }
 .st-college__name b {
   display: block;
   font-size: 14px;
+}
+/* группа страны: баллы стран — разные величины, поэтому у каждой своя подпись, что это за число */
+.st-colleges__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+.st-colleges__head span {
+  font-weight: 500;
+  color: #8a8a8a;
+}
+/* балл вуза по его типу: диапазон, «минимум N», «N+ · ориентир»; секции и уточнение — тише */
+.st-college__score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--ih-ink-2, #4a4a55);
+}
+.st-college__score b {
+  font-size: 15px;
+  color: #181818;
+}
+.st-college__score b.is-none,
+.st-college__score.is-none {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a8a8a;
+}
+.st-college__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-top: 4px;
+}
+.st-college__meta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: inherit;
+  text-decoration: underline;
+}
+/* доп. требование (UK: SAT только вместе с AP) — заметнее политики: без него балл не работает */
+.st-college__extra {
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #fff4db;
+  color: #8a5a00;
+  font-weight: 600;
+}
+.st-college__skew {
+  color: #b7791f;
+}
+.st-college__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.st-college__side .st-college__bar {
+  align-self: stretch;
+}
+.st-college__bar.is-empty {
+  background: none;
+}
+.st-college__use {
+  padding: 4px 10px;
+  border: 1px solid var(--st-line);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.st-college__use:hover {
+  border-color: var(--ih-violet, #9047ff);
+}
+/* фильтр по стране над списком вузов: выбранная — чёрная */
+.st-goal__countries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 4px;
+}
+.st-goal__countries button {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid #ededf2;
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a4a55;
+  cursor: pointer;
+}
+.st-goal__countries button.is-on {
+  border-color: #181818;
+  background: #181818;
+  color: #fff;
 }
 .st-college__name > span {
   font-size: 11px;
@@ -717,6 +822,10 @@
   background: #f4f4f4;
   color: var(--ih-ink-2, #4a4a55);
 }
+.st-band--pass {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
 .st-college__bar {
   position: relative;
   height: 8px;
@@ -740,6 +849,22 @@
 }
 .st-range--below {
   background: #c8c8d0;
+}
+/* порог и ориентир — риской, а не отрезком до 1600: отрезок читался бы как диапазон баллов вуза */
+.st-mark {
+  position: absolute;
+  top: -3px;
+  width: 4px;
+  height: 14px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: #c8c8d0;
+}
+.st-mark--pass {
+  background: #3fb27a;
+}
+.st-mark--near {
+  background: #d9a54f;
 }
 .st-you {
   position: absolute;
@@ -1157,7 +1282,7 @@
 }
 .st-date:active,
 .st-undecided:active,
-.st-college:active,
+.st-college__use:active,
 .st-step__row button:active {
   transform: scale(0.985);
 }
@@ -1362,8 +1487,8 @@
   border-right: 1px solid var(--st-line);
 }
 .st-q__text {
-  font-size: 19px;
-  line-height: 32px;
+  font-size: 18px;
+  line-height: 28px;
 }
 .st-q__text p {
   margin: 0 0 16px;
@@ -1453,9 +1578,9 @@
   color: var(--ih-ink-2);
 }
 .st-q__stem {
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 600;
-  line-height: 30px;
+  line-height: 28px;
 }
 .st-q__single .st-q__stem {
   font-size: 20px;
@@ -1472,11 +1597,45 @@
 .st-q__loading {
   padding: 48px;
 }
+/* подсветка «NEW 2» (17:3625): с полями и скруглением, на переносе строки каждая часть — своя плашка */
 mark.st-hl {
+  padding: 2px 4px;
   background: #ffe58a;
   color: inherit;
-  border-radius: 3px;
+  border-radius: 6px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
   cursor: pointer;
+}
+mark.st-hl:focus-visible {
+  outline: 2px solid var(--ih-violet);
+  outline-offset: 1px;
+}
+/* подсказка «Клик по выделению — снять» стоит от колонки вопроса и прокручивается вместе с текстом */
+.st-q__passage,
+.st-q__pane,
+.st-q__single {
+  position: relative;
+}
+.st-hltip {
+  position: absolute;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #181818;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  color: #fff;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.st-hltip svg {
+  flex-shrink: 0;
+  color: #ffe58a;
 }
 
 /* варианты (Figma 8, 26) */
@@ -2017,6 +2176,19 @@ mark.st-hl {
   background: #fff4db;
   color: #c98512;
 }
+/* учебный режим «NEW 2» (17:7551): значок вместо точки, «без ответа» серым — пропуск тут не ошибка, как в экзамене */
+.st-chip--right {
+  background: #e6f6ec;
+  color: var(--ih-green);
+}
+.st-chip--wrong {
+  background: var(--st-red-tint);
+  color: var(--st-red);
+}
+.st-chip--none {
+  background: var(--ih-soft);
+  color: var(--ih-ink-2);
+}
 .st-navdlg__grid {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
@@ -2070,6 +2242,24 @@ mark.st-hl {
 .st-navdlg__warn svg {
   flex-shrink: 0;
   color: var(--st-red);
+}
+.st-navdlg__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--ih-soft);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 19px;
+  color: var(--ih-ink-2);
+}
+.st-navdlg__note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--ih-muted);
 }
 .st-navdlg__actions {
   display: flex;
@@ -3019,146 +3209,252 @@ mark.st-hl {
   color: var(--ih-ink);
 }
 
-/* роудмап (Figma 12) */
+/* роудмап (Figma «NEW 2», 17:1367): «Ритм программы» с полосой фаз и карточка выбранной фазы */
 .st-road {
   display: flex;
   flex-direction: column;
   gap: 28px;
 }
-.st-road__map {
-  position: relative;
-  padding: 0;
-  border-radius: 28px;
-  /* Figma 11, RoadStage: сверху почти белый, книзу лавандовый */
-  background: linear-gradient(180deg, #fbf8ff 0%, #efe6ff 100%);
-}
-.st-road__track {
-  stroke: #e2d5ff;
-}
-.st-road__passed {
-  stroke: rgba(144, 71, 255, 0.35);
-}
-.st-road__dash {
-  stroke: #fff;
-}
-.st-road__svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.st-road__nav {
-  position: absolute;
-  left: 24px;
-  top: 20px;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ih-ink-2);
-}
-.st-road__arrow {
-  width: 36px;
-  height: 36px;
-  border: 0;
-}
-.st-road__arrow:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.st-road__node {
-  cursor: pointer;
-}
-.st-road__node circle {
-  fill: #fff;
-  stroke: #cdb8ff;
-  stroke-width: 2;
-  transition: r 0.16s ease;
-}
-.st-road__node circle.is-done {
-  fill: var(--ih-green);
-  stroke: #fff;
-  stroke-width: 3;
-}
-.st-road__node circle.is-here {
-  fill: var(--ih-violet);
-  stroke: #fff;
-  stroke-width: 4;
-}
-.st-road__node.is-open circle.is-next {
-  stroke: var(--ih-violet);
-  stroke-width: 3;
-}
-.st-road__node:focus-visible {
-  outline: none;
-}
-.st-road__node:focus-visible circle {
-  stroke: var(--ih-ink);
-  stroke-width: 3;
-}
-.st-road__num {
-  font-size: 17px;
-  font-weight: 800;
-  fill: var(--ih-violet);
-}
-.st-road__num.is-here {
-  font-size: 22px;
-  fill: #fff;
-}
-.st-road__star {
-  font-size: 12px;
-  fill: #cfc6e6;
-}
-.st-road__star.is-on {
-  fill: #f2a516;
-}
-.st-road__here {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--ih-ink);
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  white-space: nowrap;
-  pointer-events: none;
-}
-.st-road__exam {
-  position: absolute;
-  transform: translate(-50%, 0);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid var(--st-line);
-  border-radius: 14px;
-  background: #fff;
-  white-space: nowrap;
-  pointer-events: none;
-}
-.st-road__exam > span:last-child {
+/* карточка «Ритм программы» (Figma «NEW 2», 17:1367): заголовок, ритм фаз словами и полоса фаз размера L */
+.st-road__rhythm {
   display: flex;
   flex-direction: column;
-  font-size: 13px;
+  gap: 18px;
+  padding: 28px;
+  border-radius: 20px;
 }
-.st-road__exam small {
-  font-size: 12px;
+.st-road__rhythm h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 30px;
+}
+.st-road__rhythm p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 19px;
   color: var(--ih-muted);
 }
-.st-road__examicon {
+/* полоса не сжимается ниже читаемого: на узком окне она едет вбок, а не ломает подписи в столбик */
+.st-road__strip {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.st-road__bar {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: #efeff4;
+  overflow: hidden;
+}
+.st-road__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ih-violet);
+}
+
+/* полоса фаз (Figma «NEW 2», компонент 17:5293): колонка точки — метка «Вы здесь», дорожка 32px, подписи.
+   Тесты — кружки на линии фиксированной ширины (недель не занимают), учебные фазы делят остаток поровну. */
+.st-strip {
+  display: flex;
+  min-width: 800px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.st-strip__pt {
+  display: flex;
+  min-width: 0;
+}
+.st-strip__pt.is-cp {
+  flex: 0 0 110px;
+}
+.st-strip__pt.is-seg {
+  flex: 1 1 0;
+  min-width: 120px;
+}
+.st-strip__pt.is-self {
+  flex: 0 0 180px;
+}
+.st-strip.has-extra .st-strip__pt.is-self {
+  flex-basis: 140px;
+}
+.st-strip__pt.is-end {
+  flex: 0 0 96px;
+}
+.st-strip__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+}
+button.st-strip__body {
+  cursor: pointer;
+}
+button.st-strip__body:focus-visible {
+  outline: 2px solid var(--ih-violet);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+.st-strip__mark {
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+.st-strip__mark em {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ih-violet);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 16px;
+  color: #fff;
+  white-space: nowrap;
+}
+.st-strip__pt.is-cp .st-strip__mark,
+.st-strip__pt.is-end .st-strip__mark {
+  justify-content: center;
+}
+.st-strip__track {
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
+.st-strip__line {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #e3e3ea;
+}
+.st-strip__line.is-on {
+  background: var(--ih-green);
+}
+.st-strip__line.is-none {
+  background: transparent;
+}
+.st-strip__dot {
+  flex: none;
   width: 32px;
   height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
-  background: #fff1e3;
-  color: #d98b00;
+  border: 2px solid #dadae3;
+  border-radius: 999px;
+  background: #fff;
+  color: #b4b4c0;
+}
+.st-strip__dot b {
+  font-size: 16px;
+  line-height: 1;
+}
+.st-strip__pt.is-done .st-strip__dot {
+  border-color: var(--ih-green);
+  background: var(--ih-green);
+  color: #fff;
+}
+.st-strip__pt.is-current .st-strip__dot {
+  border-color: var(--ih-violet);
+  background: var(--ih-violet);
+  color: #fff;
+}
+/* тест прошёл без баллов: план поехал дальше, точка остаётся жёлтой с «!», пока баллы не введут */
+.st-strip__pt.is-warn .st-strip__dot {
+  border-color: #f79009;
+  background: #f79009;
+  color: #fff;
+}
+.st-strip__pt.is-end .st-strip__dot {
+  border-color: #181818;
+  background: #181818;
+  color: #fff;
+}
+.st-strip__bar {
+  flex: 1;
+  height: 16px;
+  border-radius: 999px;
+  background: #e3e3ea;
+  overflow: hidden;
+}
+.st-strip__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ih-violet);
+}
+.st-strip__pt.is-done .st-strip__bar i {
+  background: var(--ih-green);
+}
+.st-strip__open {
+  flex: 1;
+  height: 16px;
+  border: 2px dashed #c9b8f5;
+  border-radius: 999px;
+}
+.st-strip__pt.is-current .st-strip__open {
+  border-color: var(--ih-violet);
+  background: #f2ebff;
+}
+.st-strip__pt.is-done .st-strip__open {
+  border-style: solid;
+  border-color: var(--ih-green);
+  background: var(--ih-green);
+}
+.st-strip__labels {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 2px;
+}
+.st-strip__pt.is-cp .st-strip__labels,
+.st-strip__pt.is-end .st-strip__labels {
+  padding-left: 0;
+  text-align: center;
+}
+.st-strip__labels b {
+  font-size: 14px;
+  line-height: 19px;
+  color: var(--ih-muted);
+}
+.st-strip__pt.is-done .st-strip__labels b,
+.st-strip__pt.is-current .st-strip__labels b,
+.st-strip__pt.is-warn .st-strip__labels b {
+  color: var(--ih-ink);
+}
+/* выбранная фаза роудмапа — та, чья карточка открыта ниже */
+.st-strip__pt.is-selected .st-strip__labels b {
+  text-decoration: underline 2px var(--ih-violet);
+  text-underline-offset: 4px;
+}
+.st-strip__labels small {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--ih-muted);
+}
+.st-strip__labels .st-strip__count {
+  color: var(--ih-ink-2);
+}
+/* размер S («Сегодня»): отрезки тоньше, заголовок 13px, подписи в две строки */
+.st-strip.is-S {
+  min-width: 760px;
+}
+.st-strip.is-S .st-strip__bar,
+.st-strip.is-S .st-strip__open {
+  height: 12px;
+}
+.st-strip.is-S .st-strip__labels b {
+  font-size: 13px;
+  line-height: 18px;
 }
 .st-road__card {
   display: flex;
@@ -3229,7 +3525,7 @@ mark.st-hl {
 }
 .st-road__progress {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 48px;
 }
 .st-road__progress > div {
@@ -3257,66 +3553,22 @@ mark.st-hl {
   color: var(--ih-green);
 }
 
-/* полоса фаз и неделя (Figma 13) */
-.st-phases {
+/* неделя (Figma «NEW 2», 17:1583): карточка полосы фаз с прогрессом курса и карточка дней */
+.st-week__phases {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   padding: 20px;
   border-radius: 24px;
 }
-.st-phases__row {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 6px;
-}
-.st-phases__tile {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--ih-soft);
-  min-width: 0;
-}
-.st-phases__tile b {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.st-phases__tile small {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ih-muted);
-}
-.st-phases__tile.is-done {
-  background: #e7f6ed;
-}
-.st-phases__tile.is-done b {
-  color: var(--ih-green);
-}
-.st-phases__tile.is-here {
-  background: var(--ih-violet);
-}
-.st-phases__tile.is-here b {
-  color: #fff;
-}
-.st-phases__tile.is-here small {
-  color: #e6d9ff;
-}
-.st-phases__prog {
+.st-week__prog {
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 13px;
-  color: var(--ih-ink-2);
+  color: var(--ih-ink);
 }
-.st-phases__prog .st-rep__bar {
+.st-week__prog .st-road__bar {
   flex: 1;
 }
 .st-week__card {
@@ -3409,7 +3661,7 @@ mark.st-hl {
   align-items: flex-start;
   gap: 4px;
   padding: 10px;
-  border: 1.5px solid var(--ih-ink);
+  border: 1px solid var(--st-line);
   border-radius: 12px;
   background: #fff;
   font: inherit;
@@ -3443,15 +3695,21 @@ mark.st-hl {
   font-weight: 700;
   color: var(--ih-ink-2);
 }
+/* тёмная рамка — только под курсором и фокусом (Figma W6): иначе запланированные спорили бы со «Следующим» */
+.st-lesson:hover,
+.st-lesson:focus-visible {
+  border-color: var(--ih-ink);
+}
 .st-lesson.is-done {
-  border-color: transparent;
-  background: #e7f6ed;
+  border-color: var(--st-line);
+  background: #e6f6ec;
 }
 .st-lesson.is-done .st-lesson__st {
   color: var(--ih-green);
 }
 .st-lesson.is-next {
   border-color: var(--ih-violet);
+  box-shadow: inset 0 0 0 1px var(--ih-violet);
 }
 .st-lesson.is-next .st-lesson__st {
   color: var(--ih-violet);
@@ -3480,14 +3738,14 @@ mark.st-hl {
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: var(--ih-soft);
+  background: #f8f8f8;
   font-size: 12px;
   font-weight: 700;
   color: var(--ih-ink-2);
 }
 .st-legend i {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
   background: currentColor;
 }
@@ -3500,6 +3758,7 @@ mark.st-hl {
   color: var(--ih-violet);
 }
 .st-legend.is-skipped {
+  background: var(--ih-soft);
   color: var(--ih-muted);
 }
 .st-legend.is-moved {
@@ -3507,75 +3766,7 @@ mark.st-hl {
   color: #c98512;
 }
 
-/* меню занятия (Figma 13) */
-.st-lmenu {
-  position: absolute;
-  top: calc(100% + 6px);
-  z-index: 30;
-  width: 250px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px;
-  border: 1px solid var(--st-line);
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 16px 40px rgba(16, 24, 40, 0.16);
-  outline: none;
-}
-.st-lmenu__title {
-  font-size: 14px;
-  line-height: 19px;
-}
-.st-lmenu__goal {
-  margin: 0 0 6px;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 17px;
-  color: var(--ih-muted);
-}
-.st-lmenu__item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 40px;
-  padding: 0 4px;
-  border: 0;
-  border-radius: 10px;
-  background: none;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  text-align: left;
-  color: var(--ih-ink);
-  cursor: pointer;
-}
-.st-lmenu__item:hover:not(:disabled) {
-  background: var(--ih-soft);
-}
-.st-lmenu__item.is-start {
-  color: var(--ih-violet);
-}
-.st-lmenu__item:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-.st-lmenu__move {
-  display: flex;
-  gap: 6px;
-  padding: 4px 0;
-}
-.st-lmenu__move input {
-  flex: 1;
-  min-width: 0;
-  padding: 6px 8px;
-  border: 1px solid #dadae3;
-  border-radius: 10px;
-  font: inherit;
-  font-size: 13px;
-}
-
-/* месяц (Figma 14) */
+/* месяц (Figma «NEW 2», 17:1866) */
 .st-month {
   display: flex;
   flex-direction: column;
@@ -3633,23 +3824,17 @@ mark.st-hl {
   color: var(--ih-violet);
 }
 .st-month__label i {
-  width: 16px;
-  height: 3px;
+  width: 18px;
+  height: 4px;
   border-radius: 999px;
   background: currentColor;
 }
-/* цвета фаз 3–6 — нет в Figma: макет показывает только «Основы» (фиолетовый) и «Глубокую практику» (синий) */
-.st-month__label.is-deep {
+/* цвет полоски — фаза недели: «Основы, часть 1» фиолетовым (по умолчанию), часть 2 синим, Challenge янтарным */
+.st-month__label.is-foundations2 {
   color: var(--st-rw);
 }
-.st-month__label.is-timed {
-  color: #0e8f8a;
-}
-.st-month__label.is-mocks {
+.st-month__label.is-challenge {
   color: #c98512;
-}
-.st-month__label.is-refinement {
-  color: var(--ih-ink-2);
 }
 .st-month__cell {
   min-height: 84px;
@@ -3716,58 +3901,24 @@ mark.st-hl {
   color: var(--ih-muted);
   text-decoration: line-through;
 }
+/* Bluebook-тест и день экзамена — чёрные чипы с флагом (Figma M3). «Bluebook Test 10» шире узкой клетки — чип, как
+   в макете, выходит за её край (воскресенье — последний столбец, справа поле карточки), а не режется */
 .st-month__exam {
+  align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 8px;
+  gap: 6px;
+  padding: 5px 10px;
   border-radius: 999px;
-  background: var(--ih-ink);
-  font-size: 11px;
-  font-weight: 700;
-  color: #fff;
-}
-.st-month__marks {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-.st-month__mark {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-  border-radius: 20px;
-}
-.st-month__mark > span:last-child {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.st-month__mark b {
-  font-size: 15px;
-}
-.st-month__mark small {
+  background: #181818;
   font-size: 12px;
-  color: var(--ih-muted);
+  font-weight: 700;
+  line-height: 16px;
+  color: #fff;
+  white-space: nowrap;
 }
-.st-month__markicon {
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: var(--ih-soft);
-  color: var(--ih-ink-2);
-}
-.st-month__markicon.is-violet {
-  background: #f2ebff;
-  color: var(--ih-violet);
-}
-.st-month__markicon.is-gold {
-  background: #fff1e3;
-  color: #d98b00;
+.st-month__exam svg {
+  flex: none;
 }
 
 @media (max-width: 1100px) {
@@ -3789,8 +3940,7 @@ mark.st-hl {
   .st-rep__top,
   .st-rep__bands,
   .st-time__grid,
-  .st-road__boxes,
-  .st-month__marks {
+  .st-road__boxes {
     grid-template-columns: minmax(0, 1fr);
   }
   .st-time__days {
@@ -3812,14 +3962,6 @@ mark.st-hl {
   .st-road__progress {
     gap: 16px;
   }
-  .st-road__here,
-  .st-road__exam {
-    display: none;
-  }
-  .st-phases__row {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(2, 1fr);
-  }
   .st-week__days {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -3834,7 +3976,8 @@ mark.st-hl {
     min-height: 56px;
     padding: 4px;
   }
-  .st-mlesson span {
+  .st-mlesson span,
+  .st-month__exam span {
     display: none;
   }
 }
@@ -3961,14 +4104,30 @@ mark.st-hl {
 /* итог проверки под вопросом (Figma 23–24) */
 .st-verdict {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 12px;
   padding: 14px 16px;
   border-radius: 16px;
   font-size: 13px;
   font-weight: 500;
   line-height: 18px;
   color: var(--ih-ink-2);
+}
+.st-verdict > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+/* значок «NEW 2» (17:3869) — слева, по первой строке заголовка */
+.st-verdict > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.st-verdict.is-wrong > svg {
+  color: var(--st-red);
+}
+.st-verdict.is-right > svg {
+  color: var(--ih-green);
 }
 .st-verdict b {
   font-size: 16px;
@@ -4569,10 +4728,9 @@ mark.st-hl {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 18px;
-  border: 1px solid #e3d6ff;
+  padding: 14px 20px;
   border-radius: 20px;
-  background: #f4eeff;
+  background: var(--st-tint);
 }
 .st-resume > div {
   display: flex;
@@ -4621,54 +4779,8 @@ mark.st-hl {
   flex-direction: column;
   gap: 20px;
 }
-.st-next {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-  border-radius: 24px;
-}
-.st-next h2,
 .st-where h2 {
   margin: 0;
-}
-.st-next__head {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.st-next__head .st-muted {
-  font-size: 14px;
-  font-weight: 700;
-}
-.st-next__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--ih-soft);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ih-ink-2);
-}
-.st-next__chip.is-violet {
-  background: var(--st-tint);
-  color: var(--ih-violet);
-}
-.st-next__title {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.st-next__title > div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.st-next__title h2 {
-  font-size: 26px;
 }
 .st-next__icon {
   width: 56px;
@@ -4690,116 +4802,45 @@ mark.st-hl {
   height: 36px;
   border-radius: 10px;
 }
-.st-next__acts {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-.st-next__act {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 16px;
-  border-radius: 16px;
-  background: #f8f8f8;
-}
-.st-next__acthead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--ih-violet);
-}
-.st-next__acthead small {
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--ih-muted);
-}
-.st-next__act b {
-  font-size: 15px;
-}
-.st-next__act > span {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ih-ink-2);
-}
-.st-next__act > small {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ih-muted);
-}
-.st-next__foot {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.st-next__foot > svg {
-  flex-shrink: 0;
-  color: var(--ih-violet);
-}
-.st-next__foot p {
-  flex: 1;
-  margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-  color: var(--ih-ink-2);
-}
 .st-where {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-  border-radius: 24px;
+  gap: 18px;
+  padding: 28px;
+  border-radius: 20px;
 }
 .st-where__head {
   display: flex;
   align-items: flex-start;
   gap: 12px;
 }
-.st-where__head .st-muted {
-  font-size: 14px;
-}
-.st-where__bar {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-}
-.st-where__bar span {
+.st-where__head > div {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ih-muted);
+  gap: 4px;
 }
-.st-where__bar i {
-  height: 6px;
-  border-radius: 999px;
-  background: #e6e6ec;
+.st-where__head h2 {
+  font-size: 22px;
+  line-height: 30px;
 }
-.st-where__bar .is-done i {
-  background: var(--ih-green);
-}
-.st-where__bar .is-here i {
-  background: var(--ih-violet);
-}
-.st-where__bar .is-here small {
-  font-weight: 700;
-  color: var(--ih-ink);
-}
-.st-where__bar em {
-  font-style: normal;
-  font-size: 12px;
-  color: #c8c8d4;
-}
-.st-where__bar em .is-on {
-  color: #f5a524;
-}
-.st-where p {
-  margin: 0;
+.st-where__head .st-muted {
   font-size: 14px;
-  line-height: 21px;
-  color: var(--ih-ink-2);
+  font-weight: 500;
+}
+.st-where__open {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--st-edge);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-ink, #181818);
+  cursor: pointer;
 }
 .st-exam {
   display: flex;
@@ -5030,9 +5071,19 @@ mark.st-hl {
   font-weight: 700;
   color: var(--ih-ink-2);
 }
+.st-prac__note.is-bank {
+  padding: 8px 14px;
+  font-size: 14px;
+}
+.st-prac__head {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+/* пять режимов в один ряд («NEW 2», 17:2184): «Все вопросы» больше не уходит одиноко на вторую строку */
 .st-prac__modes {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
 }
 .st-prac__mode {
@@ -5273,13 +5324,14 @@ mark.st-hl {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
+/* «NEW 2» (17:10026): белая плитка с рамкой r16, значок в квадрате 32px, число 26px */
 .st-pstat {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
   gap: 4px 10px;
   padding: 20px;
-  border-radius: 24px;
+  border-radius: 16px;
 }
 .st-pstat b {
   font-size: 15px;
@@ -5287,7 +5339,7 @@ mark.st-hl {
 .st-pstat strong {
   grid-column: 1 / -1;
   margin-top: 8px;
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 800;
 }
 .st-pstat small {
@@ -5733,7 +5785,6 @@ mark.st-hl {
   }
 }
 @media (max-width: 760px) {
-  .st-next__acts,
   .st-prac__modes,
   .st-map__cols {
     grid-template-columns: minmax(0, 1fr);
@@ -5741,7 +5792,13 @@ mark.st-hl {
   .st-prac__modes {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .st-next__foot,
+  /* тема банка: полоска прогресса не влезает рядом с подписью — подпись важнее, она дублирует ту же долю */
+  .st-bank__head {
+    flex-wrap: wrap;
+  }
+  .st-bank__bar {
+    display: none;
+  }
   .st-reco,
   .st-err {
     flex-direction: column;
@@ -5752,9 +5809,6 @@ mark.st-hl {
   }
   .st-map__skill {
     flex-basis: calc(50% - 3px);
-  }
-  .st-where__bar small {
-    font-size: 10px;
   }
   .st-heat__grid {
     grid-template-rows: repeat(7, 12px);
@@ -5771,8 +5825,9 @@ mark.st-hl {
   cursor: default;
 }
 
-/* ---- лента прохождения (Figma 31, 32): модули и перерыв ---- */
-.st-strip {
+/* ---- лента прохождения (Figma 31, 32): модули и перерыв ----
+   .st-card — чтобы не задеть полосу фаз (тоже .st-strip, но <ol> без карточки): её отступы ломали раскладку полосы */
+.st-card.st-strip {
   display: flex;
   gap: 6px;
   padding: 18px;
@@ -6597,14 +6652,6 @@ mark.st-hl {
 .st-mocks__tr > span {
   min-width: 0;
 }
-.st-mocks__src.is-sim {
-  background: #fff4db;
-  color: #c98512;
-}
-.st-mocks__src.is-paper {
-  background: var(--st-rw-tint);
-  color: var(--st-rw);
-}
 .st-mocks__papers {
   display: flex;
   flex-direction: column;
@@ -7134,14 +7181,6 @@ mark.st-hl {
   height: 46px;
   padding: 12px 20px;
   font-size: 15px;
-}
-.st-mrev__planNote {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 8px;
-  font-size: 13px;
-  color: var(--ih-green);
 }
 .st-mrev__bottom {
   display: flex;
@@ -8087,681 +8126,8 @@ mark.st-hl {
 }
 
 /* =====================================================================
-   Словарь (фаза 9, Figma SAT 18) и гид по Desmos (Figma 20).
+   Гид по Desmos (Figma 20). Словарь SAT отсюда убран (30.10.2026): он живёт в общем «Словаре».
    ===================================================================== */
-.st-vocab {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-bottom: 72px;
-}
-.st-vocab__bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.st-vc__status {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: #f4f4f4;
-  color: #4a4a55;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.st-vc__status.is-learning {
-  background: #fff4db;
-  color: #c98512;
-}
-.st-vc__status.is-mastered {
-  background: #e6f6ec;
-  color: #1f9d55;
-}
-.st-vocab__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 16px;
-  align-items: start;
-}
-.st-vc {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.st-vc__progress {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-}
-.st-vc__progress b {
-  white-space: nowrap;
-}
-.st-vc__bar {
-  flex: 1;
-  height: 8px;
-  border-radius: 999px;
-  background: #efeff4;
-  overflow: hidden;
-}
-.st-vc__bar i {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--ih-violet, #9047ff);
-}
-.st-vc__left {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--st-tint);
-  color: var(--ih-violet, #9047ff);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.st-vc__card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 240px;
-  padding: 28px 30px;
-  border-radius: 24px;
-  box-shadow: 0 8px 28px rgba(24, 24, 24, 0.06);
-  cursor: pointer;
-  user-select: none;
-}
-.st-vc__card:focus-visible {
-  outline: 2px solid var(--ih-violet, #9047ff);
-  outline-offset: 2px;
-}
-.st-vc__chips {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.st-vc__state {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-}
-.st-vc__state.is-review {
-  background: #fff4db;
-  color: #c98512;
-}
-.st-vc__state.is-new {
-  background: var(--st-rw-tint);
-  color: var(--st-rw);
-}
-.st-vc__say {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  color: var(--ih-violet, #9047ff);
-  cursor: pointer;
-}
-.st-vc__say:hover {
-  background: var(--st-tint);
-}
-.st-vc__word {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-}
-.st-vc__word b {
-  font-size: 48px;
-  font-weight: 800;
-  line-height: 1.1;
-  overflow-wrap: break-word;
-}
-.st-vc__word small {
-  font-size: 14px;
-  color: var(--ih-muted, #8a8a8a);
-}
-.st-vc__back {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.st-vc__def {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 500;
-  line-height: 1.4;
-}
-.st-vc__ru {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ih-violet, #9047ff);
-}
-.st-vc__ex {
-  margin: 4px 0 0;
-  display: flex;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: #f4f4f4;
-  color: #4a4a55;
-  font-size: 14px;
-  line-height: 1.45;
-}
-.st-vc__ex svg {
-  flex: none;
-  color: var(--ih-muted, #8a8a8a);
-}
-.st-vc__hint {
-  margin: auto 0 0;
-  font-size: 14px;
-  color: var(--ih-muted, #8a8a8a);
-}
-.st-vc__grades {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-.st-vc__grades[hidden] {
-  display: none;
-}
-.st-vc__grade {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-height: 62px;
-  padding: 10px;
-  border: 0;
-  border-radius: 16px;
-  font: inherit;
-  cursor: pointer;
-}
-.st-vc__grade b {
-  font-size: 16px;
-}
-.st-vc__grade small {
-  font-size: 12px;
-  font-weight: 500;
-  color: #4a4a55;
-}
-.st-vc__grade kbd {
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  font: inherit;
-  font-size: 10px;
-  opacity: 0.45;
-}
-.st-vc__grade.is-again {
-  background: var(--st-red-tint);
-  color: var(--st-red);
-}
-.st-vc__grade.is-hard {
-  background: #fff4db;
-  color: #c98512;
-}
-.st-vc__grade.is-good {
-  background: #e6f6ec;
-  color: #1f9d55;
-}
-.st-vc__grade.is-easy {
-  background: var(--st-tint);
-  color: var(--ih-violet, #9047ff);
-}
-.st-vc__grade:hover {
-  filter: brightness(0.97);
-}
-.st-vc__grade:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-.st-vc__keys {
-  margin: 0;
-  text-align: center;
-  font-size: 12px;
-}
-.st-vocab__side {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.st-vocab__goal,
-.st-vocab__mine {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 18px;
-  border-radius: 20px;
-}
-.st-vocab__side h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-}
-.st-vocab__goal .ih-seg {
-  align-self: flex-start;
-}
-.st-vocab__goal p {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.45;
-}
-.st-vocab__mineHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.st-vocab__plus {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: var(--ih-violet, #9047ff);
-  color: #fff;
-  cursor: pointer;
-}
-.st-vocab__mine ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.st-vocab__mine li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.st-vocab__mine li > div {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.st-vocab__mine li b {
-  font-size: 14px;
-}
-.st-vocab__mine li small {
-  font-size: 11px;
-  color: var(--ih-muted, #8a8a8a);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.st-vocab__mine .st-vc__status {
-  padding: 3px 8px;
-  font-size: 11px;
-}
-.st-vocab__mine .st-link {
-  align-self: flex-start;
-}
-.st-vocab__fab {
-  position: fixed;
-  right: 104px;
-  bottom: 24px;
-  z-index: 20;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--ih-ink, #181818);
-  color: #fff;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  box-shadow: 0 10px 28px rgba(24, 24, 24, 0.22);
-  cursor: pointer;
-}
-
-/* ---- «Мои слова» ---- */
-.st-wl {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border-radius: 24px;
-}
-.st-wl__bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.st-wl__search {
-  flex: 1 1 260px;
-  min-width: 0;
-  padding: 10px 14px;
-  border: 1px solid var(--st-edge);
-  border-radius: 12px;
-  font: inherit;
-  font-size: 14px;
-}
-.st-wl__bar select {
-  padding: 10px 12px;
-  border: 1px solid var(--st-edge);
-  border-radius: 12px;
-  background: #fff;
-  font: inherit;
-  font-size: 14px;
-}
-.st-wl__add {
-  gap: 6px;
-}
-.st-wl > p {
-  margin: 0;
-}
-.st-wl__list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.st-wl__row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 4px;
-  border-bottom: 1px solid var(--st-line);
-}
-.st-wl__word {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.st-wl__word b {
-  font-size: 15px;
-}
-.st-wl__word small {
-  font-size: 12px;
-  color: var(--ih-muted, #8a8a8a);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.st-wl__due {
-  font-size: 12px;
-  white-space: nowrap;
-}
-.st-wl__row .st-vc__status {
-  padding: 3px 10px;
-  font-size: 12px;
-}
-.st-wl__del {
-  flex: none;
-  width: 32px;
-  height: 32px;
-}
-.st-wl__del:disabled {
-  opacity: 0.4;
-}
-.st-aw {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.st-aw label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #4a4a55;
-}
-.st-aw input,
-.st-aw textarea {
-  padding: 10px 12px;
-  border: 1px solid var(--st-edge);
-  border-radius: 12px;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 500;
-  resize: vertical;
-}
-.st-aw__acts {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-/* ---- упражнения ---- */
-.st-vg {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.st-vg__cards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-.st-vg__card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 20px;
-  border-radius: 20px;
-  font: inherit;
-  text-align: left;
-  color: inherit;
-  cursor: pointer;
-}
-.st-vg__card:hover {
-  border-color: var(--ih-violet, #9047ff);
-}
-.st-vg__card b {
-  font-size: 17px;
-}
-.st-vg__card span:not(.st-vg__icon) {
-  font-size: 14px;
-  line-height: 1.45;
-  color: #4a4a55;
-}
-.st-vg__card small {
-  margin-top: auto;
-  padding-top: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ih-muted, #8a8a8a);
-}
-.st-vg__icon {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: var(--st-tint);
-  color: var(--ih-violet, #9047ff);
-}
-.st-vg__game {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  border-radius: 24px;
-}
-.st-vg__head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.st-vg__head h3 {
-  margin: 0;
-  font-size: 18px;
-}
-.st-vg__head p {
-  margin: 2px 0 0;
-  font-size: 13px;
-}
-.st-vg__clock {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: #f4f4f4;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.st-vg__match {
-  display: grid;
-  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
-  gap: 12px;
-}
-.st-vg__col {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.st-vg__tile {
-  min-height: 48px;
-  padding: 10px 14px;
-  border: 1px solid var(--st-line);
-  border-radius: 14px;
-  background: #fff;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-}
-.st-vg__tile.is-def {
-  font-size: 14px;
-  font-weight: 500;
-}
-.st-vg__tile.is-on {
-  border: 2px solid var(--ih-violet, #9047ff);
-  background: var(--st-tint);
-  padding: 9px 13px;
-}
-.st-vg__tile.is-done,
-.st-vg__tile:disabled {
-  border-color: #e6f6ec;
-  background: #e6f6ec;
-  color: #1f9d55;
-  cursor: default;
-}
-.st-vg__tile.is-miss {
-  border-color: var(--st-red);
-  background: var(--st-red-tint);
-  animation: st-vg-shake 0.4s;
-}
-@keyframes st-vg-shake {
-  20%, 60% { transform: translateX(-4px); }
-  40%, 80% { transform: translateX(4px); }
-}
-.st-vg__done {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 24px;
-  color: #1f9d55;
-}
-.st-vg__done b {
-  font-size: 20px;
-  color: var(--ih-ink, #181818);
-}
-.st-vg__quiz {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.st-vg__sentence {
-  margin: 0;
-  font-size: 19px;
-  font-weight: 600;
-  line-height: 1.5;
-}
-.st-vg__reg {
-  display: grid;
-  gap: 10px;
-}
-.st-vg__reg p {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: #f8f8f8;
-  font-size: 17px;
-  font-weight: 600;
-}
-.st-vg__reg small {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ih-muted, #8a8a8a);
-}
-.st-vg__opts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-.st-vg__opt {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 52px;
-  padding: 12px 16px;
-  border: 1px solid var(--st-line);
-  border-radius: 14px;
-  background: #fff;
-  font: inherit;
-  font-size: 16px;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-}
-.st-vg__opt:hover:not(:disabled) {
-  border-color: var(--ih-violet, #9047ff);
-}
-.st-vg__opt:disabled {
-  cursor: default;
-  color: #8a8a8a;
-}
-.st-vg__opt.is-right {
-  border: 2px solid #1f9d55;
-  background: #e6f6ec;
-  color: #1f9d55;
-}
-.st-vg__opt.is-wrong {
-  border: 2px solid var(--st-red);
-  background: var(--st-red-tint);
-  color: var(--st-red);
-}
-.st-vg__note {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: #e6f6ec;
-}
-.st-vg__note.is-wrong {
-  background: var(--st-red-tint);
-}
-.st-vg__note p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #4a4a55;
-}
-.st-vg__note .ih-cta {
-  align-self: flex-end;
-}
-
-/* ---- гид по Desmos (Figma 20) ---- */
 .st-dg__count {
   display: inline-flex;
   align-items: center;
@@ -8813,6 +8179,38 @@ mark.st-hl {
 .st-dg__item.is-done svg {
   color: #1f9d55;
 }
+/* фильтр по тегам над списком уроков (решение 08.11.2026); номер урока — настоящий, фильтр только скрывает */
+.st-dg__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.st-dg__tag {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid #ededf2;
+  border-radius: 999px;
+  background: #fff;
+  color: #4a4a55;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.st-dg__tag.is-on {
+  border-color: #181818;
+  background: #181818;
+  color: #fff;
+}
+.st-dg__num {
+  flex: none;
+  min-width: 18px;
+  color: #8a8a8a;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 .st-dg__body {
   display: flex;
   flex-direction: column;
@@ -8827,13 +8225,6 @@ mark.st-hl {
 .st-dg__head > div {
   flex: 1;
   min-width: 0;
-}
-.st-dg__lesson {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ih-violet, #9047ff);
 }
 .st-dg__head h2 {
   margin: 2px 0 4px;
@@ -8875,42 +8266,6 @@ mark.st-hl {
   flex-direction: column;
   gap: 12px;
 }
-.st-dg__steps {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.st-dg__steps li {
-  display: flex;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 14px;
-  background: #f8f8f8;
-  font-size: 14px;
-  line-height: 1.5;
-}
-.st-dg__steps li > span {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #fff;
-  font-size: 12px;
-  font-weight: 800;
-}
-.st-dg__steps code,
-.st-dg__expr code {
-  padding: 1px 6px;
-  border-radius: 6px;
-  background: #fff;
-  color: var(--st-math);
-  font-weight: 700;
-}
 .st-dg__note {
   margin: 0;
   display: flex;
@@ -8925,32 +8280,6 @@ mark.st-hl {
 .st-dg__note svg {
   flex: none;
 }
-.st-dg__try {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 13px;
-}
-.st-dg__try > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.st-dg__expr {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border: 1px solid var(--st-line);
-  border-radius: 10px;
-  background: #f8f8f8;
-  font: inherit;
-  cursor: copy;
-}
-.st-dg__expr small {
-  color: #1f9d55;
-  font-weight: 700;
-}
 .st-dg__video {
   display: flex;
   flex-direction: column;
@@ -8962,27 +8291,22 @@ mark.st-hl {
   border: 0;
   border-radius: 14px;
 }
-.st-dg__poster {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 52px;
-  padding: 12px 18px;
-  border: 0;
-  border-radius: 14px;
-  background: var(--ih-ink, #181818);
-  color: #fff;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-}
 .st-dg__credit {
   margin: 0;
   font-size: 12px;
 }
 .st-dg__credit a {
   color: var(--ih-violet, #9047ff);
+}
+.st-dg__credit .st-dg__yt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+.st-dg__credit .st-dg__yt:hover {
+  text-decoration: underline;
 }
 .st-dg__calc {
   min-height: 420px;
@@ -8997,46 +8321,87 @@ mark.st-hl {
   min-height: 420px;
   border: 0;
 }
-.st-dg__load {
-  flex: 1;
+/* «Упражнения» — карточкой под уроком на всю ширину («NEW 2», 17:3392) */
+.st-dg__ex {
+  margin-top: 24px;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  padding: 28px;
+  border-radius: 20px;
+}
+.st-dg__ex h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #181818;
+}
+.st-dg__ex > p {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+.st-dg__exlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.st-dg__exlist li {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #f8f8f8;
+}
+.st-dg__exn {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  background: #f2ebff;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-violet, #9047ff);
+}
+.st-dg__extext {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.st-dg__extext b {
+  font-size: 16px;
+  font-weight: 600;
+  color: #181818;
+}
+.st-dg__extext small {
+  font-size: 12px;
+  color: #8a8a8a;
+}
+.st-dg__exgo {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
-  padding: 24px;
+  padding: 8px 14px;
   border: 0;
-  background: none;
+  border-radius: 999px;
+  background: #f2ebff;
   font: inherit;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--ih-violet, #9047ff);
   cursor: pointer;
 }
-.st-dg__load small {
-  max-width: 260px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--ih-muted, #8a8a8a);
-}
-.st-dg__ex {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: #f8f8f8;
-  font-size: 14px;
-}
-.st-dg__ex p,
-.st-dg__ex ol {
-  margin: 0;
-}
 
 @media (max-width: 1000px) {
-  .st-vocab__grid,
   .st-dg__cols {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .st-vg__cards {
     grid-template-columns: minmax(0, 1fr);
   }
   .st-dg__nav {
@@ -9045,30 +8410,6 @@ mark.st-hl {
   }
 }
 @media (max-width: 640px) {
-  .st-vc__card {
-    padding: 20px;
-  }
-  .st-vc__word b {
-    font-size: 36px;
-  }
-  .st-vc__grades {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .st-vc__progress {
-    flex-wrap: wrap;
-  }
-  .st-vc__progress .st-vc__bar {
-    flex-basis: 100%;
-    order: 3;
-  }
-  .st-vg__match,
-  .st-vg__opts {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .st-vocab__fab {
-    right: 88px;
-    bottom: 16px;
-  }
   .st-dg__head {
     flex-direction: column;
   }
@@ -9375,75 +8716,6 @@ mark.st-hl {
 }
 
 /* ---- «Моя статистика» на дашборде (B2, B10) ---- */
-.st-dash {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 8px;
-}
-.st-dash.is-loading {
-  min-height: 120px;
-}
-.st-dash__tiles {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-.st-dash__btn {
-  display: flex;
-  border: 0;
-  padding: 0;
-  background: none;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.st-dash__btn > .st-dash__tile {
-  flex: 1;
-}
-.st-dash__btn:hover .st-dash__tile {
-  border-color: var(--ih-violet);
-}
-.st-dash__tile {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px 18px;
-}
-.st-dash__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ih-muted);
-}
-.st-dash__value {
-  font-size: 24px;
-  font-weight: 800;
-}
-.st-dash__panels {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  align-items: start;
-}
-.st-dash__panel {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.st-dash__panel h3 {
-  margin: 0;
-  font-size: 17px;
-}
-.st-dash__panel > p {
-  margin: 0;
-}
-.st-dash__heat {
-  overflow-x: auto;
-  grid-template-rows: repeat(7, 13px);
-  grid-auto-columns: 13px;
-  gap: 3px;
-}
 .st-heat__grid i.is-pad {
   background: transparent;
 }
@@ -9456,16 +8728,6 @@ mark.st-hl {
 .st-stat__icon.is-red {
   background: var(--st-red-tint);
   color: var(--st-red);
-}
-@media (max-width: 1100px) {
-  .st-dash__panels {
-    grid-template-columns: 1fr;
-  }
-}
-@media (max-width: 760px) {
-  .st-dash__tiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* ---- итог набора «Практики» (B2) ---- */
@@ -9831,24 +9093,6 @@ mark.st-hl {
   color: var(--st-red);
   border-color: var(--st-red);
 }
-.st-mocks__src.is-simulation i {
-  background: var(--ih-violet);
-}
-.st-mocks__src.is-bluebook i {
-  background: #2f7bf5;
-}
-.st-mocks__src.is-official i {
-  background: #1f9d55;
-}
-.st-traj__dot.is-simulation {
-  fill: var(--ih-violet);
-}
-.st-traj__dot.is-bluebook {
-  fill: #2f7bf5;
-}
-.st-traj__dot.is-official {
-  fill: #1f9d55;
-}
 .st-scoreform {
   display: flex;
   flex-direction: column;
@@ -9895,19 +9139,9 @@ mark.st-hl {
   font-size: 26px;
   font-weight: 800;
 }
-.st-mocks__src.is-jts i,
-.st-traj__dot.is-jts {
-  background: var(--ih-violet);
-  fill: var(--ih-violet);
-}
 .st-res__back {
   align-self: flex-start;
   margin-bottom: 4px;
-}
-.st-res__of {
-  font-size: 0.4em;
-  font-weight: 600;
-  opacity: 0.6;
 }
 .st-res__gap {
   margin: 4px 0 0;
@@ -10134,14 +9368,6 @@ mark.st-hl {
   min-width: 0;
 }
 
-/* ---- словарь: одна кнопка «Далее» (B10) ---- */
-.st-vc__next {
-  display: flex;
-  justify-content: center;
-}
-.st-vc__next[hidden] {
-  display: none;
-}
 .exam-demo__left {
   display: flex;
   flex-wrap: wrap;
@@ -10165,13 +9391,2865 @@ mark.st-hl {
   cursor: default;
 }
 
-/* узел роадмапа — role=button на <g>: без чёрной рамки фокуса при клике */
-.st-road__node,
-.st-road__node:focus,
-.st-road__node:focus-visible,
-.st-road__svg:focus {
+/* ---- Роудмап по ТЗ 21.10.2026: тест без баллов, Bluebook-тесты, фаза 7 ---- */
+.st-road__chip.is-warn {
+  background: #fff4e5;
+  color: #b54708;
+}
+.st-bb,
+.st-self {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--ih-line, #eaecf0);
+}
+.st-self h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+.st-self__list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.st-self__offer {
+  margin: 0;
+  color: var(--ih-muted, #667085);
+  font-size: 14px;
+}
+
+/* ---- Хватает ли времени до экзамена (ТЗ 21.10, задача 4; Figma «NEW 2», 17:5933) ----
+   Без красного: тон «чтобы успеть, нужно вот что». Впритык — жёлтая плашка, не хватает — фиолетовая карточка,
+   на повторном заходе — она же одной строкой. */
+.st-timing {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-radius: 16px;
+}
+.st-timing p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+.st-timing > svg {
+  flex-shrink: 0;
+}
+.st-timing.is-tight {
+  background: #fff4db;
+  color: #5c4a1f;
+}
+.st-timing.is-tight > svg {
+  color: var(--st-orange);
+}
+.st-timing__more {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--st-edge);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-ink, #181818);
+  cursor: pointer;
+}
+.st-timing.is-line {
+  padding: 12px 20px;
+  border: 1px solid #d9c9ff;
+  background: var(--st-tint);
+  color: var(--ih-ink, #181818);
+}
+.st-timing.is-line > svg {
+  color: var(--ih-violet);
+}
+.st-timing.is-line p {
+  font-weight: 700;
+}
+.st-timing__what {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--st-tint);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-violet);
+  cursor: pointer;
+}
+.st-timing.is-short {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--ih-violet);
+  border-radius: 20px;
+  background: var(--st-tint);
+  color: var(--ih-ink, #181818);
+}
+.st-timing__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.st-timing__top > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.st-timing__top h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 25px;
+}
+.st-timing__top p {
+  color: var(--ih-ink-2, #4a4a55);
+}
+.st-timing__icon,
+.st-timing__close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+.st-timing__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--ih-violet);
+}
+.st-timing__close {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  color: var(--ih-ink-2, #4a4a55);
+  cursor: pointer;
+}
+.st-timing__opts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.st-timing__opts li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #fff;
+}
+.st-timing__opts li > span {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--st-tint);
+  color: var(--ih-violet);
+}
+.st-timing__opts li > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.st-timing__opts b {
+  font-size: 14px;
+  line-height: 19px;
+}
+.st-timing__opts small {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--ih-muted, #8a8a8a);
+}
+.st-timing__foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.st-timing__manager {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ih-violet);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+.st-timing__foot small {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ih-muted, #8a8a8a);
+}
+/* в отчёте диагностики баннер стоит в потоке без зазора — отступ свой; на «Сегодня» его даёт сетка */
+.st-rep .st-timing {
+  margin-bottom: 16px;
+}
+@media (max-width: 760px) {
+  .st-timing__opts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .st-timing {
+    flex-wrap: wrap;
+  }
+}
+
+/* ---- Фильтры практики в два блока (ТЗ 21.10, задача 5) ---- */
+.st-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.st-filters__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+/* вид «Практики» «NEW 2» (17:2184): чипы без рамки, выбранный чёрный, число справа; «Сбросить» в строке заголовка */
+.st-filters__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.st-filters__reset {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-violet);
+  cursor: pointer;
+}
+.st-filters--counted .st-sess__filters {
+  margin-bottom: 4px;
+}
+.st-filters--counted .st-sess__filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  background: var(--ih-soft);
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.st-filters--counted .st-sess__filters button.is-on {
+  background: var(--ih-ink);
+  color: #fff;
+}
+.st-filters__n {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ih-muted);
+}
+.st-filters--counted button.is-on .st-filters__n {
+  color: #c8c8d0;
+}
+.st-filters__hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 17px;
+  color: var(--ih-muted);
+}
+
+/* ---- «Работа над ошибками» («NEW 2»: журнал 17:9002, разбор 17:9308, статистика 17:9658, пусто 17:9900) ---- */
+.st-el {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.st-el__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.st-el__head h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #181818;
+}
+.st-el__head p {
+  margin: 0;
+  font-size: 13px;
+}
+.st-elbanner {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f2ebff;
+  font-size: 13px;
+  line-height: 18px;
+  color: #4a4a55;
+}
+.st-elbanner svg {
+  flex: none;
+  color: var(--ih-violet, #9047ff);
+}
+
+/* счётчики: в журнале — серые плитки и полоса «Разобрано N%», в статистике — белые на всю ширину */
+.st-elcnt {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.st-elcnt__tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 108px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: #f8f8f8;
+}
+.st-elcnt__tile b {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 32px;
+  color: #181818;
+}
+.st-elcnt__tile.is-ok b {
+  color: #1f9d55;
+}
+.st-elcnt__tile.is-open b {
+  color: #d96a00;
+}
+.st-elcnt__tile span {
+  font-size: 13px;
+  color: #8a8a8a;
+}
+.st-elcnt.is-wide {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.st-elcnt.is-wide .st-elcnt__tile {
+  padding: 20px;
+  background: #fff;
+  border: 1px solid var(--st-line);
+}
+.st-elcnt.is-wide .st-elcnt__tile b {
+  color: #181818;
+}
+.st-elcnt__bar {
+  flex: 1 1 260px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+}
+.st-elcnt__bar > i {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: #e3e3ea;
+  overflow: hidden;
+}
+.st-elcnt__bar > i > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #1f9d55;
+}
+
+/* фильтры-таблетки: выбранное значение пишется в самой таблетке */
+.st-el__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.st-pill {
+  position: relative;
+}
+.st-pill__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px 0 14px;
+  border: 1px solid #dadae3;
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #181818;
+  cursor: pointer;
+}
+.st-pill__btn span {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.st-pill__btn b {
+  font-weight: 600;
+  color: var(--ih-violet, #9047ff);
+}
+.st-pill__btn svg {
+  flex: none;
+  color: #8a8a8a;
+}
+.st-pill.is-set .st-pill__btn {
+  border-color: var(--ih-violet, #9047ff);
+  background: #f2ebff;
+}
+.st-pill__pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  min-width: 200px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid var(--st-line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(24, 24, 24, 0.12);
+}
+.st-pill__opt {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: #181818;
+  cursor: pointer;
+}
+.st-pill__opt:hover,
+.st-pill__opt:focus-visible {
+  background: #f8f8f8;
+}
+.st-pill__opt.is-on {
+  font-weight: 700;
+  color: var(--ih-violet, #9047ff);
+}
+.st-pill__dates {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px;
+}
+.st-pill__dates label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #8a8a8a;
+}
+.st-pill__dates input {
+  padding: 8px 10px;
+  border: 1px solid #dadae3;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  color: #181818;
+}
+
+/* таблица журнала */
+.st-el__list {
+  padding: 8px 24px;
+  border-radius: 16px;
+  overflow-x: auto;
+}
+.st-el__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: #181818;
+}
+.st-el__table th {
+  padding: 16px 8px 10px 0;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: #8a8a8a;
+  white-space: nowrap;
+}
+.st-el__table td {
+  padding: 14px 8px 14px 0;
+  border-top: 1px solid var(--st-line);
+  vertical-align: middle;
+}
+.st-el__table tbody tr {
+  cursor: pointer;
+}
+.st-el__table tbody tr:hover td,
+.st-el__table tbody tr:focus-visible td {
+  background: #fbf8ff;
+}
+.st-el__table tbody tr.is-open td {
+  background: #f2ebff;
+}
+.st-el__table tbody tr:focus-visible {
+  outline: 2px solid var(--ih-violet, #9047ff);
+  outline-offset: -2px;
+}
+.st-el__q {
+  width: 32%;
+  font-size: 14px;
+}
+.st-el__q span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.st-el__table td:nth-child(2) {
+  white-space: nowrap;
+}
+.st-el__none {
+  margin: 12px 0;
+}
+
+/* чипы: сложность, причина, источник, статус — цвет причины один везде (таблица, разбор, статистика) */
+.st-elchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.st-elchip svg {
+  flex: none;
+}
+.st-elchip--src i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.st-elchip--status.is-open {
+  padding: 3px 9px;
+  border: 1px solid #dadae3;
+  background: #fff;
+  color: #181818;
+}
+.st-elchip--status.is-reviewed {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.st-elicon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+.st-elchip.is-time,
+.st-elicon.is-time {
+  background: #fff4db;
+  color: #c98512;
+}
+.st-elreasons__row > i.is-time > i {
+  background: #c98512;
+}
+.st-elchip.is-calculation,
+.st-elicon.is-calculation {
+  background: #fff1e3;
+  color: #d96a00;
+}
+.st-elreasons__row > i.is-calculation > i {
+  background: #d96a00;
+}
+.st-elchip.is-knowledge,
+.st-elicon.is-knowledge {
+  background: #fceaf4;
+  color: #c94b9d;
+}
+.st-elreasons__row > i.is-knowledge > i {
+  background: #c94b9d;
+}
+.st-elchip.is-misread,
+.st-elicon.is-misread {
+  background: #e8f1ff;
+  color: #2f7bf5;
+}
+.st-elreasons__row > i.is-misread > i {
+  background: #2f7bf5;
+}
+.st-elchip.is-strategy,
+.st-elicon.is-strategy {
+  background: #dff5f5;
+  color: #0b7f7f;
+}
+.st-elreasons__row > i.is-strategy > i {
+  background: #0b7f7f;
+}
+.st-elchip.is-careless,
+.st-elicon.is-careless {
+  background: #f2ebff;
+  color: #9047ff;
+}
+.st-elreasons__row > i.is-careless > i {
+  background: #9047ff;
+}
+.st-elchip.is-unanswered,
+.st-elicon.is-unanswered {
+  background: #f4f4f4;
+  color: #4a4a55;
+}
+.st-elreasons__row > i.is-unanswered > i {
+  background: #4a4a55;
+}
+.st-elchip.is-trend,
+.st-elicon.is-trend {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.st-elreasons__row > i.is-trend > i {
+  background: #1f9d55;
+}
+.st-elchip--src.is-practice {
+  background: #f4f4f4;
+  color: #4a4a55;
+}
+.st-elchip--src.is-simulation {
+  background: #fff4db;
+  color: #c98512;
+}
+.st-elchip--src.is-paper {
+  background: #dff5f5;
+  color: #0b7f7f;
+}
+.st-elchip--src.is-diagnostic {
+  background: #f2ebff;
+  color: #9047ff;
+}
+.st-elchip--src.is-daily {
+  background: #e8f1ff;
+  color: #2f7bf5;
+}
+.st-elchip--src.is-weekly {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.st-elchip--diff.is-d1 {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.st-elchip--diff.is-d2 {
+  background: #fff4db;
+  color: #c98512;
+}
+.st-elchip--diff.is-d3 {
+  background: #fdecef;
+  color: #e0364f;
+}
+
+/* разбор — панель справа во всю высоту поверх журнала */
+.st-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(24, 24, 24, 0.4);
+}
+.st-drawer__panel {
+  width: min(560px, 100%);
+  height: 100%;
+  overflow-y: auto;
+  padding: 28px;
+  background: #fff;
+  box-shadow: -12px 0 32px rgba(24, 24, 24, 0.12);
+}
+.st-elr {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.st-elr__top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.st-elr__meta {
+  margin: 0;
+  font-size: 13px;
+}
+/* отрывок R&W — 25–150 слов, без обрезки: панель прокручивается целиком (решение 08.11.2026 — отрывок оставляем);
+   длинное слово и таблица данных не распирают панель 560 */
+.st-elr__passage {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f8f8f8;
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: break-word;
+  overflow-x: auto;
+}
+.st-elr__passage table,
+.st-elr__passage img {
+  max-width: 100%;
+}
+.st-elr__stem {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 28px;
+  color: #181818;
+}
+.st-elr__ans {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 20px;
+  color: #181818;
+}
+.st-elr__ans svg {
+  flex: none;
+}
+.st-elr__ans small {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.st-elr__why {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ih-muted, #4a4a55);
+}
+.st-elr__ans.is-bad {
+  border-color: #e0364f;
+  background: #fdecef;
+}
+.st-elr__ans.is-bad svg,
+.st-elr__ans.is-bad small {
+  color: #e0364f;
+}
+.st-elr__ans.is-ok {
+  border-color: #1f9d55;
+  background: #e6f6ec;
+}
+.st-elr__ans.is-ok svg,
+.st-elr__ans.is-ok small {
+  color: #1f9d55;
+}
+.st-elr__reason {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #f8f8f8;
+  font-size: 13px;
+  color: #181818;
+}
+.st-elr__xp {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 21px;
+  color: #181818;
+}
+.st-elr__acts {
+  margin-top: auto;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.st-elr__main {
+  width: 100%;
+  min-height: 54px;
+  justify-content: center;
+  gap: 8px;
+}
+.st-elr__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.st-elr__row .ih-btn {
+  flex: 1 1 200px;
+  justify-content: center;
+}
+.st-elr__mark {
+  font-size: 14px;
+  font-weight: 700;
+}
+.st-elr__retry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.st-elr__spr {
+  padding: 8px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  font: inherit;
+  max-width: 200px;
+}
+.st-elr__ok {
+  color: #027a48;
+  font-weight: 600;
+}
+.st-elr__bad {
+  color: #b42318;
+  font-weight: 600;
+}
+
+/* статистика: «Над чем работать», распределение по причинам, три разреза справа */
+.st-elwork {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  border: 1px solid #c9b0ff;
+  border-radius: 20px;
+  background: #f2ebff;
+}
+.st-elwork h3 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #181818;
+}
+.st-elwork__row {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  color: #181818;
+}
+.st-elstats {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.st-elreasons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+}
+.st-elreasons h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #181818;
+}
+.st-elreasons > p {
+  margin: 0;
+  font-size: 13px;
+}
+.st-elreasons__row {
+  display: grid;
+  grid-template-columns: 36px 110px minmax(0, 1fr) 28px 40px;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  color: #181818;
+}
+.st-elreasons__row > i {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: #ededf2;
+  overflow: hidden;
+}
+.st-elreasons__row > i > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+.st-elreasons__row strong {
+  text-align: right;
+}
+.st-elreasons__row small {
+  font-size: 12px;
+  color: #8a8a8a;
+}
+.st-elreasons__note {
+  margin: 0;
+  font-size: 13px;
+}
+.st-elstats__side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.st-elbars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.st-elbars h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: #181818;
+}
+.st-elbars__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px 28px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #4a4a55;
+}
+.st-elbars__row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.st-elbars__row b {
+  text-align: right;
+  color: #181818;
+}
+.st-elbars__row > i {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: #ededf2;
+  overflow: hidden;
+}
+.st-elbars__row > i > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+.st-elbars__row > i.is-violet > i {
+  background: #9047ff;
+}
+.st-elbars__row > i.is-orange > i {
+  background: #d96a00;
+}
+.st-elbars__row > i.is-grey > i {
+  background: #8a8a8a;
+}
+
+/* пусто: путь, которым сюда попадают ошибки, и выход в практику */
+.st-elempty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 48px 24px;
+  text-align: center;
+}
+.st-elempty__icon {
+  width: 88px;
+  height: 88px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24px;
+  background: #fff1e3;
+  color: #d96a00;
+}
+.st-elempty h2 {
+  margin: 8px 0 0;
+  font-size: 26px;
+  color: #181818;
+}
+.st-elempty p {
+  margin: 0;
+  max-width: 640px;
+  font-size: 16px;
+  line-height: 24px;
+  color: #4a4a55;
+}
+.st-elempty__steps {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 40px;
+}
+.st-elempty__steps li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f8f8f8;
+  font-size: 13px;
+  font-weight: 700;
+  color: #181818;
+}
+.st-elempty__steps li + li::before {
+  content: '→';
+  position: absolute;
+  left: -28px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8a8a8a;
+  font-weight: 400;
+}
+.st-elempty__steps span {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #f2ebff;
+  color: var(--ih-violet, #9047ff);
+}
+.st-elempty__cta {
+  gap: 8px;
+}
+
+@media (max-width: 960px) {
+  .st-elstats {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .st-el__head {
+    flex-direction: column;
+  }
+  .st-elcnt.is-wide {
+    grid-template-columns: 1fr;
+  }
+  .st-el__table th:nth-child(n + 3),
+  .st-el__table td:nth-child(n + 3) {
+    display: none;
+  }
+  .st-elreasons__row {
+    grid-template-columns: 36px minmax(0, 1fr) 28px;
+  }
+  .st-elreasons__row > i,
+  .st-elreasons__row small {
+    display: none;
+  }
+  .st-drawer__panel {
+    padding: 20px 16px;
+  }
+}
+
+/* ---- Учебный режим и «Все вопросы»: клетка по результату (ТЗ 21.10, задача 8). Экзамен этих классов не получает ---- */
+/* «NEW 2» (17:7551, 17:7703): цвет дублируется формой — заливка верно, жирная красная рамка неверно, пунктир не решал,
+   чтобы сетку читали и без различения красного и зелёного */
+.st-rail__n.is-right,
+.st-navdlg__n.is-right,
+.st-bank__cell.is-right,
+.st-bank__sw.is-right {
+  background: var(--ih-green);
+  border-color: var(--ih-green);
+  color: #fff;
+}
+.st-rail__n.is-wrong,
+.st-navdlg__n.is-wrong,
+.st-bank__cell.is-wrong,
+.st-bank__sw.is-wrong {
+  border: 2px solid var(--st-red);
+  background: #fff;
+  color: var(--st-red);
+}
+.st-navdlg__n.is-wrong {
+  border-width: 3px;
+}
+.st-rail__n.is-none,
+.st-bank__cell.is-none,
+.st-bank__sw.is-none {
+  border: 1px dashed #b4b4c0;
+  background: #fff;
+  color: var(--ih-muted);
+}
+.st-navdlg__n.is-none {
+  border: 2px dashed #b4b4c0;
+  background: #fff;
+  color: var(--ih-muted);
+}
+/* текущий непроверенный вопрос в ленте — фиолетовой рамкой, как раньше: пунктир прятал, где ты сейчас */
+.st-rail__n.is-here.is-none {
+  border: 2px solid var(--ih-violet);
+  color: var(--ih-violet);
+}
+
+/* ---- «Все вопросы» (ТЗ 21.10, задача 8; «NEW 2», 17:7703) ---- */
+.st-bank {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+.st-bank h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.st-bank__lead {
+  margin: -12px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+.st-bank__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.st-bank__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.st-bank__legend b {
+  margin-left: 2px;
+  color: var(--ih-ink);
+}
+.st-bank__legend.has-counts {
+  flex-direction: column;
+  gap: 8px;
+}
+.st-bank__sw {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+.st-bank__topic {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: #f8f8f8;
+}
+.st-bank__head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--ih-ink);
+  cursor: pointer;
+}
+.st-bank__head > svg {
+  flex-shrink: 0;
+  color: var(--ih-ink-2);
+}
+.st-bank__topic.is-open .st-bank__head > svg {
+  transform: rotate(180deg);
+}
+.st-bank__head b {
+  font-size: 17px;
+}
+.st-bank__bar {
+  width: 90px;
+  height: 6px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--st-edge);
+}
+.st-bank__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ih-green);
+}
+.st-bank__pill {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ih-ink-2);
+  white-space: nowrap;
+}
+.st-bank__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.st-bank__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.st-bank__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.st-bank__label {
+  width: 48px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 26px;
+  color: var(--ih-muted);
+}
+.st-bank__cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+.st-bank__cell {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.st-bank__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-top: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ih-muted);
+}
+.st-bank__all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--st-tint);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-violet);
+  cursor: pointer;
+}
+.st-bank__all.is-less svg {
+  transform: rotate(180deg);
+}
+/* панель «Прогресс по секции» вместо «Ваша сессия» */
+.st-bankp {
+  gap: 16px;
+  padding: 24px;
+}
+.st-bankp h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.st-bankp__sub {
+  margin: -8px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ih-muted);
+}
+.st-bankp__sum {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.st-bankp__ring {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  flex-shrink: 0;
+}
+.st-bankp__ring svg {
+  display: block;
+}
+.st-bankp__ring circle {
+  fill: none;
+  stroke-width: 8;
+}
+.st-bankp__track {
+  stroke: #efeff4;
+}
+.st-bankp__arc {
+  stroke: var(--ih-violet);
+  stroke-linecap: round;
+}
+.st-bankp__ring > span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.st-bankp__ring b {
+  font-size: 24px;
+  line-height: 33px;
+}
+.st-bankp__ring small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ih-muted);
+}
+.st-bankp__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--ih-soft);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--ih-ink-2);
+}
+.st-bankp__note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--ih-muted);
+}
+.st-bankq__hints {
+  margin: 0;
+  padding-left: 18px;
+  color: #475467;
+}
+
+/* ---- Занятие с преподавателем (Figma «NEW 2», 17:6347): тёмный блок над заданиями ---- */
+.st-teach {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  border-radius: 20px;
+  background: #181818;
+  color: #fff;
+}
+.st-teach__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.st-teach__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #2d2d38;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  color: #d9c9ff;
+}
+.st-teach h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 30px;
+  color: #fff;
+}
+.st-teach__when {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 20px;
+  color: #c8c8d0;
+}
+.st-teach__when svg {
+  flex-shrink: 0;
+}
+.st-teach__who {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 19px;
+}
+.st-teach__who i {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #efe7ff;
+  font-style: normal;
+  font-weight: 800;
+  color: var(--ih-violet);
+}
+.st-teach__who b {
+  color: #fff;
+}
+.st-teach__who span {
+  font-weight: 500;
+  color: #9a9aa8;
+}
+.st-teach__join {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.st-teach__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 28px;
+  border: 1px solid var(--st-edge);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #181818;
+  text-decoration: none;
+  cursor: pointer;
+}
+/* ссылка ещё не открылась: кнопка на месте (макет), но не нажимается */
+.st-teach__btn:disabled {
+  cursor: not-allowed;
+}
+.st-teach__join small {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: #9a9aa8;
+}
+
+/* ---- «Задания на сегодня» (ТЗ 21.10, задача 11; Figma «NEW 2», 17:6366, состояния 17:6008) ---- */
+.st-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 28px;
+}
+.st-tasks__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.st-tasks__head h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 30px;
+}
+.st-tasks__chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #f4f4f4;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 19px;
+  color: var(--ih-ink-2, #4a4a55);
+  white-space: nowrap;
+}
+.st-tasks__chip.is-violet {
+  background: var(--st-tint);
+  color: var(--ih-violet);
+}
+.st-tasks__topic {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.st-tasks__topicIcon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--st-rw-tint);
+  color: var(--st-rw);
+}
+.st-tasks__topicIcon.is-math {
+  background: var(--st-math-tint);
+  color: var(--st-math);
+}
+.st-tasks__topic > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.st-tasks__topic h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 27px;
+}
+.st-tasks__topic span {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--ih-muted, #8a8a8a);
+}
+.st-tasks__goal {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--ih-ink-2, #4a4a55);
+}
+.st-tasks__goal svg {
+  flex-shrink: 0;
+  color: var(--ih-violet);
+}
+.st-tasks__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* строка задания: не начато — серая без рамки, начато — фиолетовая рамка, выполнено — зелёная */
+.st-task {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background: #f8f8f8;
+}
+.st-task.is-partial {
+  border-color: var(--ih-violet);
+  background: var(--st-tint);
+}
+.st-task.is-done {
+  background: #e6f6ec;
+}
+.st-task__n {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--st-edge);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ih-ink, #181818);
+}
+.st-task.is-partial .st-task__n {
+  border-color: var(--ih-violet);
+  background: var(--ih-violet);
+  color: #fff;
+}
+.st-task.is-done .st-task__n {
+  border-color: #1f9d55;
+  background: #1f9d55;
+  color: #fff;
+}
+.st-task__text,
+.st-third__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.st-task__text b {
+  font-size: 16px;
+  line-height: 22px;
+}
+.st-task.is-done .st-task__text b {
+  color: var(--ih-ink-2, #4a4a55);
+}
+.st-task__text small,
+.st-third__text small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--ih-muted, #8a8a8a);
+}
+.st-task__text small svg,
+.st-third__text small svg {
+  flex-shrink: 0;
+}
+.st-task__bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--ih-violet);
+}
+.st-task__bar i {
+  width: 180px;
+  max-width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #e4d8ff;
+  overflow: hidden;
+}
+.st-task__bar em {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ih-violet);
+}
+.st-task__mark {
+  flex-shrink: 0;
+}
+.st-task__time {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 19px;
+  color: var(--ih-ink-2, #4a4a55);
+  white-space: nowrap;
+}
+.st-task.is-partial .st-task__time,
+.st-third .st-task__time {
+  background: #f4f4f4;
+}
+.st-task__go {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #e4d8ff;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ih-violet);
+  cursor: pointer;
+}
+.st-task.is-done .st-task__go {
+  border-color: transparent;
+  color: #1f9d55;
+}
+.st-task__go:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* третий блок «Не каждый день»: разная длина заданий видна по самому блоку */
+.st-third {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--st-line);
+  border-radius: 20px;
+  background: #fff;
+}
+.st-third.is-mock {
+  border: 2px solid #181818;
+}
+.st-third.is-clear {
+  border-color: #bfe6cd;
+  background: #e6f6ec;
+}
+.st-third__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.st-third__n {
+  min-width: 27px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #181818;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+.st-third__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ih-muted, #8a8a8a);
+}
+.st-third__rare {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ih-muted, #8a8a8a);
+}
+.st-third__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.st-third__icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--st-orange-tint);
+  color: var(--st-orange);
+}
+.st-third.is-mock .st-third__icon {
+  width: 56px;
+  height: 56px;
+  background: var(--st-tint);
+  color: var(--ih-violet);
+}
+.st-third.is-clear .st-third__icon {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.st-third__text b {
+  font-size: 17px;
+  line-height: 23px;
+}
+.st-third.is-mock .st-third__text b {
+  font-size: 20px;
+  line-height: 27px;
+}
+.st-third.is-mock .st-task__time,
+.st-third.is-mock .st-task__go {
+  border-color: #181818;
+  background: #181818;
+  color: #fff;
+}
+.st-third__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #fff4db;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  color: #5c4a1f;
+}
+.st-third__note svg {
+  flex-shrink: 0;
+  color: var(--st-orange);
+}
+.st-tasks__foot {
+  display: flex;
+  justify-content: flex-end;
+}
+.st-tasks__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 28px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ih-violet);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+.st-tasks__cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---- «Самостоятельная подготовка» на «Сегодня» (фаза 7; Figma «NEW 2», 17:6902) ---- */
+.st-self7 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+}
+.st-self7__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.st-self7__head > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.st-self7__head h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 30px;
+}
+.st-self7__head > div > span {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 19px;
+  color: var(--ih-muted, #8a8a8a);
+}
+.st-self7__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.st-self7__row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 16px;
+  background: #f8f8f8;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.st-self7__row:hover {
+  background: #f2f2f5;
+}
+.st-self7__n {
+  width: 76px;
+  height: 56px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  font-size: 24px;
+  font-weight: 800;
+}
+.st-self7__row.is-errors .st-self7__n {
+  background: var(--st-orange-tint);
+  color: var(--st-orange);
+}
+.st-self7__row.is-weak .st-self7__n {
+  background: var(--st-math-tint);
+  color: var(--st-math);
+}
+.st-self7__row.is-bank .st-self7__n {
+  background: var(--st-rw-tint);
+  color: var(--st-rw);
+}
+.st-self7__row.is-bluebook .st-self7__n {
+  background: var(--st-tint);
+  color: var(--ih-violet);
+}
+.st-self7__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.st-self7__text b {
+  font-size: 16px;
+  line-height: 22px;
+}
+.st-self7__text small {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--ih-muted, #8a8a8a);
+}
+.st-self7__go {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ih-violet);
+}
+.st-self7__offer {
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--st-line);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 19px;
+  color: var(--ih-muted, #8a8a8a);
+}
+
+@media (max-width: 760px) {
+  .st-teach {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .st-teach__join {
+    align-items: flex-start;
+  }
+  /* на узком экране время и стрелка уходят под текст задания, а не сжимают его в столбик */
+  .st-task,
+  .st-third__row {
+    flex-wrap: wrap;
+  }
+  .st-task__text,
+  .st-third__text {
+    flex-basis: calc(100% - 60px);
+  }
+  .st-tasks,
+  .st-self7,
+  .st-where {
+    padding: 20px;
+  }
+  .st-tasks__cta {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* =====================================================================
+   «Пробники», Bluebook-тесты и сравнение по макету «NEW 2» (Figma 17:2430, 17:4989, 17:8284–17:8831, 30.10.2026).
+   Цвета источников одни на таблицу, легенду и график: официальные и Bluebook — синие (сплошная линия), симуляции —
+   оранжевые (диапазон), Past papers — бирюзовые, «Другое» — фиолетовое. Проверка куратора — оранжевый · зелёный ·
+   красный чип. В сравнении красного нет: падение балла — нейтральный серый.
+   ===================================================================== */
+
+/* ---- источник строки «Результатов» (17:2430) ---- */
+.st-mocks__src.is-simulation {
+  background: #fff4db;
+  color: #c98512;
+}
+.st-mocks__src.is-bluebook {
+  background: var(--st-rw-tint);
+  color: var(--st-rw);
+}
+.st-mocks__src.is-official {
+  background: #f2f2f5;
+  color: var(--ih-ink, #181818);
+}
+.st-mocks__src.is-paper {
+  background: #e3f6f3;
+  color: #0f8f7e;
+}
+.st-mocks__src.is-jts {
+  background: var(--st-tint);
+  color: var(--ih-violet);
+}
+
+/* статус куратора — своей колонкой после итога (17:8454) */
+.st-mocks__tr {
+  grid-template-columns: 1.2fr 2fr 0.9fr 0.9fr 1.6fr 1.2fr 0.6fr 0.9fr;
+}
+.st-mocks__tr.is-rejected .st-mocks__total b,
+.st-mocks__tr.is-rejected > span[role='cell'] > b {
+  color: var(--ih-muted, #8a8a8a);
+}
+.st-mocks__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ih-ink, #181818);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.st-mocks__add:hover {
+  background: #33333d;
+}
+.st-review {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.st-review.is-pending {
+  background: #fff4db;
+  color: #c27a00;
+}
+.st-review.is-approved {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.st-review.is-rejected {
+  background: var(--st-red-tint);
+  color: var(--st-red);
+}
+
+/* ---- траектория: линия настоящих баллов, диапазон симуляции, точка Past paper, цель-пилюля ---- */
+.st-traj__line {
+  stroke: var(--st-rw);
+  stroke-dasharray: none;
+  stroke-width: 2.5;
+}
+.st-traj__range {
+  fill: #f2a516;
+  fill-opacity: 0.3;
+}
+.st-traj__dot.is-real {
+  fill: var(--st-rw);
+}
+.st-traj__dot.is-sim {
+  fill: #f2a516;
+}
+.st-traj__dot.is-paper {
+  fill: #12a58f;
+}
+.st-traj__dot.is-other {
+  fill: var(--ih-violet);
+}
+.st-traj__goal {
+  opacity: 1;
+}
+.st-traj__goalPill {
+  fill: var(--st-tint);
+}
+.st-traj__goalText {
+  text-anchor: middle;
+}
+.st-mocks__legend {
+  gap: 8px;
+}
+.st-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.st-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.st-legend.is-real {
+  background: var(--st-rw-tint);
+  color: var(--st-rw);
+}
+.st-legend.is-sim {
+  background: #fff4db;
+  color: #c98512;
+}
+.st-legend.is-paper {
+  background: #e3f6f3;
+  color: #0f8f7e;
+}
+.st-legend.is-other {
+  background: var(--st-tint);
+  color: var(--ih-violet);
+}
+
+/* ---- «Добавить результат» (17:4989): дата с календарём, «200–800» в поле, предложение округлить ---- */
+.st-scoreform__date,
+.st-scoreform__input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--st-edge);
+  border-radius: 14px;
+  background: #fff;
+}
+.st-scoreform__date {
+  color: var(--ih-muted, #8a8a8a);
+}
+.st-scoreform .st-scoreform__date input,
+.st-scoreform .st-scoreform__input input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   outline: none;
 }
-.st-road__node {
-  -webkit-tap-highlight-color: transparent;
+.st-scoreform .st-scoreform__input input {
+  font-size: 22px;
+  font-weight: 700;
+  -moz-appearance: textfield;
+}
+.st-scoreform__input input::-webkit-outer-spin-button,
+.st-scoreform__input input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.st-scoreform__input small {
+  color: var(--ih-muted, #8a8a8a);
+  font-size: 12px;
+  font-weight: 500;
+}
+.st-scoreform__date:focus-within,
+.st-scoreform__input:focus-within {
+  border-color: var(--ih-violet);
+}
+.st-scoreform__input.is-bad {
+  border-color: var(--st-red);
+}
+.st-scoreform__round {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--st-red);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.st-scoreform__round:hover {
+  text-decoration: underline;
+}
+
+/* ---- плитка «Примерный балл»: чип проверки рядом с числом, отклонённый — серым (17:8454) ---- */
+.st-pstat__score {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.st-pstat__score.is-rejected {
+  color: var(--ih-muted, #8a8a8a);
+}
+
+/* ---- карточка теста в роудмапе: состояние проверки и кнопки на экраны формы и сравнения ---- */
+.st-bbstate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 18px 20px;
+  border-radius: 16px;
+}
+.st-bbstate b {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+}
+.st-bbstate p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ih-ink, #181818);
+}
+.st-bbstate.is-pending {
+  background: #fff4db;
+}
+.st-bbstate.is-pending b {
+  color: #c27a00;
+}
+.st-bbstate.is-approved {
+  background: #e6f6ec;
+}
+.st-bbstate.is-approved b {
+  color: #1f9d55;
+}
+.st-bbstate.is-rejected {
+  background: var(--st-red-tint);
+}
+.st-bbstate.is-rejected b {
+  color: var(--st-red);
+}
+.st-bbstate__again.ih-cta {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+.st-bb__scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 0;
+}
+.st-bb__scores div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.st-bb__scores dt {
+  color: var(--ih-muted, #8a8a8a);
+  font-size: 13px;
+}
+.st-bb__scores dd {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.st-bb__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.st-bb__acts:empty {
+  display: none;
+}
+
+/* ---- экран «Результат Bluebook Test N» (17:8284 / 17:8367) ---- */
+.st-bbform__main {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px 48px;
+}
+.st-bbform {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 28px;
+}
+.st-bbform .st-card {
+  padding: 32px;
+  border-radius: 24px;
+}
+.st-bbform__how h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.st-bbform__lead {
+  margin: 16px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ih-ink-2, #4a4a55);
+}
+.st-bbform__steps {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: bbstep;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.st-bbform__steps li {
+  counter-increment: bbstep;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding-left: 46px;
+}
+.st-bbform__steps li::before {
+  content: counter(bbstep);
+  position: absolute;
+  left: 0;
+  top: -2px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--st-tint);
+  color: var(--ih-violet);
+  font-size: 14px;
+  font-weight: 700;
+}
+.st-bbform__steps b {
+  font-size: 16px;
+}
+.st-bbform__steps span {
+  color: var(--ih-muted, #8a8a8a);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.st-bbform__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--st-tint);
+  color: var(--ih-violet);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.st-bbform__note,
+.st-bbform__ok,
+.st-bbform__warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.st-bbform__note {
+  margin-top: 24px;
+  background: var(--st-tint);
+  color: var(--ih-ink, #181818);
+}
+.st-bbform__note svg {
+  flex: none;
+  color: var(--ih-violet);
+}
+.st-bbform__ok {
+  align-items: center;
+  background: #e6f6ec;
+  color: var(--ih-ink, #181818);
+}
+.st-bbform__ok svg {
+  flex: none;
+  color: #1f9d55;
+}
+.st-bbform__warn {
+  background: #fff4db;
+  color: var(--ih-ink, #181818);
+}
+.st-bbform__warn svg {
+  flex: none;
+  color: #c98512;
+}
+.st-bbform__card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.st-bbform__card h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.st-bbform__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.st-bbform__pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.st-bbform__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.st-bbform__input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
+  border: 1px solid var(--st-edge);
+  border-radius: 16px;
+  background: #fff;
+}
+.st-bbform__input:focus-within {
+  border-color: var(--ih-violet);
+}
+.st-bbform__input.is-bad {
+  border-color: var(--st-red);
+  background: var(--st-red-tint);
+}
+.st-bbform__input input {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ih-ink, #181818);
+  outline: none;
+  -moz-appearance: textfield;
+}
+.st-bbform__input input::-webkit-outer-spin-button,
+.st-bbform__input input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.st-bbform__input small {
+  color: var(--ih-muted, #8a8a8a);
+  font-size: 13px;
+  font-weight: 500;
+}
+.st-bbform__field.is-big input {
+  font-size: 28px;
+}
+.st-bbform__err {
+  margin-top: -8px;
+  color: var(--st-red);
+  font-size: 13px;
+  font-weight: 500;
+}
+.st-bbform__auto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--st-tint);
+  color: var(--ih-violet);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.st-bbform__acts {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ---- сравнение после Test 8 / 10 (17:8528 / 17:8678 / 17:8831) ---- */
+.st-cmp,
+.st-cmp__empty {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 40px 32px 48px;
+}
+.st-cmp__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+.st-cmp__eyebrow {
+  display: block;
+  color: var(--ih-violet);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.st-cmp__title {
+  margin: 14px 0 0;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.st-cmp__lead {
+  margin: 12px 0 0;
+  max-width: 1140px;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ih-ink-2, #4a4a55);
+}
+.st-cmp__next {
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid #ddc9ff;
+  border-radius: 24px;
+  background: var(--st-tint);
+}
+.st-cmp__next h2 {
+  margin: 0 0 14px;
+  font-size: 19px;
+}
+.st-cmp__nextRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+.st-cmp__nextCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff;
+}
+.st-cmp__nextCard > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.st-cmp__nextCard b {
+  font-size: 14px;
+}
+.st-cmp__nextCard small {
+  color: var(--ih-muted, #8a8a8a);
+  font-size: 12px;
+}
+.st-cmp__nextIcon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--st-tint);
+  color: var(--ih-violet);
+}
+.st-cmp__row {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 24px;
+}
+.st-cmp__card.st-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 28px;
+  border-radius: 24px;
+}
+.st-cmp__card h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.st-cmp__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f2f2f5;
+  color: var(--ih-ink-2, #4a4a55);
+  font-size: 12px;
+  font-weight: 600;
+}
+.st-cmp__chip.is-violet {
+  background: var(--st-tint);
+  color: var(--ih-violet);
+}
+.st-cmp__chart {
+  width: 100%;
+  height: auto;
+  margin-top: 8px;
+}
+.st-cmp__tick,
+.st-cmp__x {
+  font-size: 11px;
+  fill: var(--ih-muted, #8a8a8a);
+}
+.st-cmp__x {
+  text-anchor: middle;
+}
+.st-cmp__goal {
+  stroke: var(--ih-violet);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+}
+.st-cmp__goalText {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--ih-violet);
+  text-anchor: middle;
+}
+.st-cmp__line {
+  fill: none;
+  stroke: #1f9d55;
+  stroke-width: 3;
+}
+.st-cmp__dot {
+  fill: #fff;
+  stroke: #1f9d55;
+  stroke-width: 3;
+}
+.st-cmp__dot.is-last {
+  fill: #1f9d55;
+}
+.st-cmp__chart.is-flat .st-cmp__line {
+  stroke: #8a8a94;
+}
+.st-cmp__chart.is-flat .st-cmp__dot {
+  stroke: #8a8a94;
+}
+.st-cmp__chart.is-flat .st-cmp__dot.is-last {
+  fill: #8a8a94;
+}
+.st-cmp__val {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--ih-ink, #181818);
+  text-anchor: middle;
+}
+.st-cmp__rows {
+  align-self: stretch;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.st-cmp__rows li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  font-size: 15px;
+}
+.st-cmp__rows b {
+  min-width: 48px;
+  text-align: right;
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.st-cmp__delta {
+  min-width: 44px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f2f2f5;
+  color: var(--ih-ink-2, #4a4a55);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+.st-cmp__delta.is-up {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.st-cmp__domains {
+  align-self: stretch;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.st-cmp__domains li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f8f8fa;
+}
+.st-cmp__domains li > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.st-cmp__domains li b {
+  font-size: 15px;
+}
+.st-cmp__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.st-cmp__bar i {
+  flex: 0 1 150px;
+  height: 6px;
+  border-radius: 3px;
+  background: #e4e4ea;
+  overflow: hidden;
+}
+.st-cmp__bar em {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--ih-violet);
+}
+.st-cmp__domains li.is-closed .st-cmp__bar em {
+  background: #1f9d55;
+}
+.st-cmp__status {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.st-cmp__status.is-closed {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.st-cmp__status.is-left {
+  background: #fff4db;
+  color: #c98512;
+}
+.st-cmp__status.is-new {
+  background: var(--st-tint);
+  color: var(--ih-violet);
+}
+.st-cmp__prioTitle {
+  margin: 14px 0 0;
+  color: var(--ih-muted, #8a8a8a);
+  font-size: 14px;
+  font-weight: 500;
+}
+.st-cmp__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.st-cmp__pills span {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--ih-ink, #181818);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.st-cmp__foot {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.st-cmp__foot p {
+  margin: 0;
+  max-width: 560px;
+}
+
+@media (max-width: 900px) {
+  .st-bbform,
+  .st-cmp__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .st-cmp__title {
+    font-size: 32px;
+  }
+}
+@media (max-width: 560px) {
+  .st-bbform__main {
+    padding: 16px 16px 32px;
+  }
+  .st-bbform .st-card,
+  .st-cmp__card.st-card {
+    padding: 20px 16px;
+  }
+  .st-bbform__how h1 {
+    font-size: 24px;
+  }
+  .st-cmp,
+  .st-cmp__empty {
+    padding: 20px 16px 32px;
+  }
+  .st-cmp__title {
+    font-size: 26px;
+  }
+  .st-cmp__lead {
+    font-size: 15px;
+  }
+  .st-cmp__domains li {
+    flex-wrap: wrap;
+  }
+}
+/* таблица «Результатов» с колонкой статуса: на узком — те же две колонки, что раньше (правило 760px выше) */
+@media (max-width: 760px) {
+  .st-mocks__tr {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
 }

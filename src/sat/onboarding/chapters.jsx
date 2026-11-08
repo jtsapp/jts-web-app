@@ -3,15 +3,20 @@ import satInfo from '../data/satInfo.json'
 import taxonomy from '../data/taxonomy.json'
 import colleges from '../data/colleges.json'
 import examDates from '../data/examDates.json'
-import { domainShares, pick, rankColleges, roundSection, splitLead, splitTotal, TARGET_PRESETS, upcomingDates } from '../model/profile.js'
+import { byCountry, countriesIn } from '../model/colleges.js'
+import {
+  domainShares, inReach, isSkewed, pick, rankByCountry, reachSummary, roundSection, splitLead, splitTotal, suggestGoal,
+  TARGET_PRESETS, upcomingDates,
+} from '../model/profile.js'
 import { useI18n } from '../../i18n.jsx'
-import { BarChartIcon, CafeIcon, CalculateIcon, FactCheckIcon, KanbanIcon, KeyboardIcon, LockIcon, ReplayIcon, RouteIcon, SortIcon, SpeedIcon } from '../icons.jsx'
+import { BarChartIcon, BlockIcon, CafeIcon, CalculateIcon, FactCheckIcon, KanbanIcon, KeyboardIcon, LockIcon, ReplayIcon, RouteIcon, SortIcon, SpeedIcon } from '../icons.jsx'
 import { plural } from '../../lib/plural.js'
 import {
-  CheckCircleIcon, ChevronRightIcon, CloseIcon, EventIcon, ExpandMoreIcon, InfoIcon, MenuBookIcon, OpenInNewIcon, QuizIcon,
+  CheckCircleIcon, ChevronRightIcon, EventIcon, ExpandMoreIcon, InfoIcon, MenuBookIcon, OpenInNewIcon, QuizIcon,
   RadioOffIcon, ScheduleIcon, TimerIcon, TranslateIcon,
 } from '../../ielts/icons.jsx'
 import { fmtDate } from '../model/dates.js'
+import { domainName, skillName } from '../names.js'
 
 // Шесть глав об экзамене (Figma SAT 1–6). Одни и те же данные (satInfo.json — sat-info.js прототипа) рисует и
 // онбординг, и вкладка «Гайд» (Figma 19): так глава не может разойтись сама с собой. Интерактивные части — цель
@@ -122,9 +127,9 @@ export function SectionChapter({ id }) {
           <h3>{t('sat.section.what')}</h3>
           {shares.map((d) => (
             <div key={d.id} className="st-domain">
-              <div className="st-domain__head"><b>{pick({ en: d.name_en, ru: d.name_ru, kk: d.name_kk }, lang)}</b><b className="st-domain__pct">{d.percent}%</b></div>
+              <div className="st-domain__head"><b>{domainName(d.id, lang)}</b><b className="st-domain__pct">{d.percent}%</b></div>
               <i className="st-bar"><i style={{ width: `${d.percent * 2.5}%` }} /></i>
-              <div className="st-chips">{d.skills.map((s) => <span key={s.id}>{pick({ en: s.name_en, ru: s.name_ru, kk: s.name_kk }, lang)}</span>)}</div>
+              <div className="st-chips">{d.skills.map((s) => <span key={s.id}>{skillName(s.id, lang)}</span>)}</div>
             </div>
           ))}
         </div>
@@ -136,16 +141,111 @@ export function SectionChapter({ id }) {
   )
 }
 
-/** Глава 3 в онбординге (Figma 3): цель по секциям слева, справа — куда она попадает относительно middle-50% вузов. */
+// чипы стран — из самих данных, а не из макета: пустой страны в фильтре не будет
+const COUNTRIES = countriesIn(colleges.rows)
+// сколько вузов группы видно до «Показать ещё»: во «Все» групп четыре, поэтому меньше
+const LIMIT = { all: 3, one: 6 }
+
+const span = (r) => (r ? `${r[0]}–${r[1]}` : null)
+
+/** Подпись балла вуза по его типу: диапазон, «минимум N», «N+ · ориентир», «Total не публикует», «балл не публикуется». */
+function ScoreLabel({ c }) {
+  const { t, lang } = useI18n()
+  const s = c.score
+  if (!s) return <b className="st-college__score is-none">{t(c.scoreMissing === 'no_data' ? 'sat.goal.noData' : 'sat.goal.notPublished')}</b>
+  const split = [s.rw && `EBRW ${span(s.rw)}`, s.math && `Math ${span(s.math)}`].filter(Boolean).join(' · ')
+  const note = pick(s.note, lang)
+  let main
+  if (s.type === 'middle_50') main = s.total ? span(s.total) : t('sat.goal.noTotal')
+  // порог — отдельной подписью, не диапазоном «1460–1600»: иначе 1600 читается как обычный балл вуза
+  else if (s.type === 'minimum') main = s.total[1] != null ? t('sat.goal.minBands', { lo: String(s.total[0]), hi: String(s.total[1]) }) : t('sat.goal.min', { n: String(s.total[0]) })
+  else main = t('sat.goal.guide', { n: String(s.total[0]) })
+  return (
+    <span className="st-college__score">
+      <b className={s.type === 'middle_50' && !s.total ? 'is-none' : ''}>{main}</b>
+      {note && <span>{note}</span>}
+      {split && <span>{split}</span>}
+    </span>
+  )
+}
+
+/** Полоса на шкале 1000–1600: middle_50 — отрезок, порог и ориентир — риска, без Total — ничего. */
+function ScoreBar({ c, x, total }) {
+  const s = c.score
+  const band = c.band || 'below'
+  if (!s?.total) return <span className="st-college__bar is-empty" />
+  return (
+    <span className="st-college__bar">
+      {s.type === 'middle_50'
+        ? <i className={`st-range st-range--${band}`} style={{ left: x(s.total[0]), width: `calc(${x(s.total[1])} - ${x(s.total[0])})` }} />
+        : s.total.filter((v) => v != null).map((v) => <i key={v} className={`st-mark st-mark--${band}`} style={{ left: x(v) }} />)}
+      <i className="st-you" style={{ left: x(total) }} />
+    </span>
+  )
+}
+
+/** Строка вуза: балл по типу, где цель относительно него, политика SAT, доп. требования, год, источник. */
+function CollegeRow({ c, top, x, total, onPick }) {
+  const { t, lang } = useI18n()
+  const s = c.score
+  const goal = suggestGoal(c)
+  const kind = s?.type === 'minimum' ? 'min' : s?.type === 'full_range' ? 'guide' : 'mid'
+  const bandKey = c.band && ({ mid: `sat.goal.band.${c.band}`, min: `sat.goal.band.min.${c.band}`, guide: `sat.goal.band.guide.${c.band}` })[kind]
+  const policy = pick(c.policy, lang)
+  const extra = pick(c.extra, lang)
+  const skew = isSkewed(c)
+  return (
+    <div className={`st-college ${top ? 'is-top' : ''}`}>
+      <span className="st-college__name">
+        <b>{c.name}</b>
+        <ScoreLabel c={c} />
+        <span>
+          {bandKey && <span className={`st-band st-band--${c.band}`}>{t(bandKey)}</span>}
+          {c.gap != null && t(`sat.goal.gap.${kind}`, { gap: `${c.gap >= 0 ? '+' : '−'}${Math.abs(c.gap)}` })}
+        </span>
+        <span className="st-college__meta">
+          {policy && <span>{t('sat.goal.policy', { text: policy })}{c.policyYear && ` · ${t('sat.goal.policyFor', { year: c.policyYear })}`}</span>}
+          {extra && <span className="st-college__extra">{extra}</span>}
+          {c.scoresYear && s && <span>{t('sat.goal.scoresOf', { year: c.scoresYear })}</span>}
+          {(c.submittedPct != null || skew) && (
+            <span className={skew ? 'st-college__skew' : ''}>
+              {[c.submittedPct != null && t('sat.goal.submitted', { n: String(c.submittedPct) }), skew && t('sat.goal.skew')].filter(Boolean).join(' — ')}
+            </span>
+          )}
+          <a href={c.source.url} target="_blank" rel="noopener noreferrer">
+            {t(c.source.isIndex ? 'sat.goal.sourceIndex' : 'sat.goal.source')}<OpenInNewIcon size={12} />
+          </a>
+        </span>
+      </span>
+      <span className="st-college__side">
+        <ScoreBar c={c} x={x} total={total} />
+        {goal && (
+          <button type="button" className="st-college__use" title={t('sat.goal.pick')} onClick={() => onPick(goal)}>
+            {t('sat.goal.use', { n: String(goal.rw + goal.math) })}
+          </button>
+        )}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Глава 3 в онбординге (Figma 3): цель по секциям слева, справа — куда она попадает относительно данных вузов.
+ * Вузы идут группами по стране: баллы стран — разные величины (статистика, порог, ориентир), их не ранжируем вместе.
+ */
 export function GoalPicker({ rw, math, onChange }) {
   const { t, lang } = useI18n()
   const [more, setMore] = useState(false)
+  const [country, setCountry] = useState('all')
   const total = rw + math
-  const ranked = useMemo(() => rankColleges(total, colleges.rows), [total])
-  const reach = ranked.filter((c) => c.band !== 'below')
-  const shown = more ? ranked : reach.slice(0, Math.max(4, Math.min(reach.length, 4)))
-  const hidden = ranked.length - shown.length
-  const year = colleges.rows[0]?.year ?? ''
+  // фильтр по стране (17:366): «N из M в досягаемости» и список — по выбранной стране; M — только вузы с баллом
+  const visible = useMemo(() => byCountry(colleges.rows, country), [country])
+  const groups = useMemo(() => rankByCountry({ rw, math }, visible), [rw, math, visible])
+  const reach = useMemo(() => reachSummary({ rw, math }, visible), [rw, math, visible])
+  const limit = country === 'all' ? LIMIT.all : LIMIT.one
+  const shownGroups = groups.map((g) => ({ ...g, shown: more ? g.rows : g.rows.slice(0, limit) }))
+  const hidden = groups.reduce((a, g) => a + g.rows.length, 0) - shownGroups.reduce((a, g) => a + g.shown.length, 0)
+  const canCollapse = groups.some((g) => g.rows.length > limit)
   // шкала 1000–1600: точнее различимы вузы, куда реально целятся (Figma 3)
   const x = (v) => `${Math.min(100, Math.max(0, ((v - 1000) / 600) * 100))}%`
   const stepper = (label, value, set, tone) => (
@@ -180,41 +280,39 @@ export function GoalPicker({ rw, math, onChange }) {
       </div>
       <div className="st-card st-goal__right">
         <div className="st-goal__head">
-          <div><h3>{t('sat.goal.where')}</h3><span className="st-muted">{t('sat.goal.mid50')}</span></div>
-          <span className="st-goal__reach"><CheckCircleIcon size={16} />{t('sat.goal.reach', { n: String(reach.length), total: String(ranked.length) })}</span>
+          <div><h3>{t('sat.goal.where')}</h3><span className="st-muted">{t('sat.goal.byCountry')}</span></div>
+          {reach.total > 0 && (
+            <span className="st-goal__reach"><CheckCircleIcon size={16} />{t('sat.goal.reach', { n: String(reach.n), total: String(reach.total) })}</span>
+          )}
+        </div>
+        <div className="st-goal__countries" role="radiogroup" aria-label={t('sat.goal.country')}>
+          {['all', ...COUNTRIES].map((c) => (
+            <button key={c} type="button" role="radio" aria-checked={country === c} className={country === c ? 'is-on' : ''}
+              onClick={() => { setCountry(c); setMore(false) }}>
+              {t(c === 'all' ? 'sat.goal.countryAll' : `sat.country.${c}`)}
+            </button>
+          ))}
         </div>
         {/* подписи шкалы стоят на той же оси, что и полосы вузов: та же колонка и та же функция x() */}
         <div className="st-goal__scale" aria-hidden="true">
           <span />
           <span className="st-goal__ticks">{[1000, 1200, 1400, 1600].map((v) => <i key={v} style={{ left: x(v) }}>{v}</i>)}</span>
         </div>
-        <div className="st-colleges">
-          {shown.map((c) => (
-            <button key={c.id} type="button" className={`st-college ${c.band === 'in' && c === shown[0] ? 'is-top' : ''}`} title={t('sat.goal.pick')}
-              onClick={() => onChange(splitTotal(Math.round((c.midSAT.total[0] + c.midSAT.total[1]) / 20) * 10))}>
-              <span className="st-college__name">
-                <b>{c.name}</b>
-                <span>
-                  <span className={`st-band st-band--${c.band}`}>{t(`sat.goal.band.${c.band}`)}</span>
-                  {t('sat.goal.gap', { lo: String(c.midSAT.total[0]), hi: String(c.midSAT.total[1]), gap: `${c.gap >= 0 ? '+' : '−'}${Math.abs(c.gap)}` })}
-                </span>
-              </span>
-              <span className="st-college__bar">
-                <i className={`st-range st-range--${c.band}`} style={{ left: x(c.midSAT.total[0]), width: `calc(${x(c.midSAT.total[1])} - ${x(c.midSAT.total[0])})` }} />
-                <i className="st-you" style={{ left: x(total) }} />
-              </span>
-            </button>
-          ))}
-        </div>
+        {shownGroups.map((g) => (
+          <section key={g.country} className="st-colleges" aria-label={t(`sat.country.${g.country}`)}>
+            <h4 className="st-colleges__head"><b>{t(`sat.country.${g.country}`)}</b><span>{t(`sat.goal.group.${g.country}`)}</span></h4>
+            {g.shown.map((c, i) => <CollegeRow key={c.id} c={c} top={i === 0 && inReach(c.band)} x={x} total={total} onPick={onChange} />)}
+          </section>
+        ))}
         <div className="st-goal__foot">
           {hidden > 0 ? (
             <button type="button" className="st-link" onClick={() => setMore(true)}>{plural(t, lang, 'sat.goal.more', hidden)}<ExpandMoreIcon size={16} /></button>
-          ) : more ? (
+          ) : more && canCollapse ? (
             <button type="button" className="st-link" onClick={() => setMore(false)}>{t('sat.goal.less')}</button>
           ) : <span />}
           <span className="st-goal__legend"><i />{t('sat.goal.you', { n: String(total) })}</span>
         </div>
-        <p className="st-note"><InfoIcon size={18} /><span>{t('sat.goal.disclaimer', { year: String(year) })}</span></p>
+        <p className="st-note"><InfoIcon size={18} /><span>{t('sat.goal.disclaimer')}</span></p>
       </div>
     </div>
   )
@@ -231,7 +329,7 @@ export function ExamDayDetails() {
       <ol className="st-steps">{ch.steps.map((s, i) => <li key={i}><span dangerouslySetInnerHTML={html(pick(s, lang))} /></li>)}</ol>
       <div className="st-bring">
         <div className="st-bring__ok"><b><CheckCircleIcon size={18} />{t('sat.examday.bring')}</b><ul>{ch.bring.map((s, i) => <li key={i} dangerouslySetInnerHTML={html(pick(s, lang))} />)}</ul></div>
-        <div className="st-bring__no"><b><CloseIcon size={18} />{t('sat.examday.avoid')}</b><ul>{ch.avoid.map((s, i) => <li key={i} dangerouslySetInnerHTML={html(pick(s, lang))} />)}</ul></div>
+        <div className="st-bring__no"><b><BlockIcon size={18} />{t('sat.examday.avoid')}</b><ul>{ch.avoid.map((s, i) => <li key={i} dangerouslySetInnerHTML={html(pick(s, lang))} />)}</ul></div>
       </div>
       {ch.links?.length > 0 && (
         <div className="st-links">

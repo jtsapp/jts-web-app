@@ -1,361 +1,1089 @@
 {
  "meta": {
-  "verified": false,
-  "defaultSource": "JTS placeholder dataset",
-  "note": "Confirm every figure against the institution Common Data Set before release."
+  "verified": true,
+  "owner": "jts-web-app",
+  "note": "Файл ведёт веб-приложение (решения SAT, «1. Данные вузов»). scripts/sat/export-sat.js сюда не пишет: его colleges уходят в build/sat/reference/ — не копируйте их поверх.",
+  "scoreTypes": {
+   "middle_50": "middle-50% зачисленных (CDS C9): total/rw/math = [низ, верх], каждое может быть null; total из суммы секций не считать",
+   "minimum": "порог допуска, не статистика: total = [порог, верх полос | null]",
+   "full_range": "ориентир по всем поступившим: total = [нижняя граница, null]; диапазоном не показывать"
+  },
+  "fields": "scoresYear — год зачисленного курса, policyYear — год цикла политики; null, если источник год не даёт. source.isIndex — ссылка ведёт на страницу-индекс, indexUrl — её адрес. scoreMissing: not_published | no_data, когда score = null. submittedPct — доля зачисленных, приславших SAT."
  },
  "rows": [
   {
    "id": "mit",
    "name": "Massachusetts Institute of Technology",
-   "midSAT": {
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": [
+     1520,
+     1570
+    ],
     "rw": [
-     730,
+     740,
      780
     ],
     "math": [
      780,
      800
     ],
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": "required",
+   "policy": {
+    "ru": "обязателен",
+    "en": "required",
+    "kk": "міндетті"
+   },
+   "extra": null,
+   "submittedPct": 83,
+   "scoresYear": "Fall 2025",
+   "policyYear": "Fall 2027",
+   "source": {
+    "url": "https://ir.mit.edu/projects/2025-26-common-data-set/",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "columbia",
+   "name": "Columbia University",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
     "total": [
      1510,
-     1580
-    ]
-   },
-   "testPolicy": "required",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
-  },
-  {
-   "id": "caltech",
-   "name": "California Institute of Technology",
-   "midSAT": {
-    "rw": [
-     730,
-     780
+     1560
     ],
-    "math": [
-     790,
-     800
-    ],
-    "total": [
-     1520,
-     1580
-    ]
-   },
-   "testPolicy": "required",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
-  },
-  {
-   "id": "harvard",
-   "name": "Harvard University",
-   "midSAT": {
     "rw": [
-     730,
-     780
+     740,
+     777
     ],
     "math": [
      760,
      800
     ],
-    "total": [
-     1490,
-     1580
-    ]
+    "note": null
    },
-   "testPolicy": "required",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
+   "scoreMissing": null,
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию, обязателен с августа 2027",
+    "en": "optional; required from August 2027",
+    "kk": "қалауы бойынша, 2027 жылғы тамыздан міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": "Fall 2025",
+   "policyYear": "Fall 2027",
+   "source": {
+    "url": "https://opir.columbia.edu/sites/opir.columbia.edu/files/content/Common%20Data%20Set/2025-26_Columbia_College_and_Columbia_Enginnering_CDS.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
   },
   {
-   "id": "yale",
-   "name": "Yale University",
-   "midSAT": {
-    "rw": [
-     730,
-     780
-    ],
-    "math": [
-     760,
-     800
-    ],
+   "id": "brown",
+   "name": "Brown University",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
     "total": [
-     1490,
-     1580
-    ]
-   },
-   "testPolicy": "required",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
-  },
-  {
-   "id": "princeton",
-   "name": "Princeton University",
-   "midSAT": {
+     1510,
+     1560
+    ],
     "rw": [
-     730,
+     740,
      780
     ],
     "math": [
      770,
      800
     ],
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": "required",
+   "policy": {
+    "ru": "обязателен",
+    "en": "required",
+    "kk": "міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": "Fall 2024",
+   "policyYear": null,
+   "source": {
+    "url": "https://oir.brown.edu/sites/default/files/2020-04/CDS_2024_2025.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "stanford",
+   "name": "Stanford University",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
     "total": [
      1500,
-     1580
-    ]
+     1560
+    ],
+    "rw": [
+     740,
+     780
+    ],
+    "math": [
+     770,
+     800
+    ],
+    "note": null
    },
+   "scoreMissing": null,
    "testPolicy": "required",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
+   "policy": {
+    "ru": "обязателен с Fall 2026",
+    "en": "required from Fall 2026",
+    "kk": "Fall 2026-дан бастап міндетті"
+   },
+   "extra": null,
+   "submittedPct": 47,
+   "scoresYear": "Fall 2023",
+   "policyYear": null,
+   "source": {
+    "url": "https://ucomm.stanford.edu/wp-content/uploads/sites/15/2024/07/stanford-cds-2023_2024_final_v2.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "princeton",
+   "name": "Princeton University",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": [
+     1490,
+     1560
+    ],
+    "rw": [
+     740,
+     780
+    ],
+    "math": [
+     760,
+     800
+    ],
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию, обязателен с цикла 2027-28",
+    "en": "optional; required from the 2027-28 cycle",
+    "kk": "қалауы бойынша, 2027-28 циклінен міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": "Fall 2025",
+   "policyYear": "Fall 2027",
+   "source": {
+    "url": "https://ir.princeton.edu/sites/g/files/toruqf2041/files/documents/CDS_2526_Princeton_v2.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
   },
   {
    "id": "cornell",
    "name": "Cornell University",
-   "midSAT": {
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": [
+     1490,
+     1550
+    ],
     "rw": [
-     710,
-     760
+     730,
+     770
     ],
     "math": [
-     750,
+     770,
      800
     ],
-    "total": [
-     1460,
-     1560
-    ]
+    "note": null
    },
+   "scoreMissing": null,
    "testPolicy": "required",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
+   "policy": {
+    "ru": "обязателен",
+    "en": "required",
+    "kk": "міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": "Fall 2025",
+   "policyYear": "Fall 2027",
+   "source": {
+    "url": "https://irp.cornell.edu/wp-content/uploads/2026/09/Cornell-Common-Data-Set-2025-26.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
   },
   {
-   "id": "georgetown",
-   "name": "Georgetown University",
-   "midSAT": {
+   "id": "yale",
+   "name": "Yale University",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": [
+     1480,
+     1560
+    ],
     "rw": [
-     710,
-     760
+     730,
+     780
+    ],
+    "math": [
+     740,
+     790
+    ],
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": "required",
+   "policy": {
+    "ru": "обязателен",
+    "en": "required",
+    "kk": "міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": "Fall 2025",
+   "policyYear": "Fall 2027",
+   "source": {
+    "url": "https://oir.yale.edu/sites/default/files/yale_cds_2025-26_md_20260616.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "upenn",
+   "name": "University of Pennsylvania",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": [
+     1440,
+     1550
+    ],
+    "rw": null,
+    "math": null,
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": "required",
+   "policy": {
+    "ru": "обязателен",
+    "en": "required",
+    "kk": "міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": "Fall 2026",
+   "policyYear": null,
+   "source": {
+    "url": "https://admissions.upenn.edu/how-to-apply/resources-programs/incoming-class-profile",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "dartmouth",
+   "name": "Dartmouth College",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": [
+     1440,
+     1550
+    ],
+    "rw": [
+     720,
+     770
     ],
     "math": [
      720,
      790
     ],
-    "total": [
-     1430,
-     1550
-    ]
+    "note": null
    },
+   "scoreMissing": null,
    "testPolicy": "required",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
+   "policy": {
+    "ru": "обязателен",
+    "en": "required",
+    "kk": "міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": "Fall 2025",
+   "policyYear": "Fall 2027",
+   "source": {
+    "url": "https://www.dartmouth.edu/oir/pdfs/cds_2025-26.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "gatech",
+   "name": "Georgia Institute of Technology",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": [
+     1370,
+     1530
+    ],
+    "rw": [
+     680,
+     760
+    ],
+    "math": [
+     700,
+     790
+    ],
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": "required",
+   "policy": {
+    "ru": "обязателен",
+    "en": "required",
+    "kk": "міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": "Fall 2025",
+   "policyYear": "Fall 2027",
+   "source": {
+    "url": "https://irp.gatech.edu/common-data-set",
+    "isIndex": true,
+    "indexUrl": "https://irp.gatech.edu/common-data-set"
+   }
+  },
+  {
+   "id": "umich",
+   "name": "University of Michigan",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": [
+     1370,
+     1530
+    ],
+    "rw": [
+     690,
+     750
+    ],
+    "math": [
+     680,
+     780
+    ],
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию",
+    "en": "optional",
+    "kk": "қалауы бойынша"
+   },
+   "extra": null,
+   "submittedPct": 55,
+   "scoresYear": "Fall 2025",
+   "policyYear": "Fall 2027",
+   "source": {
+    "url": "https://obp.umich.edu/wp-content/uploads/pubdata/cds/cds_2025-26_umaa.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "ufl",
+   "name": "University of Florida",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": [
+     1330,
+     1490
+    ],
+    "rw": [
+     670,
+     740
+    ],
+    "math": [
+     660,
+     750
+    ],
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": "required",
+   "policy": {
+    "ru": "обязателен",
+    "en": "required",
+    "kk": "міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": "Fall 2025",
+   "policyYear": "Fall 2027",
+   "source": {
+    "url": "https://data-apps.ir.aa.ufl.edu/public/cds/CDS%202025-26_v8_08.14.2026.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "psu",
+   "name": "Penn State University",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": [
+     1280,
+     1410
+    ],
+    "rw": [
+     630,
+     710
+    ],
+    "math": [
+     630,
+     720
+    ],
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию",
+    "en": "optional",
+    "kk": "қалауы бойынша"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": "Fall 2025",
+   "policyYear": "Fall 2027",
+   "source": {
+    "url": "https://bpb-us-e1.wpmucdn.com/sites.psu.edu/dist/d/114442/files/2026/06/UniversityPark_CDS_2025_2026.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "uga",
+   "name": "University of Georgia",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": [
+     1250,
+     1420
+    ],
+    "rw": [
+     610,
+     710
+    ],
+    "math": [
+     630,
+     720
+    ],
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": "required",
+   "policy": {
+    "ru": "обязателен",
+    "en": "required",
+    "kk": "міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": "Fall 2025",
+   "policyYear": "Fall 2027",
+   "source": {
+    "url": "https://oir.uga.edu/wp-content/uploads/UGA_CDS_2025-2026.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
   },
   {
    "id": "purdue",
    "name": "Purdue University",
-   "midSAT": {
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": [
+     1220,
+     1470
+    ],
     "rw": [
-     620,
-     710
+     610,
+     730
     ],
     "math": [
-     650,
-     780
+     600,
+     760
     ],
-    "total": [
-     1270,
-     1490
-    ]
+    "note": null
    },
-   "testPolicy": "optional",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
+   "scoreMissing": null,
+   "testPolicy": "required",
+   "policy": {
+    "ru": "обязателен",
+    "en": "required",
+    "kk": "міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://www.purdue.edu/idata/",
+    "isIndex": true,
+    "indexUrl": "https://www.purdue.edu/idata/"
+   }
   },
   {
-   "id": "nyu",
-   "name": "New York University",
-   "midSAT": {
+   "id": "harvard",
+   "name": "Harvard University",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": null,
     "rw": [
-     700,
-     750
+     720,
+     770
     ],
     "math": [
      730,
      790
     ],
-    "total": [
-     1430,
-     1540
-    ]
+    "note": null
    },
-   "testPolicy": "optional",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
+   "scoreMissing": null,
+   "testPolicy": "required",
+   "policy": {
+    "ru": "обязателен",
+    "en": "required",
+    "kk": "міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://oira.harvard.edu/common-data-set",
+    "isIndex": true,
+    "indexUrl": "https://oira.harvard.edu/common-data-set"
+   }
   },
   {
-   "id": "umich",
-   "name": "University of Michigan — Ann Arbor",
-   "midSAT": {
+   "id": "caltech",
+   "name": "California Institute of Technology",
+   "country": "US",
+   "score": {
+    "type": "middle_50",
+    "total": null,
     "rw": [
-     680,
-     740
+     760,
+     780
     ],
     "math": [
-     710,
-     790
+     790,
+     800
     ],
-    "total": [
-     1390,
-     1530
-    ]
+    "note": null
    },
-   "testPolicy": "optional",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
-  },
-  {
-   "id": "uiuc",
-   "name": "University of Illinois Urbana-Champaign",
-   "midSAT": {
-    "rw": [
-     650,
-     720
-    ],
-    "math": [
-     720,
-     790
-    ],
-    "total": [
-     1370,
-     1510
-    ]
+   "scoreMissing": null,
+   "testPolicy": "required",
+   "policy": {
+    "ru": "обязателен с Fall 2025",
+    "en": "required from Fall 2025",
+    "kk": "Fall 2025-тен бастап міндетті"
    },
-   "testPolicy": "optional",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
+   "extra": null,
+   "submittedPct": 78,
+   "scoresYear": "Fall 2025",
+   "policyYear": "Fall 2027",
+   "source": {
+    "url": "https://iro.caltech.edu/documents/35129/Caltech_CDS_2025-26_August_2026.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
   },
   {
    "id": "utaustin",
    "name": "University of Texas at Austin",
-   "midSAT": {
-    "rw": [
-     650,
-     730
-    ],
-    "math": [
-     670,
-     780
-    ],
-    "total": [
-     1320,
-     1510
-    ]
-   },
+   "country": "US",
+   "score": null,
+   "scoreMissing": "not_published",
    "testPolicy": "required",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
+   "policy": {
+    "ru": "обязателен с Fall 2025",
+    "en": "required from Fall 2025",
+    "kk": "Fall 2025-тен бастап міндетті"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://news.utexas.edu/2024/03/11/ut-austin-reinstates-standardized-test-scores-in-admissions/",
+    "isIndex": false,
+    "indexUrl": null
+   }
   },
   {
-   "id": "nus",
-   "name": "National University of Singapore",
-   "midSAT": {
-    "rw": [
-     680,
-     740
-    ],
-    "math": [
-     730,
-     800
-    ],
-    "total": [
-     1410,
-     1540
-    ]
+   "id": "georgetown",
+   "name": "Georgetown University",
+   "country": "US",
+   "score": null,
+   "scoreMissing": "no_data",
+   "testPolicy": "required",
+   "policy": {
+    "ru": "обязателен",
+    "en": "required",
+    "kk": "міндетті"
    },
-   "testPolicy": "optional",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://uadmissions.georgetown.edu/faq/faq-high-school-credits-and-tests/",
+    "isIndex": false,
+    "indexUrl": null
+   }
   },
   {
-   "id": "uoft",
-   "name": "University of Toronto",
-   "midSAT": {
-    "rw": [
-     650,
-     730
-    ],
-    "math": [
-     700,
-     790
-    ],
-    "total": [
-     1350,
-     1520
-    ]
-   },
+   "id": "nyu",
+   "name": "New York University",
+   "country": "US",
+   "score": null,
+   "scoreMissing": "no_data",
    "testPolicy": "optional",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
+   "policy": {
+    "ru": "по желанию",
+    "en": "optional",
+    "kk": "қалауы бойынша"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://www.nyu.edu/admissions/undergraduate-admissions/how-to-apply/standardized-tests.html",
+    "isIndex": false,
+    "indexUrl": null
+   }
   },
   {
    "id": "nazarbayev",
    "name": "Nazarbayev University",
-   "midSAT": {
-    "rw": [
-     560,
-     660
-    ],
-    "math": [
-     620,
-     730
-    ],
+   "country": "KZ",
+   "score": {
+    "type": "full_range",
     "total": [
-     1180,
-     1390
-    ]
+     1400,
+     null
+    ],
+    "rw": null,
+    "math": null,
+    "note": null
    },
-   "testPolicy": "optional",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
+   "scoreMissing": null,
+   "testPolicy": null,
+   "policy": null,
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://nu.edu.kz/wp-content/uploads/2026/01/eng_ug_upd.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
   },
   {
-   "id": "kimep",
-   "name": "KIMEP University",
-   "midSAT": {
-    "rw": [
-     500,
-     600
-    ],
-    "math": [
-     520,
-     640
-    ],
+   "id": "imperial",
+   "name": "Imperial College London",
+   "country": "GB",
+   "score": {
+    "type": "minimum",
     "total": [
-     1020,
-     1240
-    ]
+     1460,
+     null
+    ],
+    "rw": null,
+    "math": null,
+    "note": {
+     "ru": "на STEM 1480",
+     "en": "1480 for STEM",
+     "kk": "STEM үшін 1480"
+    }
    },
+   "scoreMissing": null,
    "testPolicy": "optional",
-   "source": "JTS placeholder dataset",
-   "year": 2025,
-   "verified": false
+   "policy": {
+    "ru": "по желанию",
+    "en": "optional",
+    "kk": "қалауы бойынша"
+   },
+   "extra": {
+    "ru": "только вместе с AP",
+    "en": "only together with AP",
+    "kk": "тек AP-пен бірге"
+   },
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://www.imperial.ac.uk/study/apply/undergraduate/entry-requirements/accepted-qualifications/",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "ucl",
+   "name": "University College London",
+   "country": "GB",
+   "score": {
+    "type": "minimum",
+    "total": [
+     1440,
+     null
+    ],
+    "rw": null,
+    "math": null,
+    "note": {
+     "ru": "для низких полос 1280",
+     "en": "1280 for lower bands",
+     "kk": "төмен жолақтар үшін 1280"
+    }
+   },
+   "scoreMissing": null,
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию",
+    "en": "optional",
+    "kk": "қалауы бойынша"
+   },
+   "extra": {
+    "ru": "только вместе с AP",
+    "en": "only together with AP",
+    "kk": "тек AP-пен бірге"
+   },
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://www.ucl.ac.uk/prospective-students/international/united-states-america",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "kcl",
+   "name": "King’s College London",
+   "country": "GB",
+   "score": {
+    "type": "minimum",
+    "total": [
+     1230,
+     1440
+    ],
+    "rw": null,
+    "math": null,
+    "note": {
+     "ru": "по полосам",
+     "en": "by band",
+     "kk": "жолақтар бойынша"
+    }
+   },
+   "scoreMissing": null,
+   "testPolicy": "required",
+   "policy": null,
+   "extra": {
+    "ru": "обязателен в Route 1",
+    "en": "required in Route 1",
+    "kk": "Route 1-де міндетті"
+   },
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://www.kcl.ac.uk/study/undergraduate/how-to-apply/entry-requirements",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "warwick",
+   "name": "University of Warwick",
+   "country": "GB",
+   "score": {
+    "type": "minimum",
+    "total": [
+     1340,
+     null
+    ],
+    "rw": null,
+    "math": null,
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": null,
+   "policy": null,
+   "extra": {
+    "ru": "только как GCSE, эквивалент A-level дают AP",
+    "en": "counts only as GCSE; AP gives the A-level equivalent",
+    "kk": "тек GCSE ретінде, A-level баламасын AP береді"
+   },
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://warwick.ac.uk/study/international/countryinformation/northamerica/usa/usa-entry-requirements/",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "edinburgh",
+   "name": "University of Edinburgh",
+   "country": "GB",
+   "score": {
+    "type": "minimum",
+    "total": [
+     1290,
+     null
+    ],
+    "rw": null,
+    "math": null,
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию",
+    "en": "optional",
+    "kk": "қалауы бойынша"
+   },
+   "extra": {
+    "ru": "только вместе с AP",
+    "en": "only together with AP",
+    "kk": "тек AP-пен бірге"
+   },
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://www.ed.ac.uk/studying/international/country/americas/united-states-of-america",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "manchester",
+   "name": "University of Manchester",
+   "country": "GB",
+   "score": {
+    "type": "minimum",
+    "total": [
+     1290,
+     null
+    ],
+    "rw": null,
+    "math": null,
+    "note": null
+   },
+   "scoreMissing": null,
+   "testPolicy": null,
+   "policy": null,
+   "extra": {
+    "ru": "только как GCSE, эквивалент A-level дают AP",
+    "en": "counts only as GCSE; AP gives the A-level equivalent",
+    "kk": "тек GCSE ретінде, A-level баламасын AP береді"
+   },
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://www.manchester.ac.uk/study/international/country-specific-information/usa/entry-requirements/",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "snu",
+   "name": "Seoul National University",
+   "country": "KR",
+   "score": null,
+   "scoreMissing": "not_published",
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию",
+    "en": "optional",
+    "kk": "қалауы бойынша"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://en.snu.ac.kr/webdata/uploads/eng/file/2026/06/Admissions_for_Undergraduate_Spring_2027.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "kaist",
+   "name": "KAIST",
+   "country": "KR",
+   "score": null,
+   "scoreMissing": "not_published",
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию, «strongly recommended»",
+    "en": "optional, “strongly recommended”",
+    "kk": "қалауы бойынша, «strongly recommended»"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://admission.kaist.ac.kr/intl-undergraduate/before/sub02",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "yonsei",
+   "name": "Yonsei University",
+   "country": "KR",
+   "score": null,
+   "scoreMissing": "not_published",
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию",
+    "en": "optional",
+    "kk": "қалауы бойынша"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://www2.yonsei.ac.kr/entrance/2026/intl/2026_9_docu/Fall%202026%20Application%20Guide%20for%20International%20Students%28Eng%29.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "yonsei-uic",
+   "name": "Yonsei University · Underwood International College",
+   "country": "KR",
+   "score": null,
+   "scoreMissing": "not_published",
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию, «strongly recommended»",
+    "en": "optional, “strongly recommended”",
+    "kk": "қалауы бойынша, «strongly recommended»"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://uic.yonsei.ac.kr/main/admission.php?mid=m04_05",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "korea",
+   "name": "Korea University",
+   "country": "KR",
+   "score": null,
+   "scoreMissing": "not_published",
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию",
+    "en": "optional",
+    "kk": "қалауы бойынша"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://oia.korea.ac.kr/_attach/file/2026/07/qwpSFjrXmjLGwPzgIYEw.pdf",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "skku",
+   "name": "Sungkyunkwan University (SKKU)",
+   "country": "KR",
+   "score": null,
+   "scoreMissing": "not_published",
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию",
+    "en": "optional",
+    "kk": "қалауы бойынша"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://enc.skku.edu/eng_enc/admnissions/undergraduate.do",
+    "isIndex": false,
+    "indexUrl": null
+   }
+  },
+  {
+   "id": "postech",
+   "name": "POSTECH",
+   "country": "KR",
+   "score": null,
+   "scoreMissing": "not_published",
+   "testPolicy": "optional",
+   "policy": {
+    "ru": "по желанию",
+    "en": "optional",
+    "kk": "қалауы бойынша"
+   },
+   "extra": null,
+   "submittedPct": null,
+   "scoresYear": null,
+   "policyYear": null,
+   "source": {
+    "url": "https://adm-iu.postech.ac.kr/user/admission/guide/international.do",
+    "isIndex": false,
+    "indexUrl": null
+   }
   }
  ]
 }

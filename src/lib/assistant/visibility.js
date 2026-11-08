@@ -31,6 +31,9 @@ const HIDDEN_SCREENS = new Set([
   'sat-daily',
   'sat-weekly',
   'sat-papers',
+  // баллы Bluebook и сравнение — экраны во всё окно, как Past papers: кнопка помощника легла бы на форму
+  'sat-bluebook',
+  'sat-compare',
   'sat-mock',
   'sat-mock-review',
   'sat-unit',

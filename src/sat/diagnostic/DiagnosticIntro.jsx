@@ -6,9 +6,9 @@ import { GridIcon, InsightsIcon, SigmaIcon } from '../icons.jsx'
  * Старт диагностики (Figma SAT 7): что будет, сколько вопросов по секциям, что получите в конце, и честно — это не
  * балл SAT. Строку макета «Уже сдавали SAT? Результат добавите в «Пробники»…» не рисуем: экран 35 «Добавить
  * результат» убран по решению школы (PLAN §3, решение B), и ссылаться на него нечестно.
- * last — дата прошлой сдачи: повторная диагностика прежнюю не стирает (прототип diag.retakeNote).
+ * Сдавшему экран не показывается: пересдача только после сброса куратором (решение владельца 08.11.2026).
  */
-export default function DiagnosticIntro({ examDate, last, resuming, busy, error, onStart }) {
+export default function DiagnosticIntro({ examDate, resuming, busy, error, onStart }) {
   const { t, lang } = useI18n()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (iso, opts) => new Intl.DateTimeFormat(loc, { timeZone: 'UTC', ...opts }).format(new Date(`${iso.slice(0, 10)}T00:00:00Z`))
@@ -59,10 +59,8 @@ export default function DiagnosticIntro({ examDate, last, resuming, busy, error,
       {error && <p className="st-error" role="alert">{error}</p>}
       <div className="st-dx__cta">
         <button type="button" className="ih-cta st-dx__start" disabled={busy} onClick={onStart}>
-          {t(resuming ? 'sat.dx.continue' : last ? 'sat.dx.retake' : 'sat.dx.start')}<ArrowForwardIcon size={20} />
+          {t(resuming ? 'sat.dx.continue' : 'sat.dx.start')}<ArrowForwardIcon size={20} />
         </button>
-        {/* Нет в Figma: строка о прошлой сдаче — адаптация прототипа diagnostic.js (diag.alreadyTaken / retakeNote) */}
-        {last && !resuming && <span className="st-muted">{t('sat.dx.lastTaken', { date: fmt(last, { day: 'numeric', month: 'long' }) })}</span>}
       </div>
     </main>
   )

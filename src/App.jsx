@@ -168,6 +168,8 @@ const SatStudyPage = lazyScreen(() => import('./screens/SatStudyPage.jsx'))
 const SatDailyPage = lazyScreen(() => import('./screens/SatDailyPage.jsx'))
 const SatWeeklyPage = lazyScreen(() => import('./screens/SatWeeklyPage.jsx'))
 const SatPapersPage = lazyScreen(() => import('./screens/SatPapersPage.jsx'))
+const SatBluebookPage = lazyScreen(() => import('./screens/SatBluebookPage.jsx'))
+const SatComparePage = lazyScreen(() => import('./screens/SatComparePage.jsx'))
 const SatMockPage = lazyScreen(() => import('./screens/SatMockPage.jsx'))
 const SatMockReviewPage = lazyScreen(() => import('./screens/SatMockReviewPage.jsx'))
 const SatUnitPage = lazyScreen(() => import('./screens/SatUnitPage.jsx'))
@@ -250,12 +252,14 @@ const PERSISTABLE_SCREENS = new Set([
   'sat-run',
   // диагностика держит шаг в ?satDiag= сама
   'sat-diagnostic',
-  // учебная сессия держит себя в ?satSession= (или ?satLesson= до старта)
+  // учебная сессия держит себя в ?satSession=
   'sat-study',
   // ежедневная проверка — одна на день, свой экран без меню (с 14.10.2026 из навигации убрана, диплинк остался)
   'sat-daily',
   // недельный тест (SAT-SYNC-PLAN B1) и past papers во всё окно (B6)
   'sat-weekly', 'sat-papers',
+  // баллы Bluebook-теста и сравнение 6 → 8 → 10 держат тест в ?satBluebook= / ?satCompare= (Figma «NEW 2»)
+  'sat-bluebook', 'sat-compare',
   // пробник и его разбор держат прохождение в ?satMock= (фаза — на сервере)
   'sat-mock',
   'sat-mock-review',
@@ -1946,7 +1950,7 @@ export default function App() {
     else if (key === 'ielts-onboarding' || key === 'ielts-diagnostic' || key === 'ielts-route') { setIeltsRunTarget(payload || null); setScreen(key) }
     else if (key === 'ielts-diagnostic-result') { setIeltsReviewTarget(payload || null); setScreen(key) }
     else if (key === 'ielts-mock') { if (payload?.mockId || payload?.sessionId) { setIeltsMockTarget(payload); setScreen('ielts-mock') } }
-    else if (key === 'sat' || key === 'sat-onboarding' || key === 'sat-run' || key === 'sat-diagnostic' || key === 'sat-study' || key === 'sat-daily' || key === 'sat-weekly' || key === 'sat-papers' || key === 'sat-mock' || key === 'sat-mock-review' || key === 'sat-unit' || key === 'sat-pricing' || key === 'ielts-pricing') setScreen(key)
+    else if (key === 'sat' || key === 'sat-onboarding' || key === 'sat-run' || key === 'sat-diagnostic' || key === 'sat-study' || key === 'sat-daily' || key === 'sat-weekly' || key === 'sat-papers' || key === 'sat-bluebook' || key === 'sat-compare' || key === 'sat-mock' || key === 'sat-mock-review' || key === 'sat-unit' || key === 'sat-pricing' || key === 'ielts-pricing') setScreen(key)
     else if (key === 'ielts-reading-review') { if (payload?.attemptId) { setIeltsReviewTarget(payload); setScreen('ielts-reading-review') } }
     // back: словарь открыт ссылкой изнутри урока или раздела — у него появляется
     // «Назад» туда. Из меню словарь — раздел верхнего уровня, кнопки нет.
@@ -2980,6 +2984,10 @@ export default function App() {
       return <SatWeeklyPage token={token} onNav={handleNav} />
     case 'sat-papers':
       return <SatPapersPage token={token} onNav={handleNav} />
+    case 'sat-bluebook':
+      return <SatBluebookPage token={token} onNav={handleNav} />
+    case 'sat-compare':
+      return <SatComparePage token={token} onNav={handleNav} />
     case 'sat-mock':
       return <SatMockPage token={token} onNav={handleNav} />
     case 'sat-mock-review':
