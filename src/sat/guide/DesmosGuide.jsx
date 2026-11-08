@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import GUIDE from '../data/desmosGuide.json'
 import { pick } from '../model/profile.js'
+import { filterLessons, tagsIn } from '../model/desmosTags.js'
 import { DESMOS_URL } from '../question/DesmosDock.jsx'
 import { ArrowForwardIcon, CheckCircleIcon, InfoIcon, OpenInNewIcon, RadioOffIcon } from '../../ielts/icons.jsx'
 import { SatModal } from '../question/ToolDialogs.jsx'
@@ -109,6 +110,7 @@ export default function DesmosGuide({ seg, explainLang }) {
   const { t, lang } = useI18n()
   const sections = GUIDE.sections
   const [open, setOpen] = useState(0)
+  const [tag, setTag] = useState('all')
   const [studied, setStudied] = useState(() => new Set())
   const s = sections[open]
 
@@ -137,6 +139,14 @@ export default function DesmosGuide({ seg, explainLang }) {
       .catch(() => setStudied(studied))
   }
   const go = (i) => setOpen(i)
+  const tags = tagsIn(sections)
+  const shown = filterLessons(sections, tag)
+  // открытый урок ушёл под фильтр — открываем первый из оставшихся, чтобы список и урок не расходились
+  const pickTag = (next) => {
+    setTag(next)
+    const left = filterLessons(sections, next)
+    if (left.length && !left.some(({ i }) => i === open)) setOpen(left[0].i)
+  }
   const done = sections.filter((x) => studied.has(x.id)).length
 
   return (
@@ -149,9 +159,19 @@ export default function DesmosGuide({ seg, explainLang }) {
       </div>
       <div className="st-guide__grid">
         <nav className="st-dg__nav" aria-label={t('sat.guide.desmos')}>
-          {sections.map((x, i) => (
+          {tags.length > 1 && (
+            <div className="st-dg__tags" role="group" aria-label={t('sat.dg.tagFilter')}>
+              {['all', ...tags].map((x) => (
+                <button key={x} type="button" className={`st-dg__tag ${tag === x ? 'is-on' : ''}`} aria-pressed={tag === x} onClick={() => pickTag(x)}>
+                  {t(`sat.dg.tag.${x}`)}
+                </button>
+              ))}
+            </div>
+          )}
+          {shown.map(({ s: x, i }) => (
             <button key={x.id} type="button" className={`st-dg__item ${i === open ? 'is-on' : ''} ${studied.has(x.id) ? 'is-done' : ''}`} aria-current={i === open ? 'true' : undefined} onClick={() => go(i)}>
               {studied.has(x.id) ? <CheckCircleIcon size={18} /> : <RadioOffIcon size={18} />}
+              <span className="st-dg__num">{i + 1}</span>
               <span>{pick(x.title, lang)}</span>
             </button>
           ))}

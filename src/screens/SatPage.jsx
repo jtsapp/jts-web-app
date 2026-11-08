@@ -17,7 +17,7 @@ import { satStarted } from '../sat/model/start.js'
 import { loadToken } from '../lib/session.js'
 import { plural } from '../lib/plural.js'
 import { daysUntil } from '../sat/model/profile.js'
-import { moduleSize } from '../sat/model/practice.js'
+import { TODAY_SIZE, moduleSize } from '../sat/model/practice.js'
 import { skillSection } from '../sat/names.js'
 import { useI18n } from '../i18n.jsx'
 import { EventIcon, MenuBookIcon, QuizIcon } from '../ielts/icons.jsx'
@@ -354,12 +354,11 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         schedule={schedule}
         bluebook={bluebook}
         onWords={() => onNav?.('vocab', { back: true })}
-        onPracticeSkills={(skillIds) => startPractice({ mode: 'skills', skillIds, count: moduleSize(skillSection(skillIds[0])) }).catch((e) => setError(errorText(e, t)))}
+        onPracticeSkills={(skillIds) => startPractice({ mode: 'skills', skillIds, count: TODAY_SIZE }).catch((e) => setError(errorText(e, t)))}
         onMocks={() => go('mocks')}
         onErrors={() => go('errors')}
         onResume={openSession}
         onReview={review}
-        onWeekly={() => onNav?.('sat-weekly')}
         onPlan={() => go('plan')}
         onPracticeMode={openPractice}
         // контакта менеджера и куратора на сервере пока нет — обе кнопки ведут на тарифы SAT («уточнит менеджер»)

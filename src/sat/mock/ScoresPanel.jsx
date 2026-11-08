@@ -4,7 +4,7 @@ import ConfirmDialog from '../../ielts/ui/ConfirmDialog.jsx'
 import { InfoIcon } from '../../ielts/icons.jsx'
 import { CalendarIcon, ErrorIcon, PlusIcon, TrashIcon } from '../icons.jsx'
 import { SatModal } from '../question/ToolDialogs.jsx'
-import { MANUAL_SOURCES, isRejected, legendKinds, roundSection, scoreBody, sectionState, tableRows, trajectoryChart, validateScore } from '../model/scores.js'
+import { MANUAL_SOURCES, deltaText, isRejected, legendKinds, roundSection, scoreBody, sectionState, tableRows, trajectoryChart, validateScore } from '../model/scores.js'
 import { rangeText } from '../model/mock.js'
 import { fmtDate } from '../model/dates.js'
 
@@ -240,7 +240,7 @@ export function ScoresTable({ entries, onAdd, onDelete, onReview, onCompare, bus
                   {c.estimate && <span className="st-mocks__est">{t('sat.scores.estimate')}</span>}
                 </span>
                 <span role="cell"><ReviewChip status={r.reviewStatus} /></span>
-                <span role="cell" data-label={t('sat.mock.col.delta')} className={r.delta > 0 ? 'is-up' : r.delta < 0 ? 'is-down' : 'st-muted'}>{r.delta == null ? '—' : `${r.delta > 0 ? '+' : ''}${r.delta}`}</span>
+                <span role="cell" data-label={t('sat.mock.col.delta')} className={r.delta > 0 ? 'is-up' : r.delta < 0 ? 'is-down' : 'st-muted'}>{deltaText(r)}</span>
                 <span role="cell" className="st-mocks__rowActs">
                   {(r.source === 'SIMULATION' || r.source === 'PAPER') && r.mockId && <button type="button" className="st-link" onClick={() => onReview(r.mockId)}>{t('sat.mock.reviewShort')}</button>}
                   {/* сравнение 6 → 8 → 10 открывается и отсюда, не только из «Плана»; у отклонённого его нет — баллы не в счёт */}

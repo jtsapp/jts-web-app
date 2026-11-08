@@ -9787,8 +9787,37 @@ html[data-theme="dark"] .st-college.is-top {
     border-color: var(--ih-violet, #9047ff);
     background: var(--dk-acc-tint)
 }
-html[data-theme="dark"] .st-college__country {
+html[data-theme="dark"] .st-colleges__head span {
     color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-college__score {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-college__score b {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .st-college__score b.is-none, html[data-theme="dark"] .st-college__score.is-none {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-college__meta a {
+    color: inherit
+}
+html[data-theme="dark"] .st-college__extra {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-college__skew {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-college__bar.is-empty {
+    background: none
+}
+html[data-theme="dark"] .st-college__use {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-college__use:hover {
+    border-color: var(--ih-violet, #9047ff)
 }
 html[data-theme="dark"] .st-goal__countries button {
     border: 1px solid var(--dk-line);
@@ -9819,6 +9848,10 @@ html[data-theme="dark"] .st-band--below {
     background: var(--dk-page);
     color: var(--ih-ink-2, #4a4a55)
 }
+html[data-theme="dark"] .st-band--pass {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
 html[data-theme="dark"] .st-college__bar {
     background: var(--dk-chip)
 }
@@ -9833,6 +9866,15 @@ html[data-theme="dark"] .st-range--near {
 }
 html[data-theme="dark"] .st-range--below {
     background: var(--dk-raised)
+}
+html[data-theme="dark"] .st-mark {
+    background: var(--dk-raised)
+}
+html[data-theme="dark"] .st-mark--pass {
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .st-mark--near {
+    background: var(--dk-yellow-soft)
 }
 html[data-theme="dark"] .st-you {
     background: var(--ih-violet, #9047ff)
@@ -12019,6 +12061,19 @@ html[data-theme="dark"] .st-dg__item.is-on {
 }
 html[data-theme="dark"] .st-dg__item.is-done svg {
     color: var(--dk-green)
+}
+html[data-theme="dark"] .st-dg__tag {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-dg__tag.is-on {
+    border-color: var(--dk-line-strong);
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+html[data-theme="dark"] .st-dg__num {
+    color: var(--dk-muted)
 }
 html[data-theme="dark"] .st-dg__mark {
     border: 0;

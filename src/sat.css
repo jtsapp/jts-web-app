@@ -679,7 +679,6 @@
   background: #f8f8f8;
   font: inherit;
   text-align: left;
-  cursor: pointer;
 }
 .st-college.is-top {
   border-color: var(--ih-violet, #9047ff);
@@ -689,12 +688,87 @@
   display: block;
   font-size: 14px;
 }
-/* страна — в строке названия, тише его («NEW 2», 17:366) */
-.st-college__country {
-  margin-left: 8px;
+/* группа страны: баллы стран — разные величины, поэтому у каждой своя подпись, что это за число */
+.st-colleges__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 10px 0 0;
   font-size: 13px;
+}
+.st-colleges__head span {
   font-weight: 500;
   color: #8a8a8a;
+}
+/* балл вуза по его типу: диапазон, «минимум N», «N+ · ориентир»; секции и уточнение — тише */
+.st-college__score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--ih-ink-2, #4a4a55);
+}
+.st-college__score b {
+  font-size: 15px;
+  color: #181818;
+}
+.st-college__score b.is-none,
+.st-college__score.is-none {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a8a8a;
+}
+.st-college__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-top: 4px;
+}
+.st-college__meta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: inherit;
+  text-decoration: underline;
+}
+/* доп. требование (UK: SAT только вместе с AP) — заметнее политики: без него балл не работает */
+.st-college__extra {
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #fff4db;
+  color: #8a5a00;
+  font-weight: 600;
+}
+.st-college__skew {
+  color: #b7791f;
+}
+.st-college__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.st-college__side .st-college__bar {
+  align-self: stretch;
+}
+.st-college__bar.is-empty {
+  background: none;
+}
+.st-college__use {
+  padding: 4px 10px;
+  border: 1px solid var(--st-line);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.st-college__use:hover {
+  border-color: var(--ih-violet, #9047ff);
 }
 /* фильтр по стране над списком вузов: выбранная — чёрная */
 .st-goal__countries {
@@ -748,6 +822,10 @@
   background: #f4f4f4;
   color: var(--ih-ink-2, #4a4a55);
 }
+.st-band--pass {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
 .st-college__bar {
   position: relative;
   height: 8px;
@@ -771,6 +849,22 @@
 }
 .st-range--below {
   background: #c8c8d0;
+}
+/* порог и ориентир — риской, а не отрезком до 1600: отрезок читался бы как диапазон баллов вуза */
+.st-mark {
+  position: absolute;
+  top: -3px;
+  width: 4px;
+  height: 14px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: #c8c8d0;
+}
+.st-mark--pass {
+  background: #3fb27a;
+}
+.st-mark--near {
+  background: #d9a54f;
 }
 .st-you {
   position: absolute;
@@ -1188,7 +1282,7 @@
 }
 .st-date:active,
 .st-undecided:active,
-.st-college:active,
+.st-college__use:active,
 .st-step__row button:active {
   transform: scale(0.985);
 }
@@ -8085,6 +8179,38 @@ button.st-strip__body:focus-visible {
 .st-dg__item.is-done svg {
   color: #1f9d55;
 }
+/* фильтр по тегам над списком уроков (решение 08.11.2026); номер урока — настоящий, фильтр только скрывает */
+.st-dg__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.st-dg__tag {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid #ededf2;
+  border-radius: 999px;
+  background: #fff;
+  color: #4a4a55;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.st-dg__tag.is-on {
+  border-color: #181818;
+  background: #181818;
+  color: #fff;
+}
+.st-dg__num {
+  flex: none;
+  min-width: 18px;
+  color: #8a8a8a;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 .st-dg__body {
   display: flex;
   flex-direction: column;
@@ -10000,12 +10126,20 @@ button.st-strip__body:focus-visible {
   margin: 0;
   font-size: 13px;
 }
+/* отрывок R&W — 25–150 слов, без обрезки: панель прокручивается целиком (решение 08.11.2026 — отрывок оставляем);
+   длинное слово и таблица данных не распирают панель 560 */
 .st-elr__passage {
   padding: 14px 16px;
   border-radius: 14px;
   background: #f8f8f8;
   font-size: 14px;
   line-height: 22px;
+  overflow-wrap: break-word;
+  overflow-x: auto;
+}
+.st-elr__passage table,
+.st-elr__passage img {
+  max-width: 100%;
 }
 .st-elr__stem {
   margin: 0;

@@ -35,7 +35,7 @@ describe('Гид по Desmos — упражнения', () => {
     expect(row.textContent).toContain('Math · ')
     fireEvent.click(screen.getByText('Решить'))
     expect(screen.getByText('вопрос q-17 false')).toBeTruthy()
-    fireEvent.click(screen.getAllByRole('button').find((b) => b.textContent === 'Второй'))
+    fireEvent.click(screen.getAllByRole('button').find((b) => b.textContent.endsWith('Второй')))
     expect(container.querySelector('.st-dg__exlist')).toBeNull()
     expect(container.querySelector('.st-dg__ex').textContent).toContain('Упражнения к этому уроку появятся здесь.')
   })

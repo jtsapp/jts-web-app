@@ -32,3 +32,20 @@ describe('Гид по Desmos — уроки только видео', () => {
     }
   })
 })
+
+// Решение 08.11.2026: 23 урока плоским списком, фильтр по тегам только скрывает пункты — номера прежние.
+describe('Гид по Desmos — фильтр по тегам', () => {
+  it('«Данные» оставляет уроки с этим тегом и их настоящими номерами; «Все» возвращает список', () => {
+    const { container, getByRole } = render(<I18nProvider><DesmosGuide /></I18nProvider>)
+    const items = () => [...container.querySelectorAll('.st-dg__item')]
+    fireEvent.click(getByRole('button', { name: 'Данные' }))
+    const nums = items().map((b) => Number(b.querySelector('.st-dg__num').textContent))
+    expect(nums.length).toBeGreaterThan(0)
+    expect(nums.length).toBeLessThan(GUIDE.sections.length)
+    expect(items().map((b) => b.textContent)).toContain(`${GUIDE.sections.findIndex((s) => s.id === 'l9') + 1}Регрессия`)
+    // открыт урок из отфильтрованного списка
+    expect(container.querySelector('.st-dg__item.is-on')).not.toBeNull()
+    fireEvent.click(getByRole('button', { name: 'Все' }))
+    expect(items()).toHaveLength(GUIDE.sections.length)
+  })
+})

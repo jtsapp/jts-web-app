@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { legendKinds, pointKind, roundSection, scale, scoreBody, sectionState, tableRows, totalOf, trajectoryChart, trajectoryPoints, validSection, validateScore } from './scores.js'
+import { deltaText, legendKinds, pointKind, roundSection, scale, scoreBody, sectionState, tableRows, totalOf, trajectoryChart, trajectoryPoints, validSection, validateScore } from './scores.js'
 
 describe('ручные баллы: форма', () => {
   it('секция — 200–800 с шагом 10', () => {
@@ -58,11 +58,19 @@ describe('таблица «Результаты» и траектория', () =
     expect(totalOf({ rw: null, math: 650 })).toBeNull()
   })
 
-  it('новые сверху, Past papers — в общей таблице, изменение — к предыдущему по дате любого источника (ТЗ SAT, задача 13)', () => {
-    const rows = tableRows(entries)
-    expect(rows.map((r) => r.id)).toEqual(['8', 'p1', '7', 'mock-1'])
-    expect(rows.map((r) => r.delta)).toEqual([70, 110, 90, null])
-    expect(rows[2].total).toBe(1290)
+  it('новые сверху, Past papers — в общей таблице; без Δ сервера — к предыдущей строке того же источника', () => {
+    const rows = tableRows([...entries, { id: 'mock-2', source: 'SIMULATION', takenOn: '2026-10-10', rw: 620, math: 620, total: 1240 }])
+    expect(rows.map((r) => r.id)).toEqual(['mock-2', '8', 'p1', '7', 'mock-1'])
+    // симуляция ↔ симуляция; Bluebook и Past paper — первые в своём источнике; Δ Official — с сервера
+    expect(rows.map((r) => r.delta)).toEqual([40, 70, null, null, null])
+    expect(rows[3].total).toBe(1290)
+  })
+
+  it('подпись Δ: у симуляции приблизительная, нет Δ — прочерк', () => {
+    expect(deltaText({ source: 'SIMULATION', delta: 40 })).toBe('≈+40')
+    expect(deltaText({ source: 'BLUEBOOK', delta: -20 })).toBe('-20')
+    expect(deltaText({ source: 'OFFICIAL', delta: 0 })).toBe('0')
+    expect(deltaText({ source: 'PAPER', delta: null })).toBe('—')
   })
 
   it('траектория — старые слева, с точкой Past paper', () => {
@@ -78,9 +86,9 @@ describe('таблица «Результаты» и траектория', () =
     expect(rows.map((r) => [r.id, r.delta])).toEqual([['3', 30], ['2', null], ['1', null]])
     // без поля delta (запасной список) — считаем сами, пропуская отклонённый
     const own = tableRows([
-      { id: 'a', takenOn: '2026-06-01', total: 1100 },
-      { id: 'b', takenOn: '2026-07-01', total: 1300, reviewStatus: 'REJECTED' },
-      { id: 'c', takenOn: '2026-08-01', total: 1150 },
+      { id: 'a', source: 'BLUEBOOK', takenOn: '2026-06-01', total: 1100 },
+      { id: 'b', source: 'BLUEBOOK', takenOn: '2026-07-01', total: 1300, reviewStatus: 'REJECTED' },
+      { id: 'c', source: 'BLUEBOOK', takenOn: '2026-08-01', total: 1150 },
     ])
     expect(own.map((r) => r.delta)).toEqual([50, null, null])
     expect(trajectoryPoints(rows).map((p) => p.id)).toEqual(['1', '3'])

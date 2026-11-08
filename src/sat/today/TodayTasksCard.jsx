@@ -6,7 +6,7 @@ import { loadToken } from '../../lib/session.js'
 import { ArrowForwardIcon, CheckCircleIcon, CheckIcon, EventIcon, MenuBookIcon, OpenInNewIcon, QuizIcon, ScheduleIcon, TargetIcon } from '../../ielts/icons.jsx'
 import { HistoryIcon, NorthEastIcon, SigmaIcon } from '../icons.jsx'
 import { domainName, skillName } from '../names.js'
-import { moduleSize } from '../model/practice.js'
+import { TODAY_SIZE } from '../model/practice.js'
 import { fmtDate } from '../model/dates.js'
 import { fmtMinutes, lessonDay, lessonWeekday } from './lessonTime.js'
 import { DONE, PARTIAL, buildBlocks, ctaOf, currentLesson, priorityRank, readWords, thirdVariant, writeWords } from './todayTasks.js'
@@ -40,7 +40,7 @@ export default function TodayTasksCard({ schedule, roadmap, bluebook, todayIso, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skills.join(','), section])
 
-  const size = moduleSize(section)
+  const size = TODAY_SIZE
   const blocks = buildBlocks({ lesson, today, wordsState: words, practiceSize: size, todayIso })
   const cta = ctaOf(blocks)
   const phase = roadmap?.phases?.find((p) => p.n === roadmap.active)

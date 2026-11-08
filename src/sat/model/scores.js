@@ -77,8 +77,9 @@ function when(e) {
 
 /**
  * Строки таблицы: все источники, включая Past papers, новые сверху. Изменение сервера берём как есть, и null тоже: у
- * самой старой строки и у отклонённой его нет нарочно (правило Δ — решение продукта, экран его не переписывает).
- * Сами считаем, только когда поля нет вовсе (запасной список из /mocks) — к предыдущей строке, кроме отклонённых.
+ * первой строки источника и у отклонённой его нет нарочно (правило Δ — решение продукта, экран его не переписывает).
+ * Сами считаем, только когда поля нет вовсе (запасной список из /mocks) — тем же правилом: к предыдущей строке того же
+ * источника, кроме отклонённых (решение 08.11.2026: оценка симуляции и балл Bluebook между собой не сравниваются).
  */
 export function tableRows(entries = []) {
   const rows = entries.filter(Boolean).slice().sort((a, b) => when(b).localeCompare(when(a)) || String(b.id).localeCompare(String(a.id)))
@@ -86,10 +87,17 @@ export function tableRows(entries = []) {
     const own = totalOf(e)
     if (isRejected(e)) return { ...e, total: own, delta: null }
     if (e.delta !== undefined) return { ...e, total: own }
-    const prev = rows.slice(i + 1).find((x) => !isRejected(x))
+    const prev = rows.slice(i + 1).find((x) => !isRejected(x) && x.source === e.source)
     const before = prev ? totalOf(prev) : null
     return { ...e, total: own, delta: own != null && before != null ? own - before : null }
   })
+}
+
+/** Подпись Δ: у симуляции — «≈+40», она считается по серединам диапазонов; нет Δ — «—». */
+export function deltaText(e) {
+  if (e?.delta == null) return '—'
+  const sign = e.delta > 0 ? '+' : ''
+  return `${e.source === 'SIMULATION' ? '≈' : ''}${sign}${e.delta}`
 }
 
 /** Траектория: старые слева; только строки с итогом, без отклонённых. */

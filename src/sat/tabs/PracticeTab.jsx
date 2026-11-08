@@ -285,7 +285,7 @@ export default function PracticeTab({ onStart, onErrors, explainLang, initialMod
               <>
                 <span className="st-sess__label">{t('sat.prac.count')}</span>
                 <div className="ih-seg st-sess__counts">
-                  {countOptions(section).map((n) => <button key={n} type="button" className={count === n ? 'is-on' : ''} onClick={() => setCount(n)}>{n}</button>)}
+                  {countOptions().map((n) => <button key={n} type="button" className={count === n ? 'is-on' : ''} onClick={() => setCount(n)}>{n}</button>)}
                 </div>
               </>
             )}

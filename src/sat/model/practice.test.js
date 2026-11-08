@@ -7,9 +7,9 @@ describe('размер набора практики (ТЗ SAT, задача 7)'
     expect(moduleSize('math')).toBe(22)
   })
 
-  it('селектор: короткие наборы плюс полный модуль секции', () => {
-    expect(countOptions('rw')).toEqual([5, 10, 20, 27])
-    expect(countOptions('math')).toEqual([5, 10, 20, 22])
+  it('селектор: 5 / 10 / 20 / 22 / 27 в любой секции', () => {
+    expect(countOptions('rw')).toEqual([5, 10, 20, 22, 27])
+    expect(countOptions('math')).toEqual([5, 10, 20, 22, 27])
   })
 
   it('смена секции переносит полный модуль, а выбранный вручную короткий набор не трогает', () => {

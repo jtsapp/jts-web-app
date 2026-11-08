@@ -14,17 +14,6 @@ import { domainName } from '../sat/names.js'
 import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 import { errorText, isQuotaError } from '../lib/examQuota.js'
 
-const STEPS = ['intro', 'report']
-
-function readStep() {
-  try {
-    const v = new URLSearchParams(window.location.search).get('satDiag')
-    return STEPS.includes(v) ? v : null
-  } catch {
-    return null
-  }
-}
-
 function writeStep(step) {
   try {
     const url = new URL(window.location.href)
@@ -121,10 +110,10 @@ export default function SatDiagnosticPage({ token, onNav }) {
     ])
     setDiag(d)
     setProfile(pr)
-    const want = readStep()
+    // сдавший видит отчёт даже по ?satDiag=intro: пересдача — только после сброса куратором
     if (d.status === 'active') setStep('run')
-    else if (want === 'intro' || d.status === 'none') setStep('intro')
-    else setStep('report')
+    else if (d.status === 'finished') setStep('report')
+    else setStep('intro')
   }, [authToken])
 
   useEffect(() => {
@@ -169,6 +158,8 @@ export default function SatDiagnosticPage({ token, onNav }) {
     } catch (e) {
       // исчерпанная демо-квота диагностики (E2) — понятный текст сервера, а не «не удалось начать»
       setError(isQuotaError(e) ? errorText(e, t) : t('sat.dx.startError'))
+      // сервер отказал, потому что диагностика уже сдана (другая вкладка) — показываем отчёт
+      if (e?.status === 400) load()
     } finally {
       setBusy(false)
     }
@@ -195,11 +186,10 @@ export default function SatDiagnosticPage({ token, onNav }) {
   const back = exit
 
   let body = null
-  if (step === 'intro') {
+  if (step === 'intro' && diag.status !== 'finished') {
     body = (
       <DiagnosticIntro
         examDate={examDate}
-        last={diag.status === 'finished' ? diag.finishedAt : null}
         resuming={diag.status === 'active'}
         busy={busy}
         error={error}
@@ -217,7 +207,6 @@ export default function SatDiagnosticPage({ token, onNav }) {
         nextTest={road?.roadmap?.phases?.find((p) => p.n === 1)?.bluebookTest ?? 6}
         // роудмап не загрузился — «Посмотреть план» ведёт во вкладку, а не в пустое окно
         onRoadmap={road ? () => setRoadmap(true) : () => toPlan()}
-        onRetake={() => goStep('intro')}
         onNext={() => toPlan(1)}
       />
     )

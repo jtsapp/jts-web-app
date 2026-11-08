@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { collegeBand, dateStatus, domainShares, pick, rankColleges, roundSection, splitLead, splitTotal, upcomingDates } from './profile.js'
+import {
+  collegeBand, dateStatus, domainShares, inReach, isSkewed, MIN_MARGIN, pick, rankByCountry, rankColleges, reachSummary,
+  roundSection, splitLead, splitTotal, suggestGoal, upcomingDates,
+} from './profile.js'
+import { byCountry } from './colleges.js'
 import taxonomy from '../data/taxonomy.json'
 import colleges from '../data/colleges.json'
+
+const by = Object.fromEntries(colleges.rows.map((c) => [c.id, c]))
 
 describe('цель SAT', () => {
   it('балл секции округляется до 10 и зажимается в 200–800, а не отвергается', () => {
@@ -17,23 +23,68 @@ describe('цель SAT', () => {
     expect(splitTotal(1220)).toEqual({ rw: 610, math: 610 })
   })
 
-  it('куда попадает цель относительно middle-50% (Figma 3: Toronto, NU, KIMEP, Michigan при 1350)', () => {
-    const by = Object.fromEntries(colleges.rows.map((c) => [c.id, c]))
-    const toronto = colleges.rows.find((c) => /Toronto/.test(c.name))
-    const nu = colleges.rows.find((c) => /Nazarbayev/.test(c.name))
-    const kimep = colleges.rows.find((c) => /KIMEP/.test(c.name))
-    const mich = colleges.rows.find((c) => /Michigan/.test(c.name))
-    expect(Object.keys(by).length).toBe(16)
-    expect(collegeBand(1350, toronto)).toBe('in')
-    expect(collegeBand(1350, nu)).toBe('in')
-    expect(collegeBand(1350, kimep)).toBe('above')
-    expect(collegeBand(1350, mich)).toBe('near')
-    const ranked = rankColleges(1350, colleges.rows)
-    // «N из 16 в досягаемости»: на макете 5 — демо-цифра (доска «Решения»), по данным прототипа их больше.
-    // Проверяем правило, а не число: все достижимые раньше недостижимых, внутри — сначала «в диапазоне».
-    const firstBelow = ranked.findIndex((c) => c.band === 'below')
-    expect(ranked.slice(firstBelow).every((c) => c.band === 'below')).toBe(true)
-    expect(ranked[0].band).toBe('in')
+  it('middle_50: in / above / near / below по Total', () => {
+    expect(collegeBand(1350, by.umich)).toBe('near')
+    expect(collegeBand(1400, by.umich)).toBe('in')
+    expect(collegeBand(1550, by.umich)).toBe('above')
+    expect(collegeBand(1200, by.umich)).toBe('below')
+  })
+
+  it('middle_50 без Total — по каждой секции, худшая; итогом без секций не сравнить', () => {
+    expect(collegeBand({ rw: 730, math: 760 }, by.harvard)).toBe('in')
+    expect(collegeBand({ rw: 700, math: 800 }, by.harvard)).toBe('near')
+    expect(collegeBand({ rw: 650, math: 800 }, by.harvard)).toBe('below')
+    expect(collegeBand(1500, by.harvard)).toBeNull()
+  })
+
+  it('minimum и full_range: порог или ориентир пройден — pass; без балла — null', () => {
+    expect(collegeBand(1460, by.imperial)).toBe('pass')
+    expect(collegeBand(1400, by.imperial)).toBe('near')
+    expect(collegeBand(1300, by.imperial)).toBe('below')
+    expect(collegeBand(1230, by.kcl)).toBe('pass')
+    expect(collegeBand(1400, by.nazarbayev)).toBe('pass')
+    expect(collegeBand(1600, by.kaist)).toBeNull()
+    expect(collegeBand(1600, by.georgetown)).toBeNull()
+  })
+
+  it('«в досягаемости» не считает «чуть ниже» и вузы без балла', () => {
+    const goal = { rw: 680, math: 690 } // 1370
+    const kr = byCountry(colleges.rows, 'KR')
+    expect(reachSummary(goal, kr)).toEqual({ n: 0, total: 0 })
+    const gb = byCountry(colleges.rows, 'GB')
+    // 1370 ≥ 1340 (Warwick), 1290 ×2, 1230 (KCL); ниже Imperial 1460 и UCL 1440
+    expect(reachSummary(goal, gb)).toEqual({ n: 4, total: 6 })
+    const us = reachSummary(goal, byCountry(colleges.rows, 'US'))
+    expect(us.total).toBe(17) // UT Austin, Georgetown, NYU без балла
+  })
+
+  it('ранжирование — только внутри страны: группы в порядке чипов, достижимые первыми', () => {
+    const groups = rankByCountry(1370, colleges.rows)
+    expect(groups.map((g) => g.country)).toEqual(['US', 'GB', 'KZ', 'KR'])
+    const us = groups[0].rows
+    const firstNotReach = us.findIndex((c) => !inReach(c.band))
+    expect(us.slice(firstNotReach).some((c) => inReach(c.band))).toBe(false)
+    expect(us.at(-1).band).toBeNull()
+    expect(rankColleges(1370, byCountry(colleges.rows, 'GB'))[0].band).toBe('pass')
+  })
+
+  it('подставляемая цель: middle_50 — верх, без Total — верх секций, порог и ориентир — с запасом', () => {
+    expect(suggestGoal(by.umich)).toEqual(splitTotal(1530))
+    expect(suggestGoal(by.harvard)).toEqual({ rw: 770, math: 790 })
+    expect(suggestGoal(by.columbia)).toEqual(splitTotal(1560))
+    const imp = suggestGoal(by.imperial)
+    expect(imp.rw + imp.math).toBe(1460 + MIN_MARGIN)
+    const kcl = suggestGoal(by.kcl)
+    expect(kcl.rw + kcl.math).toBe(1440 + MIN_MARGIN)
+    expect(suggestGoal(by.nazarbayev).rw + suggestGoal(by.nazarbayev).math).toBeGreaterThan(1400)
+    expect(suggestGoal(by.snu)).toBeNull()
+  })
+
+  it('смещённый вверх диапазон — test-optional или меньше половины прислали тест', () => {
+    expect(isSkewed(by.umich)).toBe(true)
+    expect(isSkewed(by.stanford)).toBe(true)
+    expect(isSkewed(by.mit)).toBe(false)
+    expect(isSkewed(by.imperial)).toBe(false)
   })
 })
 

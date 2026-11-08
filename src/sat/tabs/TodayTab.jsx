@@ -6,7 +6,6 @@ import { iso, parse } from '../model/plan.js'
 import { phaseKeyOf } from '../model/roadmap.js'
 import { skillName, skillSection } from '../names.js'
 import { fmtDate } from '../model/dates.js'
-import WeeklyCard from '../weekly/WeeklyCard.jsx'
 import TimingBanner from '../plan/TimingBanner.jsx'
 import PhaseStrip from '../plan/PhaseStrip.jsx'
 import TodayTasksCard from '../today/TodayTasksCard.jsx'
@@ -25,7 +24,7 @@ const MODE_KEY = { skills: 'sat.prac.mode.skills', weak: 'sat.prac.mode.weak', c
  * макете нет, но это задача ТЗ 17.10 — его карточка стоит в правой колонке под ошибками.
  */
 export default function TodayTab({
-  today, roadmap, schedule, bluebook, onResume, onReview, onWeekly, onPlan, onManager, onWords, onPracticeSkills,
+  today, roadmap, schedule, bluebook, onResume, onReview, onPlan, onManager, onWords, onPracticeSkills,
   onPracticeMode, onMocks, onErrors, onCurator,
 }) {
   const { t, lang } = useI18n()
@@ -129,7 +128,8 @@ export default function TodayTab({
               <button type="button" className="st-hint__more" onClick={onReview}>{t('sat.today.reviewNow')}</button>
             </div>
           )}
-          <WeeklyCard onOpen={onWeekly} />
+          {/* «Недельный тест» на «Сегодня» не показываем (решение 08.11.2026): вернём, когда методист распишет тесты
+              по фазам. Сам механизм (WeeklyCard, ?screen=sat-weekly, бэкенд) остаётся. */}
         </aside>
       </div>
       <article className="st-card st-where">
