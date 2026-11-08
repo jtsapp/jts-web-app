@@ -11,11 +11,21 @@
 //
 // Ключ — служебный (GE_ACTIVITY_KEY, по умолчанию IELTS_GRADER_KEY: он уже есть на обоих стендах). Без ключа ничего
 // не шлём. Ошибка отправки не роняет основной запрос — её видно в логе, а итог дня приедет со следующей записью.
+//
+// Тем же запросом уходит навык «Стоит подтянуть» (`focus`, ТЗ v2.0 «Луна-трекер», 5.5 и 9.1): план собирает бэкенд,
+// а проценты навыков живут здесь. Расчёт — тот же, что у «Сильных и слабых сторон» «Главной», Профиля и Луны
+// (levelSkillHighlights поверх withStartEstimate); уровень — последних заданий ученика (loadRecentLevelSkillStats, как
+// у карточки преподавателя): своего уровня ученика у сервера веба в этой точке нет, а задания без уровня пишутся в его
+// текущий. Слабого навыка нет (мало данных, все ровно) — `none`; не посчиталось (база молчит) — поля нет вовсе, и
+// бэкенд прежний фокус не трогает. Бэкенд меняет фокус не чаще раза в неделю.
 
 import { after } from 'next/server'
 import { getSql } from './db/sql.js'
 import { BACKEND_URL } from './auth-server.js'
 import { SECONDS_PER_CREDIT } from './db/shadowingBudget.js'
+import { loadRecentLevelSkillStats, loadSkillStats } from './db/skillStats.js'
+import { levelSkillHighlights, rankLevelSkills } from './levelProgress.js'
+import { withStartEstimate } from '../practice/skillStatsCore.js'
 
 export const GE_MODULES = ['ai_tutor', 'workbooks', 'shadowing', 'media_practice', 'vocabulary_sr']
 export const PUSH_TIMEOUT_MS = 5000
@@ -77,6 +87,23 @@ export async function loadDay(profileId, day, sql = getSql()) {
   return { voiceSeconds: voice[0]?.seconds ?? 0, shadowingCredits: shadow[0]?.used ?? 0, activitySeconds }
 }
 
+/** Навык «Стоит подтянуть» из навыков уровня и общего итога: тот же расчёт, что у «Главной». Нет слабого — 'none'. */
+export function focusSkill(levelStats, totals) {
+  const weakest = levelSkillHighlights(rankLevelSkills(withStartEstimate(levelStats, totals))).weakest
+  return weakest?.skill || 'none'
+}
+
+/** Слабый навык ученика по базе веба или undefined — не посчиталось (тогда поле не уходит). */
+export async function loadFocus(profileId, sql = getSql()) {
+  try {
+    const [{ stats: levelStats }, totals] = await Promise.all([loadRecentLevelSkillStats(profileId, sql), loadSkillStats(profileId, sql)])
+    return focusSkill(levelStats, totals)
+  } catch (e) {
+    warnOnce('focus', e?.message || e)
+    return undefined
+  }
+}
+
 /**
  * Отправить итог дня на бэкенд. Никогда не бросает: возвращает { sent, reason? }.
  * @param {string} profileId  'user-<id>'
@@ -89,11 +116,12 @@ export async function pushGeActivity(profileId, day, { sql = getSql(), fetchImpl
   if (!key) return { sent: false, reason: 'no_key' }
   if (!sql || !/^\d{4}-\d{2}-\d{2}$/.test(String(day || ''))) return { sent: false, reason: 'no_data' }
   try {
-    const minutes = dayMinutes(await loadDay(profileId, day, sql))
+    const [raw, focus] = await Promise.all([loadDay(profileId, day, sql), loadFocus(profileId, sql)])
+    const minutes = dayMinutes(raw)
     const res = await fetchImpl(`${backendUrl ?? BACKEND_URL}/integrations/web/ge-activity`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Ge-Activity-Key': key },
-      body: JSON.stringify({ userId, day, minutes }),
+      body: JSON.stringify(focus ? { userId, day, minutes, focus } : { userId, day, minutes }),
       cache: 'no-store',
       signal: AbortSignal.timeout(timeoutMs),
     })

@@ -122,6 +122,7 @@ const MODULE_WORDS = {
   media_practice: ['книги, тексты и аудио', 'practice-reading'],
   vocabulary_sr: ['слова в «Словаре»', 'vocab'],
 }
+const FOCUS_SKILL_RU = { listening: 'аудирование', speaking: 'говорение', reading: 'чтение', writing: 'письмо', grammar: 'грамматика', vocab: 'словарь' }
 const taskWords = (task) => (task.kind === 'course' ? ['урок курса', 'learning'] : MODULE_WORDS[task.module] || ['практика', 'practice'])
 /** Строка профиля, когда пересчитать день нельзя: по ней turnHints не даёт метку [[REPLAN …]]. Текст — тот же, что там. */
 export const REPLAN_OFF = 'Пересчитать день под «мало времени» сейчас нельзя.'
@@ -158,6 +159,11 @@ export function gePlanToday(plan, now = Date.now()) {
   const lines = [
     `План на сегодня (тот же, что блок «Сегодня» на Главной; занятия и домашка преподавателя — не в нём): ${items.join('; ') || 'своих задач нет'}. Сделано ${doneMin} из ${sum(todays)} мин.`,
   ]
+  // «Стоит подтянуть» (ТЗ v2.0, 5.5 и 9.1): план недели даёт разделу слабого навыка больше практики — Луна объясняет «зачем»
+  if (plan.focus?.skill && FOCUS_SKILL_RU[plan.focus.skill]) {
+    const where = MODULE_WORDS[plan.focus.module]?.[0]
+    lines.push(`Стоит подтянуть: ${FOCUS_SKILL_RU[plan.focus.skill]} — поэтому в плане недели больше практики${where ? ` («${where}»)` : ''}.`)
+  }
   // прежний бэкенд без пересчёта: по этой строке указание «мало времени» метку не даст (turnHints.js)
   if (!canReplan(plan)) lines.push(REPLAN_OFF)
   // «На сегодня всё» (метка [[STOP_DAY]]): прежний бэкенд без ручки — строка, по которой turnHints метку не даёт

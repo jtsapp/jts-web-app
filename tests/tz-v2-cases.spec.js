@@ -71,7 +71,7 @@ const LEVEL_STATS = {
 }
 const SHARE = Object.fromEntries(Object.entries(LEVEL_STATS).map(([k, v]) => [k, Math.round((v.firstTry / v.done) * 100)]))
 
-async function setup(page, { format = 'teacher', lang = 'ru', tasks = DAY, chat = null } = {}) {
+async function setup(page, { format = 'teacher', lang = 'ru', tasks = DAY, chat = null, planExtra = null } = {}) {
   const demo = format === 'demo'
   const me = { userId: 7, name: 'Saken', role: 'USER', languageLevel: 'B1', isDemoAccount: demo, phone: '77001234567' }
   await page.addInitScript(
@@ -88,7 +88,7 @@ async function setup(page, { format = 'teacher', lang = 'ru', tasks = DAY, chat 
     if (url.includes('/cabinet/my-sections')) return route.fulfill(json(SECTIONS[format]))
     const gate = gateReply(url)
     if (gate) return route.fulfill(json(gate))
-    if (url.includes('/mobile/ge/plan')) return route.fulfill(json(planOf(tasks)))
+    if (url.includes('/mobile/ge/plan')) return route.fulfill(json({ ...planOf(tasks), ...planExtra }))
     if (url.includes('/mobile/ge/profile')) return route.fulfill(json(profile(format)))
     if (url.includes('/user/language-level')) return route.fulfill(json({ languageLevel: 'B1' }))
     if (url.includes('/user/me')) return route.fulfill(json(me))
@@ -154,7 +154,9 @@ for (const format of ['teacher', 'self', 'demo']) {
   test(`кейс 17: английский интерфейс, ${format} — на «Главной» и в плане нет кириллицы`, async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'компьютер; планшет — ниже, телефон — своя раскладка')
     await setup(page, { format, lang: 'en' })
-    // все строки с кириллицей с обоих экранов и ширин — одним списком: падение сразу показывает всё
+    // все строки с кириллицей с обоих экранов и ширин — одним списком: падение сразу показывает всё. Ссылки подвала
+    // «Покупателям» на английском интерфейсе — русские страницы: английских не делаем (решение владельца 08.11.2026,
+    // «Оставить русские»; Footer.jsx, 50b391c6)
     const found = {}
     const cyr = async (key) => {
       found[key] = (await learnText(page)).split('\n').filter((l) => CYRILLIC.test(l) && !isRuFooterLink(l))
@@ -328,6 +330,26 @@ test('кейс 23: «Сегодня» и «Мой план» показываю�
     expect(twin.meta, `минуты «${r.title}»`).toContain(min)
   }
   expect(plan.length).toBe(home.length + 1)
+})
+
+// ── кейс 20: «Стоит подтянуть» попадает в план ────────────────────────────────────────────────────────────────────
+// План собирает бэкенд: разделу слабого навыка он дал больше практики и отдаёт plan.focus. Экран это объясняет: у шага —
+// «Зачем» про слабый навык, медиа при слабом аудировании ведёт во вкладку «Аудирование», плитка — «Аудирование».
+test('кейс 20: фокус плана — «Зачем» про слабый навык, «Откроется» и плитка «Аудирование»', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'на телефоне блока «Сегодня» нет (решение 6)')
+  const tasks = [
+    { id: 21, date: today, kind: 'practice', module: 'media_practice', minutes: 20, got: 0, status: 'available', overdue: false, movable: true },
+    ...DAY,
+  ]
+  await setup(page, { tasks, planExtra: { focus: { skill: 'listening', module: 'media_practice', since: today } } })
+  await page.goto('/?screen=home')
+  const row = page.locator('.ge-today .ge-task').first()
+  await expect(row).toBeVisible({ timeout: 20000 })
+  await expect(row.locator('.ge-task__why')).toHaveText('Зачем: Аудирование у тебя сейчас слабее остальных навыков, поэтому в плане на неделю на него больше времени.')
+  await expect(row.locator('.ge-task__opens')).toHaveText('Откроется: Практика → Аудирование')
+  await expect(row.locator('.ge-task__meta')).toContainText('Аудирование · 20 мин')
+  await page.getByRole('button', { name: 'По навыкам' }).click()
+  await expect(page.locator('.ge-sk__tile').filter({ hasText: 'Аудирование' })).toHaveCount(1)
 })
 
 // ── кейс 36: Главная и Профиль — одинаковые % ─────────────────────────────────────────────────────────────────────

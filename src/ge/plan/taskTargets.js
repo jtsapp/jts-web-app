@@ -141,7 +141,7 @@ export function baseTargets(tasks, { level = null, courseSteps = {} } = {}) {
   return out
 }
 
-export async function materialTargets(tasks, { level = null, loaders = DEFAULT_LOADERS } = {}) {
+export async function materialTargets(tasks, { level = null, loaders = DEFAULT_LOADERS, focus = null } = {}) {
   const out = {}
   const lv = level ? String(level).toUpperCase() : null
   // один раздел на день грузим один раз: две задачи воркбука ведут в один и тот же следующий урок
@@ -156,6 +156,9 @@ export async function materialTargets(tasks, { level = null, loaders = DEFAULT_L
     } else if (task.module === 'shadowing') {
       const pick = await once('shadowing', () => loaders.shadowing())
       if (pick) out[task.id] = { section: 'shadowing', to: 'shadowing', payload: pick.id, title: pick.title, started: pick.started }
+    } else if (task.module === 'media_practice' && focus?.skill === 'listening' && focus.module === 'media_practice') {
+      // план дал медиа больше времени ради аудирования (фокус «Стоит подтянуть») — вкладка «Аудирование», а не текст
+      out[task.id] = { section: 'listening', to: 'practice', payload: { skill: 'listening' } }
     } else {
       // media_practice и неизвестный раздел — вкладка «Чтение» (taskRoute): конкретный текст уровня
       const code = readingLevel(lv)
@@ -191,6 +194,9 @@ export function targetPath(t, target) {
       break
     case 'tutor':
       parts = [t('nav.tutor')]
+      break
+    case 'listening':
+      parts = [t('nav.practice'), t('gePlan.skill.listening')]
       break
     case 'vocab':
       parts = [t('nav.vocab')]

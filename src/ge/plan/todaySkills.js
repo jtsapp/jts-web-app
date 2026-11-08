@@ -23,11 +23,16 @@ const MODULE_SKILL = {
   vocabulary_sr: 'vocab',
 }
 
+// Фокус плана («Стоит подтянуть», ТЗ 5.5 и 9.1): бэкенд даёт разделу слабого навыка больше практики и отдаёт
+// plan.focus = { skill, module }. Задача этого раздела тогда — задача слабого навыка: медиа при слабом аудировании —
+// «Аудирование», воркбук при слабом письме — «Письмо».
+const isFocusTask = (task, focus) => Boolean(focus?.skill && focus.module && task?.kind === 'practice' && task.module === focus.module)
+
 /** Навык плитки для своей задачи плана; null — задача не своя (занятие, домашка, задача преподавателя). */
-export function skillOf(task) {
+export function skillOf(task, focus = null) {
   if (!task || task.origin === 'teacher') return null
   if (task.kind === 'course') return 'lesson'
-  if (task.kind === 'practice') return MODULE_SKILL[task.module] || 'reading'
+  if (task.kind === 'practice') return isFocusTask(task, focus) && SKILL_TILES.includes(focus.skill) ? focus.skill : MODULE_SKILL[task.module] || 'reading'
   return null
 }
 
@@ -54,10 +59,10 @@ export function todayMinutes(tasks) {
  * Плитки «По навыкам»: [{ skill, tasks, minutes, done }] в порядке ТЗ, только навыки с задачами. minutes — сумма
  * минут задач навыка, done — сколько задач выполнено (полоса плитки — доля выполненных задач).
  */
-export function groupBySkill(tasks) {
+export function groupBySkill(tasks, focus = null) {
   const by = new Map()
   for (const task of tasks || []) {
-    const skill = skillOf(task)
+    const skill = skillOf(task, focus)
     if (!skill) continue
     if (!by.has(skill)) by.set(skill, [])
     by.get(skill).push(task)
@@ -94,13 +99,16 @@ const rank = (level) => LEVELS.indexOf(String(level || '').toUpperCase())
  *      «Чтение у тебя сейчас слабее остальных навыков (41%)…»;
  *   2. вид задачи — что этот раздел тренирует (урок курса — следующий урок уровня);
  *   3. цель ученика из анкеты GE — хвостом «— шаг к цели B2», только если цель выше текущего уровня.
+ * Сильнее всех — фокус плана (focus): раздел, которому бэкенд дал больше практики ради навыка «Стоит подтянуть».
  * Чисел, которых нет в данных («4 ошибки из 9»), строка не обещает. Обращение — на «ты», без рода (решение 7).
  * level — уровень материала (воркбук A2, текст B1), иначе уровень ученика; без него шаблоны с уровнем молчат.
  * @returns {string} '' — сказать нечего
  */
-export function whyLine(t, task, { level = null, target = null, weakest = null } = {}) {
-  const skill = skillOf(task)
+export function whyLine(t, task, { level = null, target = null, weakest = null, focus = null } = {}) {
+  const skill = skillOf(task, focus)
   if (!skill) return ''
+  // раздел в фокусе плана — довод сильнее всех: план недели сам дал ему больше времени (кейс 20)
+  if (isFocusTask(task, focus) && SKILL_TILES.includes(focus.skill)) return `${t('gePlan.why.focus', { skill: t(`gePlan.skill.${focus.skill}`) })}.`
   const stat = STAT_OF[skill]
   if (stat && weakest && weakest.skill === stat && weakest.percent != null) {
     return `${t('gePlan.why.weak', { skill: t(`gePlan.skill.${skill}`), pct: String(weakest.percent) })}.`

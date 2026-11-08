@@ -30,7 +30,7 @@ export function resetTodayGoalCache() {
  * «Сильные и слабые стороны» (levelSkillHighlights поверх навыков уровня), иначе null; target — цель из анкеты GE;
  * targets — { id задачи: цель перехода } (taskTargets).
  */
-export function useTodayExtras({ token, level, tasks, courseSteps }) {
+export function useTodayExtras({ token, level, tasks, courseSteps, focus = null }) {
   const code = skillLevel(level)
   // сначала то, что знает устройство, ответ сервера — поверх; ответ чужого уровня не берётся
   const local = useMemo(() => (code ? readLocalLevelSkillStats(code) : null), [code])
@@ -66,6 +66,7 @@ export function useTodayExtras({ token, level, tasks, courseSteps }) {
   const materialKey = (tasks || [])
     .filter((x) => x.kind === 'practice' && x.status !== 'completed' && x.origin !== 'teacher')
     .map((x) => `${x.id}:${x.module}`)
+    .concat(focus?.skill ? [`focus:${focus.skill}`] : [])
     .join(',')
   // цели держатся вместе с ключом, по которому собраны: сменился набор разделов — старые не показываем
   const [material, setMaterial] = useState({ key: '', map: {} })
@@ -73,7 +74,7 @@ export function useTodayExtras({ token, level, tasks, courseSteps }) {
     if (!materialKey) return undefined
     let alive = true
     const key = `${materialKey}|${level}`
-    materialTargets(tasks, { level }).then((map) => {
+    materialTargets(tasks, { level, focus }).then((map) => {
       if (alive) setMaterial({ key, map })
     })
     return () => {

@@ -31,7 +31,9 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
   const steps = useMemo(() => courseSteps(plan.tasks, frontier), [plan.tasks, frontier])
   const { tasks, ahead, deferred } = useMemo(() => todayView(plan), [plan])
   const shown = useMemo(() => [...tasks, ...ahead, ...deferred], [tasks, ahead, deferred])
-  const { weakest, target, targets } = useTodayExtras({ token, level, tasks: shown, courseSteps: steps })
+  // фокус плана («Стоит подтянуть», ТЗ 5.5 и 9.1): разделу слабого навыка бэкенд дал больше практики
+  const focus = plan.focus || null
+  const { weakest, target, targets } = useTodayExtras({ token, level, tasks: shown, courseSteps: steps, focus })
   const firstOpen = tasks.findIndex((x) => x.status !== 'completed')
   const currentId = firstOpen >= 0 ? tasks[firstOpen].id : null
   const { start, markFailed } = useGeTaskStart({ token, level, onNav, reload: onReload, lessons, targets })
@@ -69,9 +71,9 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
         showDate={showDate}
         tokens={tokensOf(task)}
         onStart={start}
-        skill={skillOf(task)}
+        skill={skillOf(task, focus)}
         badge={goal?.level || null}
-        why={current ? whyLine(t, task, { level: goal?.level || level, target, weakest }) : ''}
+        why={current ? whyLine(t, task, { level: goal?.level || level, target, weakest, focus }) : ''}
         opens={targetPath(t, goal)}
         started={Boolean(goal?.started)}
       />
@@ -116,7 +118,7 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
         </p>
       )}
       {tasks.length > 0 &&
-        (view === 'skills' ? <GeTodaySkills tasks={tasks} renderRow={row} /> : <ul className="ge-tasks">{tasks.map((task) => row(task))}</ul>)}
+        (view === 'skills' ? <GeTodaySkills tasks={tasks} renderRow={row} focus={focus} /> : <ul className="ge-tasks">{tasks.map((task) => row(task))}</ul>)}
       {markFailed && <p className="ge-move__error" role="alert">{t('gePlan.markFail')}</p>}
       {firstOpen < 0 && (
         <>

@@ -8,6 +8,8 @@ import { resolveProfileId } from '@/lib/auth-server.js'
 import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
 import { validateByLevel, validateDeltas } from '@/lib/skillContract.js'
 import { skillLevel } from '@/practice/skillStatsCore.js'
+import { utcDay } from '@/lib/db/activityTime.js'
+import { queueGeActivity } from '@/lib/geActivity.js'
 
 export const runtime = 'nodejs'
 
@@ -61,6 +63,9 @@ export async function POST(request) {
 
   try {
     await applySkillDeltas(resolved.id, deltas, undefined, byLevel)
+    // ответы заданий двигают «Стоит подтянуть» — бэкенд плана узнаёт его вместе с итогом дня (geActivity.js); после
+    // ответа, не задерживая сохранение. Минут здесь нет: итог дня тот же, повтор безвреден
+    queueGeActivity(resolved.id, utcDay(new Date()))
     const stats = await loadSkillStats(resolved.id)
     return Response.json({ configured: true, stats })
   } catch (err) {

@@ -85,3 +85,17 @@ describe('whyLine — «Зачем» из данных', () => {
     expect(whyLine(t, { kind: 'homework' }, { level: 'A2' })).toBe('')
   })
 })
+
+describe('фокус плана — «Стоит подтянуть» (кейс 20)', () => {
+  const focus = { skill: 'listening', module: 'media_practice' }
+  it('задача раздела в фокусе — плитка слабого навыка; остальные — как были', () => {
+    expect(skillOf(prac('media_practice'), focus)).toBe('listening')
+    expect(skillOf(prac('vocabulary_sr'), focus)).toBe('vocab')
+    expect(skillOf(prac('workbooks'), { skill: 'writing', module: 'workbooks' })).toBe('writing')
+    expect(groupBySkill([prac('media_practice'), prac('ai_tutor')], focus).map((g) => g.skill)).toEqual(['listening', 'speaking'])
+  })
+  it('«Зачем» у задачи в фокусе — про слабый навык и план недели, сильнее довода раздела', () => {
+    expect(whyLine(t, prac('media_practice'), { level: 'A2', target: 'B2', focus })).toBe('gePlan.why.focus(skill=gePlan.skill.listening).')
+    expect(whyLine(t, prac('vocabulary_sr'), { level: 'A2', focus })).toBe('gePlan.why.vocabulary_sr(level=A2).')
+  })
+})

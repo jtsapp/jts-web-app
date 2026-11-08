@@ -4451,6 +4451,7 @@ const dict = {
     'gePlan.why.media_practice': "{level} деңгейіндегі мәтін жаңа сөздерді қолданыста көрсетеді",
     'gePlan.why.vocabulary_sr': "Уақытында қайталасаң, сөздер ұмытылмайды",
     'gePlan.why.weak': "{skill} қазір басқа дағдыларыңнан әлсіздеу ({pct}%), ал бұл тапсырма дәл соны жаттықтырады",
+    'gePlan.why.focus': "{skill} қазір басқа дағдыларыңнан әлсіздеу, сондықтан апталық жоспарда оған көбірек уақыт берілген",
     'gePlan.opens': "Ашылады: {path}",
     'gePlan.open.unit': "{n}-бөлім",
     'gePlan.open.workbook': "Воркбук {level}",
