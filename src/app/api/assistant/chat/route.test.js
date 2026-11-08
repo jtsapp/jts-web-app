@@ -213,6 +213,56 @@ describe('POST /api/assistant/chat', () => {
     expect((await post(other)).status).toBe(429)
   })
 
+  // Модель хода — lib/assistant/model.js (свой тест); здесь — что роут её передаёт и откатывается на Haiku.
+  describe('модель учителя', () => {
+    const ask = (userId, content, extra = {}) => ({ ...question(userId), messages: [{ role: 'user', content }], screen: { id: 'home', text: 'Главная' }, ...extra })
+
+    it('вопрос учителю — Sonnet 5.5 с effort учителя, справка по сайту — Haiku 5.5', async () => {
+      await (await post(ask(3101, 'Объясни present perfect'))).text()
+      expect(calls.at(-1)).toMatchObject({ model: 'claude-sonnet-5-5', effort: 'low' })
+      await (await post(ask(3102, 'Где мои домашки?'))).text()
+      expect(calls.at(-1).model).toBe('claude-haiku-5-5')
+      expect(calls.at(-1).effort).toBeUndefined()
+    })
+
+    it('в живом звонке и на служебном ходе — Haiku', async () => {
+      const room = 'jts-luna-teacher-1760600000000'
+      liveCalls.add(`${room}:3103`)
+      await (await post(ask(3103, 'Объясни present perfect', { call: room }))).text()
+      expect(calls.at(-1).model).toBe('claude-haiku-5-5')
+      await (await post(ask(3104, '[ученик открыл окно]'))).text()
+      expect(calls.at(-1).model).toBe('claude-haiku-5-5')
+    })
+
+    it('Sonnet упала или промолчала до первого слова — тот же ход на Haiku, ученик получает ответ', async () => {
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      let n = 0
+      streamImpl = async function* () {
+        n += 1
+        if (n === 1) throw new Error('rate_limit_error')
+        yield { type: 'text', text: 'Present Perfect — это…' }
+      }
+      let res = await post(ask(3105, 'Объясни present perfect'))
+      expect(res.status).toBe(200)
+      expect(await res.text()).toBe('Present Perfect — это…')
+      expect(calls.slice(-2).map((c) => c.model)).toEqual(['claude-sonnet-5-5', 'claude-haiku-5-5'])
+      // отказ классификатора до первого слова: поток кончился пустым
+      n = 0
+      streamImpl = async function* () {
+        n += 1
+        if (n === 1) {
+          yield { type: 'done', stopReason: 'refusal' }
+          return
+        }
+        yield { type: 'text', text: 'Ответ Haiku' }
+      }
+      res = await post(ask(3106, 'Переведи: I miss you'))
+      expect(await res.text()).toBe('Ответ Haiku')
+      expect(calls.slice(-2).map((c) => c.model)).toEqual(['claude-sonnet-5-5', 'claude-haiku-5-5'])
+      errSpy.mockRestore()
+    })
+  })
+
   it('обрыв модели посреди ответа — ошибка чтения, а не полуфраза как готовый ответ', async () => {
     streamImpl = async function* () {
       yield { type: 'text', text: 'Начало' }

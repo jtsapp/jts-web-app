@@ -53,12 +53,12 @@ import { isLiveAssistantCall } from '@/lib/assistant/callUsage.js'
 import { itemIntentForTurns } from '@/lib/assistant/items/intent.js'
 import { parseHintMark } from '@/lib/assistant/hintSteps.js'
 import { buildItemCatalog, resolveItem } from '@/lib/assistant/items/catalog.js'
+import { baseModel, pickAssistantModel } from '@/lib/assistant/model.js'
 
 export const runtime = 'nodejs'
 
-// Haiku: ответ справки должен начаться за секунду, а разбор школьного
-// задания ему по силам. Для эксперимента с моделью посильнее — ASSISTANT_MODEL.
-const MODEL = process.env.ASSISTANT_MODEL || 'claude-haiku-5-5'
+// Модель — lib/assistant/model.js: справка и служебные ходы — Haiku 5.5 (ASSISTANT_MODEL), вопрос учителю
+// английского — Sonnet 5.5 (ASSISTANT_TEACHER_MODEL, с 08.11.2026).
 const MAX_OUTPUT_TOKENS = 800
 
 const takeQuota = createRateLimiter()
@@ -168,27 +168,38 @@ export async function POST(request) {
 
   const [studentContext, itemCatalog] = await Promise.all([contextReady, itemsReady])
 
-  const modelAt = performance.now()
-  const gen = chatStreamRich({
-    systemPrompt: buildSystemPrompt(assistantPersona(parsed.lang), { rewards: parsed.rewards }),
-    messages: buildTurns({
-      ...parsed,
-      user: auth.user,
-      studentContext,
-      items: itemCatalog?.text || null,
-      itemsMode: intent?.followUp ? 'followUp' : intent?.guess ? 'guess' : 'ask',
-      today: new Date().toISOString().slice(0, 10),
-    }),
-    model: MODEL,
-    maxOutputTokens: MAX_OUTPUT_TOKENS,
-    task: 'site_assistant',
+  // Вопрос учителю — модели учителя (model.js). Служебный ход — не вопрос ученика, даже если в пометке слово «правило».
+  const picked = pickAssistantModel({
+    question: lastText,
+    unchecked: !opening && !wake && openingFocus(parsed.screen.text).unchecked,
+    service: Boolean(opening || wake || stuck || hint || event),
+    call: inCall,
+  })
+  const systemPrompt = buildSystemPrompt(assistantPersona(parsed.lang), { rewards: parsed.rewards })
+  // chatStreamRich собирает свои объекты сообщений из этих (toRichMessages), поэтому повтор на другой модели берёт
+  // тот же ход без пересборки.
+  const turns = buildTurns({
+    ...parsed,
+    user: auth.user,
+    studentContext,
+    items: itemCatalog?.text || null,
+    itemsMode: intent?.followUp ? 'followUp' : intent?.guess ? 'guess' : 'ask',
+    today: new Date().toISOString().slice(0, 10),
   })
 
   // Читаем, пока не станет ясно, метка это или ответ.
-  let head = ''
-  let verdict = 'undecided'
-  let finished = false
-  try {
+  const startReply = async (model) => {
+    const gen = chatStreamRich({
+      systemPrompt,
+      messages: turns,
+      model,
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      task: 'site_assistant',
+      ...(model === picked.model ? { effort: picked.effort } : {}),
+    })
+    let head = ''
+    let verdict = 'undecided'
+    let finished = false
     while (verdict === 'undecided') {
       const { value, done } = await gen.next()
       if (done) {
@@ -200,12 +211,28 @@ export async function POST(request) {
         verdict = classifyStart(head)
       }
     }
+    return { gen, head, verdict, finished }
+  }
+
+  const modelAt = performance.now()
+  let reply
+  try {
+    reply = await startReply(picked.model).catch((err) => {
+      if (!picked.teacher) throw err
+      console.error('[assistant] teacher model failed:', err?.message || err)
+      return null
+    })
+    // Модель учителя не ответила — сбой, свой лимит запросов у Sonnet, отказ классификатора до первого слова: тот же
+    // ход на Haiku. Ученик получит ответ попроще, а не «не удалось ответить».
+    if (picked.teacher && (!reply || (reply.finished && !reply.head.trim()))) reply = await startReply(baseModel())
   } catch (err) {
     console.error('[assistant] model failed:', err?.message || err)
     // Ответа не было — и вопрос не должен съесть лимит ученика.
     limiter.refund(key)
     return json(502, { error: 'model_failed' })
   }
+  const { gen, head, finished } = reply
+  let { verdict } = reply
 
   marks.model = since(modelAt)
   marks.total = since(startedAt)

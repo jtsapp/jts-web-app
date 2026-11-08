@@ -1,6 +1,7 @@
 // Прогон качества Луны (ТЗ v2.0, 8.3а и раздел 10): настоящий системный промпт и ход сайта (buildSystemPrompt /
-// buildTurns из src/lib/assistant/prompt.js) → Haiku 5.5 с параметрами роута /api/assistant/chat (chatStreamRich:
-// мышление выключено, effort low, 800 токенов) → судья Sonnet 5.5 по критерию вопроса.
+// buildTurns из src/lib/assistant/prompt.js) → модель роута /api/assistant/chat с его параметрами (chatStreamRich:
+// мышление выключено, 800 токенов; вопрос учителю — Sonnet 5.5, остальное — Haiku 5.5, effort low; model.js) → судья
+// Sonnet 5.5 по критерию вопроса.
 //
 //   node scripts/assistant-eval/run.js --phase base --n 3              # оба набора, по 3 ответа на вопрос
 //   node scripts/assistant-eval/run.js --set teacher --only g0,t1 --n 3 # часть набора учителя
@@ -8,12 +9,17 @@
 //
 // Флаги: --set teacher|luna|all; --only id-префиксы через запятую (или темы: grammar, check…); --lang ru|kk|en; --n ответов на вопрос;
 // --conc параллельных запросов (6); --effort medium — опыт: Haiku 5.5 с мышлением вместо параметров роута; --fresh — заново, а не дописывать; --rejudge — те же ответы, новый судья
+// Модель ответа выбирает тот же код, что и роут (src/lib/assistant/model.js): вопрос учителю — ASSISTANT_TEACHER_MODEL,
+// остальное — ASSISTANT_MODEL. --teacher-model <id> и --teacher-effort low|medium|high подменяют их env на прогон
+// (--teacher-model claude-haiku-5-5 — прежний роут, всё на Haiku); --model-all <id> — одна модель на все ответы, мимо
+// выбора роута (так меряют вопросы, которые признак учителя не ловит). В строке ответа — model, firstMs (первые слова:
+// как отметка model в Server-Timing роута), ms и usd ответа; в сводке — p50/p90 и цена по моделям.
 // (чтобы «до» и «после» судил один судья); --repo — чей промпт гонять (по умолчанию этот репозиторий; так меряют
 // базу: --repo <worktree develop>); --env — файл с ANTHROPIC_API_KEY (по умолчанию .env.local этой копии, потом
 // основной). Ответы — build/assistant-eval/<phase>.jsonl (build/ в .gitignore), сводка — <phase>.summary.md.
 //
-// Стоит денег (замер 07.11.2026: ~0,8 цента за ответ с судейством, 140 вопросов × 3 ≈ 3,5 $): сначала маленький
-// прогон (--only … --n 3), потом полный.
+// Стоит денег: на Haiku ~0,8 цента за ответ с судейством (07.11.2026), на Sonnet ~2,2 цента при тёплом кэше
+// (08.11.2026) — набор учителя по 2 ответа на вопрос ≈ 6 $. Сначала маленький прогон (--only … --n 3), потом полный.
 //
 // «Верно» в наборе учителя — по сути (ключевые пункты, нет ошибок в английском) и на языке вопроса, без «вы»/«сіз» и
 // выдуманной почты. Шаблон ответа (правило → форма → примеры → ошибка → вопрос) и род считаются отдельно: цель ТЗ
@@ -63,6 +69,9 @@ for (const file of envFiles) {
   }
 }
 if (!process.env.ANTHROPIC_API_KEY) throw new Error('нет ANTHROPIC_API_KEY (ни в окружении, ни в .env.local)')
+// Модель учителя на прогон — через env, который читает model.js сайта: прогон выбирает модель тем же кодом, что роут.
+if (args['teacher-model']) process.env.ASSISTANT_TEACHER_MODEL = String(args['teacher-model'])
+if (args['teacher-effort']) process.env.ASSISTANT_TEACHER_EFFORT = String(args['teacher-effort'])
 
 // Модули сайта — динамически и после ключа: anthropic.js создаёт клиента из окружения.
 const imp = (p) => import(pathToFileURL(path.join(REPO, p)).href)
@@ -78,34 +87,31 @@ const events = existsSync(path.join(REPO, 'src/lib/assistant/events.js')) ? awai
 // Ступени подсказки (этап 4) — у репозитория без них кейсы HINT_* не гоняются.
 const hintSteps = existsSync(path.join(REPO, 'src/lib/assistant/hintSteps.js')) ? await imp('src/lib/assistant/hintSteps.js') : null
 const { knowledgeText } = await import(pathToFileURL(path.join(ROOT, 'src/lib/assistant/knowledge.js')).href)
+// Выбор модели роута (model.js). У базы без модуля — прежний роут: всё на Haiku 5.5.
+const HAIKU = 'claude-haiku-5-5'
+const modelPick = existsSync(path.join(REPO, 'src/lib/assistant/model.js'))
+  ? (await imp('src/lib/assistant/model.js')).pickAssistantModel
+  : () => ({ model: HAIKU, teacher: false })
 const Anthropic = (await import('@anthropic-ai/sdk')).default
 const judgeClient = new Anthropic()
 
-const MODEL = 'claude-haiku-5-5' // ASSISTANT_MODEL роута по умолчанию (решение владельца 07.11.2026)
 const JUDGE = 'claude-sonnet-5-5'
 const MAX_OUTPUT_TOKENS = 800 // как в src/app/api/assistant/chat/route.js
+const MODEL_ALL = args['model-all'] ? String(args['model-all']) : null
 
-// Сколько стоил прогон: anthropic.js пишет строку llm_cost на каждый вызов модели — её считаем и в вывод не пускаем
-// (она заслоняла сводку), судью считаем по usage ответа. Цены — $ за миллион токенов (07.11.2026); запись в кэш ×1,25,
-// чтение ×0,1.
-const PRICE = { [MODEL]: [0.1, 0.5], [JUDGE]: [2, 10] }
-const spend = { [MODEL]: 0, [JUDGE]: 0 }
-function addSpend(model, u) {
-  const [inp, out] = PRICE[model]
-  spend[model] += ((u.inputTokens || 0) * inp + (u.cacheWriteTokens || 0) * inp * 1.25 + (u.cacheReadTokens || 0) * inp * 0.1 + (u.outputTokens || 0) * out) / 1e6
+// Сколько стоил прогон: цена ответа — по его usage (событие done из chatStreamRich), судьи — по usage судьи. Строку
+// llm_cost, которую anthropic.js пишет на каждый вызов, в вывод не пускаем: она заслоняла сводку. Цены — $ за миллион
+// токенов (08.11.2026, Haiku — до 100K токенов промпта); запись в кэш ×1,25, чтение ×0,1.
+const PRICE = { [HAIKU]: [0.1, 0.5], 'claude-sonnet-5-5': [2, 10] }
+const costOf = (model, u) => {
+  const [inp, out] = PRICE[model] || [NaN, NaN]
+  return ((u.input_tokens || 0) * inp + (u.cache_creation_input_tokens || 0) * inp * 1.25 + (u.cache_read_input_tokens || 0) * inp * 0.1 + (u.output_tokens || 0) * out) / 1e6
 }
+const spend = { answers: 0, judge: 0 }
 for (const level of ['log', 'info']) {
   const original = console[level].bind(console)
   console[level] = (...a) => {
-    if (typeof a[0] === 'string' && a[0].startsWith('{"kind":"llm_cost"')) {
-      try {
-        const u = JSON.parse(a[0])
-        if (PRICE[u.model]) addSpend(u.model, u)
-      } catch {
-        // строка не того вида — не наша забота
-      }
-      return
-    }
+    if (typeof a[0] === 'string' && a[0].startsWith('{"kind":"llm_cost"')) return
     original(...a)
   }
 }
@@ -163,23 +169,39 @@ async function ask(job) {
   // --effort medium|high — опыт, а не роут: та же Haiku 5.5 и тот же промпт, но с мышлением (adaptive). Роут держит
   // мышление выключенным ради скорости голоса, и решение менять это — за владельцем; замер показывает цену и выигрыш.
   if (args.effort) {
+    const t0 = Date.now()
     const res = await judgeClient.messages.create({
-      model: MODEL,
+      model: HAIKU,
       max_tokens: 6000,
       thinking: { type: 'adaptive' },
       output_config: { effort: String(args.effort) },
       system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
       messages: turns,
     })
-    const u = res.usage || {}
-    addSpend(MODEL, { inputTokens: u.input_tokens, outputTokens: u.output_tokens, cacheReadTokens: u.cache_read_input_tokens, cacheWriteTokens: u.cache_creation_input_tokens })
-    return res.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
+    return { raw: res.content.filter((b) => b.type === 'text').map((b) => b.text).join(''), model: HAIKU, firstMs: null, ms: Date.now() - t0, usd: costOf(HAIKU, res.usage || {}) }
   }
+  // Модель — как в роуте: служебный ход (открытие окна, «Подсказать?», ступень, событие) — не вопрос ученика.
+  const c = job.src
+  const service = Boolean(c.ask || c.event)
+  const pick = MODEL_ALL
+    ? { model: MODEL_ALL, effort: MODEL_ALL === HAIKU ? undefined : process.env.ASSISTANT_TEACHER_EFFORT || 'low' }
+    : modelPick({ question: job.content, unchecked: !service && prompt.openingFocus(job.screen.text).unchecked, service })
   let raw = ''
-  for await (const ev of chatStreamRich({ systemPrompt, messages: turns, model: MODEL, maxOutputTokens: MAX_OUTPUT_TOKENS, task: 'assistant_eval' })) {
-    if (ev.type === 'text') raw += ev.text
+  let firstMs = null
+  let usage = null
+  const t0 = Date.now()
+  for await (const ev of chatStreamRich({ systemPrompt, messages: turns, model: pick.model, maxOutputTokens: MAX_OUTPUT_TOKENS, task: 'assistant_eval', ...(pick.effort ? { effort: pick.effort } : {}) })) {
+    if (ev.type === 'text') {
+      raw += ev.text
+      // Первые слова — как отметка model в Server-Timing роута: пока не ясно, метка «не по теме» это или ответ.
+      if (firstMs == null && prompt.classifyStart(raw) !== 'undecided') firstMs = Date.now() - t0
+    }
+    if (ev.type === 'done') usage = ev.usage
   }
-  return raw
+  if (firstMs == null) firstMs = Date.now() - t0
+  // usage — коротко: сколько прочитано из кэша и записано в него (промах кэша у Sonnet стоит ~8 ¢ на ответ)
+  const u = usage ? { in: usage.input_tokens, cr: usage.cache_read_input_tokens, cw: usage.cache_creation_input_tokens, out: usage.output_tokens } : null
+  return { raw, model: pick.model, firstMs, ms: Date.now() - t0, usd: usage ? costOf(pick.model, usage) : null, usage: u }
 }
 
 // То, что увидит ученик: метки действий вырезает тот же фильтр, что и в окне; хвост отчёта о поломке — тоже;
@@ -282,8 +304,7 @@ async function judgeCall(system, kb, user) {
         system: [{ type: 'text', text: system }, ...(kb ? [{ type: 'text', text: kb, cache_control: { type: 'ephemeral' } }] : [])],
         messages: [{ role: 'user', content: user }],
       })
-      const u = res.usage || {}
-      addSpend(JUDGE, { inputTokens: u.input_tokens, outputTokens: u.output_tokens, cacheReadTokens: u.cache_read_input_tokens, cacheWriteTokens: u.cache_creation_input_tokens })
+      spend.judge += costOf(JUDGE, res.usage || {})
       const text = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
       const parsed = firstJson(text)
       if (parsed) return parsed
@@ -354,12 +375,14 @@ if (args.rejudge) {
 const todo = jobsOf.flatMap((job) => Array.from({ length: N }, (_, i) => ({ job, i }))).filter(({ job, i }) => !have.has(keyOf(job.set, job.id, i)))
 await pool(todo, async ({ job, i }) => {
   let raw = ''
-  let ms = null // время ответа модели целиком — для сравнения с --effort
+  // model — чем ответили; firstMs — первые слова, ms — ответ целиком (и для сравнения с --effort); usd — цена ответа
+  let meta = { model: null, firstMs: null, ms: null, usd: null, usage: null }
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const t0 = Date.now()
-      raw = await ask(job)
-      ms = Date.now() - t0
+      const { raw: text, ...m } = await ask(job)
+      raw = text
+      meta = m
+      if (m.usd != null) spend.answers += m.usd
       break
     } catch (err) {
       raw = `__ERROR__ ${err.message}`
@@ -369,7 +392,7 @@ await pool(todo, async ({ job, i }) => {
   const visible = visibleOf(job, raw)
   const det = raw.startsWith('__ERROR__') ? ['ошибка модели'] : detChecks(job, raw, visible)
   const j = raw.startsWith('__ERROR__') ? { correct: false, pass: false, why: raw } : await judge(job, visible, raw)
-  rows.push({ set: job.set, id: job.id, i, topic: job.topic, lang: job.answer, ms, raw, visible, det, judge: j, ok: okOf(job, det, j) })
+  rows.push({ set: job.set, id: job.id, i, topic: job.topic, lang: job.answer, ...meta, raw, visible, det, judge: j, ok: okOf(job, det, j) })
   save()
   process.stdout.write(rows[rows.length - 1].ok ? '.' : 'x')
 })
@@ -377,7 +400,7 @@ console.log('\n')
 
 const summary = summarize(rows.filter((r) => byKey.has(`${r.set}:${r.id}`)), PHASE)
 console.log(summary)
-console.log(`\nСтоимость этого запуска: модель $${spend[MODEL].toFixed(3)}, судья $${spend[JUDGE].toFixed(3)} (${todo.length} новых ответов)`)
+console.log(`\nСтоимость этого запуска: ответы $${spend.answers.toFixed(3)}, судья $${spend.judge.toFixed(3)} (${todo.length} новых ответов)`)
 writeFileSync(path.join(OUT, `${PHASE}.summary.md`), summary + '\n')
 
 // ----------------------------------------------------------------------------------- сводка
@@ -386,7 +409,22 @@ function pct(a, b) {
 }
 
 function summarize(list, phase) {
-  const lines = [`# Прогон «${phase}» — модель ${MODEL}, судья ${JUDGE}, ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, '']
+  const models = [...new Set(list.map((r) => r.model || HAIKU))]
+  const lines = [`# Прогон «${phase}» — модели ${models.join(', ')}, судья ${JUDGE}, ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, '']
+  // Скорость и цена по моделям: первые слова (как отметка model в Server-Timing роута) и ответ целиком.
+  const q = (xs, p) => {
+    const s = xs.filter((x) => Number.isFinite(x)).sort((a, b) => a - b)
+    return s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : NaN
+  }
+  lines.push('| Модель | Ответов | Первые слова p50 / p90, мс | Ответ целиком p50 / p90, мс | Цена ответа, ¢ (среднее) |', '|---|---|---|---|---|')
+  for (const m of models) {
+    const x = list.filter((r) => (r.model || HAIKU) === m)
+    const first = x.map((r) => r.firstMs)
+    const all = x.map((r) => r.ms)
+    const usd = x.map((r) => r.usd).filter((v) => Number.isFinite(v))
+    lines.push(`| ${m} | ${x.length} | ${q(first, 0.5)} / ${q(first, 0.9)} | ${q(all, 0.5)} / ${q(all, 0.9)} | ${usd.length ? ((100 * usd.reduce((a, b) => a + b, 0)) / usd.length).toFixed(2) : '—'} |`)
+  }
+  lines.push('')
   const teacher = list.filter((r) => r.set === 'teacher')
   if (teacher.length) {
     const ok = teacher.filter((r) => r.ok).length
