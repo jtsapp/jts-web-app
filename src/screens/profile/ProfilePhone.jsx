@@ -75,6 +75,9 @@ export default function ProfilePhone(p) {
           <Row ico="edit" tone="violet" title={t('profile.editProfile')} onClick={openEdit} />
           <Row ico="language" tone="blue" title={t('profile.language')} sub={p.langLabel} onClick={() => go('lang')} />
           <Row ico="palette" tone="pink" title={t('profile.customization')} onClick={() => setSheet('custom')} />
+          {p.luna?.visible && (
+            <Row ico="chat_bubble" tone="violet" title={t('profile.luna')} sub={t(`profile.luna.${p.luna.level}`)} onClick={() => go('luna')} />
+          )}
           {p.notif.visible && (
             <Row ico="notifications" tone="violet" title={t('profile.notifications')} sub={p.notif.enabled ? t('profile.notifOn') : t('profile.notifOff')} onClick={() => { p.notif.open(); setSheet('notif') }} />
           )}
@@ -166,6 +169,26 @@ export default function ProfilePhone(p) {
             </button>
           ))}
         </Card>
+      </Screen>
+    )
+  } else if (view === 'luna') {
+    // «Подсказки Луны» (ТЗ v2.0, 7.4): тот же выбор, что окном на компьютере, — экраном, как язык.
+    body = (
+      <Screen title={t('profile.luna')} onBack={back}>
+        <Card>
+          {['often', 'sometimes', 'manual'].map((v) => (
+            <button key={v} type="button" role="radio" aria-checked={v === p.luna?.level} className={`pfm-lang ${v === p.luna?.level ? 'is-on' : ''}`} data-luna={v} onClick={() => p.luna?.choose(v)}>
+              <span>
+                {t(`profile.luna.${v}`)}
+                <small className="pfm-luna__note">{t(`profile.luna.note.${v}`)}</small>
+              </span>
+              <span className="pfm-radio" aria-hidden="true">
+                {v === p.luna?.level && <MaskIcon name="check" />}
+              </span>
+            </button>
+          ))}
+        </Card>
+        <p className="pfm-luna__device">{t('profile.luna.device')}</p>
       </Screen>
     )
   } else if (view === 'delete') {

@@ -6210,6 +6210,15 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
 .pf-lang--active svg:last-child {
   color: #9047ff;
 }
+/* «Подсказки Луны» (окно Профиля): под названием выбора — что он значит. */
+.pf-luna__note {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--muted, #8b8a97);
+}
 
 /* Тост */
 .pf-toast {

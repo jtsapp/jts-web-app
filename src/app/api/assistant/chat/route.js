@@ -29,6 +29,7 @@ import {
   openingFocus,
   stuckReason,
   parseChatRequest,
+  parseEventMark,
 } from '@/lib/assistant/prompt.js'
 import { createOfftopicGuard, createRateLimiter } from '@/lib/assistant/rateLimit.js'
 import { loadStudentContext } from '@/lib/assistant/studentContext.js'
@@ -119,6 +120,9 @@ export async function POST(request) {
   // задание, раздел не предлагает. Строка лога — сколько раз облачко нажимали, без текста.
   const stuck = stuckReason(parsed.messages[parsed.messages.length - 1].content)
   if (stuck) console.info('[assistant]', JSON.stringify({ kind: 'stuck', reason: stuck }))
+  // Событие трекера («Луна пишет первой», lib/assistant/events.js): строка лога — сколько каких событий, без текста.
+  const event = parseEventMark(parsed.messages[parsed.messages.length - 1].content)
+  if (event) console.info('[assistant]', JSON.stringify({ kind: 'event', type: event.type }))
   const studentTurns = parsed.messages.filter((m) => !(m.role === 'user' && isOpeningTurn(m.content)))
   const lastText = parsed.messages[parsed.messages.length - 1].content
   const pause = offtopic.blockedFor(key)
@@ -250,6 +254,13 @@ export async function POST(request) {
   const finalAction = async () => {
     if (focusTask || wake || stuck) return null
     const action = actions.action()
+    // Ответ на событие: кнопки ставит окно по таблице событий (events.js) — перерыв, «мало времени», «На сегодня всё»
+    // модели не доверяем, даже если указание она пропустила. Остаётся только её предложение открыть раздел: оно нужно,
+    // когда плана по дням нет и окну нечего поставить на «Начать».
+    if (event) {
+      if (action && (action.kind !== 'open' || action.feedback || action.item)) return null
+      return action ? { ...action, now: false } : inferAdviceOffer(shown, studentContext)
+    }
     if (action?.kind === 'click') {
       return !opening && clickAllowed(action.label, { screenText: parsed.screen.text, userText: lastText }) ? action : null
     }

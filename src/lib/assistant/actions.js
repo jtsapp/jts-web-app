@@ -13,6 +13,10 @@
 //   [[REPLAN 20]] / [[REPLAN_NOW 20]] — «У меня мало времени»: пересобрать сегодняшний план
 //   под 20 минут (ТЗ v2.0, 5.2; 0 — вернуть обычный план). Делает окно ручкой бэкенда,
 //   итог пишет само по ответу сервера (ge/plan/replan.js): модель новый день не видит.
+//   [[BREAK 10]] / [[BREAK_NOW 5]] — перерыв: таймер у кнопки Луны на 5, 10 или 15 минут (ТЗ v2.0, 7.4; решение владельца 2),
+//   работает, пока сайт открыт; по концу Луна сама пишет следующий шаг (событие break_over, events.js). Делает окно.
+//   [[STOP_DAY]] / [[STOP_DAY_NOW]] — «На сегодня всё»: бэкенд засчитывает сделанное, оставшиеся свои задачи дня переносит
+//   на следующий учебный день (lib/assistant/stopDay.js); итог пишет окно по ответу сервера, как у REPLAN.
 //   [[CLICK 7]] / [[CLICK_NOW 7]] — нажать кнопку экрана с номером 7 из снимка
 //   (screenSnapshot.snapshotWithRefs; 21.10.2026). Номер сверяется со снимком этого
 //   же запроса, подпись берётся оттуда — окно по ней проверит, что жмёт ту же кнопку.
@@ -81,6 +85,20 @@ function replanAction(minutes, now) {
   return { kind: 'replan', target: 'plan', minutes: n, now: Boolean(now) }
 }
 
+// Перерыв: минуты числом, только из белого списка — таймер на экране, а не «перерыв на час».
+const BREAK_MARK = /^\[\[BREAK(_NOW)?\s*:?\s*(\d{1,3})\s*(?:мин\S*|min\S*)?\s*\]\]$/i
+const BREAK_TAIL = /\[\[ASST_ACTION break (\d{1,2}) (now|offer)\]\]/
+export const BREAK_MINUTES = [5, 10, 15]
+
+export function breakAction(minutes, now) {
+  const n = Number(minutes)
+  return BREAK_MINUTES.includes(n) ? { kind: 'break', target: 'timer', minutes: n, now: Boolean(now) } : null
+}
+
+const STOP_MARK = /^\[\[STOP_DAY(_NOW)?\s*\]\]$/i
+const STOP_TAIL = /\[\[ASST_ACTION stop (now|offer)\]\]/
+export const stopAction = (now) => ({ kind: 'stop', target: 'plan', now: Boolean(now) })
+
 export const SERVICE_PREFIX = '[[ASST_'
 const ACTION_TAIL = /\[\[ASST_ACTION (open|click) ([A-Za-z0-9_.-]+) (now|offer)(?: «([^«»[\]]{1,80})»)?\]\]/
 
@@ -116,7 +134,23 @@ export function actionMarker(action) {
     return `[[FEEDBACK${action.now ? '_NOW' : ''} ${category}${draft ? ` | ${draft}` : ''}]]`
   }
   if (action.kind === 'replan') return `[[REPLAN${action.now ? '_NOW' : ''} ${action.minutes}]]`
+  if (action.kind === 'break') return `[[BREAK${action.now ? '_NOW' : ''} ${action.minutes}]]`
+  if (action.kind === 'stop') return `[[STOP_DAY${action.now ? '_NOW' : ''}]]`
+  // Шаг плана (кнопка события, окно): в истории — раздел шага, чтобы «да» модель поняла как «открой его».
+  if (action.kind === 'step') return action.dest ? `[[OPEN ${action.dest}]]` : ''
+  // Остальные кнопки окна (закрыть, «мало времени», пробный урок) модели нечего повторять.
+  if (action.kind !== 'open' && action.kind !== 'click') return ''
   return `[[${action.kind.toUpperCase()}${action.now ? '_NOW' : ''} ${action.target}]]`
+}
+
+/**
+ * Метки всех кнопок ответа — для истории разговора (AssistantWidget): у ответа на событие их до трёх (Начать,
+ * Перерыв 10 мин, На сегодня всё), и на «давай перерыв» модель должна видеть, что перерыв предлагался. Модель сама
+ * ставит одну метку (RULES), лишние в её ответе роут вырезает — история с тремя метками ей не вредит.
+ */
+export function messageMarkers(m) {
+  const list = m?.actions?.length ? m.actions : m?.action ? [m.action] : []
+  return list.map(actionMarker).filter(Boolean).join('\n')
 }
 
 /** Служебный хвост стрима с действием. */
@@ -128,6 +162,8 @@ export function actionTail(action) {
     return `[[ASST_ACTION feedback ${action.feedback.category} ${mode}${draft}]]`
   }
   if (action.kind === 'replan') return `[[ASST_ACTION replan ${action.minutes} ${mode}]]`
+  if (action.kind === 'break') return `[[ASST_ACTION break ${action.minutes} ${mode}]]`
+  if (action.kind === 'stop') return `[[ASST_ACTION stop ${mode}]]`
   return action.kind === 'click' || action.label
     ? `[[ASST_ACTION ${action.kind} ${action.target} ${mode} «${tailLabel(action.label)}»]]`
     : `[[ASST_ACTION ${action.kind} ${action.target} ${mode}]]`
@@ -187,6 +223,16 @@ export function createActionFilter({ screenText = '', items = null } = {}) {
           if (!action) action = replanAction(rp[2], Boolean(rp[1]))
           continue
         }
+        const br = BREAK_MARK.exec(mark)
+        if (br) {
+          if (!action) action = breakAction(br[2], Boolean(br[1]))
+          continue
+        }
+        const st = STOP_MARK.exec(mark)
+        if (st) {
+          if (!action) action = stopAction(Boolean(st[1]))
+          continue
+        }
         const m = MODEL_MARK.exec(mark)
         if (!m) {
           out += mark
@@ -240,6 +286,10 @@ export function createServiceTailFilter() {
       }
       const rp = REPLAN_TAIL.exec(tail())
       if (rp) return replanAction(rp[1], rp[2] === 'now')
+      const br = BREAK_TAIL.exec(tail())
+      if (br) return breakAction(br[1], br[2] === 'now')
+      const st = STOP_TAIL.exec(tail())
+      if (st) return stopAction(st[1] === 'now')
       const m = ACTION_TAIL.exec(tail())
       if (!m) return null
       if (m[1] === 'click') return m[4] ? { kind: 'click', target: m[2], label: m[4], now: m[3] === 'now' } : null

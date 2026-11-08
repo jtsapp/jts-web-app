@@ -545,3 +545,9 @@ html[data-theme="dark"] .tb-legend__item--gold i {
 html[data-theme="dark"] .scr-load--page {
   background: var(--dk-page);
 }
+/* «Подсказки Луны» в Профиле (ТЗ v2.0, 7.4): пояснения выбора — вторичным текстом. */
+html[data-theme="dark"] .pf-luna__note,
+html[data-theme="dark"] .pfm-luna__note,
+html[data-theme="dark"] .pfm-luna__device {
+  color: var(--dk-text-2);
+}

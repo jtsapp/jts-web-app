@@ -793,6 +793,14 @@ export async function replanGeDay(token, minutes) {
   return gePlanShape(await authPost('/mobile/ge/plan/replan', token, { minutes: minutes || null }))
 }
 
+/**
+ * «На сегодня всё» (ТЗ v2.0, 7.2 day_stopped): сделанное засчитывается, оставшиеся свои задачи дня — на следующий учебный
+ * день. Ответ — план, как у getGePlan, плюс stop { done, moved } (backend docs/ge/PLAN.md). Вернуть день — replanGeDay(null).
+ */
+export async function stopGeDay(token) {
+  return gePlanShape(await authPost('/mobile/ge/plan/stop-day', token, {}))
+}
+
 // Работа ученика в самостоятельном уроке: ответы, проверенные карточки и
 // последний открытый шаг. Отдельной ручкой, а не полем дерева: дерево читается
 // на открытие раздела целиком, и таскать в нём работу по всем урокам ради

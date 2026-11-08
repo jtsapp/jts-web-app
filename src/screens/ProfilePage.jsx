@@ -26,6 +26,7 @@ import { useMediaQuery, MOBILE_QUERY } from '../lib/useMediaQuery.js'
 import ProfileBlocks, { NotificationChannels } from '../matching/ProfileBlocks.jsx'
 import { AXIS_TUTOR_KEYS, temperFor } from '../tutor/tutors.js'
 import ProfilePhone from './profile/ProfilePhone.jsx'
+import { PROACTIVE_LEVELS, useProactiveLevel, writeProactiveLevel } from '../lib/assistant/proactiveSetting.js'
 import DeleteAccount from './profile/DeleteAccount.jsx'
 import { useAccountDeletion } from './profile/useAccountDeletion.js'
 
@@ -141,6 +142,9 @@ export default function ProfilePage({
 
   // Модалки
   const [langOpen, setLangOpen] = useState(false)
+  // «Подсказки Луны: часто / иногда / только по запросу» (ТЗ v2.0, 7.4) — настройка устройства (proactiveSetting.js).
+  const [lunaOpen, setLunaOpen] = useState(false)
+  const lunaLevel = useProactiveLevel()
   const [editOpen, setEditOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
@@ -393,6 +397,8 @@ export default function ProfilePage({
     { key: 'edit', icon: <PfEditIcon />, title: t('profile.editProfile'), onClick: openEdit },
     { key: 'lang', icon: <PfGlobeIcon />, title: t('profile.language'), trailing: langLabel, onClick: () => setLangOpen(true) },
     { key: 'custom', icon: <PfGiftIcon />, title: t('profile.customization'), onClick: () => setCustomOpen(true) },
+    // Луна — только у ученика: у преподавателя её окна нет (assistantAllowedOn).
+    ...(isTeacher(token) ? [] : [{ key: 'luna', icon: <PfLunaIcon />, title: t('profile.luna'), trailing: t(`profile.luna.${lunaLevel}`), onClick: () => setLunaOpen(true) }]),
   ]
 
   // «Служба поддержки» — страница «Контакты и реквизиты» (почта, телефон, WhatsApp школы). Раньше здесь было
@@ -483,6 +489,7 @@ export default function ProfilePage({
           onPickPhoto={() => fileRef.current?.click()}
           edit={{ form, setForm, saving, error: editErr, open: openEdit, save: saveProfile }}
           langLabel={langLabel}
+          luna={{ visible: !isTeacher(token), level: lunaLevel, choose: writeProactiveLevel }}
           notif={{
             visible: isTeacher(token) || !isStudentSectionHidden('notifications'),
             enabled: notifEnabled,
@@ -686,6 +693,33 @@ export default function ProfilePage({
         </Modal>
       )}
 
+      {/* ── «Подсказки Луны» ── */}
+      {lunaOpen && (
+        <Modal onClose={() => setLunaOpen(false)} title={t('profile.luna')}>
+          {PROACTIVE_LEVELS.map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={v === lunaLevel}
+              className={`pf-lang ${v === lunaLevel ? 'pf-lang--active' : ''}`}
+              data-luna={v}
+              onClick={() => {
+                writeProactiveLevel(v)
+                setLunaOpen(false)
+              }}
+            >
+              <span>
+                {t(`profile.luna.${v}`)}
+                <small className="pf-luna__note">{t(`profile.luna.note.${v}`)}</small>
+              </span>
+              {v === lunaLevel && <PfCheckIcon />}
+            </button>
+          ))}
+          <small className="pf-field__note">{t('profile.luna.device')}</small>
+        </Modal>
+      )}
+
       {/* ── Модалка редактирования профиля ── */}
       {editOpen && (
         <Modal onClose={() => setEditOpen(false)} title={t('profile.editTitle')}>
@@ -862,6 +896,15 @@ function PfShareIcon() {
       <circle cx="6" cy="12" r="2.5" />
       <circle cx="18" cy="19" r="2.5" />
       <path d="M8.2 10.8 15.8 6.2M8.2 13.2l7.6 4.6" />
+    </svg>
+  )
+}
+// Облачко реплики — «Подсказки Луны».
+function PfLunaIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
+      <path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4 3v-3H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+      <path d="M8 10h8M8 13h5" />
     </svg>
   )
 }

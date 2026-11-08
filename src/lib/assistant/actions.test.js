@@ -255,3 +255,35 @@ describe('метка «мало времени»', () => {
     expect(f.action).toEqual(action)
   })
 })
+
+// ТЗ v2.0 (7.2, 7.4; решение владельца 2): перерыв и «На сегодня всё» — метками, со сверкой.
+describe('перерыв и «На сегодня всё»', () => {
+  it('[[BREAK N]] — только 5, 10 или 15 минут; «мин» после числа прощаем', () => {
+    expect(run('Отдохни.\n[[BREAK_NOW 10]]')).toEqual({ out: 'Отдохни.\n', action: { kind: 'break', target: 'timer', minutes: 10, now: true } })
+    expect(run('Отдохни.\n[[BREAK 5 мин]]').action).toMatchObject({ kind: 'break', minutes: 5, now: false })
+    expect(run('Отдохни.\n[[BREAK 60]]')).toEqual({ out: 'Отдохни.\n', action: null })
+  })
+
+  it('[[STOP_DAY]] / [[STOP_DAY_NOW]]', () => {
+    expect(run('Хорошо, до завтра.\n[[STOP_DAY_NOW]]').action).toEqual({ kind: 'stop', target: 'plan', now: true })
+    expect(run('Закончим?\n[[STOP_DAY]]').action).toEqual({ kind: 'stop', target: 'plan', now: false })
+  })
+
+  it('хвост стрима туда и обратно; метка — для истории', () => {
+    for (const action of [{ kind: 'break', target: 'timer', minutes: 15, now: false }, { kind: 'stop', target: 'plan', now: true }]) {
+      const f = createServiceTailFilter()
+      const shown = f.push('Ответ.' + actionTail(action)) + f.flush()
+      expect(shown).toBe('Ответ.')
+      expect(f.action).toEqual(action)
+    }
+    expect(actionMarker({ kind: 'break', minutes: 10, now: true })).toBe('[[BREAK_NOW 10]]')
+    expect(actionMarker({ kind: 'stop', now: false })).toBe('[[STOP_DAY]]')
+  })
+
+  it('кнопки окна без метки модели в историю не пишутся', () => {
+    expect(actionMarker({ kind: 'dismiss', target: 'look' })).toBe('')
+    expect(actionMarker({ kind: 'lowtime', target: 'plan' })).toBe('')
+    expect(actionMarker({ kind: 'trial', target: 'trial' })).toBe('')
+    expect(actionMarker({ kind: 'step', dest: 'tutor' })).toBe('[[OPEN tutor]]')
+  })
+})
