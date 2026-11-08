@@ -4,14 +4,20 @@
 //
 // Ключи вкладок прежние: на них стоят сессия, «назад» (navStack), переходы Луны и плитки «Главной». Пятая вкладка
 // так и осталась `grammarGames`, хотя называется теперь «Грамматика»: кроме тем, в ней собраны игры из других
-// вкладок и «Скорочтение» (карта переноса макета, 7404:4427). Подпись под ней — `sub`, а не «N тренажёров».
+// вкладок (карта переноса макета, 7404:4427). Подпись под ней — `sub`, а не «N тренажёров».
+//
+// «Скорочтение» макет тоже унёс в «Грамматику», но 08.11.2026 его вернули в «Аудирование» — сразу после
+// Just to Listen, где его ставила спека раздела (Д5): читать вслух вслед за диктором — работа на слух.
 //
 // Сказки — последняя карточка везде, где они есть (решение владельца 27.09.2026); макет это соблюдает.
 
 import { cardOf } from './practiceCatalog.js'
 
 export const SKILLS = [
-  { key: 'listening', groups: [{ cards: ['listenchoose', 'justListen', 'cartoons', 'shadowing', 'karaoke', 'memes', 'tales'] }] },
+  {
+    key: 'listening',
+    groups: [{ cards: ['listenchoose', 'justListen', 'speedReading', 'cartoons', 'shadowing', 'karaoke', 'memes', 'tales'] }],
+  },
   { key: 'reading', groups: [{ cards: ['reading', 'books', 'comics', 'tales'] }] },
   { key: 'writing', groups: [{ cards: ['grammar', 'prepositions', 'writing', 'verbs', 'workbooks'] }] },
   { key: 'speaking', groups: [{ cards: ['pronunciation', 'situations', 'speakspin', 'shadowing', 'karaoke', 'tales'] }] },
@@ -19,7 +25,7 @@ export const SKILLS = [
     key: 'grammarGames',
     sub: 'practice.skillSub.grammarGames',
     groups: [
-      { title: 'practice.group.trainers', cards: ['topics', 'speedReading'] },
+      { title: 'practice.group.trainers', cards: ['topics'] },
       {
         title: 'practice.group.games',
         sub: 'practice.group.gamesSub',
