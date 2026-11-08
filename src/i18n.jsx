@@ -4508,6 +4508,7 @@ const dict = {
     'gePlan.why.media_practice': "Текст уровня {level} показывает новые слова в живом контексте",
     'gePlan.why.vocabulary_sr': "Повторение вовремя не даёт словам забыться",
     'gePlan.why.weak': "{skill} у тебя сейчас слабее остальных навыков ({pct}%), и это задание тренирует именно его",
+    'gePlan.why.focus': "{skill} у тебя сейчас слабее остальных навыков, поэтому в плане на неделю на него больше времени",
     'gePlan.opens': "Откроется: {path}",
     'gePlan.open.unit': "Юнит {n}",
     'gePlan.open.workbook': "Воркбук {level}",

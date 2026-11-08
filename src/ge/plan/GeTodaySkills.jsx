@@ -20,9 +20,9 @@ const PLATE = {
   vocab: 'vocabulary_sr',
 }
 
-export default function GeTodaySkills({ tasks, renderRow }) {
+export default function GeTodaySkills({ tasks, renderRow, focus = null }) {
   const { t, lang } = useI18n()
-  const groups = groupBySkill(tasks)
+  const groups = groupBySkill(tasks, focus)
   const [openSkill, setOpenSkill] = useState(null)
   const open = groups.find((g) => g.skill === openSkill) || null
   return (

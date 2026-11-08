@@ -118,3 +118,17 @@ describe('targetPath — строка «Откроется»', () => {
     expect(targetPath(t, null)).toBe('')
   })
 })
+
+describe('фокус плана — «Стоит подтянуть» (кейс 20)', () => {
+  it('слабое аудирование: медиа ведёт во вкладку «Аудирование», а не в текст «Чтения»', async () => {
+    const reading = vi.fn(async () => ({ id: 'a2-x', title: 'X', started: false }))
+    const loaders = { workbook: vi.fn(), shadowing: vi.fn(), reading }
+    const out = await materialTargets([prac('media_practice')], { level: 'A2', loaders, focus: { skill: 'listening', module: 'media_practice' } })
+    expect(out.media_practice).toEqual({ section: 'listening', to: 'practice', payload: { skill: 'listening' } })
+    expect(reading).not.toHaveBeenCalled()
+    expect(targetPath(t, out.media_practice)).toBe('nav.practice → gePlan.skill.listening')
+    // другой фокус — текст, как раньше
+    const plain = await materialTargets([prac('media_practice')], { level: 'A2', loaders, focus: { skill: 'vocab', module: 'vocabulary_sr' } })
+    expect(plain.media_practice.section).toBe('reading')
+  })
+})

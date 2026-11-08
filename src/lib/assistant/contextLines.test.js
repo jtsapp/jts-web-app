@@ -72,6 +72,12 @@ describe('gePlanToday', () => {
   // shortDay и stopDay: null — план нового бэкенда (с «мало времени» и «На сегодня всё»), как на стенде
   const plan = (tasks) => ({ state: 'ready', today: '2026-11-07', shortDay: null, stopDay: null, tasks })
 
+  it('фокус плана — строкой «Стоит подтянуть» (кейс 20)', () => {
+    const r = gePlanToday({ ...plan([{ id: 'v', date: '2026-11-07', kind: 'practice', module: 'media_practice', status: 'available', minutes: 15 }]), focus: { skill: 'listening', module: 'media_practice' } }, NOW)
+    expect(r.lines).toContain('Стоит подтянуть: аудирование — поэтому в плане недели больше практики («книги, тексты и аудио»).')
+    expect(gePlanToday(plan([{ id: 'v', date: '2026-11-07', kind: 'course', status: 'available', minutes: 30 }]), NOW).lines.join(' ')).not.toContain('Стоит подтянуть')
+  })
+
   it('план не собран — строк нет', () => {
     expect(gePlanToday(null, NOW)).toEqual({ lines: [], next: null })
     expect(gePlanToday({ state: 'building' }, NOW)).toEqual({ lines: [], next: null })

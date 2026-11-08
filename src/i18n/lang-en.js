@@ -4451,6 +4451,7 @@ const dict = {
     'gePlan.why.media_practice': "A {level} text shows new words in real context",
     'gePlan.why.vocabulary_sr': "Reviewing on time keeps words from fading",
     'gePlan.why.weak': "{skill} is your weakest skill right now ({pct}%), and this task trains exactly that",
+    'gePlan.why.focus': "{skill} is your weakest skill right now, so this week’s plan gives it more time",
     'gePlan.opens': "Opens: {path}",
     'gePlan.open.unit': "Unit {n}",
     'gePlan.open.workbook': "Workbook {level}",
