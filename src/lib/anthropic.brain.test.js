@@ -59,6 +59,23 @@ describe('chatStreamRich()', () => {
     expect(body.messages.at(-2).role).toBe('assistant')
   })
 
+  it('Sonnet 5.5 (учитель Луны): thinking:disabled ей — 400, поэтому between_tools и effort вызывающего', async () => {
+    let body = await run('claude-sonnet-5-5', [{ role: 'user', content: 'hello' }])
+    expect(body.thinking).toEqual({ type: 'between_tools' })
+    expect(body.output_config).toEqual({ effort: 'low' })
+    for await (const ev of chatStreamRich({ systemPrompt: 's', messages: TAIL, model: 'claude-sonnet-5-5', effort: 'medium' })) void ev
+    body = sdk.calls.at(-1)
+    expect(body.output_config).toEqual({ effort: 'medium' })
+    // префилла у неё тоже нет
+    expect(body.messages.at(-1).role).toBe('user')
+  })
+
+  it('done несёт usage — по нему прогон качества считает цену ответа', async () => {
+    const events = []
+    for await (const ev of chatStreamRich({ systemPrompt: 's', messages: [{ role: 'user', content: 'hello' }], model: 'claude-haiku-5-5' })) events.push(ev)
+    expect(events.at(-1)).toEqual({ type: 'done', stopReason: 'end_turn', usage: {} })
+  })
+
   it('Haiku 4.5: как раньше — префилл держится, effort не шлём (у 4.5 его нет)', async () => {
     const body = await run('claude-haiku-4-5', TAIL)
     expect(body.messages.at(-1).role).toBe('assistant')

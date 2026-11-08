@@ -95,6 +95,20 @@ export function addressHint(answerLang, gender = null) {
 }
 
 /**
+ * Вопрос учителю английского (шаблоны учителя ниже): проверка английского текста, перевод, правило или вопрос об
+ * английском, к которому нашлась справка школы. На непроверенном задании «проверь» и «объясни» — не разбор, а кнопка
+ * и подсказка. Тот же признак выбирает модель ответа (assistant/model.js): указания учителя и сильная модель — на
+ * одних и тех же вопросах.
+ * @param {string} question
+ * @param {{ unchecked?: boolean }} [opts]
+ */
+export function isTeacherQuestion(question, { unchecked = false } = {}) {
+  const q = String(question || '')
+  const textToCheck = CHECK_ASK.test(q) && latinWords(q) >= 3
+  return (textToCheck && !unchecked) || TRANSLATE_ASK.test(q) || (RULE_ASK.test(q) && !unchecked) || (isEnglishQuestion(q) && grammarRefFor(q) !== null)
+}
+
+/**
  * Указания под вопросом ученика: шаблоны учителя, жалоба, токены, план на сегодня, формат.
  * @param {{ question: string, studentContext?: string|null, unchecked?: boolean }} args
  *   unchecked — на экране непроверенное задание: «проверь» там — нажать «Проверить», а не разбор текста
@@ -171,7 +185,7 @@ export function questionHints({ question, studentContext = null, unchecked = fal
   }
   // Хвост ответа — упоминание ошибки из Speaking Buddy или «открыть раздел?» — модель писала по-русски и в казахском, и
   // в английском ответе: данные профиля русские (эталонный набор 08.11.2026: c12, t14, g30). Указание — на языке ответа.
-  const teacherAsk = (textToCheck && !unchecked) || TRANSLATE_ASK.test(q) || (RULE_ASK.test(q) && !unchecked) || (isEnglishQuestion(q) && grammarRefFor(q) !== null)
+  const teacherAsk = isTeacherQuestion(q, { unchecked })
   // Ошибку из звонков модель приплетала к вопросу о другом правиле («He don't like» к порядку слов, к can, к Passive —
   // эталонный набор 08.11.2026, c11, e15, e17, e20, g33): связь «то же правило» — только когда она правда та же.
   if (teacherAsk) {
