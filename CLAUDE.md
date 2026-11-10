@@ -969,6 +969,34 @@ npx vitest run src/practice/pronunciation/engine.test.js` сверяет все 
 `tests/pronunciation.spec.js` (`window.__PRON_FAST` ускоряет игру, `window.__PRON_E2E` открывает тесту api движка).
 Правки движка — только PR сайта: хэш движка бэкенд сверяет с `pronunciation.engine-sha`.
 
+**Tenses World в «Практике» — 12 времён, материал из админки (10.11.2026).** Спека (контракт трёх частей, вместе с
+Punctuation World) — `docs/superpowers/specs/2026-11-10-tenses-punctuation-world-design.md`. Карта времён (хаб),
+страница времени (видеоурок, правила `usage`, формулы, сигналы, ошибки, сравнения, итог, схема на линии времени),
+Formula Lab (собери предложение; «машина времени» — то же действие во всех 12 временах) и практика: пять этапов, 26
+наборов, 241 задание (choice / gap / rewrite / order / error / meaning / timeline / name / text). Источник правды —
+html-прототип методиста (64.7 МБ, двенадцать mp4 в base64; в репозитории его НЕТ): правки — в прототип и заливка
+целиком в web-admin «Практика и тесты» → Tenses World; банк практики там не литерал (конструкторы `C(…)`, `TW.ORDER`),
+поэтому бэкенд исполняет ТОЛЬКО блоки данных в песочнице Rhino и отдаёт `GET /mobile/tenses` — `{release, TW: {VIDEOS,
+GROUPS, ASPECTS, LOCAL_NAMES, ORDER, PRACTICE}, TENSES_DATA}` в форме прототипа, видео и постеры — ссылками MinIO
+(Bearer; 404 — «Раздел готовится»). Экран `?screen=tenses` (`src/screens/TensesPage.jsx`), карточка — вкладка
+«Грамматика», группа «Тренажёры», сразу после «Тем по уровням». Движок — `src/practice/tenses/engine.js`: пять блоков
+движка прототипа (языки, Formula Lab, схемы, практика, оболочка) и `TW.meta` из блока конфигурации почти дословно в
+Shadow DOM; отличия — в шапке файла (данные из бандла, роутер `HASH` без адреса страницы, `<video src>` по ссылке
+бакета — нет записи (`src: null`) — заглушка `videoErr`, `lang` и поиск `[data-tr]` на корне `.tws`, а не на
+`<html>`/document, логотипа нет). Язык перевода (en / kz / ru — коды прототипа) — `jts_tenses_lang` устройства, чистится
+при выходе. Звук «Listen» — Soniox британским голосом (`voice.js` — тот же код, что у Pronunciation World; запасной —
+голос устройства), смена экрана глушит. CSS (`styles.js`) ГЕНЕРИРУЕТ `scripts/tenses/extract-styles.js` — руками не
+править: гарнитуры — сайта через `--tw-font`, перевод на казахский (`lang="kk"` на корне) — Inter, ширина — по
+контейнеру `.tws` (`@container`, `cqw`). Прогресс — модуль синка `tenses` (ключ прототипа `jts-tenses-world`: `practice`
+— лучший счёт набора, `visited`, `last`; merge: пройденный набор остаётся, счёт — максимум, страницы объединяются,
+последнее время — устройства). Ответ на задание (кроме «Practise my mistakes») — `recordSkill('grammar')`; квот и
+домашки нет. Порт сверяется с оракулом прототипа (`scripts/tenses/make-fixture.js --html <прототип>` → копия
+`__fixtures__/prototype-mini.html`: все блоки данных и движка байт в байт, видео — одно mp4 1.3 КБ, постеры — один
+JPEG; `.gitattributes` держит LF; `extract-oracle.js` проходит её в jsdom: сравнение ответа, Formula Lab, экраны, все 26
+наборов): красный `engine.test.js` — чинить порт. `TENSES_ORACLE_FULL=1` сверяет все карточки заданий целиком (в
+файле — образцы и отпечатки), `TENSES_HTML=<прототип>` — полный файл (~15 с). E2E — `tests/tenses.spec.js`
+(`window.__TENSES_E2E` открывает тесту api движка). Правки движка — только PR сайта: хэш движка бэкенд сверяет с
+`tenses.engine-sha`; `TW.meta` лежит в блоке данных и хэшем не ловится.
 **Punctuation World в «Практике» — пунктуация A0–C2, материал из админки (10.11.2026).** Спека (вместе с Tenses
 World) — `docs/superpowers/specs/2026-11-10-tenses-punctuation-world-design.md`. 20 страниц на пяти островах; у страницы
 урок Learn (Look · Job · When · Why · How: «Hear the difference», «Fix it», реальный документ, «Don't confuse», UK/US) и

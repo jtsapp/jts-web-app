@@ -51,6 +51,7 @@ export const SCREEN_NAMES = {
   prepositions: 'Практика → Письмо → Prepositions World (курс предлогов)',
   pronunciation: 'Практика → Говорение → Pronunciation World (курс произношения и игра Echo Gates)',
   'grammar-games': 'Практика → Грамматика · игры (темы, правило и игры)',
+  tenses: 'Практика → Грамматика → Tenses World (12 времён: видеоурок, правила, Formula Lab, практика)',
   punctuation: 'Практика → Грамматика → Punctuation World (уроки пунктуации и игра-приключение)',
   workbook: 'Практика → Воркбуки',
   words: 'Практика → Слова в картинках',

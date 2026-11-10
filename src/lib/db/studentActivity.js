@@ -42,6 +42,7 @@ export const PRACTICE_AREA_BY_MODULE = {
   cartoons: 'cartoons',
   wordhunt: 'wordhunt',
   pronunciation: 'pronunciation',
+  tenses: 'tenses',
   punctuation: 'punctuation',
 }
 

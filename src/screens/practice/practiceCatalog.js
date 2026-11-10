@@ -41,6 +41,8 @@ export const CARDS = {
   // Грамматика: тренажёры. «Темы по уровням» — раздел «Грамматика · игры» своим экраном (125 тем, хаб движка
   // прототипа); вместо токенов на чипе — число тем.
   topics: { nav: 'grammar-games', module: 'grammarGames', chip: 'practice.card.topics.chip' },
+  // Tenses World — 12 времён своим экраном: материал с бэкенда, движок прототипа в тени.
+  tenses: { nav: 'tenses' },
   // Punctuation World — 20 страниц пунктуации и приключение; материал с бэкенда, без квоты.
   punctuation: { nav: 'punctuation' },
   speedReading: { nav: 'speed-reading', badge: 'new' },
