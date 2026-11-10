@@ -11,7 +11,7 @@ describe('practiceTabs', () => {
     expect(skillCards('reading')).toEqual(['reading', 'speedReading', 'books', 'comics', 'tales'])
     expect(skillCards('writing')).toEqual(['grammar', 'prepositions', 'writing', 'verbs', 'workbooks'])
     expect(skillCards('speaking')).toEqual(['pronunciation', 'situations', 'speakspin', 'shadowing', 'karaoke', 'tales'])
-    expect(skillCards('grammarGames')).toEqual(['topics', 'listening', 'words', 'numbers', 'wordhunt', 'speak', 'runner'])
+    expect(skillCards('grammarGames')).toEqual(['topics', 'punctuation', 'listening', 'words', 'numbers', 'wordhunt', 'speak', 'runner'])
     expect(skillCards('nope')).toEqual([])
   })
 
@@ -41,7 +41,7 @@ describe('practiceTabs', () => {
     expect(skillOfModule('grammar')).toBe('writing')
     expect(skillOfModule('listen')).toBe('listening')
     expect(skillOfModule('speedReading')).toBe('reading')
-    for (const m of ['words', 'listening', 'numbers', 'wordhunt', 'arcade', 'grammarGames'])
+    for (const m of ['words', 'listening', 'numbers', 'wordhunt', 'arcade', 'grammarGames', 'punctuation'])
       expect(skillOfModule(m), m).toBe('grammarGames')
     expect(skillOfModule('nope')).toBeNull()
   })
@@ -50,7 +50,7 @@ describe('practiceTabs', () => {
     const modules = [
       'grammar', 'writing', 'reading', 'words', 'verbs', 'listenchoose', 'listening', 'numbers', 'listen',
       'speedReading', 'cartoons', 'shadowing', 'situations', 'workbooks', 'tales', 'memes', 'books', 'comics',
-      'karaoke', 'wordhunt', 'arcade', 'prepositions', 'pronunciation', 'speakspin', 'grammarGames',
+      'karaoke', 'wordhunt', 'arcade', 'prepositions', 'pronunciation', 'punctuation', 'speakspin', 'grammarGames',
     ]
     for (const m of modules) expect(skillOfModule(m), m).toBeTruthy()
   })

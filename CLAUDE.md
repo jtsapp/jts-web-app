@@ -970,6 +970,37 @@ npx vitest run src/practice/pronunciation/engine.test.js` сверяет все 
 `tests/pronunciation.spec.js` (`window.__PRON_FAST` ускоряет игру, `window.__PRON_E2E` открывает тесту api движка).
 Правки движка — только PR сайта: хэш движка бэкенд сверяет с `pronunciation.engine-sha`.
 
+**Punctuation World в «Практике» — пунктуация A0–C2, материал из админки (10.11.2026).** Спека (вместе с Tenses
+World) — `docs/superpowers/specs/2026-11-10-tenses-punctuation-world-design.md`. 20 страниц на пяти островах; у страницы
+урок Learn (Look · Job · When · Why · How: «Hear the difference», «Fix it», реальный документ, «Don't confuse», UK/US) и
+Play — приключение Декстера в семь стадий по банку предложений (камни, ворота, плоты и MEANING, мост, ремонт табличек,
+три послания маяка; неверный знак поднимает Murmur, на пятом уровне — назад к началу стадии; звёзды — доля «с первого
+раза», ≥ 90 % — три). Источник правды — html-прототип методиста (2.7 МБ, в репозитории его НЕТ): правки — в прототип и
+заливка целиком в web-admin «Практика и тесты» → Punctuation World; бэкенд читает литералы `const ASSET/ART/ADV_ART/
+ADV_ART2/LESSONS/CUE/BANK/MEANING` без исполнения, 32 картинки кладёт в MinIO по хэшу и отдаёт `GET /mobile/punctuation`
+— бандл в форме данных прототипа (ключи прототипа, картинки — ссылками; `LOGO_SVG` не идёт; Bearer; 404 — «Раздел
+готовится»). Экран `?screen=punctuation` (`src/screens/PunctuationPage.jsx`), карточка — вкладка «Грамматика», группа
+«Тренажёры» после «Тем по уровням». Движок — `src/practice/punctuation/engine.js`: остаток единственного `<script>`
+прототипа почти дословно в Shadow DOM (собран из прототипа заменами, отличия — в шапке файла: данные из бандла, роутер —
+переменная, ссылки `#/…` и `#s-…` полосы шагов перехвачены в тени, `data-tr`, `in-game`, `--sprite`/`--world`/`sprite-ok`,
+тост, живой регион, искры, вспышка портала и выбор знака — на корне `.punct`, слушатели — на корне/окне, без логотипа и
+«Reset progress»). Fixed-слои движка живут внутри `.punct`: контейнер `inline-size` их не держит (проверено в Chrome).
+Луна читает голосом Soniox (`voice.js`, британский, темп 0.9; запасной — голос устройства), эффекты — Web Audio
+прототипа, контекст закрывается в `destroy()`. CSS (`styles.js`) ГЕНЕРИРУЕТ `scripts/punctuation/extract-styles.js` —
+руками не править: Onest выброшен, гарнитура — сайта через `--punct-font`, ширина — `@container punct`/`cqw`, игра —
+блок высотой с окно (`--punct-game-h`), секции урока — `scroll-margin-top` вместо `scroll-padding` на `<html>`.
+Прогресс — модуль синка `punctuation` (ключ прототипа `pw-world-1`: `read`, `p`, `fin`; merge: прочитанное —
+объединение, звёзды — максимум), перечитывается на каждом экране; вид `tr/mute/luna` (`jts_punctuation_prefs`) и
+недоигранное приключение `run` (`jts_punctuation_run`) — только устройство, чистятся при выходе. Каждое задание игры —
+`recordSkill('grammar', с первой попытки)`; квот, домашки и монет нет. Пока идёт приключение (`data-game` у хоста),
+кнопки Луны нет. Порт сверяется с оракулом прототипа (`scripts/punctuation/make-fixture.js --html <прототип>` →
+`__fixtures__/prototype-mini.html`: страницы 1 и 7, CUE целиком, у каждой картинки свой цвет, движок байт в байт,
+`.gitattributes` держит LF; `extract-oracle.js` прогоняет её в jsdom со своими часами и сидом: разбор банка, сборка
+приключений, главная, уроки и два прохождения каждой страницы целиком): красный `engine.test.js` — чинить порт.
+`PUNCTUATION_HTML=<прототип> npx vitest run src/practice/punctuation/engine.test.js` сверяет все 20 страниц (~1 мин). E2E
+— `tests/punctuation.spec.js` («меньше движения» — прототип сам сжимает паузы; `window.__PUNCT_E2E` открывает тесту api
+движка). Правки движка — только PR сайта: хэш движка бэкенд сверяет с `punctuation.engine-sha`.
+
 **Озвучка без записи — Soniox, а не браузерный синтез (с 23.09.2026).** Всё,
 что раньше читал `speechSynthesis` (Словарь, Воркбук, Чтение, Грамматика,
 Сказки без записанного клипа, «минимальные пары» теста уровня, слова курса без
