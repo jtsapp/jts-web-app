@@ -5,7 +5,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render } from '@testing-library/react'
+import { act, cleanup, render } from '@testing-library/react'
 
 const h = vi.hoisted(() => ({ data: null, state: null, skill: [] }))
 vi.mock('../components/LearningLayout.jsx', () => ({ default: ({ children }) => <div>{children}</div> }))
@@ -63,6 +63,19 @@ describe('PunctuationPage', () => {
       expect(c.querySelector('.pct-host').hidden).toBe(true)
       expect(Boolean(c.querySelector('.pct-state .nmb-retry'))).toBe(status === 'error')
       cleanup()
+    }
+  })
+
+  // 10.11.2026: тень не видит html[data-theme] — без атрибута хоста раздел оставался светлым при тёмном сайте.
+  it('тема приложения — атрибутом хоста, и вслед за кнопкой темы без перезагрузки', async () => {
+    document.documentElement.setAttribute('data-theme', 'dark')
+    try {
+      const host = mount({ status: 'ready', bundle }).querySelector('.pct-host')
+      expect(host.getAttribute('data-theme')).toBe('dark')
+      await act(async () => document.documentElement.removeAttribute('data-theme'))
+      expect(host.getAttribute('data-theme')).toBe('light')
+    } finally {
+      document.documentElement.removeAttribute('data-theme')
     }
   })
 

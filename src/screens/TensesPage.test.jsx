@@ -50,6 +50,19 @@ describe('TensesPage', () => {
     expect(c.querySelector('.tns-host').shadowRoot).toBeNull()
   })
 
+  // 10.11.2026: тень не видит html[data-theme] — без атрибута хоста раздел оставался светлым при тёмном сайте.
+  it('тема приложения — атрибутом хоста, и вслед за кнопкой темы без перезагрузки', async () => {
+    document.documentElement.setAttribute('data-theme', 'dark')
+    try {
+      const host = mount().querySelector('.tns-host')
+      expect(host.getAttribute('data-theme')).toBe('dark')
+      await act(async () => document.documentElement.removeAttribute('data-theme'))
+      expect(host.getAttribute('data-theme')).toBe('light')
+    } finally {
+      document.documentElement.removeAttribute('data-theme')
+    }
+  })
+
   it('бандл есть — карта времён в тени, release на корне экрана', () => {
     const c = mount()
     const host = c.querySelector('.tns-host')

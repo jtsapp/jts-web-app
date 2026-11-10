@@ -24,6 +24,7 @@ import { speakPunctuation, stopPunctuation } from '../practice/punctuation/voice
 import { PUNCTUATION_PROGRESS_EVENT } from '../practice/practiceKeys.js'
 import { ownerOf } from '../practice/progressStore.js'
 import { recordSkill } from '../practice/skillStats.js'
+import { watchAppTheme } from '../practice/hostTheme.js'
 import { usePunctuationData } from './punctuation/usePunctuationData.js'
 
 const FALLBACK_FONT = "'Manrope', sans-serif"
@@ -39,6 +40,8 @@ export default function PunctuationPage({ userName, userLevel, token, onNav, onP
     const host = hostRef.current
     if (host) host.style.setProperty('--punct-font', getComputedStyle(host).fontFamily || FALLBACK_FONT)
   }, [lang])
+  // Тёмная тема — приложения: тень её не видит, поэтому атрибутом хоста и вслед за кнопкой темы.
+  useEffect(() => (hostRef.current ? watchAppTheme(hostRef.current) : undefined), [])
 
   useEffect(() => {
     const host = hostRef.current
