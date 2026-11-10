@@ -7,6 +7,8 @@ import { createLead, createOrder } from '../api.js'
 import PaymentMethodModal from '../components/PaymentMethodModal.jsx'
 import PurchaseSuccessModal from '../components/PurchaseSuccessModal.jsx'
 import CatalogError from '../components/CatalogError.jsx'
+import { clearPendingOffer, peekPendingOffer } from '../lib/pendingOffer.js'
+import { checkoutUrl, fetchCheckoutOrigin } from '../lib/checkoutOrigin.js'
 import { CURRENCY, formatPrice, packDiscount, pricePerMinute, splitOffers } from '../data/pricing.js'
 
 
@@ -29,10 +31,14 @@ function newOrderKey() {
 //
 // Пакеты и цены приезжают с бэкенда (GET /catalog/offers), как и на «Тарифах»:
 // сумму заказа считает сервер.
-export default function MinutesTopUpPage({ token, onBack, onDone }) {
+export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin }) {
   const { t, lang } = useI18n()
   const { offers, failed, reload } = useOffers()
   const [pickedCode, setPickedCode] = useState(null)
+  // Пакет, с которым приложение увело оплату на домен лендинга (?offer=<код>):
+  // начальный выбор, а не запись из эффекта — см. ниже, почему.
+  const [linkedCode] = useState(() => peekPendingOffer()[0]?.code ?? null)
+  useEffect(() => clearPendingOffer(), [])
   const [payOpen, setPayOpen] = useState(false)
   const [sent, setSent] = useState(false)
   const [hidNote, setHidNote] = useState(false)
@@ -53,7 +59,7 @@ export default function MinutesTopUpPage({ token, onBack, onDone }) {
     () => (packs.length ? packs.reduce((a, b) => ((a.minutes || 0) <= (b.minutes || 0) ? a : b)) : null),
     [packs],
   )
-  const picked = packs.find((p) => p.code === pickedCode) || smallest
+  const picked = packs.find((p) => p.code === (pickedCode ?? linkedCode)) || smallest
 
   const minutesLabel = (n) => plural(t, lang, 'topup.minutes', n)
 
@@ -71,6 +77,20 @@ export default function MinutesTopUpPage({ token, onBack, onDone }) {
 
   const pay = async (method) => {
     if (!picked) return
+    // Картой платят на домене лендинга (он в анкете Freedom Pay, оферте и политике).
+    if (method === 'card') {
+      const origin = await fetchCheckoutOrigin()
+      if (origin) {
+        setPayOpen(false)
+        window.location.assign(checkoutUrl(origin, 'minutes', [{ code: picked.code, qty: 1 }]))
+        return
+      }
+      if (!token && onNeedLogin) {
+        setPayOpen(false)
+        onNeedLogin()
+        return
+      }
+    }
     const text = [
       t('topup.title'),
       `• ${t('topup.pack', { minutes: minutesLabel(picked.minutes) })} — ${formatPrice(picked.price)} ${CURRENCY}`,

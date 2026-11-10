@@ -478,7 +478,7 @@ export default function App() {
     }
     // ?screen=pricing&offer=<код> — «Купить» со страницы тарифов сайта: тариф
     // ляжет в корзину витрины, в том числе после входа (lib/pendingOffer.js).
-    if (deepLink === 'pricing') rememberPendingOffer(searchParams.get('offer'))
+    if (deepLink === 'pricing' || deepLink === 'minutes') rememberPendingOffer(searchParams.get('offer'))
     // ?screen=listen&set=A1 — сразу уровень (или направление) Just to Listen:
     // проверить набор по ссылке, не проходя меню.
     if (deepLink === 'listen') {
@@ -2529,7 +2529,14 @@ export default function App() {
       // Витрина пакетов минут. «Назад» — туда, откуда пришли: разговор к этому
       // моменту уже закрыт лимитом, поэтому возвращаем на домашний экран тьютора.
       return (
-        <MinutesTopUpPage token={token} onBack={() => setScreen(tutorHome)} />
+        <MinutesTopUpPage
+          token={token}
+          onBack={() => setScreen(tutorHome)}
+          onNeedLogin={() => {
+            rememberPendingScreen('minutes')
+            setScreen('login-password')
+          }}
+        />
       )
     case 'pricing':
       // Витрина без сайдбара — как в макете: это шаг покупки, и уводить с него

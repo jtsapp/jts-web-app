@@ -10,7 +10,7 @@ import { Footer, Header } from '../../../landing/Landing.jsx'
 import InfoContent from '../../../landing/InfoContent.jsx'
 import { APP_LOGIN_URL, pickContent } from '../../../landing/content.js'
 import { INFO_PAGES, pickInfo } from '../../../landing/info.js'
-import { appLink, normalizeAppUrl, parseHosts, requestHost } from '../../../landing/hostRouting.js'
+import { appLink, checkoutOrigin, normalizeAppUrl, parseHosts, requestHost } from '../../../landing/hostRouting.js'
 import { BACKEND_URL } from '../../../lib/auth-server.js'
 
 async function langOf(searchParams) {
@@ -61,9 +61,10 @@ export default async function InfoPage({ params, searchParams }) {
     langKz: '?lang=kz',
   }
   const offers = page === 'tariffs' ? await loadOffers() : null
-  // «Купить» ведёт в витрину приложения с тарифом в корзине: вход, заказ и
-  // оплата картой живут там (домен приложения указан и в текстах страниц).
-  const buyUrl = (code) => appLink(`/?screen=pricing&offer=${encodeURIComponent(code)}`, { onLandingHost, appUrl })
+  // «Купить» — витрина с тарифом в корзине на домене лендинга: вход, заказ и
+  // оплата картой идут там (этот домен — в анкете Freedom Pay, оферте и политике).
+  const shopOrigin = checkoutOrigin({ onLandingHost, landingHosts }) || ''
+  const buyUrl = (code) => `${shopOrigin}/?screen=pricing&offer=${encodeURIComponent(code)}`
 
   return (
     <>

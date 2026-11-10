@@ -2468,6 +2468,16 @@ Windows-пайпа — серверный код уже вырезает его;
 существующими `tests/*.spec.js`; **frontend-design** — при работе над UI.
 
 
+## Оплата картой — на домене лендинга · 10.11.2026
+
+Freedom Pay принимает оплату на домене из анкеты, оферты и политики — justtostudy-english.kz (решение владельца
+10.11.2026). Поэтому `routeLanding` пропускает на домене лендинга экраны `CHECKOUT_SCREENS` (`?screen=pricing`,
+`?screen=minutes`) и весь `/api/`: витрина, вход и заказ идут приложением на этом домене, со своим входом
+(localStorage у доменов разный). «Оплатить картой» на ai-tutor спрашивает `GET /api/landing/checkout` и уводит на
+лендинг с корзиной `?offer=код:кол,…` (`lib/checkoutOrigin.js`, `lib/pendingOffer.js`); без `LANDING_HOSTS` (локально,
+дев) платят на месте. «Купить» на `/info/tariffs` ведёт туда же. Google-вход на домене лендинга работает, только если
+домен добавлен в Authorized JavaScript origins клиента Google.
+
 ## Прайс и документы ученика · 29.10.2026
 
 - Единственный источник 46 тарифов — backend `sales_offers`, миграция V485. `category`, `months`, `previousPrice`,

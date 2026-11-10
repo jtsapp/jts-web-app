@@ -12,6 +12,7 @@ import LegalDocumentsPanel from '../components/LegalDocumentsPanel.jsx'
 import { CURRENCY, formatPrice, offerCategory, offerTitle, offerDetails } from '../data/pricing.js'
 import { addItem, cartCount, cartTotal, qtyOf, removeItem, setQty } from '../lib/cart.js'
 import { consumePendingOffer } from '../lib/pendingOffer.js'
+import { checkoutUrl, fetchCheckoutOrigin } from '../lib/checkoutOrigin.js'
 
 
 /**
@@ -53,15 +54,21 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
   const add = (offer) => setItems((prev) => addItem(prev, cartLine(offer)))
 
   // Пришли кнопкой «Купить» со страницы тарифов сайта — этот тариф сразу в
-  // корзине. Код забирается один раз, когда каталог доехал.
+  // корзине (и вся корзина, с которой приложение увело оплату на домен
+  // лендинга). Забирается один раз, когда каталог доехал.
   const pendingDone = useRef(false)
   useEffect(() => {
     if (pendingDone.current || !offers?.length) return
     pendingDone.current = true
-    const code = consumePendingOffer()
-    const offer = code && offers.find((o) => o.code === code)
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- разовая подстановка из ссылки сайта
-    if (offer) setItems((prev) => (qtyOf(prev, offer.code) ? prev : addItem(prev, cartLine(offer))))
+    const lines = consumePendingOffer()
+      .map((l) => ({ offer: offers.find((o) => o.code === l.code), qty: l.qty }))
+      .filter((l) => l.offer)
+    if (!lines.length) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- разовая подстановка из ссылки
+    setItems((prev) => lines.reduce(
+      (acc, l) => (qtyOf(acc, l.offer.code) ? acc : addItem(acc, { ...cartLine(l.offer), qty: l.qty })),
+      prev,
+    ))
   }, [offers]) // eslint-disable-line react-hooks/exhaustive-deps -- cartLine зависит от языка, подстановка одна
   const bump = (id, delta) => setItems((prev) => setQty(prev, id, qtyOf(prev, id) + delta))
 
@@ -79,6 +86,16 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
   }
 
   const pay = async (method) => {
+    // Картой платят на домене лендинга (он в анкете Freedom Pay, оферте и
+    // политике): с домена приложения уводим туда вместе с корзиной.
+    if (method === 'card') {
+      const origin = await fetchCheckoutOrigin()
+      if (origin) {
+        setPayOpen(false)
+        window.location.assign(checkoutUrl(origin, 'pricing', items.map((x) => ({ code: x.id, qty: x.qty }))))
+        return
+      }
+    }
     // Оплата картой — из аккаунта: заказ привязан к ученику, которому выдаётся
     // доступ. Гостя ведём ко входу, после него он вернётся сюда.
     if (method === 'card' && !token && onNeedLogin) {

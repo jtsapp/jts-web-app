@@ -205,6 +205,38 @@ describe('Витрина тарифов', () => {
   })
 
   // «Купить» на странице тарифов сайта ведёт сюда с кодом тарифа.
+  it('корзина из ссылки — с количеством', async () => {
+    rememberPendingOffer('ind-60-12:2,group-12')
+    const { container } = await renderLoaded()
+    await waitFor(() => expect(container.querySelectorAll('.pr-line')).toHaveLength(2))
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Оплатить картой'))
+    await waitFor(() => expect(backend.orderCalls).toHaveLength(1))
+    expect(backend.orderCalls[0].items).toEqual([
+      { offerCode: 'ind-60-12', quantity: 2 },
+      { offerCode: 'group-12', quantity: 1 },
+    ])
+  })
+
+  // На домене приложения карта уводит на домен лендинга вместе с корзиной.
+  it('карта на домене приложения — переход на домен оплаты с корзиной', async () => {
+    const assign = vi.fn()
+    Object.defineProperty(window, 'location', { configurable: true, value: { href: 'http://localhost/', assign } })
+    const realFetch = globalThis.fetch
+    globalThis.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ origin: 'https://justtostudy-english.kz' }) }))
+    try {
+      const { container } = await renderLoaded()
+      await addTile(container, '12 уроков')
+      fireEvent.click(container.querySelector('.pr-cart__pay'))
+      fireEvent.click(screen.getByText('Оплатить картой'))
+      await waitFor(() => expect(assign).toHaveBeenCalledTimes(1))
+      expect(assign.mock.calls[0][0]).toBe('https://justtostudy-english.kz/?screen=pricing&offer=ind-60-12')
+      expect(backend.orderCalls).toHaveLength(0)
+    } finally {
+      globalThis.fetch = realFetch
+    }
+  })
+
   it('тариф из ссылки сайта сразу лежит в корзине', async () => {
     rememberPendingOffer('group-12')
     const { container } = await renderLoaded()
@@ -225,7 +257,7 @@ describe('Витрина тарифов', () => {
     fireEvent.click(view.container.querySelector('.pr-cart__pay'))
     fireEvent.click(screen.getByText('Оплатить картой'))
 
-    expect(onNeedLogin).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(onNeedLogin).toHaveBeenCalledTimes(1))
     expect(backend.orderCalls).toHaveLength(0)
     expect(window.open).not.toHaveBeenCalled()
   })
