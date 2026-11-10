@@ -207,6 +207,8 @@ const dict = {
     'pay.sub': 'Қалай төлегіңіз келетінін таңдаңыз.',
     'pay.kaspi': 'Kaspi.kz арқылы төлеу',
     'pay.kaspiSub': 'Сізді сыртқы төлем сервисіне бағыттаймыз',
+    'pay.card': 'Картамен төлеу',
+    'pay.cardSub': 'Visa немесе Mastercard, Freedom Pay қорғалған беті',
     'pay.manager': 'Менеджермен байланысу',
     'pay.managerSub': 'Төлемді жүргізу үшін менеджердің нөмірін аласыз',
     'pay.callback': 'Маған хабарласыңыз',

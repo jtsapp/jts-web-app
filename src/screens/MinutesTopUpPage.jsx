@@ -86,20 +86,24 @@ export default function MinutesTopUpPage({ token, onBack, onDone }) {
       /* заявка не единственный путь */
     }
 
-    try {
-      const order = await createOrder(token, {
-        items: [{ offerCode: picked.code, quantity: 1 }],
-        idempotencyKey: orderKey(),
-        returnUrl: typeof window === 'undefined' ? undefined : window.location.href,
-      })
-      if (order?.paymentUrl) {
-        setPayOpen(false)
-        onDone?.(method)
-        window.location.assign(order.paymentUrl)
-        return
+    // Заказ и платёж — только для «Оплатить картой»: выбравший менеджера
+    // не должен внезапно оказаться на странице оплаты.
+    if (method === 'card') {
+      try {
+        const order = await createOrder(token, {
+          items: [{ offerCode: picked.code, quantity: 1 }],
+          idempotencyKey: orderKey(),
+          returnUrl: typeof window === 'undefined' ? undefined : window.location.href,
+        })
+        if (order?.paymentUrl) {
+          setPayOpen(false)
+          onDone?.(method)
+          window.location.assign(order.paymentUrl)
+          return
+        }
+      } catch {
+        /* заказ не создался — остаётся запасной путь ниже */
       }
-    } catch {
-      /* заказ не создался — остаётся запасной путь ниже */
     }
 
     setPayOpen(false)

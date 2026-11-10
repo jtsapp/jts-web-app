@@ -207,6 +207,8 @@ const dict = {
     'pay.sub': 'Choose how you would like to pay.',
     'pay.kaspi': 'Pay with Kaspi.kz',
     'pay.kaspiSub': 'We will take you to an external payment service',
+    'pay.card': 'Pay by card',
+    'pay.cardSub': 'Visa or Mastercard on the secure Freedom Pay page',
     'pay.manager': 'Contact a manager',
     'pay.managerSub': 'You will get the manager number to arrange payment',
     'pay.callback': 'Call me back',

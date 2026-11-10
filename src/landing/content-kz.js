@@ -16,6 +16,7 @@ export const kzText = {
 
   nav: {
     login: 'Кіру',
+    tariffs: 'Тарифтер',
     start: 'Оқуды бастау',
     langRu: 'РУС',
     langKz: 'ҚАЗ',

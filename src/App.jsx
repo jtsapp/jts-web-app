@@ -60,6 +60,7 @@ import { readSituationsDone } from './practice/situations/situationsProgress.js'
 import { holdTours } from './lib/tourBus.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
 import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
+import { rememberPendingOffer } from './lib/pendingOffer.js'
 import { openLandingHandoff } from './landing/handoffClient.js'
 import { captureAttribution, safeStorage } from './lib/attribution.js'
 import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
@@ -475,6 +476,9 @@ export default function App() {
       const text = searchParams.get('text')
       if (text) setSpeedReadingTarget({ text })
     }
+    // ?screen=pricing&offer=<код> — «Купить» со страницы тарифов сайта: тариф
+    // ляжет в корзину витрины, в том числе после входа (lib/pendingOffer.js).
+    if (deepLink === 'pricing') rememberPendingOffer(searchParams.get('offer'))
     // ?screen=listen&set=A1 — сразу уровень (или направление) Just to Listen:
     // проверить набор по ссылке, не проходя меню.
     if (deepLink === 'listen') {
@@ -2533,6 +2537,12 @@ export default function App() {
       return (
         <PricingPage
           token={token}
+          // Гость выбрал оплату картой: платить можно только из аккаунта —
+          // ведём ко входу и возвращаем на витрину (lib/pendingScreen.js).
+          onNeedLogin={() => {
+            rememberPendingScreen('pricing')
+            setScreen('login-password')
+          }}
           // Туда, откуда пришли за тарифом: стек переживает и перезагрузку,
           // которой оплата возвращает на ?screen=pricing.
           onBack={() => goBack(() => setScreen(isDemoAccount ? 'home' : 'kingdom'))}

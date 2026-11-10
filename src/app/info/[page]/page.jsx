@@ -61,6 +61,9 @@ export default async function InfoPage({ params, searchParams }) {
     langKz: '?lang=kz',
   }
   const offers = page === 'tariffs' ? await loadOffers() : null
+  // «Купить» ведёт в витрину приложения с тарифом в корзине: вход, заказ и
+  // оплата картой живут там (домен приложения указан и в текстах страниц).
+  const buyUrl = (code) => appLink(`/?screen=pricing&offer=${encodeURIComponent(code)}`, { onLandingHost, appUrl })
 
   return (
     <>
@@ -68,7 +71,7 @@ export default async function InfoPage({ params, searchParams }) {
       <div className="ld" id="top" lang={lang === 'kz' ? 'kk' : 'ru'}>
         <Header c={pickContent(lang)} lang={lang} links={links} home={homeWithLang} />
         <main className="ld-info">
-          <InfoContent page={page} lang={lang} offers={offers} home={homeWithLang} />
+          <InfoContent page={page} lang={lang} offers={offers} home={homeWithLang} buyUrl={buyUrl} />
         </main>
         <Footer c={pickContent(lang)} lang={lang} home={homeWithLang} />
       </div>

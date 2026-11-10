@@ -228,6 +228,13 @@
   gap: 12px;
 }
 
+/* На узкой шапке «Тарифам» места нет — там они в подвале. */
+@media (max-width: 960px) {
+  .ld-header__tariffs {
+    display: none;
+  }
+}
+
 .ld-lang {
   display: flex;
   gap: 2px;
@@ -2432,6 +2439,32 @@
   color: var(--ld-muted);
 }
 
+/* «Купить» у тарифа — в витрину приложения, где вход, заказ и оплата картой. */
+.ld-info .ld-info__buy {
+  align-self: center;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: var(--ld-violet);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+  text-decoration: none;
+}
+
+.ld-info .ld-info__buy:hover {
+  background: #7f35f0;
+  text-decoration: none;
+}
+
+.ld-info__buy-note {
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #f4effe;
+  color: var(--ld-ink);
+}
+
 .ld-info__dl {
   display: grid;
   grid-template-columns: minmax(140px, 220px) 1fr;
@@ -3199,6 +3232,17 @@
 
   .ld-info__prices li {
     align-items: flex-start;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  /* Название не уже 180px: иначе цена с «Купить» уходит на свою строку. */
+  .ld-info__offer {
+    flex: 1 1 180px;
+  }
+
+  .ld-info__price {
+    margin-left: auto;
   }
 
   .ld-footer__navcols {

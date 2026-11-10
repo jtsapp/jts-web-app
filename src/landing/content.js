@@ -29,6 +29,7 @@ export const ru = {
 
   nav: {
     login: 'Войти',
+    tariffs: 'Тарифы',
     start: 'Начать обучение',
     langRu: 'РУС',
     langKz: 'ҚАЗ',

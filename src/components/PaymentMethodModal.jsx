@@ -10,12 +10,11 @@ import { useDialogKeys } from '../lib/useDialogKeys.js'
 // из них внезапно перестаёт работать.
 //
 // Сам платёж отсюда не проводится: `onPick` получает выбранный способ, а куда
-// он ведёт, решает экран (см. PricingPage — там же объяснено, почему все три
-// пути сейчас сходятся на менеджере).
-// Kaspi спрятан до подключения эквайринга: кнопка «Оплатить через Kaspi.kz»
-// ведёт туда же, куда и остальные две (к менеджеру), и обещание автоматической
-// оплаты, которой ещё нет, злит сильнее её отсутствия. Разметка и знак банка
-// оставлены целиком — включить обратно значит поставить здесь true.
+// он ведёт, решает экран (см. PricingPage): «card» — заказ и страница оплаты
+// Freedom Pay, остальные — менеджер.
+// Kaspi напрямую не подключён: кнопка вела бы к менеджеру, а обещание
+// автоматической оплаты, которой нет, злит сильнее её отсутствия. Разметка и
+// знак банка оставлены целиком — включить обратно значит поставить здесь true.
 const KASPI_ENABLED = false
 
 export default function PaymentMethodModal({ onClose, onPick }) {
@@ -49,8 +48,23 @@ export default function PaymentMethodModal({ onClose, onPick }) {
         <h2 className="pm-title" id="pm-title">{t('pay.title')}</h2>
         <p className="pm-sub" id="pm-sub">{t('pay.sub')}</p>
 
+        {/* Карта — через Freedom Pay. Если платёж не создался (эквайринг не
+            настроен или не ответил), экран уводит к менеджеру. */}
+        <button type="button" className="pm-main" ref={firstRef} onClick={() => onPick?.('card')}>
+          <span className="pm-main__ic" aria-hidden="true"><CardMark /></span>
+          <span className="pm-main__body">
+            <b>{t('pay.card')}</b>
+            <span>{t('pay.cardSub')}</span>
+          </span>
+          <span className="pm-main__chev" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="m9 5 7 7-7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+        </button>
+
         {KASPI_ENABLED && (
-        <button type="button" className="pm-main" ref={firstRef} onClick={() => onPick?.('kaspi')}>
+        <button type="button" className="pm-main" onClick={() => onPick?.('kaspi')}>
           <span className="pm-main__ic" aria-hidden="true"><KaspiMark /></span>
           <span className="pm-main__body">
             <b>{t('pay.kaspi')}</b>
@@ -65,9 +79,7 @@ export default function PaymentMethodModal({ onClose, onPick }) {
         )}
 
         <div className="pm-alt">
-          {/* Фокус при открытии — на первой доступной кнопке: пока Kaspi
-              скрыт, ею оказывается «Связаться с менеджером». */}
-          <button type="button" className="pm-opt" ref={KASPI_ENABLED ? null : firstRef} onClick={() => onPick?.('manager')}>
+          <button type="button" className="pm-opt" onClick={() => onPick?.('manager')}>
             <b>{t('pay.manager')}</b>
             <span>{t('pay.managerSub')}</span>
             <i className="pm-opt__chev" aria-hidden="true">
@@ -88,6 +100,18 @@ export default function PaymentMethodModal({ onClose, onPick }) {
         </div>
       </div>
     </div>
+  )
+}
+
+// Значок банковской карты — нейтральный, без знаков платёжных систем.
+function CardMark() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="16" fill="#1f8a4c" />
+      <rect x="7.5" y="10" width="17" height="12" rx="2" fill="none" stroke="#fff" strokeWidth="1.8" />
+      <path d="M7.5 14h17" stroke="#fff" strokeWidth="2.2" />
+      <path d="M10.5 18.5h4" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   )
 }
 
