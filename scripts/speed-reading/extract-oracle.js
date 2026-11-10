@@ -7,6 +7,10 @@
 // окружения: экран итога и стартовый экран отрисовываются в строку, цифры берутся из неё — так проверяется
 // то, что ученик видит, а не наш пересказ формул. Длительность прокрутки — выражение `total` из srRecord.
 //
+// v1.2 (30.10.2026): текстов 250, поэтому выравнивание снимается не со всех, а с восьми текстов v1.1 и первого
+// текста каждого уровня (иначе оракул весил бы мегабайты); подпись скорости — со всех 250 на семи кнопках и трёх
+// точках ползунка. Фоновые сцены оракулу не нужны — их синтез заглушен (srScene → null).
+//
 // Запуск: node scripts/speed-reading/extract-oracle.js [--html data/jts-student-cabinet.html]
 
 const fs = require('node:fs')
@@ -29,14 +33,18 @@ function must(re, src, what) {
 }
 
 function loadPrototype(html) {
-  const consts = must(/const SR_BASE=150,SR_SPEEDS=\[[^\]]*\];/, html, 'SR_BASE/SR_SPEEDS')[0]
+  const consts = must(/const SR_BASE=150,SR_SPEEDS=\[[^\]]*\][^;]*;/, html, 'SR_BASE/SR_SPEEDS')[0]
   const total = must(/const total=([^;]+);/, sliceFunction(html, 'srRecord'), 'total в srRecord')[1]
   const code = [
     sliceConst(html, 'SR_TEXTS'),
+    sliceConst(html, 'SR_LEVELS'),
+    sliceConst(html, 'SR_CATS'),
     consts,
-    "let SR={step:'start',text:'flight',mult:1,wpm:SR_BASE,tries:[]}",
+    "let SR={step:'start',lv:'B1',cat:'travel',text:'flight',mult:1,wpm:SR_BASE,tries:[],bg:true,vol:45}",
     sliceConst(html, 'srWords'),
     sliceConst(html, 'srNorm'),
+    sliceConst(html, 'srFmt'),
+    sliceFunction(html, 'srSpeedInfo'),
     sliceFunction(html, 'srText'),
     sliceFunction(html, 'srSetMult'),
     sliceFunction(html, 'srAlign'),
@@ -52,6 +60,10 @@ function loadPrototype(html) {
     esc: (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]),
     IMG: { dexter: '', cheer: '', sleep: '' },
     sCoin: () => '',
+    srScene: () => null,
+    srBgRow: () => '',
+    AMB: null,
+    ambStop: () => {},
     SRL: null,
     render: () => {},
     srListenStop: () => {},
@@ -87,8 +99,11 @@ function build(html) {
   const P = loadPrototype(html)
   const texts = P.SR_TEXTS.map((t) => ({ id: t.id, words: P.srWords(t.x).length }))
 
+  const V11 = ['hello', 'weather', 'flight', 'hotel', 'tour', 'news', 'pitch', 'twister']
+  const firstOfLevel = [...new Set(P.SR_TEXTS.map((t) => t.lv))].map((lv) => P.SR_TEXTS.find((t) => t.lv === lv).id)
+  const alignIds = new Set([...V11, ...firstOfLevel])
   const align = []
-  for (const t of P.SR_TEXTS) {
+  for (const t of P.SR_TEXTS.filter((x) => alignIds.has(x.id))) {
     const words = P.srWords(t.x)
     for (const [kind, heard] of Object.entries(heardSets(words))) {
       P.set({ ...P.state(), words, heard })
@@ -117,10 +132,10 @@ function build(html) {
 
   const pace = []
   for (const t of P.SR_TEXTS) {
-    for (const mult of P.SR_SPEEDS) {
-      P.set({ ...P.state(), step: 'start', text: t.id })
+    for (const mult of [...P.SR_SPEEDS, 0.8, 1.3, 2.7]) {
+      P.set({ ...P.state(), step: 'start', text: t.id, lv: t.lv, cat: t.c })
       P.srSetMult(mult)
-      const m = /· (\d+) сл\/мин · ≈ (\d+) секунд/.exec(P.pSpeed())
+      const m = /· <b>(\d+)<\/b> сл\/мин · ≈ (\d+) секунд/.exec(P.pSpeed())
       if (!m) throw new Error(`нет подписи скорости у ${t.id} ${mult}x`)
       P.set({ ...P.state(), words: P.srWords(t.x) })
       pace.push({ text: t.id, mult, wpm: Number(m[1]), seconds: Number(m[2]), totalMs: P.srTotal() })
