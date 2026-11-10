@@ -17,6 +17,7 @@ import { useI18n } from '../i18n.jsx'
 import { getCartoonMission } from '../api.js'
 import { mountCartoons } from '../practice/cartoons/engine.js'
 import { CARTOONS_CSS } from '../practice/cartoons/styles.js'
+import { watchAppTheme } from '../practice/hostTheme.js'
 import { CARTOONS_MARKUP } from '../practice/cartoons/markup.js'
 import { readCartoons, updateCartoons } from '../practice/cartoons/progress.js'
 import { CARTOONS_DRAFTS_KEY, CARTOONS_PROGRESS_EVENT } from '../practice/practiceKeys.js'
@@ -58,6 +59,10 @@ export default function CartoonsPage({ userName, userLevel, token, onNav, onProf
   }, [token])
   const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'listening' }))
 
+  // Тёмная тема — приложения (html[data-theme]), а не системная настройка ОС, как было в прототипе, и вслед за кнопкой
+  // темы: атрибут, поставленный один раз при монтаже, не менялся, пока раздел открыт.
+  useEffect(() => (hostRef.current ? watchAppTheme(hostRef.current) : undefined), [])
+
   // Шрифт сайта внутрь тени (--cw-font): Manrope, в kk — Inter.
   useEffect(() => {
     const host = hostRef.current
@@ -70,8 +75,6 @@ export default function CartoonsPage({ userName, userLevel, token, onNav, onProf
     // attachShadow — один раз на элемент: при пересоздании (вход, новый релиз, смена языка) — тот же корень.
     const shadow = host.shadowRoot || host.attachShadow({ mode: 'open' })
     host.style.setProperty('--cw-font', getComputedStyle(host).fontFamily || FALLBACK_FONT)
-    // Тёмная тема — приложения (html[data-theme]), а не системная настройка ОС, как было в прототипе.
-    host.setAttribute('data-theme', document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light')
     shadow.innerHTML = `<style>${CARTOONS_CSS}</style><div class="ctw">${CARTOONS_MARKUP}</div>`
     const api = mountCartoons(shadow.querySelector('.ctw'), {
       index,

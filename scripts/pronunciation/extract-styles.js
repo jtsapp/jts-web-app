@@ -94,3 +94,7 @@ ${APP_CSS.trim()}
 }
 
 main()
+// Тёмная тема (10.11.2026): своей у прототипа нет, глобальный слой в тень не проходит — тёмный слой собирается из
+// только что записанных стилей тем же правилом брендбука, что и весь сайт (scripts/practice/shadow-dark.js →
+// styles.dark.js). Иначе новая версия прототипа оставила бы тёмную тему старой.
+require('../practice/shadow-dark').writeDark('pronunciation').then((n) => console.log(`styles.dark.js: ${Math.round(n / 1024)} КБ`))

@@ -1290,7 +1290,7 @@ button.w:hover{background-color:var(--violet-l)}
 }
 :host([data-theme="dark"]) .bigline .tr:not(:is(.hero, .adv, .hero *, .adv *)) {
     color: var(--dk-acc-on);
-    border-color: rgba(255,255,255,.5)
+    border-color: var(--dk-line)
 }
 :host([data-theme="dark"]) .hearpair:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-card);
@@ -1541,10 +1541,10 @@ button.w:hover{background-color:var(--violet-l)}
     background: linear-gradient(180deg,var(--dk-green-tint) 0 30%,var(--dk-acc) 30% 60%,var(--dk-blue-soft) 60%)
 }
 :host([data-theme="dark"]) .adv-vig:not(:is(.hero, .adv, .hero *, .adv *)) {
-    background: radial-gradient(120% 90% at 50% 40%,transparent 55%,color-mix(in oklab, var(--dk-acc) 45%, transparent) 100%)
+    background: radial-gradient(120% 90% at 50% 40%,transparent 55%,rgba(20,12,50,.45) 100%)
 }
 :host([data-theme="dark"]) .spool:not(:is(.hero, .adv, .hero *, .adv *)) {
-    background: color-mix(in oklab, var(--dk-acc) 55%, transparent);
+    background: rgba(30,20,70,.55);
     border: 1.5px dashed rgba(255,255,255,.35)
 }
 :host([data-theme="dark"]) .threads b:not(:is(.hero, .adv, .hero *, .adv *)) {
@@ -1553,7 +1553,7 @@ button.w:hover{background-color:var(--violet-l)}
 }
 :host([data-theme="dark"]) .hbtn:not(:is(.hero, .adv, .hero *, .adv *)) {
     border: 1.5px solid rgba(255,255,255,.35);
-    background: color-mix(in oklab, var(--dk-acc) 55%, transparent);
+    background: rgba(30,20,70,.55);
     color: #fff
 }
 :host([data-theme="dark"]) .hbtn:hover:not(:is(.hero, .adv, .hero *, .adv *)) {
@@ -1566,13 +1566,13 @@ button.w:hover{background-color:var(--violet-l)}
 :host([data-theme="dark"]) .ledge:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: repeating-linear-gradient(90deg,rgba(255,255,255,.08) 0 3px,transparent 3px 9px),
  linear-gradient(180deg,var(--dk-green-soft) 0 16%,var(--dk-acc) 16% 58%,var(--dk-acc-strong) 58%);
-    box-shadow: inset 0 6px 0 rgba(255,255,255,.25),0 -2px 0 rgba(255,255,255,.4),0 20px 40px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+    box-shadow: inset 0 6px 0 rgba(255,255,255,.25),0 -2px 0 rgba(255,255,255,.4),0 20px 40px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .ledge:not(:is(.hero, .adv, .hero *, .adv *))::after {
-    border-top: 2px dashed rgba(255,255,255,.55)
+    border-top: 2px dashed var(--dk-line)
 }
 :host([data-theme="dark"]) .ctx span:not(:is(.hero, .adv, .hero *, .adv *)) {
-    background: color-mix(in oklab, var(--dk-acc) 70%, transparent);
+    background: rgba(30,20,70,.7);
     color: #fff
 }
 :host([data-theme="dark"]) .sock:not(:is(.hero, .adv, .hero *, .adv *)) {
@@ -1588,34 +1588,34 @@ button.w:hover{background-color:var(--violet-l)}
     background: none
 }
 :host([data-theme="dark"]) .dex .shadow:not(:is(.hero, .adv, .hero *, .adv *)) {
-    background: radial-gradient(closest-side,color-mix(in oklab, var(--dk-acc) 45%, transparent),transparent)
+    background: radial-gradient(closest-side,rgba(20,10,50,.45),transparent)
 }
 :host([data-theme="dark"]) .say:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-card);
-    color: var(--dk-acc-text);
-    box-shadow: 0 16px 40px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+    color: var(--dk-text);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .say b.who:not(:is(.hero, .adv, .hero *, .adv *)) {
     color: var(--violet-d)
 }
 :host([data-theme="dark"]) .rule-line:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-card);
-    color: var(--dk-acc-text);
-    box-shadow: 0 12px 30px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+    color: var(--dk-text);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .rule-line .mk:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--fl)
 }
 :host([data-theme="dark"]) .card-ov:not(:is(.hero, .adv, .hero *, .adv *)) {
-    background: linear-gradient(180deg,color-mix(in oklab, var(--dk-acc) 25%, transparent),color-mix(in oklab, var(--dk-acc) 65%, transparent))
+    background: linear-gradient(180deg,rgba(255, 255, 255, 0.25),rgba(20,12,50,.65))
 }
 :host([data-theme="dark"]) .card-ov.clear:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: none
 }
 :host([data-theme="dark"]) .scard:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: color-mix(in oklab, var(--dk-card) 96%, transparent);
-    color: var(--dk-acc-text);
-    box-shadow: 0 30px 80px color-mix(in oklab, var(--dk-acc) 50%, transparent)
+    color: var(--dk-text);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .scard p:not(:is(.hero, .adv, .hero *, .adv *)) {
     color: var(--dk-text-2)
@@ -1638,10 +1638,10 @@ button.w:hover{background-color:var(--violet-l)}
     color: var(--dk-yellow)
 }
 :host([data-theme="dark"]) .msg.cur:not(:is(.hero, .adv, .hero *, .adv *)) {
-    color: var(--dk-acc-text)
+    color: var(--dk-text)
 }
 :host([data-theme="dark"]) .murmur:not(:is(.hero, .adv, .hero *, .adv *)) {
-    background: color-mix(in oklab, var(--dk-acc) 55%, transparent);
+    background: rgba(30,20,70,.55);
     border: 1.5px dashed rgba(255,255,255,.3)
 }
 :host([data-theme="dark"]) .murmur .lv i:not(:is(.hero, .adv, .hero *, .adv *)) {
@@ -1657,13 +1657,13 @@ button.w:hover{background-color:var(--violet-l)}
     background: repeating-linear-gradient(0deg,rgba(255,255,255,.08) 0 3px,transparent 3px 8px),repeating-linear-gradient(90deg,rgba(255, 255, 255, 0.05) 0 2px,transparent 2px 7px),linear-gradient(180deg,var(--dk-raised),var(--dk-raised))
 }
 :host([data-theme="dark"]) .banner:not(:is(.hero, .adv, .hero *, .adv *)) {
-    color: var(--dk-acc-text);
+    color: var(--dk-text);
     background: repeating-linear-gradient(90deg,rgba(255, 255, 255, 0.035) 0 2px,transparent 2px 7px),repeating-linear-gradient(0deg,rgba(255,255,255,.2) 0 2px,transparent 2px 6px),linear-gradient(180deg,var(--dk-yellow-tint),var(--dk-yellow-tint));
-    box-shadow: inset 0 -6px 0 color-mix(in oklab, var(--dk-yellow) 16%, transparent),0 18px 40px color-mix(in oklab, var(--dk-acc) 35%, transparent);
+    box-shadow: inset 0 -6px 0 color-mix(in oklab, var(--dk-yellow) 16%, transparent),0 18px 40px rgba(0, 0, 0, 0.6);
     outline: 2.5px dashed color-mix(in oklab, var(--dk-yellow) 45%, transparent)
 }
 :host([data-theme="dark"]) .banner:not(:is(.hero, .adv, .hero *, .adv *))::before, :host([data-theme="dark"]) .banner:not(:is(.hero, .adv, .hero *, .adv *))::after {
-    border-left: 3px dashed rgba(255,255,255,.65)
+    border-left: 3px dashed var(--dk-line)
 }
 :host([data-theme="dark"]) .banner .tag:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-acc-deep);
@@ -1694,14 +1694,14 @@ button.w:hover{background-color:var(--violet-l)}
 :host([data-theme="dark"]) .obj:not(:is(.hero, .adv, .hero *, .adv *)) {
     border: 0;
     background: none;
-    color: var(--dk-acc-text)
+    color: var(--dk-text)
 }
 :host([data-theme="dark"]) .obj:focus-visible:not(:is(.hero, .adv, .hero *, .adv *)) {
     outline: 3px solid var(--dk-yellow-line)
 }
 :host([data-theme="dark"]) .obj .tk:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: radial-gradient(circle at 40% 30%,var(--dk-card),var(--dk-acc-tint));
-    box-shadow: 0 8px 18px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .obj .tk .none:not(:is(.hero, .adv, .hero *, .adv *)) {
     border: 4px dashed var(--dk-acc)
@@ -1716,25 +1716,25 @@ button.w:hover{background-color:var(--violet-l)}
 }
 :host([data-theme="dark"]) .obj.key .base:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: repeating-linear-gradient(45deg,rgba(255,255,255,.12) 0 3px,transparent 3px 8px),linear-gradient(135deg,var(--dk-blue-soft),var(--dk-blue));
-    box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.36),0 10px 20px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+    box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.36),0 10px 20px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .obj.spring .base:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: repeating-linear-gradient(0deg,var(--dk-yellow) 0 6px,var(--dk-orange) 6px 12px);
-    box-shadow: 0 8px 0 color-mix(in oklab, var(--dk-orange) 25%, transparent)
+    box-shadow: 0 8px 0 rgba(0, 0, 0, 0.5)
 }
 :host([data-theme="dark"]) .obj.spring .base:not(:is(.hero, .adv, .hero *, .adv *))::after {
     background: var(--dk-orange)
 }
 :host([data-theme="dark"]) .obj.wkey .tk:not(:is(.hero, .adv, .hero *, .adv *)) {
-    color: var(--dk-acc-text);
+    color: var(--dk-text);
     background: linear-gradient(180deg,var(--dk-yellow-tint),var(--dk-yellow-tint))
 }
 :host([data-theme="dark"]) .obj.wkey .base:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 50'%3E%3Ccircle cx='22' cy='25' r='18' fill='none' stroke='%23C99A1E' stroke-width='9'/%3E%3Crect x='38' y='20' width='76' height='10' rx='4' fill='%23C99A1E'/%3E%3Crect x='92' y='28' width='8' height='14' fill='%23C99A1E'/%3E%3Crect x='104' y='28' width='8' height='10' fill='%23C99A1E'/%3E%3C/svg%3E")
 }
 :host([data-theme="dark"]) .obj.gate .base:not(:is(.hero, .adv, .hero *, .adv *)) {
-    background: radial-gradient(ellipse at 50% 85%,color-mix(in oklab, var(--dk-acc) 85%, transparent),color-mix(in oklab, var(--dk-acc) 75%, transparent) 60%),var(--dk-acc-deep);
-    box-shadow: inset 0 0 0 10px var(--dk-acc),inset 0 0 0 14px var(--dk-acc),0 10px 20px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+    background: radial-gradient(ellipse at 50% 85%,rgba(20,10,50,.85),color-mix(in oklab, var(--dk-acc) 75%, transparent) 60%),var(--dk-acc-deep);
+    box-shadow: inset 0 0 0 10px var(--dk-acc),inset 0 0 0 14px var(--dk-acc),0 10px 20px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .obj.glow .tk:not(:is(.hero, .adv, .hero *, .adv *)) {
     box-shadow: 0 0 0 4px var(--dk-card),0 0 30px 10px color-mix(in oklab, var(--dk-yellow) 90%, transparent)
@@ -1744,7 +1744,7 @@ button.w:hover{background-color:var(--violet-l)}
 }
 :host([data-theme="dark"]) .door:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: repeating-linear-gradient(90deg,rgba(255, 255, 255, 0.08) 0 3px,transparent 3px 22px),linear-gradient(180deg,var(--dk-orange),var(--dk-orange));
-    box-shadow: inset 0 0 0 8px var(--dk-orange),0 14px 30px color-mix(in oklab, var(--dk-acc) 40%, transparent)
+    box-shadow: inset 0 0 0 8px var(--dk-orange),0 14px 30px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .door:not(:is(.hero, .adv, .hero *, .adv *))::after {
     background: var(--dk-yellow)
@@ -1756,16 +1756,16 @@ button.w:hover{background-color:var(--violet-l)}
     background: radial-gradient(closest-side,color-mix(in oklab, var(--dk-blue-tint) 95%, transparent),color-mix(in oklab, var(--dk-blue) 40%, transparent),transparent)
 }
 :host([data-theme="dark"]) .planks:not(:is(.hero, .adv, .hero *, .adv *)) {
-    color: var(--dk-acc-text)
+    color: var(--dk-text)
 }
 :host([data-theme="dark"]) .planks.banner-mode:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: repeating-linear-gradient(90deg,rgba(255, 255, 255, 0.03) 0 2px,transparent 2px 7px),linear-gradient(180deg,var(--dk-yellow-tint),var(--dk-yellow-tint));
-    box-shadow: 0 18px 40px color-mix(in oklab, var(--dk-acc) 35%, transparent);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
     outline: 2.5px dashed color-mix(in oklab, var(--dk-yellow) 45%, transparent)
 }
 :host([data-theme="dark"]) .pl:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: repeating-linear-gradient(90deg,rgba(255, 255, 255, 0.05) 0 2px,transparent 2px 7px),linear-gradient(180deg,var(--dk-yellow-tint),var(--dk-yellow-soft));
-    box-shadow: inset 0 -4px 0 color-mix(in oklab, var(--dk-orange) 25%, transparent),0 6px 10px color-mix(in oklab, var(--dk-acc) 30%, transparent)
+    box-shadow: inset 0 -4px 0 color-mix(in oklab, var(--dk-orange) 25%, transparent),0 6px 10px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .banner-mode .pl:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: none;
@@ -1806,7 +1806,7 @@ button.w:hover{background-color:var(--violet-l)}
 }
 :host([data-theme="dark"]) .picker:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-acc-deep);
-    box-shadow: 0 16px 40px color-mix(in oklab, var(--dk-acc) 50%, transparent)
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .picker button:not(:is(.hero, .adv, .hero *, .adv *)) {
     border: 0;
@@ -1824,12 +1824,12 @@ button.w:hover{background-color:var(--violet-l)}
     text-shadow: 0 1px 4px #000
 }
 :host([data-theme="dark"]) .lamps2:not(:is(.hero, .adv, .hero *, .adv *)) {
-    background: color-mix(in oklab, var(--dk-acc) 60%, transparent)
+    background: rgba(30,20,70,.6)
 }
 :host([data-theme="dark"]) .lesson:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-card);
-    color: var(--dk-acc-text);
-    box-shadow: 0 30px 80px color-mix(in oklab, var(--dk-acc) 55%, transparent)
+    color: var(--dk-text);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .lesson .side:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: linear-gradient(160deg,var(--fl),var(--dk-card))
@@ -1870,7 +1870,7 @@ button.w:hover{background-color:var(--violet-l)}
     color: var(--dk-red)
 }
 :host([data-theme="dark"]) .punct[data-tr=ru] .lesson .tr-ru:not(:is(.hero, .adv, .hero *, .adv *)), :host([data-theme="dark"]) .punct[data-tr=kk] .lesson .tr-kk:not(:is(.hero, .adv, .hero *, .adv *)) {
-    color: var(--dk-acc-text);
+    color: var(--dk-text-2);
     border-left: 3px solid var(--dk-acc-line)
 }
 :host([data-theme="dark"]) .rule-line .mk:not(:is(.hero, .adv, .hero *, .adv *)) {
@@ -1956,7 +1956,7 @@ button.w:hover{background-color:var(--violet-l)}
     color: #FFD66B
 }
 :host([data-theme="dark"]) .modes button:hover:not(:is(.hero, .adv, .hero *, .adv *)) {
-    color: var(--dk-acc-text)
+    color: var(--dk-text)
 }
 :host([data-theme="dark"]) .stepnav li.pn a:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-acc-deep);
@@ -1965,12 +1965,12 @@ button.w:hover{background-color:var(--violet-l)}
 }
 :host([data-theme="dark"]) .stepnav li.pn a i:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-yellow);
-    color: var(--dk-acc-text)
+    color: var(--dk-on-bright)
 }
 :host([data-theme="dark"]) .stepnav li.pn a.on:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-yellow);
     border-color: var(--dk-yellow-line);
-    color: var(--dk-acc-text)
+    color: var(--dk-on-bright)
 }
 :host([data-theme="dark"]) .srcbox:not(:is(.hero, .adv, .hero *, .adv *)) {
     border-top: 1px solid var(--line)
@@ -1981,10 +1981,10 @@ button.w:hover{background-color:var(--violet-l)}
 :host([data-theme="dark"]) .gate-card:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-acc-deep);
     color: #fff;
-    box-shadow: 0 30px 70px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .gate-card:not(:is(.hero, .adv, .hero *, .adv *))::before {
-    background: linear-gradient(90deg,color-mix(in oklab, var(--dk-acc) 94%, transparent) 0%,color-mix(in oklab, var(--dk-acc) 82%, transparent) 46%,color-mix(in oklab, var(--dk-acc) 15%, transparent) 100%)
+    background: linear-gradient(90deg,rgba(26,18,60,.94) 0%,rgba(26,18,60,.82) 46%,rgba(255, 255, 255, 0.15) 100%)
 }
 :host([data-theme="dark"]) .gate-done:not(:is(.hero, .adv, .hero *, .adv *)) {
     color: #7CF0A6
@@ -2015,7 +2015,7 @@ button.w:hover{background-color:var(--violet-l)}
 :host([data-theme="dark"]) .playbtn:not(:is(.hero, .adv, .hero *, .adv *)) {
     border: 0;
     background: linear-gradient(180deg,var(--dk-yellow-tint),var(--dk-yellow));
-    color: var(--dk-acc-text);
+    color: var(--dk-text);
     box-shadow: 0 8px 0 var(--dk-yellow),0 18px 40px color-mix(in oklab, var(--dk-yellow) 30%, transparent)
 }
 :host([data-theme="dark"]) .playbtn:active:not(:is(.hero, .adv, .hero *, .adv *)) {
@@ -2029,7 +2029,7 @@ button.w:hover{background-color:var(--violet-l)}
     color: #FFD66B
 }
 :host([data-theme="dark"]) .playbtn .stars i:not(.on):not(:is(.hero, .adv, .hero *, .adv *)) {
-    color: color-mix(in oklab, var(--dk-acc-text) 25%, transparent)
+    color: color-mix(in oklab, var(--dk-text) 25%, transparent)
 }
 :host([data-theme="dark"]) .gate-skip .linkbtn:not(:is(.hero, .adv, .hero *, .adv *)) {
     color: var(--ink3)
@@ -2039,7 +2039,7 @@ button.w:hover{background-color:var(--violet-l)}
 }
 @container punct (max-width:760px) {
     :host([data-theme="dark"]) .gate-card:not(:is(.hero, .adv, .hero *, .adv *))::before {
-        background: linear-gradient(180deg,color-mix(in oklab, var(--dk-acc) 25%, transparent) 0,color-mix(in oklab, var(--dk-acc) 92%, transparent) 210px)
+        background: linear-gradient(180deg,rgba(255, 255, 255, 0.25) 0,rgba(26,18,60,.92) 210px)
     }
 }
 :host([data-theme="dark"]) .warp:not(:is(.hero, .adv, .hero *, .adv *)) {
@@ -2055,7 +2055,7 @@ button.w:hover{background-color:var(--violet-l)}
     background: var(--dk-acc-deep)
 }
 :host([data-theme="dark"]) .gtitle:not(:is(.hero, .adv, .hero *, .adv *)) {
-    background: color-mix(in oklab, var(--dk-acc) 55%, transparent);
+    background: rgba(30,20,70,.55);
     border: 1.5px dashed rgba(255,255,255,.3)
 }
 :host([data-theme="dark"]) .gtitle .mk:not(:is(.hero, .adv, .hero *, .adv *)) {
@@ -2066,11 +2066,11 @@ button.w:hover{background-color:var(--violet-l)}
 }
 :host([data-theme="dark"]) .splash b:not(:is(.hero, .adv, .hero *, .adv *)) {
     color: #fff;
-    text-shadow: 0 5px 0 var(--dk-acc-strong),0 14px 34px color-mix(in oklab, var(--dk-acc) 60%, transparent)
+    text-shadow: 0 5px 0 var(--dk-acc-strong),0 14px 34px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .splash span:not(:is(.hero, .adv, .hero *, .adv *)) {
     color: #FFE27A;
-    text-shadow: 0 2px 12px color-mix(in oklab, var(--dk-acc) 85%, transparent)
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .rule-line.cheer:not(:is(.hero, .adv, .hero *, .adv *)) {
     color: var(--dk-green)
@@ -2081,8 +2081,8 @@ button.w:hover{background-color:var(--violet-l)}
 }
 :host([data-theme="dark"]) .oops:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-card);
-    color: var(--dk-acc-text);
-    box-shadow: 0 18px 50px color-mix(in oklab, var(--dk-acc) 50%, transparent)
+    color: var(--dk-text);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .oops .oh:not(:is(.hero, .adv, .hero *, .adv *)) {
     color: var(--dk-red)
@@ -2108,20 +2108,20 @@ button.w:hover{background-color:var(--violet-l)}
 }
 :host([data-theme="dark"]) .ptag.retry:not(:is(.hero, .adv, .hero *, .adv *)), :host([data-theme="dark"]) .banner .tag.retry:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-yellow);
-    color: var(--dk-acc-text)
+    color: var(--dk-on-bright)
 }
 :host([data-theme="dark"]) .rafts .rq:not(:is(.hero, .adv, .hero *, .adv *)) {
     color: #fff;
-    text-shadow: 0 2px 12px color-mix(in oklab, var(--dk-acc) 85%, transparent)
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .raft:not(:is(.hero, .adv, .hero *, .adv *)) {
     border: 0;
     background: none;
-    color: var(--dk-acc-text)
+    color: var(--dk-text)
 }
 :host([data-theme="dark"]) .raft .rt:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: repeating-linear-gradient(90deg,rgba(255, 255, 255, 0.035) 0 2px,transparent 2px 7px),linear-gradient(180deg,var(--dk-yellow-tint),var(--dk-yellow-tint));
-    box-shadow: inset 0 -5px 0 color-mix(in oklab, var(--dk-yellow) 16%, transparent),0 16px 34px color-mix(in oklab, var(--dk-acc) 38%, transparent);
+    box-shadow: inset 0 -5px 0 color-mix(in oklab, var(--dk-yellow) 16%, transparent),0 16px 34px rgba(0, 0, 0, 0.6);
     outline: 2.5px dashed color-mix(in oklab, var(--dk-yellow) 45%, transparent)
 }
 :host([data-theme="dark"]) .raft .rb:not(:is(.hero, .adv, .hero *, .adv *)) {
@@ -2153,7 +2153,7 @@ button.w:hover{background-color:var(--violet-l)}
 }
 :host([data-theme="dark"]) .gtitle .snum:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-yellow);
-    color: var(--dk-acc-text)
+    color: var(--dk-on-bright)
 }
 :host([data-theme="dark"]) .gtitle .trail i:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: rgba(255,255,255,.25)
@@ -2169,11 +2169,11 @@ button.w:hover{background-color:var(--violet-l)}
 }
 :host([data-theme="dark"]) .splash small:not(:is(.hero, .adv, .hero *, .adv *)) {
     color: #fff;
-    text-shadow: 0 2px 10px color-mix(in oklab, var(--dk-acc) 80%, transparent)
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .strail i:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: rgba(255,255,255,.3);
-    box-shadow: 0 2px 8px color-mix(in oklab, var(--dk-acc) 40%, transparent)
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .strail i.on:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-green)
@@ -2189,8 +2189,8 @@ button.w:hover{background-color:var(--violet-l)}
 }
 :host([data-theme="dark"]) .rafts .fact:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: var(--dk-card);
-    color: var(--dk-acc-text);
-    box-shadow: 0 12px 30px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+    color: var(--dk-text);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6)
 }
 :host([data-theme="dark"]) .rafts .fact small:not(:is(.hero, .adv, .hero *, .adv *)) {
     color: var(--dk-acc-text)
@@ -2221,7 +2221,7 @@ button.w:hover{background-color:var(--violet-l)}
     background-color: var(--dk-card)
 }
 :host([data-theme="dark"]) .usedmarks b:not(:is(.hero, .adv, .hero *, .adv *)) {
-    color: var(--dk-acc-text)
+    color: var(--dk-text)
 }
 :host([data-theme="dark"]) .beam:not(:is(.hero, .adv, .hero *, .adv *)) {
     background: linear-gradient(270deg,color-mix(in oklab, var(--dk-yellow-tint) 85%, transparent),color-mix(in oklab, var(--dk-yellow-tint) 25%, transparent) 40%,transparent 85%)
