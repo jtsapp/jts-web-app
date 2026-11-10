@@ -110,6 +110,12 @@ export const DESTINATIONS = [
     name: { ru: 'Pronunciation World (произношение)', kk: 'Pronunciation World', en: 'Pronunciation World' },
     about: 'курс английского произношения A0–C1 (вкладка «Говорение»): объяснение звука со схемами рта и губ, запись своего голоса для сравнения, игра на слух Echo Gates',
   },
+  // Punctuation World тоже с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'punctuation', nav: 'punctuation', screen: 'punctuation',
+    name: { ru: 'Punctuation World (пунктуация)', kk: 'Punctuation World', en: 'Punctuation World' },
+    about: 'пунктуация английского A0–C2 (вкладка «Грамматика»): 20 страниц-уроков на пяти островах — знак, его работа, когда и как ставить, — и после каждой игра-приключение Декстера в семь стадий',
+  },
   {
     id: 'reading', nav: 'reading', screen: 'reading',
     name: { ru: 'Чтение: тексты', kk: 'Оқылым: мәтіндер', en: 'Reading texts' },

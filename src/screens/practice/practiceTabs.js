@@ -25,7 +25,8 @@ export const SKILLS = [
     key: 'grammarGames',
     sub: 'practice.skillSub.grammarGames',
     groups: [
-      { title: 'practice.group.trainers', cards: ['topics'] },
+      // Punctuation World (10.11.2026) — тренажёр рядом с темами; Tenses World встаёт между ними своей веткой.
+      { title: 'practice.group.trainers', cards: ['topics', 'punctuation'] },
       {
         title: 'practice.group.games',
         sub: 'practice.group.gamesSub',
