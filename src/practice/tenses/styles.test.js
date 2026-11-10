@@ -21,7 +21,20 @@ describe('TENSES_CSS', () => {
     expect(TENSES_CSS).toContain('.tws { container: tws / inline-size;')
     expect(TENSES_CSS).not.toMatch(/@media \((max|min)-width/)
     expect(TENSES_CSS).not.toMatch(/\d(vw)\b/)
-    // 12 правил прототипа и одно своё (кегль плитки карты на телефоне)
-    expect(TENSES_CSS.match(/@container tws \(/g)).toHaveLength(13)
+    // 12 правил прототипа и одно своё (кегль плитки карты на телефоне); тёмный слой повторяет их со своими цветами
+    expect(LIGHT.match(/@container tws \(/g)).toHaveLength(13)
+  })
+
+  // 10.11.2026: тёмная тема приложения раздел не перекрашивала — тень не видит ни html[data-theme], ни глобального
+  // тёмного слоя.
+  it('тёмная тема — по атрибуту хоста, токенами брендбука, после светлых стилей', () => {
+    expect(LIGHT).not.toContain('data-theme')
+    expect(TENSES_CSS).toMatch(/:host\(\[data-theme="dark"\]\) \{\s+--brand: var\(--dk-acc\);/)
+    expect(TENSES_CSS).toMatch(/--bg: var\(--dk-page\);\s+--card: var\(--dk-card\);\s+--ink: var\(--dk-text\);/)
+    expect(TENSES_CSS).toContain('color-scheme: dark')
+    // «выбранное» чёрной плашкой с белой подписью не становится белым по белому
+    expect(TENSES_CSS).toMatch(/:host\(\[data-theme="dark"\]\) \.pill\.on \{\s+background: var\(--dk-ink-bg\);/)
   })
 })
+
+const LIGHT = TENSES_CSS.slice(0, TENSES_CSS.indexOf(':host([data-theme="dark"])'))

@@ -20,6 +20,12 @@
 //   (.adv) и так контейнер размера — её @container и cqw/cqh не трогаем.
 // - .adv.game: в прототипе 100dvh на всю страницу без шапки сайта; у нас игра —
 //   блок в колонке высотой с окно (--punct-game-h может задать экран).
+// - Тёмная тема (10.11.2026, «включение там не работает»): своей у прототипа
+//   нет, а глобальный слой src/theme-dark.generated.css в тень не проходит.
+//   Тёмный слой собирается здесь тем же правилом брендбука, что и у всего
+//   сайта (scripts/lib/dark-css.js → токены --dk-* из src/theme-dark.css), под
+//   :host([data-theme="dark"]) — атрибут ставит экран по теме приложения
+//   (src/practice/hostTheme.js).
 //
 // Fixed-слои движка (тост, вспышка портала, искры, выбор знака, летящий знак)
 // остаются position:fixed внутри .punct: контейнер inline-size не держит их
@@ -30,6 +36,7 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
+const { darkShadowCss, HOST_DARK } = require('../lib/dark-css')
 
 const ROOT = path.join(__dirname, '..', '..')
 const FIXTURE = path.join(ROOT, 'src', 'practice', 'punctuation', '__fixtures__', 'prototype-mini.html')
@@ -62,6 +69,21 @@ const APP_CSS = `
 .punct .lsec,.punct .gate,.punct .sec{scroll-margin-top:84px}
 `
 
+// Что правило тёмной темы по цвету не угадывает. --violet-d у прототипа — текстовый фиолетовый (ссылки, надзаголовки,
+// знак урока): сплошной фиолетовый бренда мелким текстом на графите не читается (3.7:1), поэтому — его текстовая
+// ступень, а единственная заливка им (наведение на главную кнопку) — тёмная ступень заливки. --line2 — рамка
+// кнопок-плашек: палитра свела бы её к --line, и плашки слились бы с фоном.
+// Светлые зоны тёмной темы (scripts/lib/dark-css.js, zoneGuards): баннер главной — картинка во весь блок, текст лежит
+// на её светлом небе; приключение — сцена со своими табличками и фишками знаков. Обе нарисованы под иллюстрацию, а не
+// под страницу, поэтому остаются в палитре прототипа, как картинка. Цвет текста .hero наследует от корня раздела
+// (в тёмной теме — белый), поэтому ему он возвращается; у .adv свой (#fff).
+const DARK_ZONES = { lightZones: ['.hero', '.adv'], zoneColor: { '.hero': 'var(--ink)' } }
+
+const DARK_APP_CSS = `
+${HOST_DARK}{color-scheme:dark;--violet-d:var(--dk-acc-text);--line2:var(--dk-line-strong)}
+${HOST_DARK} .btn-p:hover{background:var(--dk-acc-strong)}
+`
+
 function arg(name) {
   const i = process.argv.indexOf(name)
   return i > 0 ? process.argv[i + 1] : null
@@ -82,13 +104,16 @@ function main() {
     if (bad.test(css)) throw new Error(`после правок осталось ${bad}`)
   }
   if (/[`\\]|\$\{/.test(css)) throw new Error('в CSS обратная кавычка, \\ или ${ — шаблонная строка их не перенесёт')
+  const light = `${css.trim()}\n${APP_CSS.trim()}`
+  const dark = `${darkShadowCss(light, DARK_ZONES).css}\n${DARK_APP_CSS.trim()}`
+  if (/[`\\]|\$\{/.test(dark)) throw new Error('в тёмном слое обратная кавычка, \\ или ${ — шаблонная строка их не перенесёт')
   const out = `// CSS «Punctuation World» для Shadow DOM. СГЕНЕРИРОВАН
 // scripts/punctuation/extract-styles.js из <style> прототипа — руками не
-// править: правки — в PATCHES/APP_CSS генератора (там же — что и почему
-// отличается от прототипа).
+// править: правки — в PATCHES/APP_CSS/DARK_APP_CSS генератора (там же — что
+// и почему отличается от прототипа).
 
-export const PUNCTUATION_CSS = \`${css.trim()}
-${APP_CSS.trim()}
+export const PUNCTUATION_CSS = \`${light}
+${dark}
 \`
 `
   fs.writeFileSync(OUT, out)

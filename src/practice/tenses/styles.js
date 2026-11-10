@@ -1,6 +1,6 @@
 // CSS «Tenses World» для Shadow DOM. СГЕНЕРИРОВАН scripts/tenses/extract-styles.js
-// из <style> прототипа — руками не править: правки — в PATCHES/APP_CSS генератора
-// (там же — что и почему отличается от прототипа).
+// из <style> прототипа — руками не править: правки — в PATCHES/APP_CSS/DARK_APP_CSS
+// генератора (там же — что и почему отличается от прототипа).
 
 export const TENSES_CSS = `:host {
   --brand: #874BF8;
@@ -652,4 +652,924 @@ em.en { font-style: normal; background: linear-gradient(transparent 58%, rgba(13
 .tws { container: tws / inline-size; overflow-wrap: break-word; }
 .tws[lang="kk"] { --font-head: 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; --font-body: 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
 @container tws (max-width: 400px) { .tile h3 { font-size: 13px; letter-spacing: -.01em; } }
+:host([data-theme="dark"]) {
+    --brand: var(--dk-acc);
+    --brand-2: var(--dk-acc);
+    --brand-soft: var(--dk-acc-tint);
+    --cyan: var(--dk-blue);
+    --blue: var(--dk-blue);
+    --green: var(--dk-green);
+    --orange: var(--dk-orange);
+    --orange-2: var(--dk-orange);
+    --yellow: var(--dk-yellow);
+    --red: var(--dk-red);
+    --g-past: var(--dk-orange);
+    --g-past-soft: var(--dk-orange-tint);
+    --g-present: var(--dk-acc);
+    --g-present-soft: var(--dk-acc-tint);
+    --g-future: var(--dk-blue);
+    --g-future-soft: var(--dk-blue-tint);
+    --k-s: var(--dk-acc);
+    --k-a: var(--dk-blue);
+    --k-n: var(--dk-red);
+    --k-v: var(--dk-green);
+    --k-o: var(--dk-text-2);
+    --k-t: var(--dk-yellow);
+    --bg: var(--dk-page);
+    --card: var(--dk-card);
+    --ink: var(--dk-text);
+    --ink-2: var(--dk-text-2);
+    --ink-3: var(--dk-muted);
+    --line: var(--dk-line);
+    --line-strong: var(--dk-line);
+    --ok: var(--dk-green);
+    --ok-soft: var(--dk-green-tint);
+    --bad: var(--dk-red);
+    --bad-soft: var(--dk-red-tint);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 8px 24px color-mix(in oklab, var(--dk-acc) 7%, transparent);
+    --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.1), 0 16px 40px color-mix(in oklab, var(--dk-acc) 14%, transparent)
+}
+:host([data-theme="dark"]) .tws {
+    background: var(--bg);
+    color: var(--ink)
+}
+:host([data-theme="dark"]) button, :host([data-theme="dark"]) input {
+    color: inherit
+}
+:host([data-theme="dark"]) .en {
+    color: var(--ink)
+}
+:host([data-theme="dark"]) em.en {
+    background: linear-gradient(transparent 58%, color-mix(in oklab, var(--dk-acc) 16%, transparent) 0)
+}
+:host([data-theme="dark"]) :focus-visible {
+    outline: 3px solid color-mix(in oklab, var(--dk-acc) 45%, transparent)
+}
+:host([data-theme="dark"]) .topbar {
+    background: color-mix(in oklab, var(--dk-page) 86%, transparent);
+    border-bottom: 1px solid transparent
+}
+:host([data-theme="dark"]) .topbar.scrolled {
+    border-color: var(--line)
+}
+:host([data-theme="dark"]) .logo {
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .logo b {
+    color: var(--brand)
+}
+:host([data-theme="dark"]) .logo small {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .btn {
+    border: 0;
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1.5px var(--line)
+}
+:host([data-theme="dark"]) .btn:hover {
+    box-shadow: inset 0 0 0 1.5px var(--line-strong)
+}
+:host([data-theme="dark"]) .btn.primary {
+    background: var(--brand);
+    color: var(--dk-on-acc);
+    box-shadow: 0 6px 16px color-mix(in oklab, var(--dk-acc) 32%, transparent)
+}
+:host([data-theme="dark"]) .btn.primary:hover {
+    background: var(--brand-2)
+}
+:host([data-theme="dark"]) .btn.ghost {
+    background: transparent;
+    box-shadow: none
+}
+:host([data-theme="dark"]) .btn.ghost:hover {
+    background: color-mix(in oklab, var(--dk-acc) 8%, transparent)
+}
+:host([data-theme="dark"]) .switcher-pop {
+    background: var(--card);
+    box-shadow: var(--shadow-lift)
+}
+:host([data-theme="dark"]) .mini-map .h {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .mini-map .rl {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .mini-map a {
+    color: var(--ink);
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .mini-map a:hover {
+    background: var(--brand-soft)
+}
+:host([data-theme="dark"]) .mini-map a.cur {
+    background: var(--brand);
+    color: var(--dk-on-acc)
+}
+:host([data-theme="dark"]) .mini-map a[data-g="past"].cur {
+    background: var(--g-past)
+}
+:host([data-theme="dark"]) .mini-map a[data-g="future"].cur {
+    background: var(--g-future)
+}
+:host([data-theme="dark"]) .hub-hero {
+    background: var(--brand);
+    color: var(--dk-on-acc)
+}
+:host([data-theme="dark"]) .hub-hero::before {
+    background: radial-gradient(600px 300px at 0% 100%, color-mix(in oklab, var(--dk-orange) 55%, transparent), transparent 60%),
+              radial-gradient(520px 320px at 100% 0%, color-mix(in oklab, var(--dk-blue) 60%, transparent), transparent 60%),
+              radial-gradient(400px 260px at 60% 120%, color-mix(in oklab, var(--dk-green) 25%, transparent), transparent 60%)
+}
+:host([data-theme="dark"]) .hub-hero .eyebrow {
+    background: rgba(255, 255, 255, .16)
+}
+:host([data-theme="dark"]) .hub-hero h1 span {
+    color: #FFF805
+}
+:host([data-theme="dark"]) .hero-actions .btn {
+    background: var(--dk-card);
+    color: var(--brand);
+    box-shadow: none
+}
+:host([data-theme="dark"]) .hero-actions .btn.alt {
+    background: rgba(255, 255, 255, .16);
+    color: #fff
+}
+:host([data-theme="dark"]) .section-title p {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .kicker {
+    color: var(--brand)
+}
+:host([data-theme="dark"]) .time-axis .zone {
+    color: #fff
+}
+:host([data-theme="dark"]) .zone.past {
+    background: var(--g-past)
+}
+:host([data-theme="dark"]) .zone.present {
+    background: var(--g-present)
+}
+:host([data-theme="dark"]) .zone.future {
+    background: var(--g-future)
+}
+:host([data-theme="dark"]) .map .aspect-label span {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .tile {
+    background: var(--card);
+    box-shadow: var(--shadow);
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .tile:hover {
+    box-shadow: var(--shadow-lift)
+}
+:host([data-theme="dark"]) .tile .num {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .tile .tg {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .tile::before {
+    background: var(--gc)
+}
+:host([data-theme="dark"]) .tile .badge-video {
+    color: var(--gc);
+    background: var(--gs)
+}
+:host([data-theme="dark"]) .tile.visited h3::after {
+    color: var(--ok)
+}
+:host([data-theme="dark"]) .how .card p {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .how .step-n {
+    background: var(--brand-soft);
+    color: var(--brand)
+}
+:host([data-theme="dark"]) .card {
+    background: var(--card);
+    box-shadow: var(--shadow)
+}
+:host([data-theme="dark"]) .t-hero {
+    background: var(--gc);
+    color: #fff
+}
+:host([data-theme="dark"]) .t-hero::before {
+    background: radial-gradient(500px 280px at 100% 0%, rgba(255, 255, 255, .22), transparent 60%), radial-gradient(380px 240px at 0% 110%, rgba(255, 255, 255, 0.14), transparent 60%)
+}
+:host([data-theme="dark"]) .t-hero .chip {
+    background: rgba(255, 255, 255, .18)
+}
+:host([data-theme="dark"]) .t-hero .tl-card {
+    background: var(--dk-card);
+    color: var(--ink);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28)
+}
+:host([data-theme="dark"]) .t-hero .tl-card .cap {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .stepnav {
+    background: var(--card);
+    box-shadow: var(--shadow)
+}
+:host([data-theme="dark"]) .stepnav a {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .stepnav a i {
+    background: var(--bg);
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .stepnav a:hover {
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .stepnav a.on {
+    background: var(--gc, var(--brand));
+    color: #fff
+}
+:host([data-theme="dark"]) .stepnav a.on i {
+    background: rgba(255, 255, 255, .25);
+    color: #fff
+}
+:host([data-theme="dark"]) .block-head .n {
+    color: #fff;
+    background: var(--gc, var(--brand))
+}
+:host([data-theme="dark"]) .block-head p {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .video-wrap {
+    background: #0E0D14;
+    box-shadow: var(--shadow-lift)
+}
+:host([data-theme="dark"]) .video-wrap video {
+    background: #000
+}
+:host([data-theme="dark"]) .video-meta {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .video-pending {
+    background: var(--card);
+    box-shadow: var(--shadow)
+}
+:host([data-theme="dark"]) .video-pending::before {
+    background: repeating-linear-gradient(-45deg, transparent 0 22px, color-mix(in oklab, var(--dk-acc) 4%, transparent) 22px 44px)
+}
+:host([data-theme="dark"]) .video-pending .play {
+    background: var(--brand-soft);
+    color: var(--brand)
+}
+:host([data-theme="dark"]) .video-pending p {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .video-error {
+    color: #fff
+}
+:host([data-theme="dark"]) .usage .ic {
+    background: var(--gs);
+    color: var(--gc)
+}
+:host([data-theme="dark"]) .usage p {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .ex {
+    border-left: 3px solid var(--gc)
+}
+:host([data-theme="dark"]) .ex .r {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .forms-tabs {
+    background: var(--card);
+    box-shadow: var(--shadow)
+}
+:host([data-theme="dark"]) .forms-tabs button {
+    border: 0;
+    background: transparent;
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .forms-tabs button .sg {
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .forms-tabs button.on {
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+:host([data-theme="dark"]) .forms-tabs button.on .sg {
+    background: rgba(255, 255, 255, .18)
+}
+:host([data-theme="dark"]) .chipk {
+    color: #fff
+}
+:host([data-theme="dark"]) .chipk.s {
+    background: var(--k-s)
+}
+:host([data-theme="dark"]) .chipk.a {
+    background: var(--k-a)
+}
+:host([data-theme="dark"]) .chipk.n {
+    background: var(--k-n)
+}
+:host([data-theme="dark"]) .chipk.v {
+    background: var(--k-v)
+}
+:host([data-theme="dark"]) .chipk.o {
+    background: var(--dk-chip);
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .chipk.t {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+:host([data-theme="dark"]) .plus {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .formula-card .note {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .formula-card .short span {
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .legend {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .extra li {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .extra li::before {
+    background: var(--gc)
+}
+:host([data-theme="dark"]) .signal-words span {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+:host([data-theme="dark"]) .signals .note {
+    color: var(--ink-2);
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .mistake .w {
+    color: var(--bad);
+    text-decoration-color: color-mix(in oklab, var(--dk-red) 55%, transparent)
+}
+:host([data-theme="dark"]) .mistake .c {
+    color: var(--ok)
+}
+:host([data-theme="dark"]) .mistake .w::before, :host([data-theme="dark"]) .mistake .c::before {
+    color: #fff
+}
+:host([data-theme="dark"]) .mistake .w::before {
+    background: var(--bad)
+}
+:host([data-theme="dark"]) .mistake .c::before {
+    background: var(--ok)
+}
+:host([data-theme="dark"]) .mistake p {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .compare h4 a {
+    color: inherit
+}
+:host([data-theme="dark"]) .compare > p {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .cmp-col {
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .cmp-col .r {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .sources {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .lab-row .lab-lbl {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .pill {
+    border: 0;
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .pill:hover {
+    background: var(--brand-soft)
+}
+:host([data-theme="dark"]) .pill.on {
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+:host([data-theme="dark"]) .lab-out {
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .k-s {
+    color: var(--k-s);
+    background: color-mix(in oklab, var(--dk-acc) 10%, transparent)
+}
+:host([data-theme="dark"]) .k-a {
+    color: var(--k-a);
+    background: color-mix(in oklab, var(--dk-blue) 10%, transparent)
+}
+:host([data-theme="dark"]) .k-an {
+    color: var(--k-a);
+    background: linear-gradient(90deg, color-mix(in oklab, var(--dk-blue) 10%, transparent), color-mix(in oklab, var(--dk-red) 12%, transparent))
+}
+:host([data-theme="dark"]) .k-n {
+    color: var(--k-n);
+    background: color-mix(in oklab, var(--dk-red) 10%, transparent)
+}
+:host([data-theme="dark"]) .k-v {
+    color: var(--k-v);
+    background: color-mix(in oklab, var(--dk-green) 10%, transparent)
+}
+:host([data-theme="dark"]) .k-o {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .k-t {
+    color: var(--k-t);
+    background: color-mix(in oklab, var(--dk-yellow) 10%, transparent)
+}
+:host([data-theme="dark"]) .lab-contr {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .lab-contr b {
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .machine-grid button {
+    border: 0;
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .machine-grid button:hover {
+    background: var(--brand-soft)
+}
+:host([data-theme="dark"]) .machine-grid button small {
+    color: var(--gc)
+}
+:host([data-theme="dark"]) .machine-grid button.cur {
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+:host([data-theme="dark"]) .machine-grid button.cur small {
+    color: #fff
+}
+:host([data-theme="dark"]) .review li::before {
+    background: var(--gs);
+    color: var(--gc)
+}
+:host([data-theme="dark"]) .review .recap {
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .review .recap .lbl {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .next-tense a {
+    background: var(--card);
+    box-shadow: var(--shadow);
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .next-tense a small {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .tl-t {
+    fill: var(--ink-3)
+}
+:host([data-theme="dark"]) .tl-strong {
+    fill: var(--ink)
+}
+:host([data-theme="dark"]) .tl-now {
+    fill: #fff
+}
+:host([data-theme="dark"]) .footer-note {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .toast {
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+:host([data-theme="dark"]) .signals .note svg {
+    color: var(--yellow)
+}
+:host([data-theme="dark"]) .langs {
+    background: var(--card);
+    box-shadow: inset 0 0 0 1.5px var(--line)
+}
+:host([data-theme="dark"]) .langs button {
+    border: 0;
+    background: transparent;
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .langs button:hover {
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .langs button.on {
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+:host([data-theme="dark"]) .langs button[data-lang="kz"].on {
+    background: var(--dk-blue)
+}
+:host([data-theme="dark"]) .langs button[data-lang="ru"].on {
+    background: var(--brand)
+}
+:host([data-theme="dark"]) .xlat {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .lesson-head .chip {
+    background: var(--card);
+    box-shadow: inset 0 0 0 1.5px var(--line);
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .lesson-head .chip.g {
+    background: var(--gc);
+    color: #fff;
+    box-shadow: none
+}
+:host([data-theme="dark"]) .lesson-head .key {
+    color: var(--ink-2);
+    border-left: 4px solid var(--gc)
+}
+:host([data-theme="dark"]) .cinema {
+    background: linear-gradient(135deg, var(--gc), color-mix(in srgb, var(--gc) 55%, var(--dk-blue)));
+    box-shadow: 0 30px 70px -20px color-mix(in srgb, var(--gc) 60%, transparent), 0 8px 24px rgba(0, 0, 0, 0.24)
+}
+:host([data-theme="dark"]) .cinema-screen {
+    background: #0B0A12
+}
+:host([data-theme="dark"]) .cinema-screen video {
+    background: #000
+}
+:host([data-theme="dark"]) .cinema.pending .cinema-screen {
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.14), transparent 50%), var(--dk-acc-deep)
+}
+:host([data-theme="dark"]) .pending-in {
+    color: #fff
+}
+:host([data-theme="dark"]) .pending-in .play {
+    background: rgba(255,255,255,.12);
+    color: #fff
+}
+:host([data-theme="dark"]) .lab-tip {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .lesson-below .tl-card .cap {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .lesson-below .intro {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .cinema {
+    background-color: var(--gc)
+}
+:host([data-theme="dark"]) .pr-lesson {
+    border-top: 5px solid var(--gc)
+}
+:host([data-theme="dark"]) .pr-lesson .pl-tl {
+    background: var(--gs)
+}
+:host([data-theme="dark"]) .pr-lesson .pl-covers {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .pr-lesson .pl-meta {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .best {
+    color: var(--dk-green)
+}
+:host([data-theme="dark"]) .pr-lesson .pl-more {
+    border-top: 1px solid var(--line)
+}
+:host([data-theme="dark"]) .pr-lesson .pl-more > span {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .pl-chip {
+    color: var(--ink);
+    background: var(--bg);
+    box-shadow: inset 0 0 0 1.5px var(--line)
+}
+:host([data-theme="dark"]) .pl-chip:hover {
+    box-shadow: inset 0 0 0 1.5px var(--gc)
+}
+:host([data-theme="dark"]) .pl-all {
+    color: var(--brand)
+}
+:host([data-theme="dark"]) .pr-hero {
+    background: var(--card);
+    box-shadow: var(--shadow)
+}
+:host([data-theme="dark"]) .pr-hero > p {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .pr-steps a {
+    background: var(--bg);
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .pr-steps a:hover {
+    background: var(--brand-soft)
+}
+:host([data-theme="dark"]) .pr-steps i {
+    background: var(--card);
+    box-shadow: inset 0 0 0 1.5px var(--line-strong)
+}
+:host([data-theme="dark"]) .pr-steps small {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .pr-steps li.part i {
+    background: var(--yellow);
+    color: var(--dk-on-bright);
+    box-shadow: none
+}
+:host([data-theme="dark"]) .pr-steps li.full i {
+    background: var(--ok);
+    color: var(--dk-on-bright);
+    box-shadow: none
+}
+:host([data-theme="dark"]) .pr-setcard {
+    background: var(--card);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+    border-top: 4px solid var(--gc)
+}
+:host([data-theme="dark"]) .pr-setcard:hover {
+    box-shadow: var(--shadow-lift)
+}
+:host([data-theme="dark"]) .pr-setcard small {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .pr-setcard .pr-meta {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .pr-setcard.cur {
+    box-shadow: 0 0 0 2.5px var(--brand), var(--shadow-lift)
+}
+:host([data-theme="dark"]) .pr-setcard .pr-next {
+    background: var(--brand);
+    color: var(--dk-on-acc)
+}
+:host([data-theme="dark"]) .pr-sources p {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .pr-sources li span {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .pr-sources a {
+    color: var(--brand)
+}
+:host([data-theme="dark"]) .pr-shell {
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .pr-top {
+    background: color-mix(in oklab, var(--dk-page) 92%, transparent);
+    border-bottom: 1px solid var(--line)
+}
+:host([data-theme="dark"]) .pr-x {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .pr-x:hover {
+    background: var(--line);
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .pr-set {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .pr-bar {
+    background: var(--line)
+}
+:host([data-theme="dark"]) .pr-bar i {
+    background: var(--gc)
+}
+:host([data-theme="dark"]) .pr-count {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .pr-card {
+    background: var(--card);
+    box-shadow: var(--shadow)
+}
+:host([data-theme="dark"]) .pr-instr {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .pr-q {
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .pr-q mark {
+    background: var(--gs);
+    color: var(--gc)
+}
+:host([data-theme="dark"]) .pr-src {
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .pr-blank {
+    border-bottom: 3px solid var(--line-strong)
+}
+:host([data-theme="dark"]) .pr-blank.ok {
+    color: var(--dk-green);
+    border-color: var(--ok)
+}
+:host([data-theme="dark"]) .pr-blank.fix {
+    color: var(--ink);
+    border-color: var(--ok);
+    background: var(--ok-soft)
+}
+:host([data-theme="dark"]) .pr-hint {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .pr-opt {
+    border: 0;
+    background: var(--card);
+    box-shadow: inset 0 0 0 2px var(--line);
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .pr-opt:hover:not([disabled]) {
+    box-shadow: inset 0 0 0 2px var(--gc)
+}
+:host([data-theme="dark"]) .pr-opt kbd {
+    color: var(--ink-3);
+    box-shadow: inset 0 0 0 1.5px var(--line-strong)
+}
+:host([data-theme="dark"]) .pr-opt.ok {
+    background: var(--ok-soft);
+    box-shadow: inset 0 0 0 2px var(--ok)
+}
+:host([data-theme="dark"]) .pr-opt.ok kbd {
+    background: var(--ok);
+    color: var(--dk-on-bright);
+    box-shadow: none
+}
+:host([data-theme="dark"]) .pr-opt.bad {
+    background: var(--bad-soft);
+    box-shadow: inset 0 0 0 2px var(--bad)
+}
+:host([data-theme="dark"]) .pr-opt.bad kbd {
+    background: var(--bad);
+    color: var(--dk-on-bright);
+    box-shadow: none
+}
+:host([data-theme="dark"]) .pr-input {
+    border: 2px solid var(--line);
+    background: var(--card)
+}
+:host([data-theme="dark"]) .pr-input:focus {
+    outline: none;
+    border-color: var(--gc);
+    box-shadow: 0 0 0 4px var(--gs)
+}
+:host([data-theme="dark"]) .pr-input.ok {
+    border-color: var(--ok);
+    background: var(--ok-soft)
+}
+:host([data-theme="dark"]) .pr-input.bad {
+    border-color: var(--bad);
+    background: var(--bad-soft);
+    text-decoration-color: color-mix(in oklab, var(--dk-red) 50%, transparent)
+}
+:host([data-theme="dark"]) .pr-slot {
+    border: 2px dashed var(--line-strong)
+}
+:host([data-theme="dark"]) .pr-slot.empty::before {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .pr-slot.ok {
+    border: 2px solid var(--ok);
+    background: var(--ok-soft)
+}
+:host([data-theme="dark"]) .pr-slot.bad {
+    border: 2px solid var(--bad);
+    background: var(--bad-soft)
+}
+:host([data-theme="dark"]) .pr-punct {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .pr-tile {
+    border: 0;
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 2px var(--line), 0 3px 0 var(--line)
+}
+:host([data-theme="dark"]) .pr-tile:hover {
+    box-shadow: inset 0 0 0 2px var(--gc), 0 3px 0 var(--gs)
+}
+:host([data-theme="dark"]) .pr-tile.in {
+    background: var(--gs);
+    box-shadow: inset 0 0 0 2px transparent
+}
+:host([data-theme="dark"]) .pr-tok {
+    border: 0;
+    background: transparent;
+    color: inherit
+}
+:host([data-theme="dark"]) .pr-tok:hover:not([disabled]) {
+    background: var(--gs)
+}
+:host([data-theme="dark"]) .pr-tok.miss {
+    background: var(--line)
+}
+:host([data-theme="dark"]) .pr-tok.err {
+    background: var(--bad-soft);
+    color: var(--dk-red);
+    box-shadow: inset 0 -3px 0 var(--bad)
+}
+:host([data-theme="dark"]) .pr-tok.fixed, :host([data-theme="dark"]) .pr-tok.fix {
+    background: var(--ok-soft);
+    color: var(--dk-green);
+    box-shadow: inset 0 -3px 0 var(--ok)
+}
+:host([data-theme="dark"]) .pr-text {
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .pr-text-h {
+    color: var(--gc)
+}
+:host([data-theme="dark"]) .pr-tgap small {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .pr-tfix {
+    color: var(--dk-green)
+}
+:host([data-theme="dark"]) .pr-fb.ok {
+    background: var(--ok-soft)
+}
+:host([data-theme="dark"]) .pr-fb.bad {
+    background: var(--bad-soft)
+}
+:host([data-theme="dark"]) .pr-fb-h .ic {
+    color: #fff
+}
+:host([data-theme="dark"]) .pr-fb.ok .ic {
+    background: var(--ok)
+}
+:host([data-theme="dark"]) .pr-fb.bad .ic {
+    background: var(--bad)
+}
+:host([data-theme="dark"]) .pr-fb.ok .pr-fb-h b {
+    color: var(--dk-green)
+}
+:host([data-theme="dark"]) .pr-fb.bad .pr-fb-h b {
+    color: var(--dk-red)
+}
+:host([data-theme="dark"]) .pr-fb-ans {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .pr-fb-ans b {
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .pr-fb-why {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .pr-fb-tl {
+    background: color-mix(in oklab, var(--dk-card) 70%, transparent)
+}
+:host([data-theme="dark"]) .pr-rule {
+    color: var(--ink-2);
+    background: color-mix(in oklab, var(--dk-card) 75%, transparent);
+    box-shadow: inset 3px 0 0 var(--gc)
+}
+:host([data-theme="dark"]) .pr-rule .tn {
+    color: var(--gc)
+}
+:host([data-theme="dark"]) .pr-rule .go {
+    color: var(--brand)
+}
+:host([data-theme="dark"]) .pr-listen {
+    border: 0;
+    background: color-mix(in oklab, var(--dk-card) 80%, transparent);
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .pr-listen:hover, :host([data-theme="dark"]) .pr-listen.on {
+    color: var(--brand);
+    box-shadow: inset 0 0 0 1.5px var(--brand)
+}
+:host([data-theme="dark"]) .pr-ring {
+    background: conic-gradient(var(--gc) calc(var(--p) * 1%), var(--line) 0)
+}
+:host([data-theme="dark"]) .pr-ring span {
+    background: var(--card)
+}
+:host([data-theme="dark"]) .pr-ring small {
+    color: var(--ink-3)
+}
+:host([data-theme="dark"]) .pr-results > p {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) .pr-muted {
+    color: var(--ink-3) !important
+}
+:host([data-theme="dark"]) .pr-rev li {
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .pr-rev .pr-rule {
+    background: var(--card)
+}
+:host([data-theme="dark"]) .badge-prac {
+    color: var(--dk-green);
+    background: var(--ok-soft)
+}
+:host([data-theme="dark"]) .hub-practice a {
+    background: var(--card);
+    box-shadow: var(--shadow);
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .hub-practice i {
+    background: var(--brand-soft);
+    color: var(--brand)
+}
+:host([data-theme="dark"]) .hub-practice span {
+    color: var(--ink-2)
+}
+:host([data-theme="dark"]) { color-scheme: dark; --line-strong: var(--dk-line-strong); --brand-2: var(--dk-acc-strong); }
+:host([data-theme="dark"]) .chipk.a, :host([data-theme="dark"]) .chipk.n, :host([data-theme="dark"]) .chipk.v { color: var(--dk-on-bright); }
 `

@@ -24,4 +24,16 @@ describe('PUNCTUATION_CSS', () => {
     // секции урока встают под липкую шапку раздела (scroll-padding прототипа жил на <html>)
     expect(PUNCTUATION_CSS).toContain('scroll-margin-top:84px')
   })
+
+  // 10.11.2026: тёмная тема приложения раздел не перекрашивала — тень не видит ни html[data-theme], ни глобального
+  // тёмного слоя.
+  it('тёмная тема — по атрибуту хоста, токенами брендбука; баннер-картинка и игра остаются в палитре прототипа', () => {
+    const at = PUNCTUATION_CSS.indexOf(':host([data-theme="dark"])')
+    expect(PUNCTUATION_CSS.slice(0, at)).not.toContain('data-theme="dark"')
+    expect(PUNCTUATION_CSS).toMatch(/--bg: var\(--dk-page\);\s+--card: var\(--dk-card\);/)
+    expect(PUNCTUATION_CSS).toContain('color-scheme:dark')
+    // светлые зоны: тёмные копии туда не доходят, а переменные там — прототипа
+    expect(PUNCTUATION_CSS).toContain(':not(:is(.hero, .adv, .hero *, .adv *))')
+    expect(PUNCTUATION_CSS).toMatch(/:host\(\[data-theme="dark"\]\) :is\(\.hero, \.adv\) \{\s+color-scheme: light;\s+--violet: #874BF8;/)
+  })
 })

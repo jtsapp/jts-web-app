@@ -14,13 +14,20 @@
 //   своего <html> и <body> у раздела нет;
 // - ширина: прототип — страница во весь экран, раскладка по @media ширины окна
 //   и кегли по vw. У нас раздел — колонка рядом с сайдбаром, поэтому корень .tws
-//   — контейнер, и ширина считается по нему (@container, cqw).
+//   — контейнер, и ширина считается по нему (@container, cqw);
+// - тёмная тема (10.11.2026, «включение там не работает»): своей у прототипа
+//   нет, а глобальный слой src/theme-dark.generated.css в тень не проходит.
+//   Поэтому тёмный слой собирается здесь тем же правилом брендбука, что и у
+//   всего сайта (scripts/lib/dark-css.js → токены --dk-* из
+//   src/theme-dark.css), под :host([data-theme="dark"]) — атрибут ставит
+//   экран по теме приложения (src/practice/hostTheme.js).
 //
 // Запуск: node scripts/tenses/extract-styles.js --html "<путь к прототипу>"
 // (или без --html — с копией из __fixtures__: стили в ней те же).
 
 const fs = require('node:fs')
 const path = require('node:path')
+const { darkShadowCss, HOST_DARK } = require('../lib/dark-css')
 
 const ROOT = path.join(__dirname, '..', '..')
 const FIXTURE = path.join(ROOT, 'src', 'practice', 'tenses', '__fixtures__', 'prototype-mini.html')
@@ -50,6 +57,15 @@ const APP_CSS = `
 @container tws (max-width: 400px) { .tile h3 { font-size: 13px; letter-spacing: -.01em; } }
 `
 
+// Что правило тёмной темы по цвету не угадывает: рамка при наведении и тёмная ступень фиолетового у прототипа свои,
+// а палитра свела бы их к соседним (--line, --brand) — наведение перестало бы быть видно. Плашки формулы (.chipk)
+// берут белый текст из общего правила, а заливку — из своего, поэтому тёмную подпись на неоновом голубом, красном и
+// зелёном (белый там 2–3:1, правило брендбука) правило само не поставит.
+const DARK_APP_CSS = `
+${HOST_DARK} { color-scheme: dark; --line-strong: var(--dk-line-strong); --brand-2: var(--dk-acc-strong); }
+${HOST_DARK} .chipk.a, ${HOST_DARK} .chipk.n, ${HOST_DARK} .chipk.v { color: var(--dk-on-bright); }
+`
+
 function arg(name) {
   const i = process.argv.indexOf(name)
   return i > 0 ? process.argv[i + 1] : null
@@ -71,12 +87,15 @@ function main() {
   }
   if (/[`\\]|\$\{/.test(css)) throw new Error('в CSS обратная кавычка, \\ или ${ — шаблонная строка их не перенесёт')
   css = css.replace(/\n{3,}/g, '\n\n').trim()
+  const light = `${css}\n${APP_CSS.trim()}`
+  const dark = `${darkShadowCss(light).css}\n${DARK_APP_CSS.trim()}`
+  if (/[`\\]|\$\{/.test(dark)) throw new Error('в тёмном слое обратная кавычка, \\ или ${ — шаблонная строка их не перенесёт')
   const out = `// CSS «Tenses World» для Shadow DOM. СГЕНЕРИРОВАН scripts/tenses/extract-styles.js
-// из <style> прототипа — руками не править: правки — в PATCHES/APP_CSS генератора
-// (там же — что и почему отличается от прототипа).
+// из <style> прототипа — руками не править: правки — в PATCHES/APP_CSS/DARK_APP_CSS
+// генератора (там же — что и почему отличается от прототипа).
 
-export const TENSES_CSS = \`${css}
-${APP_CSS.trim()}
+export const TENSES_CSS = \`${light}
+${dark}
 \`
 `
   fs.writeFileSync(OUT, out)
