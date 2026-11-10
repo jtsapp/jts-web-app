@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { openRecorder, canRecord, MAX_RECORD_MS } from './recorder.js'
+import { openRecorder, canRecord, MAX_RECORD_MS, MIC_CONSTRAINTS } from './recorder.js'
 
 function fakeStream() {
   const tracks = [{ stop: vi.fn() }, { stop: vi.fn() }]
@@ -44,13 +44,42 @@ function timers() {
 }
 
 describe('openRecorder', () => {
+  it('v1.2: с mixWith — вторая дорожка «голос + фон»: WAV на распознавание, take() — сведённая запись', async () => {
+    const stream = fakeStream()
+    const { FakeMR, made } = fakeRecorderClass()
+    const release = vi.fn()
+    const mixed = { id: 'mixed' }
+    const mixWith = vi.fn(() => ({ stream: mixed, release }))
+    const toWav = vi.fn(async () => new Blob(['wav'], { type: 'audio/wav' }))
+    const rec = await openRecorder({ getUserMedia: async () => stream, MediaRecorderCtor: FakeMR, toWav, mixWith, timers: timers() })
+    expect(mixWith).not.toHaveBeenCalled() // сведение — на старте записи, после отсчёта
+    rec.start()
+    expect(mixWith).toHaveBeenCalledWith(stream)
+    expect(made.map((m) => m.stream)).toEqual([stream, mixed])
+    expect((await rec.stop()).type).toBe('audio/wav')
+    expect(toWav).toHaveBeenCalledOnce() // в WAV — только чистый голос
+    const take = await rec.take()
+    expect(take.type).toBe('audio/webm')
+    expect(release).toHaveBeenCalledOnce()
+    expect(stream.tracks.every((t) => t.stop.mock.calls.length === 1)).toBe(true)
+  })
+
+  it('сведение не построилось — запись идёт, take() — null', async () => {
+    const { FakeMR, made } = fakeRecorderClass()
+    const rec = await openRecorder({ getUserMedia: async () => fakeStream(), MediaRecorderCtor: FakeMR, toWav: async (b) => b, mixWith: () => null, timers: timers() })
+    rec.start()
+    expect(made).toHaveLength(1)
+    expect(await rec.stop()).not.toBeNull()
+    expect(await rec.take()).toBeNull()
+  })
+
   it('микрофон по запросу, запись кусками по 250 мс, стоп — WAV и дорожки отпущены', async () => {
     const stream = fakeStream()
     const { FakeMR, made } = fakeRecorderClass()
     const toWav = vi.fn(async (blob) => new Blob([await blob.text(), '-wav'], { type: 'audio/wav' }))
     const getUserMedia = vi.fn(async () => stream)
     const rec = await openRecorder({ getUserMedia, MediaRecorderCtor: FakeMR, toWav, timers: timers() })
-    expect(getUserMedia).toHaveBeenCalledWith({ audio: true })
+    expect(getUserMedia).toHaveBeenCalledWith(MIC_CONSTRAINTS)
     expect(made).toHaveLength(0) // MediaRecorder — только на start(): отсчёт 3-2-1 идёт до записи
     rec.start()
     expect(made[0].timeslice).toBe(250)
