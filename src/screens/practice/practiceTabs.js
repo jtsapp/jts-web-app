@@ -25,7 +25,7 @@ export const SKILLS = [
     key: 'grammarGames',
     sub: 'practice.skillSub.grammarGames',
     groups: [
-      { title: 'practice.group.trainers', cards: ['topics'] },
+      { title: 'practice.group.trainers', cards: ['topics', 'tenses'] },
       {
         title: 'practice.group.games',
         sub: 'practice.group.gamesSub',

@@ -4488,6 +4488,16 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
 @media (max-width: 560px) {
   .prn-top { padding: 8px 16px 0; }
 }
+/* Tenses World: оболочка как у Pronunciation World. overflow: visible — липкие шапка и полоса шагов урока
+   прототипа липнут к окну, а не к .learn__main (с overflow: auto она стала бы их прокруткой, а сама не
+   прокручивается). */
+.tns-top { display: flex; align-items: center; margin: 0 0 12px; padding: 12px 32px 0; }
+.tns-host { display: block; }
+.tns-host[hidden] { display: none; }
+.learn__main:has(.tns-host) { overflow: visible; }
+@media (max-width: 560px) {
+  .tns-top { padding: 8px 16px 0; }
+}
 /* «Грамматика · игры» своим экраном (карточка «Темы по уровням») — оболочка как у Prepositions World; тумблер
    звука стоит слева, у кнопки «назад»: правый верхний угол занят группой .learn__bell. */
 .ggp-top { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 12px 32px 0; }

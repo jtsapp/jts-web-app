@@ -11,9 +11,10 @@
 //
 // Рисует настоящий браузер: текст и тени иначе не повторить. Итог — 480×296 с альфой, как у экспортов макета.
 //
-// Материалов Prepositions World, Pronunciation World и Cartoon World в репозитории нет (раздел живёт на бэкенде),
-// поэтому выбранные картинки лежат в data/practice-cards/: prep-* и pron-* — из прототипов методиста, cartoon-* —
-// превью видео каталога с i.ytimg.com, saw/tree — рисунки из src/screens/arcade/ArcadeScene.jsx.
+// Материалов Prepositions World, Pronunciation World, Tenses World и Cartoon World в репозитории нет (раздел живёт на
+// бэкенде), поэтому выбранные картинки лежат в data/practice-cards/: prep-* и pron-* — из прототипов методиста,
+// tenses-* — постеры видеоуроков прототипа (обрезаны до номера, названия и мини-карты времён), cartoon-* — превью
+// видео каталога с i.ytimg.com, saw/tree — рисунки из src/screens/arcade/ArcadeScene.jsx.
 //
 //   node scripts/build-practice-card-covers.js              все обложки
 //   node scripts/build-practice-card-covers.js verbs words  только эти
@@ -138,6 +139,14 @@ function pronunciation() {
   const pair = `<div class="f tx ch"><i class="lbl">Which do you hear?</i><span class="opts"><b class="on">ship</b><b>sheep</b></span></div>`
   const hero = `<img class="hero" style="height:88%;left:64%" src="${data('pron-aizere.webp')}" alt="">`
   return fan(pair, photo(data('pron-w-hero.webp'), hero), photo(data('pron-w-a1.webp')))
+}
+
+// Времена — постеры видеоуроков: прошедшее, настоящее и будущее, у среднего — кнопка «плей».
+function tenses() {
+  const poster = (id) => data(`tenses-${id}.webp`)
+  // «плей» — справа, на пустом поле постера: по центру он закрывал номер времени
+  const play = '<i class="play" style="left:80%;top:34%"></i>'
+  return fan(photo(poster('past-continuous')), photo(poster('present-simple'), play), photo(poster('future-perfect')))
 }
 
 // ---------- Текстовые разделы: настоящие строки своих данных ----------
@@ -265,6 +274,7 @@ const COVERS = {
   pronunciation: ['speaking', pronunciation],
   speakspin: ['speaking', speakspin],
   topics: ['grammar', topics],
+  tenses: ['grammar', tenses],
   speedReading: ['grammar', speedReading],
   listening: ['grammar', listening],
   words: ['grammar', words],

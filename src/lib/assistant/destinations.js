@@ -104,6 +104,12 @@ export const DESTINATIONS = [
     name: { ru: 'Prepositions World (предлоги)', kk: 'Prepositions World', en: 'Prepositions World' },
     about: 'курс английских предлогов: уроки с картинками и переводом, практика на сценах',
   },
+  // 12 времён Tenses World — тоже с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'tenses', nav: 'tenses', screen: 'tenses',
+    name: { ru: 'Tenses World (12 времён)', kk: 'Tenses World', en: 'Tenses World' },
+    about: '12 английских времён (вкладка «Грамматика», группа «Тренажёры»): карта времён, у каждого видеоурок, правила и формулы, Formula Lab, затем практика в пять этапов — от узнавания времени до всех двенадцати вместе',
+  },
   // Курс Pronunciation World тоже с бэкенда; без входа экран сам просит войти.
   {
     id: 'pronunciation', nav: 'pronunciation', screen: 'pronunciation',

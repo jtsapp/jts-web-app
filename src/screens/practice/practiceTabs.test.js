@@ -13,7 +13,7 @@ describe('practiceTabs', () => {
     expect(skillCards('reading')).toEqual(['reading', 'books', 'comics', 'tales'])
     expect(skillCards('writing')).toEqual(['grammar', 'prepositions', 'writing', 'verbs', 'workbooks'])
     expect(skillCards('speaking')).toEqual(['pronunciation', 'situations', 'speakspin', 'shadowing', 'karaoke', 'tales'])
-    expect(skillCards('grammarGames')).toEqual(['topics', 'listening', 'words', 'numbers', 'wordhunt', 'speak', 'runner'])
+    expect(skillCards('grammarGames')).toEqual(['topics', 'tenses', 'listening', 'words', 'numbers', 'wordhunt', 'speak', 'runner'])
     expect(skillCards('nope')).toEqual([])
   })
 
@@ -32,6 +32,8 @@ describe('practiceTabs', () => {
   it('у «Грамматики» две группы: тренажёры и игры; подпись вкладки — своя', () => {
     const skill = SKILLS.find((s) => s.key === 'grammarGames')
     expect(skill.groups.map((g) => g.title)).toEqual(['practice.group.trainers', 'practice.group.games'])
+    // Tenses World — тренажёр сразу после «Тем по уровням» (спека 2026-11-10, Д3; за ним встанет Punctuation World)
+    expect(skill.groups[0].cards).toEqual(['topics', 'tenses'])
     expect(skill.sub).toBe('practice.skillSub.grammarGames')
   })
 
@@ -52,7 +54,7 @@ describe('practiceTabs', () => {
     const modules = [
       'grammar', 'writing', 'reading', 'words', 'verbs', 'listenchoose', 'listening', 'numbers', 'listen',
       'speedReading', 'cartoons', 'shadowing', 'situations', 'workbooks', 'tales', 'memes', 'books', 'comics',
-      'karaoke', 'wordhunt', 'arcade', 'prepositions', 'pronunciation', 'speakspin', 'grammarGames',
+      'karaoke', 'wordhunt', 'arcade', 'prepositions', 'pronunciation', 'speakspin', 'grammarGames', 'tenses',
     ]
     for (const m of modules) expect(skillOfModule(m), m).toBeTruthy()
   })

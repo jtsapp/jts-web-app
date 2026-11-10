@@ -130,6 +130,7 @@ const PRACTICE_SECTIONS = {
   numbers: 'nav.back.numbers',
   prepositions: 'nav.back.prepositions',
   pronunciation: 'nav.back.pronunciation',
+  tenses: 'nav.back.tenses',
   'grammar-games': 'nav.back.grammarGames',
   'speed-reading': 'nav.back.speedReading',
   listen: 'nav.back.listen',
