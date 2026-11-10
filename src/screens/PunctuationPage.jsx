@@ -18,7 +18,7 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { mountPunctuation } from '../practice/punctuation/engine.js'
 import { PUNCTUATION_CSS } from '../practice/punctuation/styles.js'
-import { readPunctuation, writePunctuation } from '../practice/punctuation/progress.js'
+import { mergePunctuation, readPunctuation, writePunctuation } from '../practice/punctuation/progress.js'
 import { readPrefs, readRuns, writePrefs, writeRuns } from '../practice/punctuation/device.js'
 import { speakPunctuation, stopPunctuation } from '../practice/punctuation/voice.js'
 import { PUNCTUATION_PROGRESS_EVENT } from '../practice/practiceKeys.js'
@@ -62,7 +62,10 @@ export default function PunctuationPage({ userName, userLevel, token, onNav, onP
       onProgress: (state) => {
         ownWrite = true
         try {
-          writePunctuation(state)
+          // Движок держит копию прогресса и перечитывает её только на смене экрана: снимок сервера (или звёзды из
+          // соседней вкладки), пришедший посреди урока, иначе затёрся бы его старой копией — сервер хранит модуль
+          // заменой (ревью 10.11.2026). Сброса в порте нет, всё только растёт, поэтому сведение безопасно.
+          writePunctuation(mergePunctuation(readPunctuation(), state))
         } finally {
           ownWrite = false
         }

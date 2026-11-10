@@ -264,6 +264,31 @@ describe('Punctuation World: связь с приложением', () => {
     expect(POLICIES).toBeTruthy()
   })
 
+  it('клавиши игры слушаются на window только пока открыта игра (фокус на body корень тени не видит)', () => {
+    const add = vi.spyOn(window, 'addEventListener')
+    const remove = vi.spyOn(window, 'removeEventListener')
+    mount(bundle)
+    api.go('#/play/1')
+    const keys = add.mock.calls.filter(([type]) => type === 'keydown').map(([, fn]) => fn)
+    expect(keys).toHaveLength(1)
+    api.go('#/')
+    expect(remove.mock.calls.some(([type, fn]) => type === 'keydown' && fn === keys[0])).toBe(true)
+    add.mockRestore()
+    remove.mockRestore()
+  })
+
+  it('ссылка источника из бандла — только http(s)', () => {
+    const evil = JSON.parse(JSON.stringify(bundle))
+    const first = Object.keys(evil.LESSONS.SOURCES)[0]
+    evil.LESSONS.SOURCES[first].u = 'javascript:alert(1)'
+    for (const t of evil.LESSONS.TOPICS) t.src = [first]
+    const { root } = mount(evil)
+    api.go('#/lesson/1')
+    const hrefs = [...root.querySelectorAll('.srcs a')].map((a) => a.getAttribute('href'))
+    expect(hrefs.length).toBeGreaterThan(0)
+    expect(hrefs.every((h) => !/^javascript:/i.test(h))).toBe(true)
+  })
+
   it('destroy снимает разметку, глушит голос и снимает атрибуты с корня', () => {
     const stopSpeech = vi.fn()
     const { root } = mount(bundle, { stopSpeech })

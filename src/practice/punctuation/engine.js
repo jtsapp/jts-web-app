@@ -29,7 +29,11 @@
 //   «Reset progress» и строки «progress is saved in this browser» нет: прогресс
 //   общий с аккаунтом, а прототип спрашивал подтверждение про этот браузер;
 // - каждое задание игры — в cfg.onAnswer(с первой попытки) (навык «грамматика»);
-// - таймеры и кадры — через обёртки ниже: после destroy() ничего не сработает.
+// - таймеры и кадры — через обёртки ниже: после destroy() ничего не сработает;
+// - клавиши игры (1–4, L, выбор знака) — на window, пока открыта игра: корень тени
+//   их не получает, когда фокус на body; выбор знака закрывается и прокруткой;
+// - ссылка источника — только http(s), подписи знаков в aria-label — через esc():
+//   бандл приходит из админки и исполняется в origin приложения, где лежит токен.
 // Правило переноса: правка поведения — здесь и в прототипе одновременно, иначе
 // следующая заливка прототипа предупредит «движок отличается» уже ложно.
 
@@ -429,7 +433,7 @@ function lessonView(id){
    <div class="card"><h3>Special cases</h3><ul class="splist">${special.map(o=>`<li><div>${bi(o.s,o.tr&&o.tr[0],o.tr&&o.tr[1])}</div></li>`).join("")}</ul></div>
    <div class="card"><h3>British and American English</h3><div class="ukus"><div class="flags"><span>UK</span><span>US</span></div><div>${bi(t.vary,T.vary[0],T.vary[1])}</div></div></div>
   </div>
-  <details class="srcbox"><summary>Sources for this page</summary><ul class="srcs">${t.src.map(k=>{const s=SOURCES[k];return `<li>${s.u?`<a href="${s.u}" target="_blank" rel="noopener">${esc(s.n)}</a>`:esc(s.n)}</li>`}).join("")}</ul></details>
+  <details class="srcbox"><summary>Sources for this page</summary><ul class="srcs">${t.src.map(k=>{const s=SOURCES[k];return `<li>${s.u?`<a href="${esc(/^https?:\/\//i.test(s.u)?s.u:"#")}" target="_blank" rel="noopener">${esc(s.n)}</a>`:esc(s.n)}</li>`}).join("")}</ul></details>
  </div></section>
 
  <section class="gate" id="s-play" aria-labelledby="gate-h"><div class="wrap narrow">
@@ -592,7 +596,7 @@ const RMo=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 function zz(ms){const g=W.gen;return new Promise((res,rej)=>{const t=setTimeout(()=>{W.timers.delete(t);g===W.gen?res():rej("stale")},RMo()?Math.min(ms,120):ms);W.timers.add(t)})}
 function an(el,kf,o){if(!el)return Promise.resolve();const g=W.gen;const a=el.animate(kf,Object.assign({fill:"forwards",easing:"cubic-bezier(.3,.7,.2,1)"},o,RMo()?{duration:1}:{}));W.anims.add(a);return a.finished.then(()=>{W.anims.delete(a);if(g!==W.gen)throw"stale"},()=>{throw"stale"})}
 function waitFor(kind){return new Promise((res,rej)=>{const g=W.gen;W.wait={kind,go:v=>{W.wait=null;g===W.gen?res(v):rej("stale")}}})}
-function gameTeardown(){W.gen++;W.timers.forEach(clearTimeout);W.timers.clear();W.anims.forEach(a=>{try{a.cancel()}catch(e){}});W.anims.clear();W.wait=null;closePicker();if(W.keyH){ROOT.removeEventListener("keydown",W.keyH);W.keyH=null}}
+function gameTeardown(){W.gen++;W.timers.forEach(clearTimeout);W.timers.clear();W.anims.forEach(a=>{try{a.cancel()}catch(e){}});W.anims.clear();W.wait=null;closePicker();if(W.keyH){window.removeEventListener("keydown",W.keyH);W.keyH=null}}
 const fx={thump:SFX.stone,sink:()=>{nt(150,{glide:60,d:.45,g:.12,rev:.1});nz({d:.35,g:.05,f:500,f2:150,q:1,type:"lowpass"})},spring:SFX.spring,stitch:SFX.stitch,rise:SFX.rise,fall:SFX.fall,door:SFX.door,key:SFX.key,gate:SFX.gate,portal:SFX.portal};
 const ico={close:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'};
 const WAVE=`url("data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 70" preserveAspectRatio="none"><path d="M0 40 Q20 10 40 40 T80 40 T120 40 T160 40 V70 H0Z" fill="#B9B4C8"/><path d="M0 44 Q20 18 40 44 T80 44 T120 44 T160 44" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="3" stroke-dasharray="6 6"/></svg>')}")`;
@@ -626,7 +630,7 @@ function playView(key){
   <div class="tide" id="tide" aria-hidden="true"><div class="w" style="background-image:${WAVE}"></div><div class="w b" style="background-image:${WAVE}"></div><div class="body"></div></div>
   <div class="hud2" id="hud"></div><div id="ov"></div></div>`;
  ["adv","bg1","stage","tide","hud","ov","pglow","weather"].forEach(k=>W.el[k]=$("#"+k));
- W.keyH=keys3;ROOT.addEventListener("keydown",W.keyH);
+ W.keyH=keysWin;window.addEventListener("keydown",W.keyH);
  setTide(0,true);window.scrollTo(0,0);
  runGame();
 }
@@ -737,7 +741,7 @@ async function routeCh(ch){
  if(word){const b=(pre.match(/[A-Za-z]+$/)||[""])[0],t=(post.match(/^[A-Za-z]+/)||[""])[0];pre=pre.slice(0,pre.length-b.length);post=post.slice(t.length);shown=opts.map(o=>b+o+t);ans=b+g.a+t}
  const lab={stone:"stone",keystone:"keystone",spring:"spring",wkey:"key",gate:"gate"}[mech];
  W.el.stage.insertAdjacentHTML("beforeend",`<div class="banner ctx-${it.ctx}" id="banner">${ch.again?`<span class="tag retry">New sentence · same rule</span>`:`<span class="tag">${esc(it.label||({chat:"Message",sign:"Sign",note:"Note",story:"Story",email:"Email",doc:"Notice",article:"News",post:"Post"})[it.ctx]||"Sign")}</span>`}${esc(pre)}<span class="sockw ${word?"word":""}" id="sock" aria-label="missing ${word?"word":"mark"}">${word?"&nbsp;?&nbsp;":""}</span>${esc(post)}</div>${mech==="wkey"?`<div class="door-in"></div><div class="door" id="door"></div>`:""}
-  <div class="objs ${mech==="stone"?"stones":""} ${mech==="wkey"?"wk":""} ${ch.two?"two":""}" id="objs" role="group" aria-label="Choose a ${lab}">${shown.map((g2,i)=>`<button class="obj ${mech}" data-a3="pick" data-v="${esc(g2)}" aria-label="${word?`Key: ${esc(g2)}`:`${lab} with a ${mkName(g2)}`}"><span class="tk">${word?esc(g2):mkx(g2)}</span><span class="base"></span><kbd aria-hidden="true">${i+1}</kbd></button>`).join("")}</div>`);
+  <div class="objs ${mech==="stone"?"stones":""} ${mech==="wkey"?"wk":""} ${ch.two?"two":""}" id="objs" role="group" aria-label="Choose a ${lab}">${shown.map((g2,i)=>`<button class="obj ${mech}" data-a3="pick" data-v="${esc(g2)}" aria-label="${word?`Key: ${esc(g2)}`:`${lab} with a ${esc(mkName(g2))}`}"><span class="tk">${word?esc(g2):mkx(g2)}</span><span class="base"></span><kbd aria-hidden="true">${i+1}</kbd></button>`).join("")}</div>`);
  if(mech==="wkey"&&innerWidth>innerHeight){$("#objs").style.right="24cqw"}
  announce(`${pre} blank ${post}. Choose: ${shown.map(x=>word?x:mkName(x)).join(", ")}.`);
  W.ans=word?[ans]:g.acc;
@@ -825,7 +829,7 @@ async function raftRound(ch){
 }
 
 /* ---------------- BRIDGE · REPAIR · FINAL: several marks at once ---------------- */
-function plankHTML(parts,repair){let gi=0;return parts.map((p,pi)=>{if(p.g){const id=gi++;p.id=id;const v=p.v==null?"":p.v;const L=parts[pi-1],R=parts[pi+1];const jl=L&&L.t&&/\S$/.test(L.t)?"jl":"",jr=R&&R.t&&/^\S/.test(R.t)?"jr":"";return `<button class="gap ${jl} ${jr} ${repair?"pre":""} ${v!==""?"set":""} ${repair&&v===""?"nil":""}" data-a3="gap" data-k="${id}" aria-label="Gap ${id+1}: ${repair?mkName(v)+". Tap to change.":"empty. Choose a mark or leave it empty."}">${v!==""?mk(v):""}</button>`}
+function plankHTML(parts,repair){let gi=0;return parts.map((p,pi)=>{if(p.g){const id=gi++;p.id=id;const v=p.v==null?"":p.v;const L=parts[pi-1],R=parts[pi+1];const jl=L&&L.t&&/\S$/.test(L.t)?"jl":"",jr=R&&R.t&&/^\S/.test(R.t)?"jr":"";return `<button class="gap ${jl} ${jr} ${repair?"pre":""} ${v!==""?"set":""} ${repair&&v===""?"nil":""}" data-a3="gap" data-k="${id}" aria-label="Gap ${id+1}: ${repair?esc(mkName(v))+". Tap to change.":"empty. Choose a mark or leave it empty."}">${v!==""?mk(v):""}</button>`}
   return p.t.split(/(\s+)/).filter(x=>x.trim()).map((w,j,arr)=>`<span class="pl">${esc(w)}</span>${j<arr.length-1?'<span class="knot"></span>':""}`).join("")}).join("")}
 async function stitch(ch,si){
  scene();pose("think");
@@ -872,10 +876,10 @@ function openPicker(btn){
  closePicker();const S=W.stitch;if(!S)return;const k=+btn.dataset.k;const g=S.gaps.find(x=>x.id===k);
  const r=btn.getBoundingClientRect();
  const p=document.createElement("div");p.className="picker";p.setAttribute("role","menu");
- p.innerHTML=S.opts.map((v,i)=>`<button role="menuitem" data-a3="pk" data-v="${esc(v)}" aria-label="${mkName(v)}${i<9?`, key ${i+1}`:""}">${mkx(v)}</button>`).join("");
+ p.innerHTML=S.opts.map((v,i)=>`<button role="menuitem" data-a3="pk" data-v="${esc(v)}" aria-label="${esc(mkName(v))}${i<9?`, key ${i+1}`:""}">${mkx(v)}</button>`).join("");
  ROOT.appendChild(p);const pw=p.getBoundingClientRect().width;
  p.style.left=Math.max(8,Math.min(innerWidth-pw-8,r.left+r.width/2-pw/2))+"px";p.style.top=Math.max(8,r.top-74)+"px";
- W.picker={el:p,btn,g};const f=p.querySelector(`[data-v="${CSS.escape(g.v||"")}"]`)||p.querySelector("button");f&&f.focus();
+ W.picker={el:p,btn,g,at:performance.now()};const f=p.querySelector(`[data-v="${CSS.escape(g.v||"")}"]`)||p.querySelector("button");f&&f.focus();
 }
 function closePicker(){if(W.picker){W.picker.el.remove();W.picker=null}}
 function pickGap(v){const P=W.picker;if(!P)return;P.g.v=v;P.btn.innerHTML=v===""?"":mk(v);P.btn.classList.toggle("set",v!=="");P.btn.classList.toggle("nil",v===""&&P.btn.classList.contains("pre"));P.btn.setAttribute("aria-label",`Gap ${P.g.id+1}: ${mkName(v)}`);sfx.place();const b=P.btn;closePicker();b.focus()}
@@ -943,6 +947,10 @@ function celebrate(){
 }
 
 /* ---------------- input ---------------- */
+// Порт: прототип слушал клавиши на document. Корень тени их не получает, когда фокус на body — а он там после
+// каждой перерисовки (#app, oops, scene) и всегда в Safari, где клик фокус не ставит (ревью 10.11.2026). Поэтому
+// слушатель на window, только пока открыта игра; набор в полях вне раздела (чат Луны) не перехватывается.
+function keysWin(e){const t=e.composedPath?e.composedPath()[0]:e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;keys3(e)}
 function keys3(e){
  if(W.picker){const bs=$$(".picker button");if(e.key==="Escape"){e.preventDefault();const b=W.picker.btn;closePicker();b.focus();return}if(/^[1-9]$/.test(e.key)&&bs[+e.key-1]){e.preventDefault();bs[+e.key-1].click();return}
   if(/Arrow(Left|Right)/.test(e.key)){e.preventDefault();const i=bs.indexOf(activeEl());bs[(i+(e.key==="ArrowRight"?1:-1)+bs.length)%bs.length].focus();return}}
@@ -965,6 +973,9 @@ on(ROOT,"click",e=>{
 });
 on(ROOT,"click",e=>{if(W.picker&&!e.target.closest(".picker")&&!e.target.closest(".gap"))closePicker()},{capture:true});
 on(window,"resize",()=>closePicker());
+// Порт: у прототипа страница в игре не прокручивалась, у нас прокручивается — плашка position:fixed отрывалась бы от
+// пропуска. Первые 400 мс не считаем: фокус на кнопку плашки сам доводит прокрутку.
+on(window,"scroll",()=>{if(W.picker&&performance.now()-W.picker.at>400)closePicker()},{passive:true,capture:true});
 
 
 /* ======================= EVENTS ======================= */

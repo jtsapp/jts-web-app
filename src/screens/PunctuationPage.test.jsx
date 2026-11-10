@@ -10,7 +10,8 @@ import { cleanup, render } from '@testing-library/react'
 const h = vi.hoisted(() => ({ data: null, state: null, skill: [] }))
 vi.mock('../components/LearningLayout.jsx', () => ({ default: ({ children }) => <div>{children}</div> }))
 vi.mock('./punctuation/usePunctuationData.js', () => ({ usePunctuationData: () => h.data }))
-vi.mock('../practice/punctuation/progress.js', () => ({
+vi.mock('../practice/punctuation/progress.js', async (importOriginal) => ({
+  mergePunctuation: (await importOriginal()).mergePunctuation,
   readPunctuation: () => (h.state ? JSON.parse(JSON.stringify(h.state)) : null),
   writePunctuation: (s) => {
     h.state = JSON.parse(JSON.stringify(s))
@@ -106,5 +107,16 @@ describe('PunctuationPage', () => {
     h.state = { ...h.state, p: { 1: 3, 7: 2 } }
     window.dispatchEvent(new Event(PUNCTUATION_PROGRESS_EVENT))
     expect(shadow.querySelector('#app').innerHTML).toBe(before)
+  })
+
+  it('снимок сервера посреди урока не затирается старой копией движка при следующей записи', () => {
+    mount({ status: 'ready', bundle })
+    window.__punct.go('#/lesson/1')
+    // пока ученик читал, пришли звёзды с другого устройства — движок о них не знает до смены экрана
+    h.state = { read: { 1: 1 }, p: { 1: 3 }, fin: 0 }
+    window.dispatchEvent(new Event(PUNCTUATION_PROGRESS_EVENT))
+    window.__punct.go('#/lesson/7')
+    expect(h.state.p).toEqual({ 1: 3 })
+    expect(h.state.read).toEqual({ 1: 1, 7: 1 })
   })
 })
