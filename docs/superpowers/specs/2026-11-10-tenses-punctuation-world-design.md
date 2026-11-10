@@ -110,7 +110,9 @@ sha256 (hex): inline `<script>` без атрибута `type`, по поряд�
   `var window = {};`, блоки по порядку, затем `JSON.stringify({TW: {VIDEOS, GROUPS, ASPECTS, LOCAL_NAMES, ORDER,
   PRACTICE}, TENSES_DATA})`. Лимиты: например 50 млн инструкций и 10 с; превышение — 400 «блок данных N не исполнился
   за отведённое время». Ошибка JS — 400 с номером блока и текстом Rhino. Постер — data-URI → байты.
-- Ошибки (400, ничего не пишется): нет ни одного блока данных; блок не исполнился; нет `TW.ORDER`/`TENSES_DATA`/`TW.PRACTICE`;
+- Ошибки (400, ничего не пишется): поля, которые движок вставляет в разметку без экранирования, — не из белого
+  списка (id времён/групп/видов, имена групп и видов, ключи частей формулы, `n` этапа, `zone`, `compare.with`);
+  нет ни одного блока данных; блок не исполнился; нет `TW.ORDER`/`TENSES_DATA`/`TW.PRACTICE`;
   id из `ORDER` без `TENSES_DATA`; набор из `STAGES[].sets` без `SETS`; набор без `items`; видео не mp4 (сигнатура
   `ftyp` на смещении 4); постер не jpeg/png/webp (сигнатура); файл > `PracticeMediaService.MAX_BYTES`.
 - Предупреждения (заливка проходит): время без видео; запись `VIDEOS` без времени в `ORDER`; задание с `tn` не из
@@ -121,8 +123,9 @@ sha256 (hex): inline `<script>` без атрибута `type`, по поряд�
   `tenses_releases` → `tenses/current/bundle.json` → сброс кэша → удаление медиа раздела, на которые не ссылаются ни
   новый, ни предыдущий бандл. Сбой медиа — строки нет, сбой бандла — строка удаляется.
 - Таблица `tenses_releases`: `id, file_name, tenses_count, sets_count, items_count, videos_count, engine_sha,
-  uploaded_by → users ON DELETE SET NULL, created_at` + индекс `created_at DESC`. Миграция **V574** (develop 10.11 —
-  V573; Punctuation берёт V575; сверить с develop, открытыми PR и локальными ветками перед мержем).
+  uploaded_by → users ON DELETE SET NULL, created_at` + индекс `created_at DESC`. Миграция **V576**: V574 занял
+  открытый backend#466, V575 — Punctuation. Flyway не принимает миграции не по порядку, поэтому мерж: #466 →
+  Punctuation → Tenses (или номер сверять в момент мержа).
 - Ручки: `POST /admin/tenses/upload` (multipart `file`, ADMIN) → `{release, tenses, sets, items, videos, posters,
   uploadedMedia, reusedMedia, removedMedia, engineMatches, warnings: []}`; `GET /admin/tenses` → `{current: {release,
   fileName, tenses, sets, items, videos, engineSha, engineMatches, uploadedBy: {id, name}, createdAt} | null, history: [… 20 …]}`.
