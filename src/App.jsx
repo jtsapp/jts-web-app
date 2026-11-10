@@ -2085,7 +2085,7 @@ export default function App() {
   // назад целиком (пришли с карточки) или в список раздела (диплинк).
   // `skill` — вкладка Практики, куда «назад» уводит без истории (диплинк, переход Луны). С редизайна 29.10.2026
   // мини-игра Listening, «Слова в картинках», «Числа», Word Hunt и «Аркада» — во вкладке «Грамматика»;
-  // «Скорочтение» с 08.11.2026 снова в «Аудировании».
+  // «Скорочтение» с 10.11.2026 — во вкладке «Чтение».
   function sectionBack(skill) {
     return {
       onBack: () => goBack(() => handleNav('practice', skill ? { skill } : undefined)),
@@ -2795,7 +2795,7 @@ export default function App() {
     case 'speed-reading':
       return (
         <SpeedReadingPage
-          {...sectionBack('listening')}
+          {...sectionBack('reading')}
           userLevel={userLevel}
           userName={name}
           token={token}

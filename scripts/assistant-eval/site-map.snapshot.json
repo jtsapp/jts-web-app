@@ -175,6 +175,9 @@
     "pronunciation": [
       "pronunciation"
     ],
+    "punctuation": [
+      "punctuation"
+    ],
     "reading": [
       "reading"
     ],
@@ -200,6 +203,12 @@
       "registration"
     ],
     "sat": [
+      "sat"
+    ],
+    "sat-bluebook": [
+      "sat"
+    ],
+    "sat-compare": [
       "sat"
     ],
     "sat-daily": [
@@ -264,6 +273,9 @@
     ],
     "teacher-wizard": [
       "cabinet"
+    ],
+    "tenses": [
+      "tenses"
     ],
     "test": [
       "placement"
@@ -455,10 +467,6 @@
           "title": "Just to Listen"
         },
         {
-          "id": "speedReading",
-          "title": "Скорочтение"
-        },
-        {
           "id": "cartoons",
           "title": "Cartoon World"
         },
@@ -487,6 +495,10 @@
         {
           "id": "reading",
           "title": "Читай по-английски и разбирай прочитанное"
+        },
+        {
+          "id": "speedReading",
+          "title": "Скорочтение"
         },
         {
           "id": "books",
@@ -565,6 +577,14 @@
         {
           "id": "topics",
           "title": "Темы по уровням"
+        },
+        {
+          "id": "tenses",
+          "title": "Tenses World"
+        },
+        {
+          "id": "punctuation",
+          "title": "Punctuation World"
         },
         {
           "id": "listening",
@@ -663,8 +683,16 @@
       "screen": "prepositions"
     },
     {
+      "id": "tenses",
+      "screen": "tenses"
+    },
+    {
       "id": "pronunciation",
       "screen": "pronunciation"
+    },
+    {
+      "id": "punctuation",
+      "screen": "punctuation"
     },
     {
       "id": "reading",
@@ -841,7 +869,7 @@
     },
     "practice": {
       "title": "Практика: обзор и лимиты",
-      "hash": "13w4ztp"
+      "hash": "17bjcf4"
     },
     "grammar": {
       "title": "Практика: Грамматика",
@@ -903,13 +931,21 @@
       "title": "Практика: Pronunciation World",
       "hash": "1152dbh"
     },
+    "tenses": {
+      "title": "Практика: Tenses World",
+      "hash": "1g3mjwo"
+    },
+    "punctuation": {
+      "title": "Практика: Punctuation World",
+      "hash": "dg4gf3"
+    },
     "grammar-games": {
       "title": "Практика: Грамматика · игры",
       "hash": "1yb17z4"
     },
     "speed-reading": {
       "title": "Практика: Скорочтение",
-      "hash": "1e41jb1"
+      "hash": "1m1nckj"
     },
     "library": {
       "title": "Практика: Книжки, сказки, комиксы, мемы, караоке",
