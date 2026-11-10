@@ -20,6 +20,8 @@ import { useI18n } from '../i18n.jsx'
 import { mountNumbers } from '../practice/numbers/engine.js'
 import { NUMBERS_MARKUP } from '../practice/numbers/markup.js'
 import { NUMBERS_CSS } from '../practice/numbers/styles.js'
+import { NUMBERS_DARK_CSS } from '../practice/numbers/styles.dark.js'
+import { watchAppTheme } from '../practice/hostTheme.js'
 import { createNumbersVoice } from '../practice/numbers/voice.js'
 import { readNumbers, updateNumbers } from '../practice/numbers/numbersProgress.js'
 import { ownerOf } from '../practice/progressStore.js'
@@ -71,6 +73,9 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
   // ученик тот же (sub из JWT), и меняется на входе и выходе.
   const owner = ownerOf(token)
 
+  // Тёмная тема — приложения: тень её не видит, поэтому атрибутом хоста и вслед за кнопкой темы.
+  useEffect(() => (hostRef.current ? watchAppTheme(hostRef.current) : undefined), [])
+
   useEffect(() => {
     let alive = true
     loadData().then(
@@ -88,7 +93,7 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
     // attachShadow разрешён один раз на элемент — при пересоздании (вход в
     // аккаунт, двойной эффект StrictMode) переиспользуем тот же корень.
     const shadow = host.shadowRoot || host.attachShadow({ mode: 'open' })
-    shadow.innerHTML = `<style>${NUMBERS_CSS}</style><main class="nw" id="jts-numbers">${NUMBERS_MARKUP}</main>`
+    shadow.innerHTML = `<style>${NUMBERS_CSS}\n${NUMBERS_DARK_CSS}</style><main class="nw" id="jts-numbers">${NUMBERS_MARKUP}</main>`
     const root = shadow.getElementById('jts-numbers')
     const game = mountNumbers(root, {
       data: data.game,

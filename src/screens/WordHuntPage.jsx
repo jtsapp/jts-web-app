@@ -18,6 +18,8 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { mountWordHunt } from '../practice/wordhunt/engine.js'
 import { WORDHUNT_CSS } from '../practice/wordhunt/styles.js'
+import { WORDHUNT_DARK_CSS } from '../practice/wordhunt/styles.dark.js'
+import { watchAppTheme } from '../practice/hostTheme.js'
 import { readWip, readWordHunt, writeWip, writeWordHunt } from '../practice/wordhunt/progress.js'
 import { sayWord, stopWords } from '../practice/wordhunt/voice.js'
 import { WORDHUNT_PROGRESS_EVENT } from '../practice/practiceKeys.js'
@@ -40,6 +42,9 @@ export default function WordHuntPage({ userName, userLevel, token, onNav, onProf
 
   // Смена языка приложения — перерисовка текущего вида движком, без пересоздания: кроссворд посреди партии
   // не сбрасывается. Эффект объявлен РАНЬШЕ монтирующего: на первом кадре движок видит актуальный язык.
+  // Тёмная тема — приложения: тень её не видит, поэтому атрибутом хоста и вслед за кнопкой темы.
+  useEffect(() => (hostRef.current ? watchAppTheme(hostRef.current) : undefined), [])
+
   useEffect(() => {
     langRef.current = lang
     apiRef.current?.setLang(engineLang(lang))
@@ -50,7 +55,7 @@ export default function WordHuntPage({ userName, userLevel, token, onNav, onProf
     if (!host || !bundle) return undefined
     // attachShadow — один раз на элемент: при пересоздании (вход, новый релиз, StrictMode) — тот же корень.
     const shadow = host.shadowRoot || host.attachShadow({ mode: 'open' })
-    shadow.innerHTML = `<style>${WORDHUNT_CSS}</style><div class="wh"></div>`
+    shadow.innerHTML = `<style>${WORDHUNT_CSS}\n${WORDHUNT_DARK_CSS}</style><div class="wh"></div>`
     // Пишем только за того, кто открыл раздел. Выход из аккаунта (и выход по 401) чистит хранилище практики
     // синхронно, а движок снимается позже, на коммите React, — и его прощальная запись (недорешённая сетка,
     // итог партии) легла бы следующему ученику этого компьютера.

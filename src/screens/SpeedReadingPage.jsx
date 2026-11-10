@@ -24,6 +24,8 @@ import { useI18n } from '../i18n.jsx'
 import { playUrl, stopTts, unlockSpeech } from '../lib/speech.js'
 import { mountSpeedReading } from '../practice/speed-reading/engine.js'
 import { SPEED_READING_CSS } from '../practice/speed-reading/styles.js'
+import { SPEED_READING_DARK_CSS } from '../practice/speed-reading/styles.dark.js'
+import { watchAppTheme } from '../practice/hostTheme.js'
 import { canRecord, openRecorder } from '../practice/speed-reading/recorder.js'
 import { browserRecognition, startLive } from '../practice/speed-reading/live.js'
 import { requestSample } from '../practice/speed-reading/sampleClient.js'
@@ -65,6 +67,9 @@ export default function SpeedReadingPage({ userName, userLevel, token, onNav, on
   // Язык и текст по ссылке нужны движку только при монтировании: смена языка дальше идёт через setLang, а
   // пересоздание по каждому из них выкидывало бы ученика из записи на стартовый экран.
   const live = useRef({})
+  // Тёмная тема — приложения: тень её не видит, поэтому атрибутом хоста и вслед за кнопкой темы.
+  useEffect(() => (hostRef.current ? watchAppTheme(hostRef.current) : undefined), [])
+
   useEffect(() => {
     live.current = { lang, text: initialTarget?.text || null, level: userLevel || null }
   })
@@ -87,7 +92,7 @@ export default function SpeedReadingPage({ userName, userLevel, token, onNav, on
     const shadow = host.shadowRoot || host.attachShadow({ mode: 'open' })
     // Шрифт сайта внутрь тени (Manrope, в kk — Inter) — до отрисовки.
     host.style.setProperty('--sr-font', hostFont(host))
-    shadow.innerHTML = `<style>${SPEED_READING_CSS}</style><div class="sr"></div>`
+    shadow.innerHTML = `<style>${SPEED_READING_CSS}\n${SPEED_READING_DARK_CSS}</style><div class="sr"></div>`
     const api = mountSpeedReading(shadow.querySelector('.sr'), {
       // Копии: движок дописывает образец в текст, а список хука остаётся как пришёл.
       texts: texts.map((x) => ({ ...x })),

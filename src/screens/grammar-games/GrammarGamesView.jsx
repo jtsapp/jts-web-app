@@ -12,6 +12,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { mountGrammarGames } from '../../practice/grammar-games/engine.js'
 import { GRAMMAR_GAMES_CSS } from '../../practice/grammar-games/styles.js'
+import { GRAMMAR_GAMES_DARK_CSS } from '../../practice/grammar-games/styles.dark.js'
+import { watchAppTheme } from '../../practice/hostTheme.js'
 import { EMOJI_LIST, emojiUrl, mascotUrl } from '../../practice/grammar-games/emoji.js'
 import { levelOf } from '../../practice/grammar-games/levelOf.js'
 import { speakGrammar, stopGrammar } from '../../practice/grammar-games/voice.js'
@@ -66,6 +68,9 @@ export default function GrammarGamesView({ token, userLevel, initialTopic = null
   // Язык, уровень, звук и звёзды нужны движку только при монтировании: смена языка дальше идёт через setLang,
   // а пересоздание по каждому из них выкидывало бы ученика из игры на хаб.
   const live = useRef({})
+  // Тёмная тема — приложения: тень её не видит, поэтому атрибутом хоста и вслед за кнопкой темы.
+  useEffect(() => (hostRef.current ? watchAppTheme(hostRef.current) : undefined), [])
+
   useEffect(() => {
     live.current = { lang, level: levelOf(userLevel), sound, progress, token, topic: initialTopic }
   })
@@ -79,7 +84,7 @@ export default function GrammarGamesView({ token, userLevel, initialTopic = null
     // Шрифт сайта внутрь тени (Manrope, в kk — Inter) — до отрисовки, иначе первый кадр
     // пойдёт системным; пустая строка (элемент вне документа) сделала бы var(--gg-font) невалидным.
     host.style.setProperty('--gg-font', getComputedStyle(host).fontFamily || "'Manrope', sans-serif")
-    shadow.innerHTML = `<style>${GRAMMAR_GAMES_CSS}</style><div class="gg"></div>`
+    shadow.innerHTML = `<style>${GRAMMAR_GAMES_CSS}\n${GRAMMAR_GAMES_DARK_CSS}</style><div class="gg"></div>`
     const api = mountGrammarGames(shadow.querySelector('.gg'), {
       index,
       progress: now.progress || {},

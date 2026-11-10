@@ -20,11 +20,16 @@ import { useI18n } from '../i18n.jsx'
 import { mountSpeakSpin } from '../practice/speakspin/engine.js'
 import { SPEAKSPIN_MARKUP } from '../practice/speakspin/markup.js'
 import { SPEAKSPIN_CSS } from '../practice/speakspin/styles.js'
+import { SPEAKSPIN_DARK_CSS } from '../practice/speakspin/styles.dark.js'
+import { watchAppTheme } from '../practice/hostTheme.js'
 import { createAssessAdapter } from '../practice/speakspin/assessClient.js'
 
 export default function SpeakSpinPage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel }) {
   const { t, lang } = useI18n()
   const hostRef = useRef(null)
+
+  // Тёмная тема — приложения: тень её не видит, поэтому атрибутом хоста и вслед за кнопкой темы.
+  useEffect(() => (hostRef.current ? watchAppTheme(hostRef.current) : undefined), [])
 
   useEffect(() => {
     const host = hostRef.current
@@ -32,7 +37,7 @@ export default function SpeakSpinPage({ userName, userLevel, token, onNav, onPro
     // attachShadow разрешён один раз на элемент — при пересоздании (смена языка,
     // двойной эффект StrictMode) переиспользуем тот же корень.
     const shadow = host.shadowRoot || host.attachShadow({ mode: 'open' })
-    shadow.innerHTML = `<style>${SPEAKSPIN_CSS}</style><main class="ss" id="jts-speakspin">${SPEAKSPIN_MARKUP}</main>`
+    shadow.innerHTML = `<style>${SPEAKSPIN_CSS}\n${SPEAKSPIN_DARK_CSS}</style><main class="ss" id="jts-speakspin">${SPEAKSPIN_MARKUP}</main>`
     const root = shadow.getElementById('jts-speakspin')
     const destroy = mountSpeakSpin(root, {
       language: lang,

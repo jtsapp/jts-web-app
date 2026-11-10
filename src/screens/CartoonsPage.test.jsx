@@ -5,7 +5,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render } from '@testing-library/react'
+import { act, cleanup, render } from '@testing-library/react'
 
 const h = vi.hoisted(() => ({ index: null, state: { missions: {} } }))
 vi.mock('../components/LearningLayout.jsx', () => ({ default: ({ children }) => <div>{children}</div> }))
@@ -72,5 +72,28 @@ describe('CartoonsPage — мультфильм, открытый Луной', (
 
   it('без цели — библиотека', () => {
     expect(mount(null).inLibrary()).toBe(true)
+  })
+})
+
+function mountHost() {
+  mount(null)
+  return document.querySelector('.cwp-host')
+}
+// 10.11.2026: тень не видит html[data-theme] — раздел оставался светлым при тёмном сайте, а у Cartoons атрибут ставился
+// один раз при монтаже и не менялся вслед за кнопкой темы.
+describe('тема приложения', () => {
+  it('атрибутом хоста и вслед за кнопкой темы, без перезагрузки; тёмный слой — в тени', async () => {
+    document.documentElement.setAttribute('data-theme', 'dark')
+    try {
+      const host = mountHost()
+      expect(host.getAttribute('data-theme')).toBe('dark')
+      expect(host.shadowRoot.querySelector('style').textContent).toContain(':host([data-theme="dark"])')
+      await act(async () => document.documentElement.removeAttribute('data-theme'))
+      expect(host.getAttribute('data-theme')).toBe('light')
+      await act(async () => document.documentElement.setAttribute('data-theme', 'dark'))
+      expect(host.getAttribute('data-theme')).toBe('dark')
+    } finally {
+      document.documentElement.removeAttribute('data-theme')
+    }
   })
 })
