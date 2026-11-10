@@ -91,6 +91,13 @@ export const WORDHUNT_WIP_KEY = 'jts_lexiverse_wip'
 // (sessionStorage jts-pron-tr движка). Replace со сведением merge (pronunciation/progress.js): прочитанная тема и
 // пройденный раунд не «распроходятся», лучший результат — с любого устройства.
 export const PRONUNCIATION_KEY = 'jts-pron-v2'
+// Прогресс Tenses World: { practice: { <набор>: { done, best, total } }, visited: { <время>: 1 }, last } — форма и
+// ключ прототипа (jts-tenses-world). Replace со сведением merge (tenses/progress.js): пройденный набор не
+// «распроходится», лучший счёт — с любого устройства, открытые страницы объединяются.
+export const TENSES_KEY = 'jts-tenses-world'
+// Язык перевода раздела (en | kz | ru — коды прототипа) — настройка устройства, не синкается, но чистится вместе с
+// прогрессом, как язык «Чисел».
+export const TENSES_LANG_KEY = 'jts_tenses_lang'
 // Прогресс Punctuation World: { read: { <страница>: 1 }, p: { <страница>: звёзды 1–3 }, fin } — ключ прототипа
 // (pw-world-1), без настроек вида. Replace со сведением merge (punctuation/progress.js): прочитанная страница не
 // «распрочитывается», звёзды — лучшие с любого устройства.
@@ -130,6 +137,7 @@ export const PREPOSITIONS_PROGRESS_EVENT = 'prepositions-progress'
 export const CARTOONS_PROGRESS_EVENT = 'cartoons-progress'
 export const WORDHUNT_PROGRESS_EVENT = 'wordhunt-progress'
 export const PRONUNCIATION_PROGRESS_EVENT = 'pronunciation-progress'
+export const TENSES_PROGRESS_EVENT = 'tenses-progress'
 export const PUNCTUATION_PROGRESS_EVENT = 'punctuation-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
