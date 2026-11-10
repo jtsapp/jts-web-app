@@ -18,6 +18,8 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { mountPronunciation } from '../practice/pronunciation/engine.js'
 import { PRONUNCIATION_CSS } from '../practice/pronunciation/styles.js'
+import { PRONUNCIATION_DARK_CSS } from '../practice/pronunciation/styles.dark.js'
+import { watchAppTheme } from '../practice/hostTheme.js'
 import { readPronunciation, writePronunciation } from '../practice/pronunciation/progress.js'
 import { speakPronunciation, stopPronunciation } from '../practice/pronunciation/voice.js'
 import { PRONUNCIATION_PROGRESS_EVENT } from '../practice/practiceKeys.js'
@@ -52,6 +54,9 @@ export default function PronunciationPage({ userName, userLevel, token, onNav, o
   const owner = ownerOf(token)
   const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'speaking' }))
   // Шрифт интерфейса меняется вместе с языком (kk — Inter): переносим его в тень заново, без пересоздания движка.
+  // Тёмная тема — приложения: тень её не видит, поэтому атрибутом хоста и вслед за кнопкой темы.
+  useEffect(() => (hostRef.current ? watchAppTheme(hostRef.current) : undefined), [])
+
   useEffect(() => {
     const host = hostRef.current
     if (host) host.style.setProperty('--pron-font', getComputedStyle(host).fontFamily || FALLBACK_FONT)
@@ -65,7 +70,7 @@ export default function PronunciationPage({ userName, userLevel, token, onNav, o
     // Шрифт сайта внутрь тени: --head/--ui прототипа берут его отсюда (Manrope, в kk — Inter). Ставим ДО
     // отрисовки содержимого тени, иначе первый кадр пойдёт системным шрифтом.
     host.style.setProperty('--pron-font', getComputedStyle(host).fontFamily || FALLBACK_FONT)
-    shadow.innerHTML = `<style>${PRONUNCIATION_CSS}</style><div class="pron"><div id="app"></div></div>`
+    shadow.innerHTML = `<style>${PRONUNCIATION_CSS}\n${PRONUNCIATION_DARK_CSS}</style><div class="pron"><div id="app"></div></div>`
     // Хранилище шлёт событие прогресса и на свою же запись, синхронно. Карта раздела пишет уровень при каждой
     // отрисовке, и перерисовка «по событию» на свою запись зацикливалась (Maximum call stack) — свои записи
     // помечаем и событие от них пропускаем.
