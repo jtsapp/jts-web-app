@@ -202,6 +202,12 @@
     "sat": [
       "sat"
     ],
+    "sat-bluebook": [
+      "sat"
+    ],
+    "sat-compare": [
+      "sat"
+    ],
     "sat-daily": [
       "sat"
     ],
@@ -455,10 +461,6 @@
           "title": "Just to Listen"
         },
         {
-          "id": "speedReading",
-          "title": "Скорочтение"
-        },
-        {
           "id": "cartoons",
           "title": "Cartoon World"
         },
@@ -487,6 +489,10 @@
         {
           "id": "reading",
           "title": "Читай по-английски и разбирай прочитанное"
+        },
+        {
+          "id": "speedReading",
+          "title": "Скорочтение"
         },
         {
           "id": "books",
@@ -841,7 +847,7 @@
     },
     "practice": {
       "title": "Практика: обзор и лимиты",
-      "hash": "13w4ztp"
+      "hash": "z78e2l"
     },
     "grammar": {
       "title": "Практика: Грамматика",
@@ -909,7 +915,7 @@
     },
     "speed-reading": {
       "title": "Практика: Скорочтение",
-      "hash": "1e41jb1"
+      "hash": "1m1nckj"
     },
     "library": {
       "title": "Практика: Книжки, сказки, комиксы, мемы, караоке",

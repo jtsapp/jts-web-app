@@ -6,19 +6,17 @@
 // так и осталась `grammarGames`, хотя называется теперь «Грамматика»: кроме тем, в ней собраны игры из других
 // вкладок (карта переноса макета, 7404:4427). Подпись под ней — `sub`, а не «N тренажёров».
 //
-// «Скорочтение» макет тоже унёс в «Грамматику», но 08.11.2026 его вернули в «Аудирование» — сразу после
-// Just to Listen, где его ставила спека раздела (Д5): читать вслух вслед за диктором — работа на слух.
+// «Скорочтение» макет унёс в «Грамматику», 08.11.2026 его вернули в «Аудирование» (после Just to Listen, как в
+// Д5 спеки), а 10.11.2026 по просьбе владельца перенесли в «Чтение» — сразу после «Чтения»: ученик сам читает
+// текст вслух, образец диктора — только подсказка темпа.
 //
 // Сказки — последняя карточка везде, где они есть (решение владельца 27.09.2026); макет это соблюдает.
 
 import { cardOf } from './practiceCatalog.js'
 
 export const SKILLS = [
-  {
-    key: 'listening',
-    groups: [{ cards: ['listenchoose', 'justListen', 'speedReading', 'cartoons', 'shadowing', 'karaoke', 'memes', 'tales'] }],
-  },
-  { key: 'reading', groups: [{ cards: ['reading', 'books', 'comics', 'tales'] }] },
+  { key: 'listening', groups: [{ cards: ['listenchoose', 'justListen', 'cartoons', 'shadowing', 'karaoke', 'memes', 'tales'] }] },
+  { key: 'reading', groups: [{ cards: ['reading', 'speedReading', 'books', 'comics', 'tales'] }] },
   { key: 'writing', groups: [{ cards: ['grammar', 'prepositions', 'writing', 'verbs', 'workbooks'] }] },
   { key: 'speaking', groups: [{ cards: ['pronunciation', 'situations', 'speakspin', 'shadowing', 'karaoke', 'tales'] }] },
   {
