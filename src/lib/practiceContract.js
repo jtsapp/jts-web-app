@@ -52,6 +52,9 @@ import { mergeReadingState } from './readingState.js'
 // 'pronunciation' — стейт-объект Pronunciation World {learned, rounds, tutorial, level, last} (прочитанные темы,
 // раунды Echo Gates с лучшим результатом). Replace; клиент сводит с серверным (pronunciation/progress.js merge):
 // пройденное остаётся пройденным. Area 'pronunciation' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
+// 'tenses' — стейт-объект Tenses World {practice, visited, last} (результаты наборов практики, открытые страницы
+// времён, последнее время). Replace; клиент сводит с серверным (tenses/progress.js merge): пройденный набор остаётся
+// пройденным, лучший счёт — максимум. Area 'tenses' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
 // 'vocabLearned' / 'vocabMisses' — «изучено» и «хуже запомненные» «Словаря»
 // ({scopes} и {words}, см. practiceKeys.js). Replace: снятая отметка и снятая
 // ошибка не должны воскресать от объединения.
@@ -74,6 +77,7 @@ export const PRACTICE_MODULES = [
   'cartoons',
   'wordhunt',
   'pronunciation',
+  'tenses',
   'vocabLearned',
   'vocabMisses',
 ]
