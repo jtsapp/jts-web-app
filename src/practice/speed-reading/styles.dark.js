@@ -174,6 +174,37 @@ export const SPEED_READING_DARK_CSS = `:host([data-theme="dark"]) .sr:not(:is(.t
     background: var(--dk-ink-bg);
     color: #fff
 }
+:host([data-theme="dark"]) .srbg:not(:is(.tele, .tele *)) {
+    background: linear-gradient(110deg,var(--dk-acc-tint),var(--dk-page));
+    border: 1px solid var(--dk-acc-line)
+}
+:host([data-theme="dark"]) .srbg.off:not(:is(.tele, .tele *)) {
+    background: var(--dk-page);
+    border-color: var(--dk-line)
+}
+:host([data-theme="dark"]) .srbg .sbic:not(:is(.tele, .tele *)) {
+    background: var(--dk-card);
+    box-shadow: 0 4px 10px color-mix(in oklab, var(--dk-acc) 10%, transparent)
+}
+:host([data-theme="dark"]) .srbg .sbt span:not(:is(.tele, .tele *)) {
+    color: var(--dk-text-2)
+}
+:host([data-theme="dark"]) .srvol:not(:is(.tele, .tele *)) {
+    color: var(--dk-text-2)
+}
+:host([data-theme="dark"]) .srvol input:not(:is(.tele, .tele *)) {
+    accent-color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .srslider:not(:is(.tele, .tele *)) {
+    color: var(--dk-text-2)
+}
+:host([data-theme="dark"]) .srslider input:not(:is(.tele, .tele *)) {
+    accent-color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .srspdv:not(:is(.tele, .tele *)) {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
 :host([data-theme="dark"]) .srwait:not(:is(.tele, .tele *)) {
     color: var(--dk-text-2)
 }
