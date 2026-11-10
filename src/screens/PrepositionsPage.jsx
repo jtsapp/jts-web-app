@@ -15,6 +15,8 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { mountPrepositions } from '../practice/prepositions/engine.js'
 import { PREPOSITIONS_CSS } from '../practice/prepositions/styles.js'
+import { PREPOSITIONS_DARK_CSS } from '../practice/prepositions/styles.dark.js'
+import { watchAppTheme } from '../practice/hostTheme.js'
 import { readPrepositions, writePrepositions } from '../practice/prepositions/progress.js'
 import { speakLesson, stopLesson } from '../practice/prepositions/voice.js'
 import { PREPOSITIONS_LANG_KEY, PREPOSITIONS_PROGRESS_EVENT } from '../practice/practiceKeys.js'
@@ -48,6 +50,9 @@ export default function PrepositionsPage({ userName, userLevel, token, onNav, on
   // Код казахского в приложении — 'kk' (LANGS в i18n.jsx), он же ждёт движок: подмены не нужно.
   const langRef = useRef(lang)
   // Эффект объявлен РАНЬШЕ монтирующего: на первом кадре он отрабатывает первым и движок видит актуальный язык.
+  // Тёмная тема — приложения: тень её не видит, поэтому атрибутом хоста и вслед за кнопкой темы.
+  useEffect(() => (hostRef.current ? watchAppTheme(hostRef.current) : undefined), [])
+
   useEffect(() => {
     langRef.current = lang
   }, [lang])
@@ -67,7 +72,7 @@ export default function PrepositionsPage({ userName, userLevel, token, onNav, on
     // Ставим ДО отрисовки содержимого тени, иначе первый кадр пойдёт системным шрифтом. Пустая строка
     // (элемент вне документа) сделала бы var(--pw-font) невалидным — подстраховываемся шрифтом десктопа.
     host.style.setProperty('--pw-font', getComputedStyle(host).fontFamily || "'Manrope', sans-serif")
-    shadow.innerHTML = `<style>${PREPOSITIONS_CSS}</style><div class="pw"><div id="app"></div></div>`
+    shadow.innerHTML = `<style>${PREPOSITIONS_CSS}\n${PREPOSITIONS_DARK_CSS}</style><div class="pw"><div id="app"></div></div>`
     const api = mountPrepositions(shadow.querySelector('.pw'), {
       bundle,
       lang: langRef.current,

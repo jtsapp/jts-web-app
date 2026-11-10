@@ -44,4 +44,63 @@ describe('darkShadowCss', () => {
   it(':host(…) не поддержан — падает, а не пропускает правило молча', () => {
     expect(() => darkShadowCss(':host(.x){color:#000}')).toThrow(/:host/)
   })
+
+  // Дальше — что разделы в тени показали на снимках 10.11.2026 (Pronunciation, «Числа», Word Hunt, «Грамматика · игры»).
+
+  it('градиентный заголовок: clip переносится вслед за фоном, цвета градиента — как текст', () => {
+    const { css } = darkShadowCss('h1{background:linear-gradient(100deg,#2B0F7A,#0A6E9E);-webkit-background-clip:text;background-clip:text;color:transparent}')
+    const c = compact(css)
+    // без clip шорткат background сбросил бы его к border-box — градиент лёг бы плашкой на весь блок
+    expect(c).toContain('-webkit-background-clip: text; background-clip: text')
+    expect(c).toContain('linear-gradient(100deg,var(--dk-acc-text),var(--dk-blue))')
+  })
+
+  it('чернила с оттенком — белый и серый текст графита, а не фиолетовый бренда', () => {
+    const { css } = darkShadowCss(':host{--ink:#1f1640;--ink2:#5b5478;--link-text:#5a2fc8}')
+    const c = compact(css)
+    expect(c).toContain('--ink: var(--dk-text)')
+    expect(c).toContain('--ink2: var(--dk-text-2)')
+    // насыщенный тёмный — это цвет, он остаётся в семействе бренда
+    expect(c).toContain('--link-text: var(--dk-acc-text)')
+  })
+
+  it('чернильный скрим под окном остаётся скримом, а не заливкой цветом бренда', () => {
+    const { css } = darkShadowCss('.ov{background:rgba(25,20,49,.55)}')
+    expect(compact(css)).toContain(`${D} .ov { background: rgba(25,20,49,.55) }`)
+  })
+
+  it('тёмная подпись на яркой заливке остаётся тёмной', () => {
+    const { css } = darkShadowCss(':host{--gold:#f5b400}.tag{background:var(--gold);color:#3a2a00}')
+    expect(compact(css)).toContain(`${D} .tag { background: var(--gold); color: var(--dk-on-bright) }`)
+  })
+
+  it('белый ореол — поверхность карточки той же прозрачности, без серого кольца', () => {
+    const { css } = darkShadowCss('.board{background:radial-gradient(ellipse,rgba(255,255,255,.9),rgba(255,255,255,.55) 55%,rgba(255,255,255,0))}')
+    const c = compact(css)
+    expect(c).toContain('color-mix(in oklab, var(--dk-card) 90%, transparent)')
+    expect(c).toContain('color-mix(in oklab, var(--dk-card) 55%, transparent) 55%')
+    expect(c).not.toMatch(/rgba\(255,\s*255,\s*255/)
+  })
+
+  it('полупрозрачная белая кромка — линия графита, как и непрозрачная белая', () => {
+    const { css } = darkShadowCss('.a{border:2px solid rgba(255,255,255,.95)}.b{border:2px solid #fff}')
+    const c = compact(css)
+    expect(c).toContain(`${D} .a { border: 2px solid var(--dk-line) }`)
+    expect(c).toContain(`${D} .b { border: 2px solid var(--dk-line) }`)
+  })
+})
+
+// Глобальный слой (gen-dark-theme.js) этими правилами не пользуется: его вывод обязан остаться прежним байт в байт.
+describe('createConverter без опций разделов в тени', () => {
+  it('чернила с оттенком и clip глобальный конвертер не трогает', () => {
+    const { createConverter, collectVars } = require('./dark-css.js')
+    const postcss = require('postcss')
+    const root = postcss.parse('.x{color:#1f1640}.h{background:linear-gradient(90deg,#2B0F7A,#0A6E9E);background-clip:text}')
+    const { convert } = createConverter({ prefixSelector: (s) => `html[data-theme="dark"] ${s}`, vars: collectVars([root]) })
+    const out = postcss.root()
+    convert(root, out)
+    const c = compact(out.toString())
+    expect(c).toContain('.x { color: var(--dk-acc-text) }')
+    expect(c).not.toContain('background-clip')
+  })
 })

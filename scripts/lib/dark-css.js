@@ -78,14 +78,31 @@ function parseColor(s) {
   return named ? { rgb: named, a: 1 } : null
 }
 
+// Чернила с оттенком (opts.inks, только разделы в тени): почти чёрный с фиолетовым или бурым отливом (#1f1640 у «Чисел»,
+// #1e1838 у Punctuation World) и приглушённый серо-фиолетовый вторичный текст (#5b5478) глаз читает как чёрный и серый,
+// а не как цвет. Палитра же относит всё, что чуть насыщеннее серого, к семейству бренда, и основной текст раздела
+// становился фиолетовым (--dk-acc-text) целиком. Поэтому такой текст считается нейтральным — белым и серым графита;
+// насыщенный тёмный (#2a1b72 у цифр урока, #5a2fc8 у выделений) остаётся цветом бренда.
+function isInk(lch) {
+  return (lch.L < 0.32 && lch.C < 0.11) || (lch.L < 0.56 && lch.C < 0.06)
+}
+
 // Полупрозрачные цвета — отдельная логика: чёрная дымка на светлом — это
 // тень/разделитель/ховер, на тёмном её не видно, она должна стать светлой.
-function mapColor(str, role, prop) {
+function mapColor(str, role, prop, opts = {}) {
   const c = parseColor(str)
   if (!c) return str
-  const lch = toOklch(c.rgb)
   const isShadow = prop === 'box-shadow' || prop === 'text-shadow'
+  let lch = toOklch(c.rgb)
+  // Та же тёмная «чернильная» дымка — скрим под окном (rgba(25,20,49,.55) у «Грамматики · игр»), тень, разделитель:
+  // как цвет бренда она заливала экран под окном фиолетовым. Непрозрачный тёмный фон (ночное небо, тёмная панель) —
+  // это цвет, он остаётся в своём семействе.
+  if (opts.inks && isInk(lch) && (role === 'text' || c.a < 1)) lch = { L: lch.L, C: 0, H: lch.H }
   if (c.a < 1) {
+    // Стеклянная кромка (opts.inks, только разделы в тени): полупрозрачная белая рамка на белом стекле — то же, что
+    // непрозрачная белая, которая и так становится линией графита. Иначе на тёмном оставалась резкая белая обводка
+    // (поле поиска слов Word Hunt, карточки уровней).
+    if (opts.inks && role === 'border' && !familyOf(lch) && lch.L >= 0.97 && c.a >= 0.5) return fmt('line', 1)
     if (!familyOf(lch)) {
       if (isShadow) return lch.L < 0.5 ? `rgba(0, 0, 0, ${r3(Math.min(c.a * 2, 0.6))})` : str
       if (lch.L < 0.5) {
@@ -121,11 +138,31 @@ function hasColor(value) {
   return COLOR_RE.test(stripped)
 }
 
-function mapValue(value, role, prop) {
+// Белое свечение (opts.inks, только разделы в тени): градиент из одних белых стопов с прозрачностью — ореол под сеткой
+// кроссворда, под итогом, под планетой. Каждый стоп по отдельности палитра считала бы то карточкой (плотный), то бликом
+// (тонкий, остаётся белым), и на тёмном выходило серое кольцо. Весь ореол — поверхность карточки той же прозрачности.
+function whiteGlow(value) {
+  if (!/gradient\(/.test(value)) return null
+  const stops = value.replace(/var\([^()]*\)|url\([^()]*\)/g, '').match(COLOR_RE) || []
+  const parsed = stops.map(parseColor)
+  // «белый» — и молочный прототипа (#F7F5FF): та же дымка, только с отливом фона страницы
+  if (!parsed.length || parsed.some((c) => !c || c.rgb.some((v) => v < 240))) return null
+  if (!parsed.some((c) => c.a < 1)) return null
+  return value.replace(COLOR_RE, (m) => {
+    const c = parseColor(m)
+    return c ? fmt('card', c.a) || 'transparent' : m
+  })
+}
+
+function mapValue(value, role, prop, opts) {
+  if (opts && opts.inks && role === 'bg') {
+    const glow = whiteGlow(value)
+    if (glow) return glow
+  }
   // url(...) и var(...) защищаем от замены, потом возвращаем.
   const keep = []
   const guarded = value.replace(/url\([^()]*\)|var\([^()]*\)/g, (m) => `\u0000${keep.push(m) - 1}\u0000`)
-  const out = guarded.replace(COLOR_RE, (m) => mapColor(m, role, prop))
+  const out = guarded.replace(COLOR_RE, (m) => mapColor(m, role, prop, opts))
   return out.replace(/\u0000(\d+)\u0000/g, (_, i) => keep[+i])
 }
 
@@ -184,12 +221,12 @@ const SKIP_AT = new Set(['keyframes', '-webkit-keyframes', 'font-face', 'propert
 // (--wb-green: #22c55e → var(--dk-green)). Нужен только для выбора цвета
 // подписи на заливке; одноимённые переменные разных разделов здесь
 // склеиваются (последняя побеждает) — для этой цели достаточно.
-function collectVars(roots) {
+function collectVars(roots, opts) {
   const vars = new Map()
   for (const root of roots) {
     root.walkDecls((d) => {
       if (!d.prop.startsWith('--') || !hasColor(d.value)) return
-      vars.set(d.prop, mapValue(d.value, roleFor(d.prop.toLowerCase(), d.value), d.prop.toLowerCase()).trim())
+      vars.set(d.prop, mapValue(d.value, roleFor(d.prop.toLowerCase(), d.value), d.prop.toLowerCase(), opts).trim())
     })
   }
   return vars
@@ -206,8 +243,15 @@ function collectVars(roots) {
  * нужно: их прототипы пишут токенами. Оттуда же shadowVars — тени в
  * переменных (--shadow, --sh1).
  */
-function createConverter({ prefixSelector, vars, inkFill = false, shadowVars = false }) {
+function createConverter({ prefixSelector, vars, inkFill = false, shadowVars = false, clipText = false, inks = false }) {
   const stats = { rules: 0, decls: 0, mapped: 0 }
+  // inks — см. isInk.
+  const opts = { inks }
+  // clipText: градиентный заголовок (background: linear-gradient(…); background-clip: text; color: transparent). Тёмная
+  // копия шортката background сбрасывает background-clip к border-box — и вместо букв градиент ложился плашкой на
+  // весь блок (Pronunciation World, 10.11.2026). Поэтому clip переносится в копию вслед за фоном, а цвета такого фона —
+  // это цвет букв: считаются как текст (тёмный фиолетовый → светлый), иначе буквы тонули бы в графите.
+  const CLIP_RE = /^(-webkit-)?background-clip$/
 
   function resolveVar(value) {
     const m = /^var\((--[\w-]+)\s*(?:,[^)]*)?\)$/.exec(value.trim())
@@ -225,9 +269,14 @@ function createConverter({ prefixSelector, vars, inkFill = false, shadowVars = f
       }
       if (node.type !== 'rule') return
       const decls = []
+      const textClip = clipText && node.some((d) => d.type === 'decl' && CLIP_RE.test(d.prop.toLowerCase()) && /\btext\b/.test(d.value))
       node.each((d) => {
         if (d.type !== 'decl') return
         const prop = d.prop.toLowerCase()
+        if (textClip && CLIP_RE.test(prop)) {
+          decls.push(postcss.decl({ prop: d.prop, value: d.value, important: d.important }))
+          return
+        }
         if (!COLOR_PROPS(prop)) return
         if (prop.startsWith('--') && !hasColor(d.value)) return
         let value = d.value
@@ -235,11 +284,14 @@ function createConverter({ prefixSelector, vars, inkFill = false, shadowVars = f
           // --shadow: 0 1px 2px rgba(22,21,28,.04) — это тень, а не текст: по имени роль не угадать (тёмный
           // нейтральный цвет счёлся бы текстом и стал белым свечением).
           const asShadow = shadowVars && prop.startsWith('--') && prop.includes('shadow')
-          const mapped = asShadow ? mapValue(value, 'bg', 'box-shadow') : mapValue(value, roleFor(prop, value), prop)
+          const role = textClip && prop.startsWith('background') ? 'text' : roleFor(prop, value)
+          const mapped = asShadow ? mapValue(value, 'bg', 'box-shadow', opts) : mapValue(value, role, prop, opts)
           if (mapped !== value) stats.mapped++
           value = mapped
         }
-        decls.push(postcss.decl({ prop: d.prop, value, important: d.important }))
+        const out = postcss.decl({ prop: d.prop, value, important: d.important })
+        out.src = d.value
+        decls.push(out)
       })
       // Копируем и правила без единого литерала (.btn--primary { background:
       // var(--purple) }): иначе тёмная копия .btn { background:#fff } с
@@ -268,6 +320,10 @@ function createConverter({ prefixSelector, vars, inkFill = false, shadowVars = f
           if (d.prop !== 'color') return
           const c = parseColor(d.value.trim())
           if (c && c.a === 1 && toOklch(c.rgb).L >= 0.97) d.value = `var(--dk-${onToken})`
+          // Тёмная подпись на яркой заливке (#3a2400 на золотой кнопке): чернила стали бы белыми на неоновом жёлтом —
+          // она остаётся тёмной, как и белая подпись на нём (inks — только разделы в тени).
+          const s = parseColor((d.src || '').trim())
+          if (inks && onToken === 'on-bright' && s && s.a === 1 && toOklch(s.rgb).L < 0.45) d.value = 'var(--dk-on-bright)'
         })
       }
       let selectors
@@ -346,9 +402,11 @@ function darkShadowCss(css, { lightZones = [], zoneColor = {} } = {}) {
   const zones = lightZones.length ? zoneGuards(lightZones) : null
   const { convert, stats } = createConverter({
     prefixSelector: (sel) => hostPrefix(sel, zones),
-    vars: collectVars([root]),
+    vars: collectVars([root], { inks: true }),
     inkFill: true,
     shadowVars: true,
+    clipText: true,
+    inks: true,
   })
   const out = postcss.root()
   convert(root, out)
