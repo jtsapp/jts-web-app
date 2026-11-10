@@ -76,6 +76,32 @@ h2,h3,h4,p{line-height:1.25}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:14px;font-weight:700;z-index:90;animation:pop .2s}
 @keyframes pop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
 @media (max-width:860px){.srtexts{grid-template-columns:1fr}.tele-text{font-size:22px;padding:0 6%}.srstart{padding:20px 16px}.chero img.m{display:none}}
+/* ---------- v1.2: уровни, группы, карточки ситуаций, фон, ползунок (прототип того же файла) ---------- */
+.srstart{max-width:780px}
+.srlv{flex-wrap:wrap;justify-content:flex-start!important}
+.srlv button{min-width:74px;justify-content:center;gap:6px}
+.srlv button small,.srcat button small{font-size:11px;opacity:.6;font-weight:700;margin-left:5px}
+.srcat{flex-wrap:wrap;justify-content:flex-start!important;margin-bottom:10px}
+.srcat button{gap:4px}
+.srtexts{grid-template-columns:repeat(3,minmax(0,1fr))}
+.srtexts button{text-align:left}
+.srtexts button b{line-height:1.25}
+.srbg{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;text-align:left;background:linear-gradient(110deg,#F4EEFF,#EAF3FF);border:1px solid #E4DAFB;border-radius:18px;padding:12px 14px}
+.srbg.off{background:#F7F6FA;border-color:#EFEDF4}
+.srbg.off .sbic{filter:grayscale(1);opacity:.6}
+.srbg .sbic{font-size:30px;width:48px;height:48px;border-radius:14px;background:#fff;display:grid;place-items:center;flex:none;box-shadow:0 4px 10px rgba(80,40,180,.1)}
+.srbg .sbt{flex:1;min-width:200px}
+.srbg .sbt b{display:block;font-size:14.5px}
+.srbg .sbt span{font-size:12.5px;color:#6B6878}
+.srbg .sbc{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.srvol{display:inline-flex;align-items:center;gap:4px;color:#6B6878}
+.srvol input{width:90px;accent-color:#9047FF}
+.srslider{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12.5px;font-weight:700;color:#6B6878}
+.srslider input{flex:1;accent-color:#9047FF;height:22px;min-width:0}
+.srspdv{display:inline-block;margin-left:6px;background:#9047FF;color:#fff;border-radius:999px;padding:2px 10px;font-size:13px}
+.tele-top b{min-width:0;overflow-wrap:anywhere}
+@media (max-width:860px){.srtexts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.srtexts{grid-template-columns:1fr}.srvol input{width:70px}}
 /* ---------- своё: итог считается, монеты, телефон ---------- */
 .srwait{display:inline-flex;align-items:center;gap:8px;color:#6B6878;font-weight:700}
 .srwait .ms{animation:srspin 1.4s linear infinite}

@@ -10,9 +10,39 @@ import { mountSpeedReading } from './engine.js'
 const BODY_A = 'Hello everyone my name is Ali and I live in Almaty'
 const WORDS_A = BODY_A.split(' ').map((w, i) => [w, i * 0.5, i * 0.5 + 0.4])
 const TEXTS = () => [
-  { id: 'a', level: 'A1', icon: '👋', title: { ru: 'Знакомство', kk: 'Танысу', en: 'Introduce yourself' }, body: BODY_A, words: 11, sample: { url: 'https://f/a.mp3', words: WORDS_A, wpm: 150 } },
-  { id: 'b', level: 'B1', icon: '✈️', title: { ru: '<img src=x onerror=alert(1)>', kk: 'Ұшақ', en: 'Flight' }, body: 'Good morning ladies and gentlemen', words: 5, sample: null },
+  { id: 'a', level: 'A1', icon: '👋', genre: 'airport', category: 'travel', sound: 'airport', title: { ru: 'Знакомство', kk: 'Танысу', en: 'Introduce yourself' }, body: BODY_A, words: 11, sample: { url: 'https://f/a.mp3', words: WORDS_A, wpm: 150 } },
+  { id: 'b', level: 'A1', icon: '✈️', genre: 'inflight', category: 'travel', sound: 'plane', title: { ru: '<img src=x onerror=alert(1)>', kk: 'Ұшақ', en: 'Flight' }, body: 'Good morning ladies and gentlemen', words: 5, sample: null },
+  // v1.2: на B1 — тот же жанр airport (смена уровня его сохраняет) и ситуации другой группы; порядок — как пришёл с
+  // сервера, а экран сортирует по жанрам справочника (shop — первый в «Городе», cafe — третий).
+  { id: 'c', level: 'B1', icon: '☕', genre: 'cafe', category: 'city', sound: 'cafe', title: { ru: 'В кафе', kk: 'Кафеде', en: 'At the café' }, body: 'Two coffees please', words: 3, sample: null },
+  { id: 'd', level: 'B1', icon: '✈️', genre: 'airport', category: 'travel', sound: 'airport', title: { ru: 'Смена выхода', kk: 'Шығу', en: 'Gate change' }, body: 'Flight 427 now boards at Gate 12', words: 7, sample: null },
+  { id: 'e', level: 'B1', icon: '🛒', genre: 'shop', category: 'city', sound: 'mall', title: { ru: 'В магазине', kk: 'Дүкенде', en: 'In the shop' }, body: 'The shop closes at nine', words: 5, sample: null },
+  { id: 'f', level: 'B1', icon: '📄', genre: null, category: null, sound: null, title: { ru: 'Старый текст', kk: 'Ескі', en: 'Old text' }, body: 'Old text without a group', words: 5, sample: null },
 ]
+
+// Фон сцен — заглушка: в jsdom нет Web Audio, а движку важно, когда он просит сцену, сигнал и сведение с записью.
+function fakeAmbience({ cue = 0 } = {}) {
+  const a = {
+    cue,
+    now: null,
+    volume: 45,
+    mix: { stream: { id: 'mixed' }, bus: { id: 'bus' }, setOn: vi.fn(), release: vi.fn() },
+    wake: vi.fn(() => true),
+    start: vi.fn((key, o = {}) => {
+      a.now = { key, preview: !!o.preview, onPreviewEnd: o.onPreviewEnd }
+      return a.cue
+    }),
+    stop: vi.fn(() => {
+      a.now = null
+    }),
+    route: vi.fn(),
+    playing: () => (a.now ? { key: a.now.key, preview: a.now.preview } : null),
+    setVolume: vi.fn((v) => (a.volume = v)),
+    close: vi.fn(),
+  }
+  a.mixer = vi.fn(() => a.mix)
+  return a
+}
 
 let host
 let root
@@ -35,8 +65,9 @@ function makeEnv(over = {}) {
   const e = {
     handlers: null,
     live: null,
-    recorder: { start: vi.fn(), stop: vi.fn(async () => new Blob(['RIFF'], { type: 'audio/wav' })), cancel: vi.fn() },
+    recorder: { start: vi.fn(), stop: vi.fn(async () => new Blob(['RIFF'], { type: 'audio/wav' })), take: vi.fn(async () => null), cancel: vi.fn() },
     liveStop: vi.fn(),
+    amb: over.ambience || fakeAmbience(),
   }
   e.cfg = {
     texts: TEXTS(),
@@ -61,7 +92,9 @@ function makeEnv(over = {}) {
     transcribe: vi.fn(async () => 'Hello everyone my name is Ali'),
     submitAttempt: vi.fn(async () => ({ attempt: { id: 9, createdAt: new Date().toISOString() }, coins: 4 })),
     scrollTop: vi.fn(),
+    unlockSample: vi.fn(),
     ...over,
+    ambience: e.amb,
   }
   return e
 }
@@ -103,15 +136,63 @@ afterEach(() => {
 })
 
 describe('стартовый экран', () => {
-  it('тексты, семь скоростей, подпись темпа по образцу', () => {
+  it('уровни и группы вкладками, ситуации группы, семь скоростей и подпись темпа', () => {
     mount()
+    expect($$('.srlv button').map((b) => b.dataset.arg)).toEqual(['A1', 'B1'])
+    expect($('.srlv button.on').textContent).toBe('A12')
+    expect($$('.srcat button').map((b) => b.dataset.arg)).toEqual(['travel'])
     expect($$('.srtexts button')).toHaveLength(2)
     expect($('.srtexts button.on').dataset.arg).toBe('a')
-    expect($$('.srspd button').map((b) => b.textContent.trim())).toEqual(['0.5x', '0.7x', '1x', '1.5x', '2x', '2.5x', '3x'])
+    expect($$('.srspd button').map((b) => b.textContent.trim())).toEqual(['0,5x', '0,7x', '1x', '1,5x', '2x', '2,5x', '3x'])
     expect(text()).toContain('1x — темп носителя · 150 сл/мин · ≈ 4 секунд')
     click('.srspd button[data-arg="1.5"]')
-    expect($('.srspd button.on').textContent.trim()).toBe('1.5x')
+    expect($('.srspd button.on').textContent.trim()).toBe('1,5x')
+    expect($('#srspdv').textContent).toBe('1,5x')
     expect(text()).toContain('225 сл/мин')
+  })
+
+  it('смена уровня оставляет тот же жанр; группы по справочнику, тексты без группы — «Другие»', () => {
+    mount()
+    click('.srlv button[data-arg="B1"]')
+    expect($('.srtexts button.on').dataset.arg).toBe('d') // airport и на B1
+    expect($$('.srcat button').map((b) => b.dataset.arg)).toEqual(['travel', 'city', 'other'])
+    expect(text()).toContain('· 4 жанров на уровне')
+    click('.srcat button[data-arg="city"]')
+    // shop — первый жанр «Города», cafe — третий: порядок справочника, а не сервера.
+    expect($$('.srtexts button').map((b) => b.dataset.arg)).toEqual(['e', 'c'])
+    expect($('.srtexts button.on').dataset.arg).toBe('e')
+    click('.srcat button[data-arg="other"]')
+    expect($$('.srtexts button').map((b) => b.dataset.arg)).toEqual(['f'])
+    click('.srlv button[data-arg="A1"]')
+    expect($('.srtexts button.on').dataset.arg).toBe('a') // у «Других» жанра нет — первая ситуация уровня
+  })
+
+  it('уровень ученика — вкладка по умолчанию; A0 открывает A1, неизвестный — первый уровень', () => {
+    mount({ initialLevel: 'B1' })
+    expect($('.srlv button.on').dataset.arg).toBe('B1')
+    expect($('.srtexts button.on').dataset.arg).toBe('d')
+    api.destroy()
+    mount({ initialLevel: 'A0' })
+    expect($('.srlv button.on').dataset.arg).toBe('A1')
+    api.destroy()
+    mount({ initialLevel: 'C2' })
+    expect($('.srlv button.on').dataset.arg).toBe('A1')
+  })
+
+  it('ползунок: подписи на ходу без перерисовки, отпустил — 0,1x и пересчёт', () => {
+    mount()
+    const slider = $('input[data-act="slide"]')
+    expect([slider.min, slider.max, slider.step]).toEqual(['0.5', '3', '0.1'])
+    slider.value = '1.3'
+    slider.dispatchEvent(new Event('input', { bubbles: true }))
+    expect($('input[data-act="slide"]')).toBe(slider) // экран не перерисован — перетаскивание не сбито
+    expect($('#srspdv').textContent).toBe('1,3x')
+    expect($('#srspdi').textContent).toContain('195 сл/мин')
+    expect($('.srspd button.on')).toBeNull()
+    slider.value = '2'
+    slider.dispatchEvent(new Event('input', { bubbles: true }))
+    slider.dispatchEvent(new Event('change', { bubbles: true }))
+    expect($('.srspd button.on').dataset.arg).toBe('2')
   })
 
   it('названия из админки экранированы', () => {
@@ -149,8 +230,9 @@ describe('образец', () => {
     done({ status: 'ready', sample: { url: 'https://f/b.mp3', words: [['Good', 0, 0.3]], wpm: 170 } })
     await flush()
     expect($('[data-act="listen"]').disabled).toBe(false)
-    expect($('[data-act="listen"]').textContent).toContain('Послушать образец')
-    expect(text()).toContain('170 сл/мин')
+    expect($('[data-act="listen"]').textContent).toContain('Послушать образец · 1x')
+    // v1.2: темп образца больше не основа 1x — подпись всегда от 150 сл/мин.
+    expect(text()).toContain('150 сл/мин')
   })
 
   it('синтеза на стенде нет — «Образец недоступен»', async () => {
@@ -161,11 +243,11 @@ describe('образец', () => {
     expect($('[data-act="listen"]').textContent).toContain('Образец недоступен')
   })
 
-  it('играет на выбранной скорости, подсветка — по времени записи', () => {
+  it('всегда в 1x при любой скорости, подсветка — по времени записи', () => {
     mount()
     click('.srspd button[data-arg="1.5"]')
     click('[data-act="listen"]')
-    expect(env.cfg.playSample).toHaveBeenCalledWith('https://f/a.mp3', 1.5, expect.any(Object))
+    expect(env.cfg.playSample).toHaveBeenCalledWith('https://f/a.mp3', 1, expect.any(Object))
     expect($$('#srlist span')).toHaveLength(11)
     env.handlers.onTime(1.6) // четвёртое слово (name) начинается на 1.5 с
     expect($('#srl3').classList.contains('on')).toBe(true)
@@ -173,6 +255,32 @@ describe('образец', () => {
     click('[data-act="listen"]')
     expect(env.cfg.stopSample).toHaveBeenCalled()
     expect($('#srlist')).toBeNull()
+  })
+
+  it('сначала сигнал сцены, потом голос; смена скорости образец не прерывает', () => {
+    mount({ ambience: fakeAmbience({ cue: 1.2 }) })
+    click('[data-act="listen"]')
+    expect(env.cfg.unlockSample).toHaveBeenCalled() // элемент озвучки будится в клике — голос пойдёт таймером
+    expect(env.amb.start).toHaveBeenCalledWith('airport')
+    expect(env.cfg.playSample).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1199)
+    expect(env.cfg.playSample).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(env.cfg.playSample).toHaveBeenCalledWith('https://f/a.mp3', 1, expect.any(Object))
+    click('.srspd button[data-arg="2"]')
+    expect(env.cfg.stopSample).not.toHaveBeenCalled()
+    expect($('#srlist')).not.toBeNull()
+    env.handlers.onEnd('ended')
+    expect(env.amb.stop).toHaveBeenLastCalledWith(1.2)
+  })
+
+  it('фон выключен — образец без сцены и без ожидания сигнала', () => {
+    mount({ ambience: fakeAmbience({ cue: 1.2 }) })
+    click('[data-act="bgToggle"]')
+    expect($('.srbg').classList.contains('off')).toBe(true)
+    click('[data-act="listen"]')
+    expect(env.amb.start).not.toHaveBeenCalled()
+    expect(env.cfg.playSample).toHaveBeenCalled()
   })
 
   it('образец доиграл — кнопка снова «Послушать»', () => {
@@ -212,6 +320,81 @@ describe('запись и итог', () => {
     expect($('audio').getAttribute('src')).toBe('blob:rec')
     expect($('a[download]').getAttribute('download')).toMatch(/^speed-a-\d{4}-\d{2}-\d{2}\.wav$/)
     expect(text()).toContain('+4 монеты')
+  })
+
+  it('v1.2: сигнал сцены до отсчёта, запись с фоном — в плеер, на распознавание — чистый голос', async () => {
+    const amb = fakeAmbience({ cue: 1.5 })
+    const take = new Blob(['OggS'], { type: 'audio/webm;codecs=opus' })
+    let mixWith = null
+    mount({
+      ambience: amb,
+      openRecorder: vi.fn(async (o) => {
+        mixWith = o.mixWith
+        return env.recorder
+      }),
+    })
+    env.recorder.start = vi.fn(() => mixWith({ id: 'mic' }))
+    env.recorder.take = vi.fn(async () => take)
+    click('.srspd button[data-arg="1.5"]')
+    click('[data-act="begin"]')
+    expect(amb.wake).toHaveBeenCalled() // в клике: сигнал зазвучит уже после ответа про микрофон
+    await flush()
+    expect(amb.start).toHaveBeenCalledWith('airport')
+    expect($('.tele-top b').textContent).toBe('👋 Знакомство · 1,5x')
+    expect($('#telecount').textContent).toBe('👋') // во время сигнала — значок сцены, а не «3»
+    vi.advanceTimersByTime(1500 + 2399)
+    expect(env.recorder.start).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(env.recorder.start).toHaveBeenCalledOnce()
+    expect(amb.mixer).toHaveBeenCalledWith({ id: 'mic' }, true)
+    expect(amb.route).toHaveBeenCalledWith(amb.mix.bus)
+    // Выключить фон посреди записи: перерисовки нет, сведение глохнет, сцена останавливается.
+    const tele = $('#teletext')
+    click('[data-act="bgToggle"]')
+    expect($('#teletext')).toBe(tele)
+    expect(amb.mix.setOn).toHaveBeenLastCalledWith(false)
+    expect(amb.stop).toHaveBeenCalled()
+    click('[data-act="bgToggle"]')
+    expect(amb.mix.setOn).toHaveBeenLastCalledWith(true)
+    vi.advanceTimersByTime(3000)
+    click('[data-act="stop"]')
+    await flush()
+    await flush()
+    expect(amb.route).toHaveBeenLastCalledWith(null)
+    expect(env.cfg.transcribe.mock.calls[0][0].type).toBe('audio/wav')
+    expect(URL.createObjectURL).toHaveBeenCalledWith(take)
+    expect($('a[download]').getAttribute('download')).toMatch(/^speed-a-\d{4}-\d{2}-\d{2}\.webm$/)
+    expect(text()).toContain('В записи твой голос и фон ситуации')
+    expect(env.cfg.submitAttempt.mock.calls[0][0].speed).toBe(1.5)
+  })
+
+  it('скорость с ползунка уходит на бэкенд как есть (1,3x), а не ближайшей кнопкой', async () => {
+    mount()
+    const slider = $('input[data-act="slide"]')
+    slider.value = '1.3'
+    slider.dispatchEvent(new Event('change', { bubbles: true }))
+    await record()
+    expect(env.cfg.submitAttempt.mock.calls[0][0].speed).toBe(1.3)
+    expect(text()).toContain('скорость 1,3x (195 сл/мин)')
+  })
+
+  it('фон: послушать 7 с, громкость, уход с экрана гасит контекст', () => {
+    mount()
+    click('[data-act="bgPreview"]')
+    expect(env.amb.start).toHaveBeenCalledWith('airport', expect.objectContaining({ preview: 7 }))
+    expect($('[data-act="bgPreview"]').textContent).toContain('Стоп')
+    env.amb.now.onPreviewEnd()
+    env.amb.now = null
+    const vol = $('input[data-act="vol"]')
+    vol.value = '80'
+    vol.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(env.amb.setVolume).toHaveBeenCalledWith(80)
+    click('.srtexts button[data-arg="b"]')
+    expect(env.amb.stop).toHaveBeenCalled() // другая ситуация — «послушать» прежней гаснет
+    expect(text()).toContain('Фон: Салон самолёта')
+    api.destroy()
+    api = null
+    expect(env.amb.close).toHaveBeenCalled()
   })
 
   it('сервер не распознал — итог по живому распознаванию', async () => {

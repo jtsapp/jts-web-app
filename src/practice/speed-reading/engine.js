@@ -26,10 +26,22 @@
 //   к звучащему слову (прототип вычитал отступ списка и всегда сбрасывал прокрутку наверх); пока браузер
 //   спрашивает микрофон, на экране ожидание с «Отменой», а не рабочий выбор текста (выбор посреди запроса
 //   разводил текст попытки и текст итога); числа цифрами в распознанном засчитываются (rules.js expandHeard).
+//
+// ТЗ v1.2 (30.10.2026, прототип того же файла): уровни A1–C1, на уровне 50 жанров в пяти группах по десять, при смене
+// уровня остаётся тот же жанр; скорость — семь кнопок и ползунок 0,5–3x с шагом 0,1; образец всегда в 1x (не на
+// выбранной скорости, кнопка «· 1x»), 1x — ровно 150 сл/мин; у каждой ситуации фоновая сцена (ambience.js) —
+// «послушать» 7 с, вкл/выкл, громкость, сигнал сцены перед отсчётом и перед образцом; запись, которую ученик слушает
+// и скачивает, — голос вместе с фоном на 45 % (recorder.js take), распознаётся чистый голос. Отличия от прототипа v1.2:
+// группы и порядок жанров — из справочника сайта (catalog.js), а не из списка текстов; тексты без группы — вкладка
+// «Другие»; уровень по умолчанию — уровень ученика (initialLevel), а не B1; ползунок перерисовывает только подписи
+// (полная перерисовка на каждом шаге сбивала бы перетаскивание); образец ждёт сигнал сцены таймером, поэтому общий
+// элемент озвучки будится в клике (unlockSample) — иначе iPhone молчал бы.
 
-import { SPEEDS, BASE_WPM, AUTO_STOP_MS, srWords, alignHeard, resultOf, speedWpm, paceSeconds, scrollMs, sampleIndexAt, todayCount } from './rules.js'
+import { SPEEDS, SPEED_MIN, SPEED_MAX, SPEED_STEP, BASE_WPM, AUTO_STOP_MS, srWords, alignHeard, resultOf, speedWpm, paceSeconds, scrollMs, sampleIndexAt, todayCount, clampSpeed, fmtSpeed } from './rules.js'
 import { attemptBody } from './data.js'
 import { icon } from './icons.js'
+import { CATEGORIES, OTHER_CATEGORY, LEVEL_ORDER, categoryOf, genreRank } from './catalog.js'
+import { createAmbience, sceneOf } from './ambience.js'
 
 /**
  * @param {HTMLElement} root  корень раздела (.sr) в Shadow DOM
@@ -51,7 +63,11 @@ export function mountSpeedReading(root, cfg) {
     submitAttempt = async () => null,
     scrollTop = () => {},
     initialText = null,
+    initialLevel = null,
+    unlockSample = () => {},
   } = cfg
+  // Фон сцен: свой контекст у экрана (тест подменяет его заглушкой).
+  const amb = cfg.ambience || createAmbience()
   let lang = cfg.lang || 'ru'
   let serverTries = Array.isArray(cfg.attempts) ? cfg.attempts.slice() : []
   const ac = new AbortController()
@@ -137,14 +153,46 @@ export function mountSpeedReading(root, cfg) {
 
   /* ================= Скорочтение (Speak fast and clear!) ================= */
   const byId = new Map(texts.map((t) => [t.id, t]))
+  // Уровни вкладками: известные — по порядку справочника, прочие (если бэкенд пришлёт) — за ними.
+  const LEVELS = [...LEVEL_ORDER.filter((l) => texts.some((t) => t.level === l)), ...new Set(texts.map((t) => t.level).filter((l) => !LEVEL_ORDER.includes(l)))]
+  const ofLevel = (lv) => texts.filter((t) => t.level === lv)
+  // Карточки группы — в порядке жанров справочника; равные (неизвестные жанры) — как пришли с сервера.
+  const listOf = (lv, cat) =>
+    ofLevel(lv)
+      .map((t, i) => ({ t, i }))
+      .filter(({ t }) => categoryOf(t) === cat)
+      .sort((a, b) => genreRank(a.t.genre) - genreRank(b.t.genre) || a.i - b.i)
+      .map(({ t }) => t)
+  const catsOf = (lv) => [...CATEGORIES, OTHER_CATEGORY].filter((c) => listOf(lv, c.id).length)
+  const firstOf = (lv) => {
+    for (const c of catsOf(lv)) {
+      const list = listOf(lv, c.id)
+      if (list.length) return list[0]
+    }
+    return null
+  }
+  const startText = () => {
+    if (byId.has(initialText)) return byId.get(initialText)
+    const lv = String(initialLevel || '').toUpperCase()
+    // A0 → вкладка A1, C2 → C1: уровни Скорочтения уже, чем уровни ученика.
+    const near = lv === 'A0' ? 'A1' : lv === 'C2' ? 'C1' : lv
+    return firstOf(LEVELS.includes(near) ? near : LEVELS[0]) || texts[0] || null
+  }
+  const first = startText()
   const SR = {
     step: 'start',
-    text: byId.has(initialText) ? initialText : texts[0]?.id,
+    text: first?.id,
+    lv: first?.level,
+    cat: categoryOf(first),
     mult: 1,
+    bg: true,
     tries: [],
   }
   const srText = () => byId.get(SR.text) || texts[0]
-  const srWpm = (tx = srText()) => speedWpm(tx?.sample?.wpm || BASE_WPM, SR.mult)
+  // v1.2: 1x — ровно 150 сл/мин (образец звучит своим темпом и с бегущей строкой не сверяется).
+  const srWpm = () => speedWpm(BASE_WPM, SR.mult)
+  const sp = (m) => fmtSpeed(m, lang)
+  const sceneTx = (tx) => sceneOf(tx?.sound)
   // Состояние образца текста без записи: loading | unavailable | error.
   const sampleState = new Map()
 
@@ -173,21 +221,106 @@ export function mountSpeedReading(root, cfg) {
       })
   }
 
+  // Выбор другой ситуации гасит и образец, и «послушать фон» прошлой.
+  function srPicked() {
+    amb.stop(0.2)
+    needSample(srText())
+    if (SRL) srListenStop()
+    else render()
+  }
   function srSetText(id) {
     if (!byId.has(id)) return
     SR.text = id
-    needSample(byId.get(id))
-    if (SRL) srListenStop()
-    else render()
+    SR.cat = categoryOf(byId.get(id))
+    srPicked()
   }
+  // Смена уровня оставляет тот же жанр (ТЗ v1.2 §2), иначе — первую ситуацию той же группы, иначе — уровня.
+  function srPickLevel(lv) {
+    if (!LEVELS.includes(lv)) return
+    const cur = srText()
+    if (cur?.level !== lv) {
+      const same = cur?.genre ? ofLevel(lv).find((t) => t.genre === cur.genre) : null
+      const next = same || listOf(lv, SR.cat)[0] || firstOf(lv)
+      if (next) {
+        SR.text = next.id
+        SR.cat = categoryOf(next)
+      }
+    }
+    SR.lv = lv
+    srPicked()
+  }
+  function srPickCat(c) {
+    const list = listOf(SR.lv, c)
+    if (!list.length) return
+    SR.cat = c
+    if (categoryOf(srText()) !== c || srText()?.level !== SR.lv) SR.text = list[0].id
+    srPicked()
+  }
+  // Кнопки скорости и отпущенный ползунок. Звучащий образец не прерывается (ТЗ v1.2 §5): он всегда в 1x.
   function srSetMult(m) {
-    if (!SPEEDS.includes(m)) return
-    SR.mult = m
-    if (SRL) srListenStop()
-    else render()
+    SR.mult = clampSpeed(m)
+    render()
+  }
+  // Ползунок в движении: только подписи — перерисовка всего экрана сбила бы перетаскивание.
+  function srSlide(v) {
+    SR.mult = clampSpeed(v)
+    const tx = srText()
+    const a = $('srspdv')
+    if (a) a.textContent = sp(SR.mult)
+    const b = $('srspdi')
+    if (b && tx) b.innerHTML = speedInfo(tx)
+    root.querySelectorAll('.srspd button').forEach((bt) => bt.classList.toggle('on', Number(bt.dataset.arg) === SR.mult))
+  }
+  function speedInfo(tx) {
+    const wpm = srWpm()
+    return `${X('1x — темп носителя', '1x — тасымалдаушы қарқыны', '1x = native pace')} · <b>${wpm}</b> ${X('сл/мин', 'сөз/мин', 'wpm')} · ≈ ${paceSeconds(srWords(tx.body).length, wpm)} ${X('секунд', 'секунд', 'seconds')}`
   }
 
-  /* ---- образец озвучки: запись ElevenLabs, та же скорость, подсветка слов ---- */
+  /* ---- фон сцены: послушать, вкл/выкл, громкость ---- */
+  function srBgPreview() {
+    const tx = srText()
+    if (amb.playing()?.preview) {
+      amb.stop()
+      render()
+      return
+    }
+    if (SRL) {
+      SRL = null
+      stopSample()
+    }
+    amb.wake()
+    amb.start(tx?.sound, { preview: 7, onPreviewEnd: () => SR.step === 'start' && render() })
+    render()
+  }
+  function srBgToggle() {
+    SR.bg = !SR.bg
+    const tx = SR.step === 'rec' ? SR.cur : srText()
+    if (!SR.bg) amb.stop(0.3)
+    else if ((SR.step === 'rec' && SRX && !SRX.demo) || SRL) {
+      amb.wake()
+      amb.start(tx?.sound)
+    }
+    SRX?.mixer?.setOn(SR.bg)
+    if (SRX && SR.bg && SR.t0) SRX.bgUsed = true
+    // Посреди записи — только значок: бегущая строка измерена под текущую разметку.
+    if (SR.step === 'rec') {
+      const b = $('srbgbtn')
+      if (b) b.innerHTML = icon(SR.bg ? 'volume_up' : 'volume_off')
+      return
+    }
+    render()
+  }
+  function srBgRow(tx) {
+    const sc = sceneTx(tx)
+    if (!sc) return ''
+    const on = !!amb.playing()?.preview
+    return `<div class="srbg ${SR.bg ? '' : 'off'}"><span class="sbic">${esc(sc.ic)}</span><div class="sbt"><b>${X('Фон', 'Фон', 'Background')}: ${esc(X(...sc.n))}</b><span>${SR.bg ? X('Звучит во время записи и образца — как в настоящей ситуации', 'Жазба мен үлгі кезінде естіледі — нақты жағдайдағыдай', 'Plays while you record and in the model — like the real place') : X('Фон выключен', 'Фон өшірулі', 'Background is off')}</span></div>
+ <div class="sbc"><button class="cbtn sm line" data-act="bgPreview">${icon(on ? 'stop' : 'play_arrow')}${on ? X('Стоп', 'Тоқта', 'Stop') : X('Послушать фон', 'Фонды тыңдау', 'Preview')}</button>
+ <button class="cbtn sm ${SR.bg ? '' : 'line'}" data-act="bgToggle" aria-pressed="${SR.bg}">${SR.bg ? X('Вкл', 'Қосулы', 'On') : X('Выкл', 'Өшірулі', 'Off')}</button>
+ <label class="srvol" title="${X('Громкость фона', 'Фон дыбысы', 'Background volume')}">${icon('volume_down')}<input type="range" min="0" max="100" step="5" value="${amb.volume}" data-act="vol" aria-label="${X('Громкость фона', 'Фон дыбысы', 'Background volume')}"></label></div></div>`
+  }
+
+  /* ---- образец озвучки: запись ElevenLabs, всегда 1x, тот же фон, подсветка слов ---- */
   let SRL = null // { id, k } — звучащий образец
   function srListen() {
     if (SRL) {
@@ -208,9 +341,19 @@ export function mountSpeedReading(root, cfg) {
     const n = srWords(tx.body).length
     const my = { id: tx.id, k: -1 }
     SRL = my
+    // Сначала фон и его сигнал, потом голос (ТЗ v1.2 §5). Голос стартует таймером, поэтому общий элемент озвучки
+    // будится здесь, в тике нажатия: разрешение iPhone выдаётся жесту.
+    let cue = 0
+    if (SR.bg && sceneTx(tx)) {
+      unlockSample()
+      amb.wake()
+      cue = amb.start(tx.sound)
+    } else amb.stop(0.2)
     render()
-    // Звук — в тике нажатия: разрешение iPhone выдаётся жесту и общему элементу озвучки.
-    playSample(tx.sample.url, SR.mult, {
+    if (cue > 0) later(() => SRL === my && voice(), Math.round(cue * 1000))
+    else voice()
+    function voice() {
+    playSample(tx.sample.url, 1, {
       onTime: (t) => {
         if (SRL !== my) return
         const k = sampleIndexAt(tx.sample.words, t, n)
@@ -228,21 +371,25 @@ export function mountSpeedReading(root, cfg) {
       onEnd: () => {
         if (SRL !== my) return
         SRL = null
+        amb.stop(1.2)
         render()
       },
       onFail: () => {
         if (SRL !== my) return
         SRL = null
+        amb.stop(0.4)
         render()
         toast(X('Не удалось включить образец', 'Үлгіні қосу мүмкін болмады', "Couldn't play the model"))
       },
     })
+    }
   }
   function srListenStop() {
     const was = SRL
     SRL = null
     if (was) {
       stopSample()
+      amb.stop(0.4)
       render()
     }
   }
@@ -258,7 +405,7 @@ export function mountSpeedReading(root, cfg) {
     }
     if (!tx.sample)
       return `<button class="cbtn line" data-act="listen">${icon('refresh')}${X('Повторить образец', 'Үлгіні қайта сұрау', 'Try the model again')}</button>`
-    return `<button class="cbtn line" data-act="listen">${icon(SRL ? 'stop_circle' : 'headphones')}${SRL ? X('Остановить образец', 'Үлгіні тоқтату', 'Stop the model') : X('Послушать образец', 'Үлгіні тыңдау', 'Listen to the model')} · ${SR.mult}x</button>`
+    return `<button class="cbtn line" data-act="listen">${icon(SRL ? 'stop_circle' : 'headphones')}${SRL ? X('Остановить образец', 'Үлгіні тоқтату', 'Stop the model') : X('Послушать образец', 'Үлгіні тыңдау', 'Listen to the model')} · ${sp(1)}</button>`
   }
 
   /* ---- попытки: сервер + этот заход ---- */
@@ -289,17 +436,29 @@ export function mountSpeedReading(root, cfg) {
     const tx = srText()
     if (!tx) return ''
     const has = canRecord()
-    const wpm = srWpm(tx)
     const words = srWords(tx.body)
+    if (tx.level !== SR.lv) SR.lv = tx.level
+    SR.cat = categoryOf(tx)
+    const list = listOf(SR.lv, SR.cat)
+    const lvN = ofLevel(SR.lv).length
+    const genreWord = X('жанров на уровне', 'жанр деңгейде', 'genres in this level')
     return `<div class="srstart"><div class="srava"><img src="${esc(img('dexter'))}" alt=""></div><h2>${X('Скорочтение', 'Жылдам оқу', 'Speed reading')} <span class="cpill st-new" style="vertical-align:middle">new</span></h2>
- <p class="muted">${X('Включи диктофон и читай вслух текст, который бежит снизу вверх. Успей прочитать всё быстро и чётко! Потом послушай свою запись и посмотри, сколько слов получилось.', 'Диктофонды қосып, төменнен жоғары жылжып бара жатқан мәтінді дауыстап оқы. Барлығын жылдам әрі анық оқып үлгер! Содан кейін жазбаңды тыңдап, қанша сөз шыққанын көр.', 'Turn on the recorder and read aloud the text that scrolls up. Read it all fast and clear! Then listen to yourself and see how many words you got.')}</p>
- <div class="srnote">🎧 ${X('Разрешите доступ к микрофону и говорите в тихом месте', 'Микрофонға рұқсат беріп, тыныш жерде сөйлеңіз', 'Allow microphone access and speak in a quiet place')}</div>
+ <p class="muted">${X('Выбери ситуацию, включи диктофон и читай вслух текст, который бежит снизу вверх, — под звуки аэропорта, стадиона или радиостудии. Потом послушай свою запись и посмотри, сколько слов получилось.', 'Жағдайды таңда, диктофонды қосып, төменнен жоғары жылжитын мәтінді дауыстап оқы — әуежай, стадион не радиостудия дыбыстарымен. Содан кейін жазбаңды тыңдап, қанша сөз шыққанын көр.', 'Pick a situation, turn on the recorder and read aloud the text that scrolls up — with the sounds of an airport, a stadium or a radio studio. Then listen to yourself and see how many words you got.')}</p>
+ <div class="srnote">🎧 ${X('Лучше читать в наушниках: так фон не мешает распознаванию речи', 'Құлаққаппен оқыған дұрыс: сонда фон сөйлеуді тануға кедергі келтірмейді', 'Headphones work best: the background won’t confuse speech recognition')}</div>
  ${has ? '' : `<div class="srnote" style="background:#FFE4EE;color:#C2185B">${X('Этот браузер не умеет записывать звук. Откройте сайт в Chrome или Safari.', 'Бұл браузер дыбыс жаза алмайды. Сайтты Chrome немесе Safari-де ашыңыз.', 'This browser cannot record audio. Please open the site in Chrome or Safari.')}</div>`}
- <h3 class="srh">${X('Текст', 'Мәтін', 'Text')}</h3><div class="srtexts">${texts.map((t) => `<button class="${SR.text === t.id ? 'on' : ''}" data-act="text" data-arg="${esc(t.id)}"><span class="ic">${esc(t.icon)}</span><b>${esc(L(t.title))}</b><small>${esc(t.level)} · ${srWords(t.body).length} ${X('слов', 'сөз', 'words')}</small></button>`).join('')}</div>
- <h3 class="srh">${X('Скорость', 'Жылдамдық', 'Speed')}</h3><div class="cseg srspd">${SPEEDS.map((m) => `<button class="${SR.mult === m ? 'on' : ''}" data-act="speed" data-arg="${m}">${m}x</button>`).join('')}</div>
- <p class="muted" style="font-size:13.5px;margin:10px 0 0">${X('1x — темп носителя', '1x — тасымалдаушы қарқыны', '1x = native pace')} · ${wpm} ${X('сл/мин', 'сөз/мин', 'wpm')} · ≈ ${paceSeconds(words.length, wpm)} ${X('секунд', 'секунд', 'seconds')}</p>
+ <h3 class="srh">${X('Уровень', 'Деңгей', 'Level')}</h3><div class="cseg srlv">${LEVELS.map((l) => `<button class="${SR.lv === l ? 'on' : ''}" data-act="level" data-arg="${esc(l)}">${esc(l)}<small>${ofLevel(l).length}</small></button>`).join('')}</div>
+ <h3 class="srh">${X('Ситуация', 'Жағдай', 'Situation')} <span class="muted" style="font-weight:600">· ${lvN} ${genreWord}</span></h3><div class="cseg srcat">${catsOf(SR.lv).map((c) => `<button class="${SR.cat === c.id ? 'on' : ''}" data-act="cat" data-arg="${esc(c.id)}">${esc(c.ic)} ${esc(X(c.ru, c.kk, c.en))}<small>${listOf(SR.lv, c.id).length}</small></button>`).join('')}</div>
+ <div class="srtexts">${list.map((t) => {
+   const sc = sceneTx(t)
+   return `<button class="${SR.text === t.id ? 'on' : ''}" data-act="text" data-arg="${esc(t.id)}"><span class="ic">${esc(t.icon)}</span><b>${esc(L(t.title))}</b><small>${srWords(t.body).length} ${X('слов', 'сөз', 'words')}${sc ? ` · ${esc(sc.ic)}` : ''}</small></button>`
+ }).join('')}</div>
+ ${srBgRow(tx)}
+ <h3 class="srh">${X('Скорость', 'Жылдамдық', 'Speed')} <span class="srspdv" id="srspdv">${sp(SR.mult)}</span></h3>
+ <div class="cseg srspd">${SPEEDS.map((m) => `<button class="${SR.mult === m ? 'on' : ''}" data-act="speed" data-arg="${m}">${sp(m)}</button>`).join('')}</div>
+ <div class="srslider"><span>${sp(SPEED_MIN)}</span><input type="range" min="${SPEED_MIN}" max="${SPEED_MAX}" step="${SPEED_STEP}" value="${SR.mult}" data-act="slide" aria-label="${X('Скорость', 'Жылдамдық', 'Speed')}"><span>${sp(SPEED_MAX)}</span></div>
+ <p class="muted" style="font-size:13.5px;margin:6px 0 0" id="srspdi">${speedInfo(tx)}</p>
  <div class="srlisten">${listenButton(tx)}
- ${SRL ? `<div class="srlist" id="srlist">${words.map((w, i) => `<span id="srl${i}">${esc(w)}</span>`).join(' ')}</div>` : `<span class="muted" style="font-size:13px">${X('Послушай, как правильно читать этот текст, — с той же скоростью', 'Бұл мәтінді қалай дұрыс оқу керегін тыңда — сол жылдамдықпен', 'Hear how to read this text correctly — at the same speed')}</span>`}</div>
+ ${SRL ? `<div class="srlist" id="srlist">${words.map((w, i) => `<span id="srl${i}">${esc(w)}</span>`).join(' ')}</div>` : `<span class="muted" style="font-size:13px">${X('Послушай, как правильно читать этот текст, — в нормальном темпе носителя (1x), с тем же фоном', 'Бұл мәтінді қалай дұрыс оқу керегін тыңда — тасымалдаушының қалыпты қарқынымен (1x), сол фонмен', 'Hear how to read this text correctly — at normal native pace (1x), with the same background')}</span>`}</div>
  <button class="cbtn srgo" data-act="begin">${icon('mic')}${X('Начать запись', 'Жазуды бастау', 'Start recording')}</button><button class="cbtn line" style="margin-top:8px;width:100%;justify-content:center" data-act="demo">${icon('play_circle')}${X('Посмотреть демо без микрофона', 'Микрофонсыз демоны көру', 'Watch a demo without a microphone')}</button>
  <div class="muted" style="font-size:13px;margin-top:10px">${X('Уровень', 'Деңгей', 'Level')} ${esc(tx.level)} · ${X('Попыток сегодня', 'Бүгінгі әрекеттер', 'Tries today')}: ${todayCount([...serverTries, ...sessionToday()])} · <span class="srcoin">${coinImg()} ${X('монеты — раз в день за текст, прочитанный на ★', 'тиындар — күніне бір рет, ★ алған мәтін үшін', 'coins once a day per text read for ★')}</span></div></div>`
   }
@@ -314,6 +473,9 @@ export function mountSpeedReading(root, cfg) {
       stopSample()
     }
     wakeAudio()
+    // Фон и его сигнал звучат уже после ответа браузера про микрофон — контекст будится сейчас, в клике.
+    amb.stop(0.2)
+    amb.wake()
     const tx = srText()
     if (!tx) return
     // Текст и темп попытки фиксируются здесь: итог, подпись и тело попытки берут их отсюда, а не из выбора на экране.
@@ -339,9 +501,20 @@ export function mountSpeedReading(root, cfg) {
       SRX = x
       SR.step = 'rec'
       SR.count = 3
+      // Сначала сигнал сцены (на экране — её значок), потом отсчёт (ТЗ v1.2 §6). В демо фон тоже звучит:
+      // демо показывает, как выглядит и звучит тренажёр.
+      const cue = SR.bg && sceneTx(tx) ? amb.start(tx.sound) : 0
+      SR.cue = cue > 0
       render()
       scrollTop()
-      srCountdown(x)
+      if (cue > 0) {
+        const c = $('telecount')
+        if (c && cue > 0.3) {
+          c.textContent = tx.icon
+          c.classList.add('cnt')
+        }
+        later(() => srCountdown(x), Math.round(cue * 1000))
+      } else srCountdown(x)
     }
     if (demo) return go({ demo: true })
     if (!canRecord()) {
@@ -352,7 +525,14 @@ export function mountSpeedReading(root, cfg) {
     }
     render() // «Ждём доступ к микрофону…»: окно браузера может висеть, сколько ученик его не трогает
     try {
-      const rec = await openRecorder({ onLimit: () => SRX?.rec === rec && srStop() })
+      // Запись «голос + фон»: сведение строится, когда запись стартует (после отсчёта), и сцена сразу идёт в него.
+      const mixWith = (stream) => {
+        const m = amb.mixer(stream, SR.bg)
+        if (m) amb.route(m.bus)
+        if (SRX?.rec === rec) SRX.mixer = m
+        return m
+      }
+      const rec = await openRecorder({ onLimit: () => SRX?.rec === rec && srStop(), mixWith })
       go({ rec })
     } catch (e) {
       if (dead || my !== waitSeq || SR.step !== 'count') return
@@ -382,9 +562,11 @@ export function mountSpeedReading(root, cfg) {
   }
 
   function srRecView() {
-    return `<div class="tele" id="tele"><div class="tele-top"><span class="recdot" id="recdot"></span><span id="rectime">0:00</span><b>${X('Читай быстро и чётко!', 'Жылдам әрі анық оқы!', 'Speak fast and clear!')}</b><button class="cbtn sm white" data-act="stop">${icon('stop')}${X('Стоп', 'Тоқта', 'Stop')}</button></div>
+    const tx = SR.cur
+    const sc = sceneTx(tx)
+    return `<div class="tele" id="tele"><div class="tele-top"><span class="recdot" id="recdot"></span><span id="rectime">0:00</span><b>${esc(tx.icon)} ${esc(L(tx.title))} · ${sp(SR.curMult)}</b>${sc ? `<button class="cbtn sm white" id="srbgbtn" data-act="bgToggle" title="${X('Фон', 'Фон', 'Background')}" aria-label="${X('Фон', 'Фон', 'Background')}">${icon(SR.bg ? 'volume_up' : 'volume_off')}</button>` : ''}<button class="cbtn sm white" data-act="stop">${icon('stop')}${X('Стоп', 'Тоқта', 'Stop')}</button></div>
  <div class="tele-view"><div class="tele-line"></div><div class="tele-text" id="teletext"><h4>${X('Читай быстро и чётко!', 'Жылдам әрі анық оқы!', 'Speak fast and clear!')}</h4>${SR.words.map((w, i) => `<span id="tw${i}">${esc(w)}</span>`).join(' ')}</div>
- <div class="tele-count" id="telecount">${SR.count || ''}</div></div><div class="tele-bar"><i id="telebar"></i></div></div>`
+ <div class="tele-count" id="telecount">${SR.cue ? '' : SR.count || ''}</div></div><div class="tele-bar"><i id="telebar"></i></div></div>`
   }
 
   function srCountdown(x) {
@@ -407,6 +589,7 @@ export function mountSpeedReading(root, cfg) {
 
   function srRecord(x) {
     SR.t0 = performance.now()
+    x.bgUsed = SR.bg
     beep('ok')
     if (x.demo) {
       SR.asr = true
@@ -483,6 +666,9 @@ export function mountSpeedReading(root, cfg) {
     if (x.raf) cancelAnimationFrame(x.raf)
     x.raf = null
     x.live?.stop()
+    // Фон гаснет вместе с записью; шина записи отпускается — дальше сцена (образец, «послушать») идёт только в уши.
+    amb.route(null)
+    amb.stop(silent ? 0.2 : 1)
     // Стоп во время отсчёта: записи ещё нет — просто обратно к выбору.
     if (silent || !SR.t0) {
       SRX = null
@@ -508,6 +694,7 @@ export function mountSpeedReading(root, cfg) {
     const mult = SR.curMult
     const wpmTarget = SR.curWpm
     let wav = null
+    let take = null
     let heard = null
     let scoredBy = 'none'
     if (x.demo) {
@@ -517,6 +704,8 @@ export function mountSpeedReading(root, cfg) {
       SR.step = 'scoring'
       render()
       wav = await x.rec.stop().catch(() => null)
+      // Слушается и скачивается «голос + фон», распознаётся чистый голос (WAV).
+      take = (await Promise.resolve(x.rec.take?.()).catch(() => null)) || null
       if (dead || SRX !== x) return
       const said = wav ? await Promise.resolve(transcribe(wav, ac.signal)).catch(() => null) : null
       if (dead || SRX !== x) return
@@ -535,9 +724,10 @@ export function mountSpeedReading(root, cfg) {
     const ok = heard ? alignHeard(words, heard) : null
     const read = ok ? ok.filter(Boolean).length : null
     const { pct, stars, wpm: realWpm } = resultOf({ read, words: words.length, dur })
-    const url = wav ? URL.createObjectURL(wav) : null
+    const audio = take || wav
+    const url = audio ? URL.createObjectURL(audio) : null
     if (url) blobUrls.add(url)
-    const tr = { url, demo: !!x.demo, text: tx.id, wpm: wpmTarget, mult, dur, words: words.length, read, ok, pct, stars, realWpm, scoredBy, at: new Date(), id: null, coins: null, saving: !x.demo }
+    const tr = { url, ext: extOf(audio), bg: !!take && !!x.bgUsed, demo: !!x.demo, text: tx.id, wpm: wpmTarget, mult, dur, words: words.length, read, ok, pct, stars, realWpm, scoredBy, at: new Date(), id: null, coins: null, saving: !x.demo }
     SR.tries.unshift(tr)
     SR.last = tr
     SR.step = 'result'
@@ -581,6 +771,11 @@ export function mountSpeedReading(root, cfg) {
     return `✓ ${X('Попытка сохранена', 'Әрекет сақталды', 'Try saved')}`
   }
 
+  // Расширение файла записи по её типу: сведённая дорожка — как пишет браузер (webm/opus, в Safari — mp4/aac).
+  const extOf = (b) => {
+    const t = String(b?.type || '')
+    return /wav/.test(t) ? 'wav' : /mp4|aac|m4a/.test(t) ? 'm4a' : /ogg/.test(t) ? 'ogg' : 'webm'
+  }
   const stamp = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   function whenOf(t) {
     if (!t.at || Number.isNaN(t.at.getTime())) return ''
@@ -598,10 +793,10 @@ export function mountSpeedReading(root, cfg) {
     const tries = allTries()
     return `<div class="ph"><button class="cbtn sm" data-act="back">${icon('arrow_back')}${X('Скорочтение', 'Жылдам оқу', 'Speed reading')}</button></div>
  <div class="chero"><img class="m" src="${esc(img(pct != null && pct < 30 ? 'sleep' : 'cheer'))}" alt="" style="margin:-10px 0 -14px 0"><div style="flex:1;min-width:220px"><p style="opacity:.85;font-weight:700">${esc(tx.icon)} ${esc(L(tx.title))} · ${esc(tx.level)}</p><h2>${pct != null ? `${X('Прочитано', 'Оқылды', 'Read')} ${pct}%` : X('Запись готова!', 'Жазба дайын!', 'Recording ready!')}</h2>
- <p>${Math.round(tr.dur)} ${X('сек', 'сек', 'sec')} · ${X('скорость', 'жылдамдық', 'speed')} ${tr.mult}x (${tr.wpm} ${X('сл/мин', 'сөз/мин', 'wpm')})${realWpm ? ` · ${X('твой темп', 'сенің қарқының', 'your pace')} ${realWpm} ${X('сл/мин', 'сөз/мин', 'wpm')}` : ''}</p>${stars != null ? `<div style="font-size:26px;letter-spacing:4px;margin-top:6px" aria-label="${stars} / 3">${'★'.repeat(stars)}<span style="opacity:.35">${'★'.repeat(3 - stars)}</span></div>` : ''}
+ <p>${Math.round(tr.dur)} ${X('сек', 'сек', 'sec')} · ${X('скорость', 'жылдамдық', 'speed')} ${sp(tr.mult)} (${tr.wpm} ${X('сл/мин', 'сөз/мин', 'wpm')})${realWpm ? ` · ${X('твой темп', 'сенің қарқының', 'your pace')} ${realWpm} ${X('сл/мин', 'сөз/мин', 'wpm')}` : ''}</p>${stars != null ? `<div style="font-size:26px;letter-spacing:4px;margin-top:6px" aria-label="${stars} / 3">${'★'.repeat(stars)}<span style="opacity:.35">${'★'.repeat(3 - stars)}</span></div>` : ''}
  <div class="srsave" id="srsave">${saveLine(tr)}</div></div></div>
- <div class="card"><h3>🎧 ${X('Послушай себя', 'Өзіңді тыңда', 'Listen to yourself')}</h3>${tr.url ? `<audio controls src="${esc(tr.url)}" style="width:100%"></audio>` : `<div class="srnote" style="max-width:none;margin:0">${tr.demo ? X('Это демо без микрофона: в настоящей игре здесь будет запись голоса студента. Результат ниже — пример.', 'Бұл микрофонсыз демо: нақты ойында мұнда студенттің дауыс жазбасы болады. Төмендегі нәтиже — мысал.', 'This is a demo without a microphone: in the real game the student’s recording appears here. The result below is an example.') : X('Запись не получилась: браузер не отдал звук.', 'Жазба шықпады: браузер дыбысты бермеді.', "The recording didn't work: the browser returned no audio.")}</div>`}
- <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="cbtn" data-act="begin">${icon('mic')}${X('Записать ещё раз', 'Қайта жазу', 'Record again')}</button>${tr.url ? `<a class="cbtn line" href="${esc(tr.url)}" download="speed-${esc(tr.text)}-${stamp(tr.at)}.wav">${icon('download')}${X('Скачать запись', 'Жазбаны жүктеу', 'Download')}</a>` : ''}${tx.sample ? `<button class="cbtn line" data-act="listen">${icon(SRL ? 'stop_circle' : 'volume_up')}${SRL ? X('Остановить образец', 'Үлгіні тоқтату', 'Stop the model') : X('Послушать образец', 'Үлгіні тыңдау', 'Listen to the model')} · ${SR.mult}x</button>` : ''}</div></div>
+ <div class="card"><h3>🎧 ${X('Послушай себя', 'Өзіңді тыңда', 'Listen to yourself')}</h3>${tr.url && tr.bg ? `<p class="muted" style="font-size:13.5px;margin-top:-4px">${X('В записи твой голос и фон ситуации — как настоящее объявление.', 'Жазбада сенің дауысың мен жағдай фоны бар — нақты хабарландыру сияқты.', 'Your voice plus the scene background — like a real announcement.')}</p>` : ''}${tr.url ? `<audio controls src="${esc(tr.url)}" style="width:100%"></audio>` : `<div class="srnote" style="max-width:none;margin:0">${tr.demo ? X('Это демо без микрофона: в настоящей игре здесь будет запись голоса студента. Результат ниже — пример.', 'Бұл микрофонсыз демо: нақты ойында мұнда студенттің дауыс жазбасы болады. Төмендегі нәтиже — мысал.', 'This is a demo without a microphone: in the real game the student’s recording appears here. The result below is an example.') : X('Запись не получилась: браузер не отдал звук.', 'Жазба шықпады: браузер дыбысты бермеді.', "The recording didn't work: the browser returned no audio.")}</div>`}
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="cbtn" data-act="begin">${icon('mic')}${X('Записать ещё раз', 'Қайта жазу', 'Record again')}</button>${tr.url ? `<a class="cbtn line" href="${esc(tr.url)}" download="speed-${esc(tr.text)}-${stamp(tr.at)}.${tr.ext || 'wav'}">${icon('download')}${X('Скачать запись', 'Жазбаны жүктеу', 'Download')}</a>` : ''}${tx.sample ? `<button class="cbtn line" data-act="listen">${icon(SRL ? 'stop_circle' : 'volume_up')}${SRL ? X('Остановить образец', 'Үлгіні тоқтату', 'Stop the model') : X('Послушать образец', 'Үлгіні тыңдау', 'Listen to the model')} · ${sp(1)}</button>` : ''}</div></div>
  <div class="card"><h3>${X('Что получилось', 'Не шықты', 'How it went')}</h3>${tr.ok ? `<p class="muted" style="font-size:13.5px;margin-top:-4px">${X('Зелёные слова — распознаны в твоей речи, серые — пропущены или нечётко.', 'Жасыл сөздер — сөйлеуіңде танылған, сұрлары — өткізіп алынған не анық емес.', 'Green words were recognised in your speech, grey ones were skipped or unclear.')}</p><div class="srres">${srWords(tx.body).map((w, i) => `<span class="${tr.ok[i] ? 'g' : 'm'}">${esc(w)}</span>`).join(' ')}</div>` : `<p class="muted">${X('Оценка недоступна: распознавание речи не ответило. Послушай запись и сравни с текстом:', 'Бағалау қолжетімсіз: сөйлеуді тану жауап бермеді. Жазбаны тыңдап, мәтінмен салыстыр:', "No score this time: speech recognition didn't respond. Listen to the recording and compare it with the text:")}</p><div class="srres">${esc(tx.body)}</div>`}</div>
  ${tries.length > 1 ? `<div class="card srtries"><h3>${X('Мои попытки', 'Менің әрекеттерім', 'My tries')}</h3>${tries.map((t) => tryRow(t)).join('')}</div>` : ''}`
   }
@@ -611,7 +806,7 @@ export function mountSpeedReading(root, cfg) {
     const name = tt ? L(tt.title) : L(t.title) || t.text
     const pct = t.pct != null ? ` · ${t.pct}%` : ''
     const right = t.url ? `<audio controls src="${esc(t.url)}"></audio>` : t.server ? `<span class="cpill st-grey">${t.stars ? '★'.repeat(t.stars) : '—'}</span>` : `<span class="cpill st-grey">${X('без записи', 'жазбасыз', 'no audio')}</span>`
-    return `<div class="lrow"><div class="ic" style="background:#F3EBFF">${esc(tt?.icon || '📄')}</div><div class="ti"><b>${esc(name)} · ${t.mult}x</b><span>${esc(whenOf(t))} · ${Math.round(t.dur)} ${X('сек', 'сек', 'sec')}${pct}</span></div>${right}</div>`
+    return `<div class="lrow"><div class="ic" style="background:#F3EBFF">${esc(tt?.icon || '📄')}</div><div class="ti"><b>${esc(name)} · ${t.mult != null ? sp(t.mult) : ''}</b><span>${esc(whenOf(t))} · ${Math.round(t.dur)} ${X('сек', 'сек', 'sec')}${pct}</span></div>${right}</div>`
   }
 
   /* ---- отрисовка и события ---- */
@@ -630,7 +825,11 @@ export function mountSpeedReading(root, cfg) {
 
   const ACTIONS = {
     text: (id) => srSetText(id),
+    level: (lv) => srPickLevel(lv),
+    cat: (c) => srPickCat(c),
     speed: (m) => srSetMult(Number(m)),
+    bgPreview: () => srBgPreview(),
+    bgToggle: () => srBgToggle(),
     listen: () => srListen(),
     begin: () => srBegin(false),
     demo: () => srBegin(true),
@@ -648,6 +847,25 @@ export function mountSpeedReading(root, cfg) {
       scrollTop()
     },
   }
+  // Ползунки (скорость, громкость фона) — по input, отпущенная скорость — по change: полная перерисовка.
+  root.addEventListener(
+    'input',
+    (e) => {
+      const el = e.target
+      if (!el?.dataset || !root.contains(el)) return
+      if (el.dataset.act === 'slide') srSlide(el.value)
+      else if (el.dataset.act === 'vol') amb.setVolume(Number(el.value))
+    },
+    { signal: ac.signal },
+  )
+  root.addEventListener(
+    'change',
+    (e) => {
+      const el = e.target
+      if (el?.dataset?.act === 'slide' && root.contains(el)) srSetMult(el.value)
+    },
+    { signal: ac.signal },
+  )
   root.addEventListener(
     'click',
     (e) => {
@@ -687,6 +905,7 @@ export function mountSpeedReading(root, cfg) {
         SRX.rec?.cancel()
         SRX = null
       }
+      amb.close()
       blobUrls.forEach((u) => URL.revokeObjectURL(u))
       blobUrls.clear()
       try {
