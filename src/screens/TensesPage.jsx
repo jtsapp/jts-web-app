@@ -94,7 +94,7 @@ export default function TensesPage({ userName, userLevel, token, onNav, onProfil
     // Тест e2e открывает экраны движка напрямую (адрес движка — не адрес страницы).
     if (window.__TENSES_E2E) window.__tenses = api
     const onProgress = () => {
-      if (!ownWrite && overview(api.snapshot().hash)) api.TW.route()
+      if (!ownWrite && overview(api.snapshot().hash)) api.refresh()
     }
     window.addEventListener(TENSES_PROGRESS_EVENT, onProgress)
     return () => {

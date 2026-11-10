@@ -217,9 +217,15 @@ describe('Tenses World: связь с приложением', () => {
     btn.click()
     expect(btn.classList.contains('on')).toBe(false)
     expect(speak).toHaveBeenCalledTimes(1)
+    // своя фраза звучит — смена экрана её глушит
+    btn.click()
     stopSpeech.mockClear()
     api.go('#/')
     expect(stopSpeech).toHaveBeenCalled()
+    // раздел молчит — чужой звук на общем <audio> (голос Луны) смена экрана не трогает
+    stopSpeech.mockClear()
+    api.go('#/practice')
+    expect(stopSpeech).not.toHaveBeenCalled()
   })
 
   it('прогресс читается при каждой отрисовке: снимок сервера виден на следующем экране', () => {
@@ -247,14 +253,17 @@ describe('Tenses World: связь с приложением', () => {
 
   it('destroy снимает разметку, атрибут языка, слушатели и глушит звук', () => {
     const stopSpeech = vi.fn()
-    const { root } = mount(bundle, { stopSpeech })
+    const { root } = mount(bundle, { speak: vi.fn(), stopSpeech })
     api.go('#/practice/recognise')
+    root.querySelector('#pr-card .pr-opt').click()
+    root.querySelector('#pr-card [data-a=listen]').click()
     api.destroy()
     expect(root.innerHTML).toBe('')
     expect(root.hasAttribute('lang')).toBe(false)
     expect(stopSpeech).toHaveBeenCalled()
-    // клавиши 1–4 прототипа после destroy ничего не делают
+    // клавиши 1–4 прототипа после destroy разметку не трогают
     window.dispatchEvent(new KeyboardEvent('keydown', { key: '1' }))
+    expect(root.innerHTML).toBe('')
     api = null
   })
 })

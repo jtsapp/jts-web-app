@@ -23,7 +23,11 @@
 // - прогресс {practice, last, visited} — cfg.progress() / cfg.onProgress(state)
 //   (синк с аккаунтом), читается при каждом обращении, как хранилище прототипа;
 // - звук — cfg.speak (Soniox, запасной — голос устройства) и cfg.stopSpeech
-//   вместо speechSynthesis; остановка — на каждой смене экрана и в destroy();
+//   вместо speechSynthesis; остановка своей фразы — на каждой смене экрана и в
+//   destroy() (чужой звук на общем <audio> — голос Луны — не трогаем);
+// - уход со страницы времени отпускает <video> и наблюдатель секций; значок
+//   «video» на карте — только у времени с роликом; повторный клик «Open the
+//   map» снова прокручивает к карте; refresh() — перерисовка обзора на месте;
 // - шапка без логотипа (у экрана своя шапка приложения); на хабе — «назад» из
 //   раздела, если передан cfg.onExit;
 // - ответ на задание (кроме «работы над ошибками») — в cfg.onAnswer(ok);
@@ -54,7 +58,12 @@ const reportAnswer = (ok) => { try { onAnswer(!!ok) } catch (e) { /* навык 
 let HASH = '#/'
 function go(h) {
   h = String(h || '#/')
-  if (dead || h === HASH) return
+  if (dead) return
+  if (h === HASH) {
+    // прототип: повторный клик по #map снова прокручивал к карте (нативный якорь)
+    if (h === '#map') { const m = $id('map'); if (m) m.scrollIntoView({ behavior: 'smooth' }) }
+    return
+  }
   HASH = h
   TW.route()
 }
@@ -601,7 +610,9 @@ TW.meta = function (id) {
     if (btn) btn.classList.add("on");
     sayText(text, { onEnd: function () { if (speaking === my) speaking = 0; if (btn) btn.classList.remove("on"); } });
   }
-  function stopSpeech() { if (canSpeak) { speaking = 0; try { hush(); } catch (e) {} } }
+  // Порт: глушим только свою фразу. hush() останавливает общий <audio> приложения — на нём же голосовой ответ Луны,
+  // и «Continue» или любая ссылка раздела обрывали бы её (ревью 10.11.2026). Своя фраза держит speaking до onEnd.
+  function stopSpeech() { if (canSpeak && speaking) { speaking = 0; try { hush(); } catch (e) {} } }
   P.stopSpeech = stopSpeech;
   function listenBtn() {
     return canSpeak ? '<button type="button" class="pr-listen" data-a="listen" aria-label="' + esc(L("pr_listen")) + '">' +
@@ -1077,7 +1088,7 @@ TW.meta = function (id) {
         var done = prac[id];
         h += '<a class="tile' + (visited[id] ? " visited" : "") + '" data-g="' + g.id + '" href="#/t/' + id + '"><span class="num">' + String(m.num).padStart(2, "0") + "</span>" +
           "<h3>" + m.name + "</h3>" + X(TW.LOCAL_NAMES[id], "tile-local") + '<p class="tg">' + (d ? T(d.tagline) : "") + "</p>" + TW.timelineSVG(id, { labels: false }) +
-          '<span class="badges">' + (TW.VIDEOS[id] ? '<span class="badge-video">' + T("videoBadge") + "</span>" : "") + (done ? '<span class="badge-prac">✓ ' + T("pr_practised") + "</span>" : "") + "</span></a>";
+          '<span class="badges">' + (TW.VIDEOS[id] && TW.VIDEOS[id].src ? '<span class="badge-video">' + T("videoBadge") + "</span>" : "") + (done ? '<span class="badge-prac">✓ ' + T("pr_practised") + "</span>" : "") + "</span></a>";
       });
     });
     h += "</div>";
@@ -1288,9 +1299,19 @@ TW.meta = function (id) {
   }
 
   /* ---------- router ---------- */
+  // Порт: прототип при уходе со страницы времени ничего не отпускал (страница уходила целиком). У нас раздел живёт
+  // дальше: наблюдатель держал бы секции прошлой страницы, а <video> — буфер ролика из MinIO.
+  function releaseTense() {
+    try { if (TW._io) { TW._io.disconnect(); TW._io = null; } } catch (e) { /* наблюдателя нет */ }
+    var v = root.querySelector(".cinema video");
+    if (v) { try { v.pause(); v.removeAttribute("src"); v.querySelectorAll("source").forEach(function (x) { x.remove(); }); v.load(); } catch (e) { /* нечего отпускать */ } }
+  }
+
   function route() {
     var hash = HASH || "#/";
     TW.PRACTICE.leave();
+    var stay = hash.match(/^#\/t\/([a-z-]+?)\/(video|grammar|lab|practice|review)$/);
+    if (!(stay && root.getAttribute("data-cur") === stay[1])) releaseTense();
     var pm = hash.match(/^#\/practice(?:\/([a-z0-9-]+))?$/);
     if (pm) {
       root.setAttribute("data-cur", "");
@@ -1334,6 +1355,18 @@ return {
   TW,
   /** Для экрана и тестов: адрес движка. */
   snapshot: () => ({ hash: HASH }),
+  /**
+   * Перерисовать обзор (карта, путь) по свежему прогрессу на месте: route() на #map при готовой карте только
+   * прокручивает к ней, а на #/ — наверх, и снимок сервера дёргал бы ученика (ревью 10.11.2026).
+   */
+  refresh() {
+    if (dead) return
+    const y = window.scrollY
+    const keep = HASH
+    if (keep === '#map') HASH = '#/'
+    try { TW.route() } finally { HASH = keep }
+    window.scrollTo(0, y)
+  },
   destroy() {
     if (dead) return
     try { TW.PRACTICE.leave() } catch (e) { /* практики нет */ }
