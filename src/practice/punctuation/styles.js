@@ -1,7 +1,7 @@
 // CSS «Punctuation World» для Shadow DOM. СГЕНЕРИРОВАН
 // scripts/punctuation/extract-styles.js из <style> прототипа — руками не
-// править: правки — в PATCHES/APP_CSS генератора (там же — что и почему
-// отличается от прототипа).
+// править: правки — в PATCHES/APP_CSS/DARK_APP_CSS генератора (там же — что
+// и почему отличается от прототипа).
 
 export const PUNCTUATION_CSS = `:host{
  --violet:#874BF8;--violet-d:#6B33E6;--violet-dd:#4F22B8;--violet-l:#F1EAFF;--violet-m:#DCCBFF;
@@ -936,4 +936,1340 @@ button.w:hover{background-color:var(--violet-l)}
 .punct{container:punct/inline-size;overflow-wrap:break-word}
 .punct [lang="kk"]{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
 .punct .lsec,.punct .gate,.punct .sec{scroll-margin-top:84px}
+:host([data-theme="dark"]) {
+    --violet: var(--dk-acc);
+    --violet-d: var(--dk-acc);
+    --violet-dd: var(--dk-acc-strong);
+    --violet-l: var(--dk-acc-tint);
+    --violet-m: var(--dk-acc-soft);
+    --cyan: var(--dk-blue);
+    --cyan-t: var(--dk-blue);
+    --cyan-l: var(--dk-blue-tint);
+    --green: var(--dk-green);
+    --green-t: var(--dk-green);
+    --green-l: var(--dk-green-tint);
+    --orange: var(--dk-orange);
+    --orange-t: var(--dk-orange);
+    --orange-l: var(--dk-orange-tint);
+    --yellow: var(--dk-yellow);
+    --yellow-t: var(--dk-yellow);
+    --yellow-l: var(--dk-yellow-tint);
+    --ink: var(--dk-text);
+    --ink2: var(--dk-text-2);
+    --ink3: var(--dk-muted);
+    --line: var(--dk-line);
+    --line2: var(--dk-line);
+    --bg: var(--dk-page);
+    --card: var(--dk-card);
+    --ok: var(--dk-green);
+    --ok-l: var(--dk-green-tint);
+    --bad: var(--dk-red);
+    --bad-l: var(--dk-red-tint);
+    --alt: var(--dk-acc);
+    --alt-l: var(--dk-acc-tint);
+    --sh1: 0 1px 2px color-mix(in oklab, var(--dk-acc) 6%, transparent),0 6px 18px color-mix(in oklab, var(--dk-acc) 6%, transparent);
+    --sh2: 0 2px 6px color-mix(in oklab, var(--dk-acc) 6%, transparent),0 18px 44px color-mix(in oklab, var(--dk-acc) 12%, transparent)
+}
+:host([data-theme="dark"]) .punct:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink);
+    background: var(--bg)
+}
+:host([data-theme="dark"]) button:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: inherit
+}
+:host([data-theme="dark"]) a:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) :focus-visible:not(:is(.hero, .adv, .hero *, .adv *)) {
+    outline: 3px solid var(--violet)
+}
+:host([data-theme="dark"]) .eyebrow:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .mk:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ft,var(--violet-d))
+}
+:host([data-theme="dark"]) .sprite-ok .mk[data-i]:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background-image: var(--sprite)
+}
+:host([data-theme="dark"]) .top:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-card) 86%, transparent);
+    border-bottom: 1px solid rgba(220,210,240,.7)
+}
+:host([data-theme="dark"]) .brand:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: none;
+    border: 0
+}
+:host([data-theme="dark"]) .lo-w:not(:is(.hero, .adv, .hero *, .adv *)) {
+    fill: var(--ink)
+}
+:host([data-theme="dark"]) .lo-to:not(:is(.hero, .adv, .hero *, .adv *)) {
+    fill: var(--violet)
+}
+:host([data-theme="dark"]) .brand-sep:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--line2)
+}
+:host([data-theme="dark"]) .brand-name b:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--violet)
+}
+:host([data-theme="dark"]) .nav button:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: none;
+    border: 0;
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .nav button:hover:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet-l);
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .nav button[aria-current=page]:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet-l);
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .pill:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    border: 1px solid var(--line2)
+}
+:host([data-theme="dark"]) .pill svg:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--yellow)
+}
+:host([data-theme="dark"]) .pill small:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .ibtn:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 1px solid var(--line2);
+    background: var(--dk-card)
+}
+:host([data-theme="dark"]) .ibtn[aria-pressed=false]:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .trbar:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 1px solid var(--line2);
+    background: var(--dk-card)
+}
+:host([data-theme="dark"]) .trbar .cap:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .trb:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 0;
+    background: none;
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .trb[aria-pressed=true]:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet);
+    color: var(--dk-on-acc)
+}
+:host([data-theme="dark"]) .btn:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 0
+}
+:host([data-theme="dark"]) .btn-p:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet);
+    color: var(--dk-on-acc);
+    box-shadow: 0 8px 22px color-mix(in oklab, var(--dk-acc) 32%, transparent)
+}
+:host([data-theme="dark"]) .btn-p:hover:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet-d)
+}
+:host([data-theme="dark"]) .btn-p:disabled:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-soft);
+    box-shadow: none
+}
+:host([data-theme="dark"]) .btn-s:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    color: var(--ink);
+    border: 1.5px solid var(--line2)
+}
+:host([data-theme="dark"]) .btn-s:hover:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--violet);
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .linkbtn:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: none;
+    border: 0;
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .bub:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .bub b.who:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .tr:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-left: 3px solid var(--violet-m);
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .hero-copy .eyebrow:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-card) 75%, transparent);
+    color: var(--violet-dd)
+}
+:host([data-theme="dark"]) .crew .shadow:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: radial-gradient(closest-side,color-mix(in oklab, var(--dk-acc) 32%, transparent),transparent)
+}
+:host([data-theme="dark"]) .sec-head p.sub:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .role:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .role .job:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .role p:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .fam:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--fl);
+    color: var(--ft)
+}
+:host([data-theme="dark"]) .fam .mk:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background-color: var(--dk-card)
+}
+:host([data-theme="dark"]) .fam small:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .isle-tab:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 2px solid transparent;
+    background: var(--dk-card);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .isle-tab:hover:not(:is(.hero, .adv, .hero *, .adv *)) {
+    box-shadow: var(--sh2)
+}
+:host([data-theme="dark"]) .isle-tab[aria-selected=true]:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--violet);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--dk-acc) 14%, transparent),var(--sh2)
+}
+:host([data-theme="dark"]) .isle-art:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background-color: var(--dk-blue-tint);
+    background-image: var(--world)
+}
+:host([data-theme="dark"]) .isle-art .band:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card)
+}
+:host([data-theme="dark"]) .isle-tab .bar:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--line)
+}
+:host([data-theme="dark"]) .isle-tab .bar i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet)
+}
+:host([data-theme="dark"]) .isle-tab small:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .isle-panel:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .isle-panel .intro p:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .topic:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 1.5px solid var(--line);
+    background: var(--dk-card)
+}
+:host([data-theme="dark"]) .topic:hover:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--violet-m);
+    background: var(--dk-page)
+}
+:host([data-theme="dark"]) .topic .mkbox:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--fl)
+}
+:host([data-theme="dark"]) .topic .tx span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .topic .num:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .exband:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: linear-gradient(120deg,var(--dk-acc-tint),var(--dk-blue-tint));
+    box-shadow: var(--sh2)
+}
+:host([data-theme="dark"]) .exband .panel:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-card) 93%, transparent);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .exband p:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .foot:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .method:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .method summary:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .method summary:not(:is(.hero, .adv, .hero *, .adv *))::before {
+    background: var(--violet-l);
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .method ul:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .l-top:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: linear-gradient(180deg,var(--dk-acc-tint),var(--bg))
+}
+:host([data-theme="dark"]) .crumb:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .crumb button:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    border: 1px solid var(--line2)
+}
+:host([data-theme="dark"]) .l-badge:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--fl);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.6)
+}
+:host([data-theme="dark"]) .outcome:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .outcome small:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ok)
+}
+:host([data-theme="dark"]) .stepnav:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-page) 92%, transparent);
+    border-bottom: 1px solid var(--line)
+}
+:host([data-theme="dark"]) .stepnav a:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2);
+    background: var(--dk-card);
+    border: 1px solid var(--line)
+}
+:host([data-theme="dark"]) .stepnav a i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet-l);
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .stepnav a.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet);
+    border-color: var(--violet);
+    color: var(--dk-on-acc)
+}
+:host([data-theme="dark"]) .stepnav a.on i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card)
+}
+:host([data-theme="dark"]) .lsec>.wrap>h2 .q:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-on-acc);
+    background: var(--violet)
+}
+:host([data-theme="dark"]) .lsec .sub:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .glyph:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .glyph .mkbox:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--fl)
+}
+:host([data-theme="dark"]) .glyph span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .defcard:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .gloss details:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    border: 1.5px solid var(--line)
+}
+:host([data-theme="dark"]) .gloss details[open]:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--violet-m)
+}
+:host([data-theme="dark"]) .gloss summary:not(:is(.hero, .adv, .hero *, .adv *))::after {
+    color: var(--violet)
+}
+:host([data-theme="dark"]) .gloss details p:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .bigline:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet);
+    color: var(--dk-on-acc)
+}
+:host([data-theme="dark"]) .bigline .tr:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-on);
+    border-color: rgba(255,255,255,.5)
+}
+:host([data-theme="dark"]) .hearpair:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .hp-row:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .hp-row.no .lab:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--bad)
+}
+:host([data-theme="dark"]) .hp-row.yes .lab:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ok)
+}
+:host([data-theme="dark"]) .hear:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 0;
+    background: var(--violet-l);
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .hear.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet);
+    color: var(--dk-on-acc)
+}
+:host([data-theme="dark"]) .rule:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .tag.Rule:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet);
+    color: var(--dk-on-acc)
+}
+:host([data-theme="dark"]) .tag.Standard:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--cyan-l);
+    color: var(--cyan-t)
+}
+:host([data-theme="dark"]) .tag.Style:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--yellow-l);
+    color: var(--yellow-t)
+}
+:host([data-theme="dark"]) .tag.Option:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--green-l);
+    color: var(--green-t)
+}
+:host([data-theme="dark"]) .rule .t:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .ex-ok:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--ok-l)
+}
+:host([data-theme="dark"]) .ex-ok .ic:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ok)
+}
+:host([data-theme="dark"]) mark.hl:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet-l);
+    color: var(--violet-dd);
+    box-shadow: inset 0 -2px 0 var(--violet-m)
+}
+:host([data-theme="dark"]) .fix:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 1.5px dashed var(--dk-red-line);
+    background: var(--dk-page)
+}
+:host([data-theme="dark"]) .fix s:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-red)
+}
+:host([data-theme="dark"]) .fix .after:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-top: 1px solid var(--dk-line)
+}
+:host([data-theme="dark"]) .fix.open:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--dk-green-line);
+    background: var(--dk-page)
+}
+:host([data-theme="dark"]) .fix .after b:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ok)
+}
+:host([data-theme="dark"]) .fix .after span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .fixbtn:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 0;
+    background: var(--bad);
+    color: var(--dk-on-bright)
+}
+:host([data-theme="dark"]) .fix.open .fixbtn:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--ok)
+}
+:host([data-theme="dark"]) .doc:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .doc-h:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-page);
+    border-bottom: 1px solid var(--line);
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .doc-h i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--line2)
+}
+:host([data-theme="dark"]) .doc-b button.n:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 0;
+    background: var(--violet-l);
+    color: var(--violet-dd)
+}
+:host([data-theme="dark"]) .doc-b button.n sup:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--violet)
+}
+:host([data-theme="dark"]) .doc-b button.n.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet);
+    color: var(--dk-on-acc)
+}
+:host([data-theme="dark"]) .doc-b button.n.on sup:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: #fff
+}
+:host([data-theme="dark"]) .doc-notes li:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .doc-notes li b:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet-l);
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .doc-notes li.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet-l);
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .vs .side:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--bg)
+}
+:host([data-theme="dark"]) .vs em:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--violet)
+}
+:host([data-theme="dark"]) .card:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .splist li:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .splist li:not(:is(.hero, .adv, .hero *, .adv *))::before {
+    background: var(--violet)
+}
+:host([data-theme="dark"]) .flags span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--cyan-l);
+    color: var(--cyan-t)
+}
+:host([data-theme="dark"]) .flags span+span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--orange-l);
+    color: var(--orange-t)
+}
+:host([data-theme="dark"]) .srcs:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .stage .node:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: var(--sh2)
+}
+:host([data-theme="dark"]) .stage .node b:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--violet)
+}
+:host([data-theme="dark"]) .stage .node small:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .route:not(:is(.hero, .adv, .hero *, .adv *))::before {
+    border-left: 4px dashed var(--dk-line)
+}
+:host([data-theme="dark"]) .stars i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-on)
+}
+:host([data-theme="dark"]) .stars i.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--yellow)
+}
+:host([data-theme="dark"]) .lockline:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .play:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: linear-gradient(180deg,var(--dk-acc-tint) 0%,var(--dk-blue-tint) 55%,var(--dk-page) 100%)
+}
+:host([data-theme="dark"]) .dots i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--line2)
+}
+:host([data-theme="dark"]) .dots i.cur:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--dk-acc) 22%, transparent)
+}
+:host([data-theme="dark"]) .dots i.s3:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--ok)
+}
+:host([data-theme="dark"]) .dots i.s2:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--yellow)
+}
+:host([data-theme="dark"]) .dots i.s1:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-red-soft)
+}
+:host([data-theme="dark"]) .how:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet-l);
+    color: var(--violet-dd)
+}
+:host([data-theme="dark"]) .w:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 0;
+    background: none;
+    color: inherit
+}
+:host([data-theme="dark"]) button.w:hover:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background-color: var(--violet-l)
+}
+:host([data-theme="dark"]) .changed:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-yellow-tint) !important;
+    color: var(--dk-yellow) !important
+}
+:host([data-theme="dark"]) .st-ok:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--ok) !important;
+    background: var(--ok-l) !important;
+    color: var(--dk-green) !important
+}
+:host([data-theme="dark"]) .st-bad:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--bad) !important;
+    background: var(--bad-l) !important;
+    color: var(--dk-red) !important
+}
+:host([data-theme="dark"]) .st-alt:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--alt) !important;
+    background: var(--alt-l) !important;
+    color: var(--dk-acc-text) !important
+}
+:host([data-theme="dark"]) .st-miss:not(:is(.hero, .adv, .hero *, .adv *)) {
+    outline: 2px dashed var(--bad)
+}
+:host([data-theme="dark"]) .reader:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 1.5px solid var(--line2);
+    background: var(--dk-card)
+}
+:host([data-theme="dark"]) .reader img:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-orange-tint)
+}
+:host([data-theme="dark"]) .reader.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--violet);
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .versions div:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-card) 75%, transparent)
+}
+:host([data-theme="dark"]) .versions div b:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .ledge:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: radial-gradient(ellipse at 50% 30%,var(--dk-green-tint),var(--dk-green-soft) 60%,var(--dk-green-soft));
+    box-shadow: inset 0 -18px 0 color-mix(in oklab, var(--dk-acc) 18%, transparent)
+}
+:host([data-theme="dark"]) .hero-stage .fb-isle:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: linear-gradient(180deg,var(--dk-green-tint) 0 30%,var(--dk-acc) 30% 60%,var(--dk-blue-soft) 60%)
+}
+:host([data-theme="dark"]) .adv-vig:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: radial-gradient(120% 90% at 50% 40%,transparent 55%,color-mix(in oklab, var(--dk-acc) 45%, transparent) 100%)
+}
+:host([data-theme="dark"]) .spool:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-acc) 55%, transparent);
+    border: 1.5px dashed rgba(255,255,255,.35)
+}
+:host([data-theme="dark"]) .threads b:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: repeating-linear-gradient(160deg,var(--tc) 0 3px,color-mix(in srgb,var(--tc) 70%,#000) 3px 5px);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5)
+}
+:host([data-theme="dark"]) .hbtn:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 1.5px solid rgba(255,255,255,.35);
+    background: color-mix(in oklab, var(--dk-acc) 55%, transparent);
+    color: #fff
+}
+:host([data-theme="dark"]) .hbtn:hover:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-acc) 70%, transparent)
+}
+:host([data-theme="dark"]) .hbtn.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet);
+    border-color: var(--dk-line)
+}
+:host([data-theme="dark"]) .ledge:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: repeating-linear-gradient(90deg,rgba(255,255,255,.08) 0 3px,transparent 3px 9px),
+ linear-gradient(180deg,var(--dk-green-soft) 0 16%,var(--dk-acc) 16% 58%,var(--dk-acc-strong) 58%);
+    box-shadow: inset 0 6px 0 rgba(255,255,255,.25),0 -2px 0 rgba(255,255,255,.4),0 20px 40px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+}
+:host([data-theme="dark"]) .ledge:not(:is(.hero, .adv, .hero *, .adv *))::after {
+    border-top: 2px dashed rgba(255,255,255,.55)
+}
+:host([data-theme="dark"]) .ctx span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-acc) 70%, transparent);
+    color: #fff
+}
+:host([data-theme="dark"]) .sock:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 3px dashed var(--dk-acc);
+    background: color-mix(in oklab, var(--dk-acc) 12%, transparent);
+    color: inherit
+}
+:host([data-theme="dark"]) .sock.hot:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-acc) 35%, transparent)
+}
+:host([data-theme="dark"]) .sock.full:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: transparent;
+    background: none
+}
+:host([data-theme="dark"]) .dex .shadow:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: radial-gradient(closest-side,color-mix(in oklab, var(--dk-acc) 45%, transparent),transparent)
+}
+:host([data-theme="dark"]) .say:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    color: var(--dk-acc-text);
+    box-shadow: 0 16px 40px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+}
+:host([data-theme="dark"]) .say b.who:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .rule-line:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    color: var(--dk-acc-text);
+    box-shadow: 0 12px 30px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+}
+:host([data-theme="dark"]) .rule-line .mk:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--fl)
+}
+:host([data-theme="dark"]) .card-ov:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: linear-gradient(180deg,color-mix(in oklab, var(--dk-acc) 25%, transparent),color-mix(in oklab, var(--dk-acc) 65%, transparent))
+}
+:host([data-theme="dark"]) .card-ov.clear:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: none
+}
+:host([data-theme="dark"]) .scard:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-card) 96%, transparent);
+    color: var(--dk-acc-text);
+    box-shadow: 0 30px 80px color-mix(in oklab, var(--dk-acc) 50%, transparent)
+}
+:host([data-theme="dark"]) .scard p:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-text-2)
+}
+:host([data-theme="dark"]) .lamps i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-chip);
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.24)
+}
+:host([data-theme="dark"]) .lamps i.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: radial-gradient(circle at 40% 35%,var(--dk-yellow-tint),var(--dk-yellow));
+    box-shadow: 0 0 14px 4px color-mix(in oklab, var(--dk-yellow) 70%, transparent)
+}
+:host([data-theme="dark"]) .msg:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-top: 1px solid color-mix(in oklab, var(--dk-yellow) 15%, transparent)
+}
+:host([data-theme="dark"]) .msg:first-of-type:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-top: 0
+}
+:host([data-theme="dark"]) .msg b:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-yellow)
+}
+:host([data-theme="dark"]) .msg.cur:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .murmur:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-acc) 55%, transparent);
+    border: 1.5px dashed rgba(255,255,255,.3)
+}
+:host([data-theme="dark"]) .murmur .lv i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: rgba(255,255,255,.18)
+}
+:host([data-theme="dark"]) .murmur .lv i.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: repeating-linear-gradient(160deg,var(--dk-raised) 0 3px,var(--dk-raised) 3px 5px)
+}
+:host([data-theme="dark"]) .murmur .lv i.on.hot:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: repeating-linear-gradient(160deg,var(--dk-red-soft) 0 3px,var(--dk-red) 3px 5px)
+}
+:host([data-theme="dark"]) .tide .body:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: repeating-linear-gradient(0deg,rgba(255,255,255,.08) 0 3px,transparent 3px 8px),repeating-linear-gradient(90deg,rgba(255, 255, 255, 0.05) 0 2px,transparent 2px 7px),linear-gradient(180deg,var(--dk-raised),var(--dk-raised))
+}
+:host([data-theme="dark"]) .banner:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-text);
+    background: repeating-linear-gradient(90deg,rgba(255, 255, 255, 0.035) 0 2px,transparent 2px 7px),repeating-linear-gradient(0deg,rgba(255,255,255,.2) 0 2px,transparent 2px 6px),linear-gradient(180deg,var(--dk-yellow-tint),var(--dk-yellow-tint));
+    box-shadow: inset 0 -6px 0 color-mix(in oklab, var(--dk-yellow) 16%, transparent),0 18px 40px color-mix(in oklab, var(--dk-acc) 35%, transparent);
+    outline: 2.5px dashed color-mix(in oklab, var(--dk-yellow) 45%, transparent)
+}
+:host([data-theme="dark"]) .banner:not(:is(.hero, .adv, .hero *, .adv *))::before, :host([data-theme="dark"]) .banner:not(:is(.hero, .adv, .hero *, .adv *))::after {
+    border-left: 3px dashed rgba(255,255,255,.65)
+}
+:host([data-theme="dark"]) .banner .tag:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-deep);
+    color: #fff
+}
+:host([data-theme="dark"]) .banner .tag.retry:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-red)
+}
+:host([data-theme="dark"]) .banner .sockw:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 3px dashed var(--dk-acc);
+    background: color-mix(in oklab, var(--dk-acc) 12%, transparent)
+}
+:host([data-theme="dark"]) .banner .sockw.full:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: transparent;
+    background: none
+}
+:host([data-theme="dark"]) .banner .sockw.full.word:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-bottom: 3px solid var(--dk-green);
+    color: var(--dk-green)
+}
+:host([data-theme="dark"]) .banner .sockw.bad:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 3px solid var(--dk-red);
+    background: var(--dk-red-tint)
+}
+:host([data-theme="dark"]) .banner.ok:not(:is(.hero, .adv, .hero *, .adv *)) {
+    box-shadow: inset 0 -6px 0 color-mix(in oklab, var(--dk-yellow) 16%, transparent),0 0 0 4px var(--dk-card),0 0 40px 8px color-mix(in oklab, var(--dk-yellow) 90%, transparent)
+}
+:host([data-theme="dark"]) .obj:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 0;
+    background: none;
+    color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .obj:focus-visible:not(:is(.hero, .adv, .hero *, .adv *)) {
+    outline: 3px solid var(--dk-yellow-line)
+}
+:host([data-theme="dark"]) .obj .tk:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: radial-gradient(circle at 40% 30%,var(--dk-card),var(--dk-acc-tint));
+    box-shadow: 0 8px 18px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+}
+:host([data-theme="dark"]) .obj .tk .none:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 4px dashed var(--dk-acc)
+}
+:host([data-theme="dark"]) .obj kbd:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-deep);
+    color: #fff
+}
+:host([data-theme="dark"]) .obj.stone .base:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: radial-gradient(ellipse at 40% 30%,var(--dk-acc-tint),var(--dk-acc) 70%);
+    box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.3),0 8px 0 color-mix(in oklab, var(--dk-acc) 25%, transparent)
+}
+:host([data-theme="dark"]) .obj.key .base:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: repeating-linear-gradient(45deg,rgba(255,255,255,.12) 0 3px,transparent 3px 8px),linear-gradient(135deg,var(--dk-blue-soft),var(--dk-blue));
+    box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.36),0 10px 20px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+}
+:host([data-theme="dark"]) .obj.spring .base:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: repeating-linear-gradient(0deg,var(--dk-yellow) 0 6px,var(--dk-orange) 6px 12px);
+    box-shadow: 0 8px 0 color-mix(in oklab, var(--dk-orange) 25%, transparent)
+}
+:host([data-theme="dark"]) .obj.spring .base:not(:is(.hero, .adv, .hero *, .adv *))::after {
+    background: var(--dk-orange)
+}
+:host([data-theme="dark"]) .obj.wkey .tk:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-text);
+    background: linear-gradient(180deg,var(--dk-yellow-tint),var(--dk-yellow-tint))
+}
+:host([data-theme="dark"]) .obj.wkey .base:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 50'%3E%3Ccircle cx='22' cy='25' r='18' fill='none' stroke='%23C99A1E' stroke-width='9'/%3E%3Crect x='38' y='20' width='76' height='10' rx='4' fill='%23C99A1E'/%3E%3Crect x='92' y='28' width='8' height='14' fill='%23C99A1E'/%3E%3Crect x='104' y='28' width='8' height='10' fill='%23C99A1E'/%3E%3C/svg%3E")
+}
+:host([data-theme="dark"]) .obj.gate .base:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: radial-gradient(ellipse at 50% 85%,color-mix(in oklab, var(--dk-acc) 85%, transparent),color-mix(in oklab, var(--dk-acc) 75%, transparent) 60%),var(--dk-acc-deep);
+    box-shadow: inset 0 0 0 10px var(--dk-acc),inset 0 0 0 14px var(--dk-acc),0 10px 20px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+}
+:host([data-theme="dark"]) .obj.glow .tk:not(:is(.hero, .adv, .hero *, .adv *)) {
+    box-shadow: 0 0 0 4px var(--dk-card),0 0 30px 10px color-mix(in oklab, var(--dk-yellow) 90%, transparent)
+}
+:host([data-theme="dark"]) .obj.barred .base:not(:is(.hero, .adv, .hero *, .adv *))::before {
+    background: repeating-linear-gradient(90deg,var(--dk-raised) 0 8px,transparent 8px 22px)
+}
+:host([data-theme="dark"]) .door:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: repeating-linear-gradient(90deg,rgba(255, 255, 255, 0.08) 0 3px,transparent 3px 22px),linear-gradient(180deg,var(--dk-orange),var(--dk-orange));
+    box-shadow: inset 0 0 0 8px var(--dk-orange),0 14px 30px color-mix(in oklab, var(--dk-acc) 40%, transparent)
+}
+:host([data-theme="dark"]) .door:not(:is(.hero, .adv, .hero *, .adv *))::after {
+    background: var(--dk-yellow)
+}
+:host([data-theme="dark"]) .door-in:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: radial-gradient(ellipse at 50% 60%,var(--dk-yellow-tint),var(--dk-yellow) 70%)
+}
+:host([data-theme="dark"]) .portalglow:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: radial-gradient(closest-side,color-mix(in oklab, var(--dk-blue-tint) 95%, transparent),color-mix(in oklab, var(--dk-blue) 40%, transparent),transparent)
+}
+:host([data-theme="dark"]) .planks:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .planks.banner-mode:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: repeating-linear-gradient(90deg,rgba(255, 255, 255, 0.03) 0 2px,transparent 2px 7px),linear-gradient(180deg,var(--dk-yellow-tint),var(--dk-yellow-tint));
+    box-shadow: 0 18px 40px color-mix(in oklab, var(--dk-acc) 35%, transparent);
+    outline: 2.5px dashed color-mix(in oklab, var(--dk-yellow) 45%, transparent)
+}
+:host([data-theme="dark"]) .pl:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: repeating-linear-gradient(90deg,rgba(255, 255, 255, 0.05) 0 2px,transparent 2px 7px),linear-gradient(180deg,var(--dk-yellow-tint),var(--dk-yellow-soft));
+    box-shadow: inset 0 -4px 0 color-mix(in oklab, var(--dk-orange) 25%, transparent),0 6px 10px color-mix(in oklab, var(--dk-acc) 30%, transparent)
+}
+:host([data-theme="dark"]) .banner-mode .pl:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: none;
+    box-shadow: none
+}
+:host([data-theme="dark"]) .knot:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-orange)
+}
+:host([data-theme="dark"]) .banner-mode .knot:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: none
+}
+:host([data-theme="dark"]) .gap:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 3px dashed var(--dk-acc);
+    background: color-mix(in oklab, var(--dk-card) 75%, transparent);
+    color: inherit
+}
+:host([data-theme="dark"]) .gap:hover:not(:is(.hero, .adv, .hero *, .adv *)), :host([data-theme="dark"]) .gap:focus-visible:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-tint)
+}
+:host([data-theme="dark"]) .gap:focus-visible:not(:is(.hero, .adv, .hero *, .adv *)) {
+    outline: 3px solid var(--dk-yellow-line)
+}
+:host([data-theme="dark"]) .gap.set:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--dk-acc);
+    background: var(--dk-card)
+}
+:host([data-theme="dark"]) .gap.ok:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--dk-green);
+    background: var(--dk-green-tint)
+}
+:host([data-theme="dark"]) .gap.bad:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--dk-red);
+    background: var(--dk-red-tint)
+}
+:host([data-theme="dark"]) .gap.fixed:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--dk-green);
+    background: var(--dk-green-tint)
+}
+:host([data-theme="dark"]) .picker:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-deep);
+    box-shadow: 0 16px 40px color-mix(in oklab, var(--dk-acc) 50%, transparent)
+}
+:host([data-theme="dark"]) .picker button:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 0;
+    background: var(--dk-card)
+}
+:host([data-theme="dark"]) .picker button:hover:not(:is(.hero, .adv, .hero *, .adv *)), :host([data-theme="dark"]) .picker button:focus-visible:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-tint);
+    outline: 3px solid var(--dk-yellow-line)
+}
+:host([data-theme="dark"]) .picker button .none:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 3px dashed var(--dk-acc)
+}
+:host([data-theme="dark"]) .picker small:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: #fff;
+    text-shadow: 0 1px 4px #000
+}
+:host([data-theme="dark"]) .lamps2:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-acc) 60%, transparent)
+}
+:host([data-theme="dark"]) .lesson:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    color: var(--dk-acc-text);
+    box-shadow: 0 30px 80px color-mix(in oklab, var(--dk-acc) 55%, transparent)
+}
+:host([data-theme="dark"]) .lesson .side:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: linear-gradient(160deg,var(--fl),var(--dk-card))
+}
+:host([data-theme="dark"]) .lesson .side .big:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    box-shadow: 0 10px 24px color-mix(in oklab, var(--dk-acc) 15%, transparent)
+}
+:host([data-theme="dark"]) .lesson .side .role:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ft)
+}
+:host([data-theme="dark"]) .lesson .eyebrow:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ft)
+}
+:host([data-theme="dark"]) .lesson .box:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-page)
+}
+:host([data-theme="dark"]) .lesson .box b.h:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .lesson .box.ex:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-green-tint)
+}
+:host([data-theme="dark"]) .lesson .box.ex b.h:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-green)
+}
+:host([data-theme="dark"]) .lesson .box.no:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-page)
+}
+:host([data-theme="dark"]) .lesson .box.no b.h:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-red)
+}
+:host([data-theme="dark"]) .lesson mark:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-yellow-tint);
+    color: inherit
+}
+:host([data-theme="dark"]) .lesson s:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-red)
+}
+:host([data-theme="dark"]) .punct[data-tr=ru] .lesson .tr-ru:not(:is(.hero, .adv, .hero *, .adv *)), :host([data-theme="dark"]) .punct[data-tr=kk] .lesson .tr-kk:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-text);
+    border-left: 3px solid var(--dk-acc-line)
+}
+:host([data-theme="dark"]) .rule-line .mk:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background-color: var(--fl,#F1EAFF) !important;
+    background: none
+}
+:host([data-theme="dark"]) .sprite-ok .rule-line .mk[data-i]:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background-image: var(--sprite)
+}
+:host([data-theme="dark"]) .rhythm li:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .rhythm li i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    color: var(--violet-d);
+    box-shadow: var(--sh1)
+}
+:host([data-theme="dark"]) .rhythm li.p i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-deep);
+    color: #FFD66B
+}
+:host([data-theme="dark"]) .rhythm li b:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .rhythm li.ar:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--line2)
+}
+:host([data-theme="dark"]) .lp2>span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--bg);
+    color: var(--ink3);
+    border: 1px solid var(--line)
+}
+:host([data-theme="dark"]) .lp2 .st-l.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet-l);
+    color: var(--violet-d);
+    border-color: var(--violet-m)
+}
+:host([data-theme="dark"]) .lp2 .st-p:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .lp2 .st-p.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-yellow-tint);
+    border-color: var(--dk-yellow-line)
+}
+:host([data-theme="dark"]) .cc:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 1.5px solid var(--line);
+    background: var(--dk-card);
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .cc .mk:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background-color: var(--violet-l)
+}
+:host([data-theme="dark"]) .cc.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--dk-yellow-line);
+    background: var(--dk-page);
+    color: var(--ink)
+}
+:host([data-theme="dark"]) .modes:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    border: 1.5px solid var(--line)
+}
+:host([data-theme="dark"]) .modes>span:not(.ln):not(:is(.hero, .adv, .hero *, .adv *)), :host([data-theme="dark"]) .modes button:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 0;
+    background: none;
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .modes i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--line)
+}
+:host([data-theme="dark"]) .modes .on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet-l);
+    color: var(--violet-d)
+}
+:host([data-theme="dark"]) .modes .on i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--violet);
+    color: var(--dk-on-acc)
+}
+:host([data-theme="dark"]) .modes .ln:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--line2)
+}
+:host([data-theme="dark"]) .modes button i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-deep);
+    color: #FFD66B
+}
+:host([data-theme="dark"]) .modes button:hover:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .stepnav li.pn a:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-deep);
+    border-color: var(--dk-acc);
+    color: #fff
+}
+:host([data-theme="dark"]) .stepnav li.pn a i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-yellow);
+    color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .stepnav li.pn a.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-yellow);
+    border-color: var(--dk-yellow-line);
+    color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .srcbox:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-top: 1px solid var(--line)
+}
+:host([data-theme="dark"]) .srcbox summary:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .gate-card:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-deep);
+    color: #fff;
+    box-shadow: 0 30px 70px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+}
+:host([data-theme="dark"]) .gate-card:not(:is(.hero, .adv, .hero *, .adv *))::before {
+    background: linear-gradient(90deg,color-mix(in oklab, var(--dk-acc) 94%, transparent) 0%,color-mix(in oklab, var(--dk-acc) 82%, transparent) 46%,color-mix(in oklab, var(--dk-acc) 15%, transparent) 100%)
+}
+:host([data-theme="dark"]) .gate-done:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: #7CF0A6
+}
+:host([data-theme="dark"]) .gate h2:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: #fff
+}
+:host([data-theme="dark"]) .gate h2 span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: #FFD66B
+}
+:host([data-theme="dark"]) .gate .tr:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-on);
+    border-color: rgba(255,255,255,.3)
+}
+:host([data-theme="dark"]) .gate-how p:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: rgba(255,255,255,.9)
+}
+:host([data-theme="dark"]) .gate-legend span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.14)
+}
+:host([data-theme="dark"]) .gate-legend .ok:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: #7CF0A6
+}
+:host([data-theme="dark"]) .gate-legend .bad:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: #FFB4B4
+}
+:host([data-theme="dark"]) .playbtn:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 0;
+    background: linear-gradient(180deg,var(--dk-yellow-tint),var(--dk-yellow));
+    color: var(--dk-acc-text);
+    box-shadow: 0 8px 0 var(--dk-yellow),0 18px 40px color-mix(in oklab, var(--dk-yellow) 30%, transparent)
+}
+:host([data-theme="dark"]) .playbtn:active:not(:is(.hero, .adv, .hero *, .adv *)) {
+    box-shadow: 0 3px 0 var(--dk-yellow)
+}
+:host([data-theme="dark"]) .playbtn:focus-visible:not(:is(.hero, .adv, .hero *, .adv *)) {
+    outline: 3px solid var(--dk-line)
+}
+:host([data-theme="dark"]) .playbtn .pb-ic:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-deep);
+    color: #FFD66B
+}
+:host([data-theme="dark"]) .playbtn .stars i:not(.on):not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: color-mix(in oklab, var(--dk-acc-text) 25%, transparent)
+}
+:host([data-theme="dark"]) .gate-skip .linkbtn:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink3)
+}
+:host([data-theme="dark"]) .gate-skip .linkbtn:hover:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--violet-d)
+}
+@container punct (max-width:760px) {
+    :host([data-theme="dark"]) .gate-card:not(:is(.hero, .adv, .hero *, .adv *))::before {
+        background: linear-gradient(180deg,color-mix(in oklab, var(--dk-acc) 25%, transparent) 0,color-mix(in oklab, var(--dk-acc) 92%, transparent) 210px)
+    }
+}
+:host([data-theme="dark"]) .warp:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: radial-gradient(circle at var(--x) var(--y),var(--dk-acc) 0,var(--dk-acc-strong) 30%,var(--dk-acc-deep) 70%)
+}
+:host([data-theme="dark"]) .warp-in:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: #fff
+}
+:host([data-theme="dark"]) .warp-in b:not(:is(.hero, .adv, .hero *, .adv *)) {
+    text-shadow: 0 5px 0 var(--dk-acc-strong)
+}
+:host([data-theme="dark"]) .punct.in-game:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-deep)
+}
+:host([data-theme="dark"]) .gtitle:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: color-mix(in oklab, var(--dk-acc) 55%, transparent);
+    border: 1.5px dashed rgba(255,255,255,.3)
+}
+:host([data-theme="dark"]) .gtitle .mk:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background-color: color-mix(in oklab, var(--dk-card) 92%, transparent)
+}
+:host([data-theme="dark"]) .gtitle .gt small:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: rgba(255,255,255,.7)
+}
+:host([data-theme="dark"]) .splash b:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: #fff;
+    text-shadow: 0 5px 0 var(--dk-acc-strong),0 14px 34px color-mix(in oklab, var(--dk-acc) 60%, transparent)
+}
+:host([data-theme="dark"]) .splash span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: #FFE27A;
+    text-shadow: 0 2px 12px color-mix(in oklab, var(--dk-acc) 85%, transparent)
+}
+:host([data-theme="dark"]) .rule-line.cheer:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-green)
+}
+:host([data-theme="dark"]) .rule-line.cheer span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-green);
+    color: var(--dk-on-bright)
+}
+:host([data-theme="dark"]) .oops:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    color: var(--dk-acc-text);
+    box-shadow: 0 18px 50px color-mix(in oklab, var(--dk-acc) 50%, transparent)
+}
+:host([data-theme="dark"]) .oops .oh:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-red)
+}
+:host([data-theme="dark"]) .oops .cue:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-yellow);
+    background: var(--dk-yellow-tint)
+}
+:host([data-theme="dark"]) .banner .sockw.fixd:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 3px solid var(--dk-green);
+    background: var(--dk-green-tint)
+}
+:host([data-theme="dark"]) .banner .sockw.fixd.word:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-green);
+    background: none
+}
+:host([data-theme="dark"]) .obj.right .tk:not(:is(.hero, .adv, .hero *, .adv *)) {
+    box-shadow: 0 0 0 4px var(--dk-green),0 0 26px 6px color-mix(in oklab, var(--dk-green) 55%, transparent)
+}
+:host([data-theme="dark"]) .ptag:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-deep);
+    color: #fff
+}
+:host([data-theme="dark"]) .ptag.retry:not(:is(.hero, .adv, .hero *, .adv *)), :host([data-theme="dark"]) .banner .tag.retry:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-yellow);
+    color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .rafts .rq:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: #fff;
+    text-shadow: 0 2px 12px color-mix(in oklab, var(--dk-acc) 85%, transparent)
+}
+:host([data-theme="dark"]) .raft:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 0;
+    background: none;
+    color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .raft .rt:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: repeating-linear-gradient(90deg,rgba(255, 255, 255, 0.035) 0 2px,transparent 2px 7px),linear-gradient(180deg,var(--dk-yellow-tint),var(--dk-yellow-tint));
+    box-shadow: inset 0 -5px 0 color-mix(in oklab, var(--dk-yellow) 16%, transparent),0 16px 34px color-mix(in oklab, var(--dk-acc) 38%, transparent);
+    outline: 2.5px dashed color-mix(in oklab, var(--dk-yellow) 45%, transparent)
+}
+:host([data-theme="dark"]) .raft .rb:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: linear-gradient(180deg,var(--dk-acc),var(--dk-acc));
+    box-shadow: 0 8px 0 color-mix(in oklab, var(--dk-acc) 25%, transparent)
+}
+:host([data-theme="dark"]) .raft kbd:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-deep);
+    color: #fff
+}
+:host([data-theme="dark"]) .raft:focus-visible:not(:is(.hero, .adv, .hero *, .adv *)) {
+    outline: none
+}
+:host([data-theme="dark"]) .raft:focus-visible .rt:not(:is(.hero, .adv, .hero *, .adv *)) {
+    outline: 3px solid var(--dk-yellow-line)
+}
+:host([data-theme="dark"]) .raft.glow .rt:not(:is(.hero, .adv, .hero *, .adv *)), :host([data-theme="dark"]) .raft.right .rt:not(:is(.hero, .adv, .hero *, .adv *)) {
+    box-shadow: 0 0 0 4px var(--dk-green),0 0 34px 8px color-mix(in oklab, var(--dk-green) 50%, transparent);
+    outline-color: transparent
+}
+:host([data-theme="dark"]) .scard.win .big-stars i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-on)
+}
+:host([data-theme="dark"]) .scard.win .big-stars i.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--yellow)
+}
+:host([data-theme="dark"]) .joined:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-text-2)
+}
+:host([data-theme="dark"]) .gtitle .snum:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-yellow);
+    color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .gtitle .trail i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: rgba(255,255,255,.25)
+}
+:host([data-theme="dark"]) .gtitle .trail i.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-green)
+}
+:host([data-theme="dark"]) .gtitle .trail i.now:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-yellow)
+}
+:host([data-theme="dark"]) .gtitle .cnt:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: rgba(255,255,255,.8)
+}
+:host([data-theme="dark"]) .splash small:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: #fff;
+    text-shadow: 0 2px 10px color-mix(in oklab, var(--dk-acc) 80%, transparent)
+}
+:host([data-theme="dark"]) .strail i:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: rgba(255,255,255,.3);
+    box-shadow: 0 2px 8px color-mix(in oklab, var(--dk-acc) 40%, transparent)
+}
+:host([data-theme="dark"]) .strail i.on:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-green)
+}
+:host([data-theme="dark"]) .strail i.now:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-yellow)
+}
+:host([data-theme="dark"]) .gust:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: linear-gradient(90deg,transparent,color-mix(in oklab, var(--dk-card) 80%, transparent),transparent)
+}
+:host([data-theme="dark"]) .banner .tag:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-acc-deep)
+}
+:host([data-theme="dark"]) .rafts .fact:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-card);
+    color: var(--dk-acc-text);
+    box-shadow: 0 12px 30px color-mix(in oklab, var(--dk-acc) 35%, transparent)
+}
+:host([data-theme="dark"]) .rafts .fact small:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .planks.repair:not(:is(.hero, .adv, .hero *, .adv *)) {
+    outline-color: color-mix(in oklab, var(--dk-red) 45%, transparent)
+}
+:host([data-theme="dark"]) .gap.pre:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--dk-line);
+    background: var(--dk-card)
+}
+:host([data-theme="dark"]) .gap.pre.nil:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border: 2px dashed var(--dk-acc-line);
+    background: color-mix(in oklab, var(--dk-card) 60%, transparent)
+}
+:host([data-theme="dark"]) .gap.pre:hover:not(:is(.hero, .adv, .hero *, .adv *)), :host([data-theme="dark"]) .gap.pre:focus-visible:not(:is(.hero, .adv, .hero *, .adv *)) {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-tint)
+}
+:host([data-theme="dark"]) .scard p.small:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-muted)
+}
+:host([data-theme="dark"]) .usedmarks span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+:host([data-theme="dark"]) .usedmarks .mk:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background-color: var(--dk-card)
+}
+:host([data-theme="dark"]) .usedmarks b:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--dk-acc-text)
+}
+:host([data-theme="dark"]) .beam:not(:is(.hero, .adv, .hero *, .adv *)) {
+    background: linear-gradient(270deg,color-mix(in oklab, var(--dk-yellow-tint) 85%, transparent),color-mix(in oklab, var(--dk-yellow-tint) 25%, transparent) 40%,transparent 85%)
+}
+:host([data-theme="dark"]) .lp2 .st-p:not(:is(.hero, .adv, .hero *, .adv *)), :host([data-theme="dark"]) .gate-skip .linkbtn:not(:is(.hero, .adv, .hero *, .adv *)), :host([data-theme="dark"]) .lp2>span:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) .cc:not(:is(.hero, .adv, .hero *, .adv *)) {
+    color: var(--ink2)
+}
+:host([data-theme="dark"]) :is(.hero, .adv) {
+    color-scheme: light;
+    --violet: #874BF8;
+    --violet-d: #6B33E6;
+    --violet-dd: #4F22B8;
+    --violet-l: #F1EAFF;
+    --violet-m: #DCCBFF;
+    --cyan: #0AAFFF;
+    --cyan-t: #0077B8;
+    --cyan-l: #E2F5FF;
+    --green: #00D441;
+    --green-t: #00823A;
+    --green-l: #E1FAE9;
+    --orange: #FF7D1D;
+    --orange-t: #C9520A;
+    --orange-l: #FFEEE0;
+    --yellow: #FFAD00;
+    --yellow-t: #9A6500;
+    --yellow-l: #FFF3D1;
+    --ink: #141217;
+    --ink2: #4E4B55;
+    --ink3: #86838F;
+    --line: #ECE8F4;
+    --line2: #DDD7EA;
+    --bg: #F8F6FD;
+    --card: #fff;
+    --ok: #00A63E;
+    --ok-l: #E3F8EA;
+    --bad: #E5484D;
+    --bad-l: #FFECEC;
+    --alt: #8B5CF6;
+    --alt-l: #F1EAFF;
+    --sh1: 0 1px 2px rgba(40,20,90,.06),0 6px 18px rgba(60,30,140,.06);
+    --sh2: 0 2px 6px rgba(40,20,90,.06),0 18px 44px rgba(60,30,140,.12)
+}
+:host([data-theme="dark"]) .hero {
+    color: var(--ink)
+}
+:host([data-theme="dark"]){color-scheme:dark;--violet-d:var(--dk-acc-text);--line2:var(--dk-line-strong)}
+:host([data-theme="dark"]) .btn-p:hover{background:var(--dk-acc-strong)}
 `
