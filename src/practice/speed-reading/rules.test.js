@@ -14,6 +14,8 @@ import {
   todayCount,
   alignHeard,
   expandHeard,
+  clampSpeed,
+  fmtSpeed,
 } from './rules.js'
 
 // Оракул считает сам прототип кабинета (scripts/speed-reading/extract-oracle.js): красный тест значит, что
@@ -27,7 +29,7 @@ describe('правила Скорочтения сверены с прототи
   })
 
   it('srAlign на всех наборах оракула', () => {
-    expect(oracle.align.length).toBe(72)
+    expect(oracle.align.length).toBe(117) // 13 текстов (8 из v1.1 и первый на каждом уровне) × 9 наборов
     for (const c of oracle.align) expect(srAlign(srWords(c.text), c.heard), `${c.kind}: ${c.text.slice(0, 30)}`).toEqual(c.ok)
   })
 
@@ -51,10 +53,15 @@ describe('правила Скорочтения сверены с прототи
     }
   })
 
-  it('темп образца как основа: 1x — темп диктора', () => {
-    expect(speedWpm(163, 1)).toBe(163)
-    expect(speedWpm(163, 0.5)).toBe(82)
-    expect(speedWpm(null, 2)).toBe(300)
+  it('v1.2: оракул снят со всех 250 текстов, на кнопках и на ползунке', () => {
+    expect(oracle.texts).toHaveLength(250)
+    expect(oracle.pace).toHaveLength(2500)
+    expect(oracle.pace.find((p) => p.mult === 1.3).wpm).toBe(195)
+  })
+
+  it('скорость ползунка: 0,5–3 с шагом 0,1, подпись как srFmt', () => {
+    expect([clampSpeed(1.26), clampSpeed('2.04'), clampSpeed(0.1), clampSpeed(9), clampSpeed('x')]).toEqual([1.3, 2, 0.5, 3, 1])
+    expect([fmtSpeed(1.3, 'ru'), fmtSpeed(1.3, 'kk'), fmtSpeed(1.3, 'en'), fmtSpeed(2, 'ru')]).toEqual(['1,3x', '1,3x', '1.3x', '2x'])
   })
 })
 

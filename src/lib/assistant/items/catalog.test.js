@@ -159,6 +159,21 @@ describe('каталог для Луны', () => {
     expect(items.get('karaoke.believer').label).toBe('караоке “Believer”')
   })
 
+  it('скорочтение v1.2: 250 текстов режутся уровнем ученика (A0 → A1), иначе не влезли бы в каталог', async () => {
+    const levels = ['A1', 'A2', 'B1', 'B2', 'C1']
+    const texts = levels.flatMap((lv) => Array.from({ length: 50 }, (_, i) => ({ id: `${lv.toLowerCase()}-t${i}`, level: lv, title: { ru: `Текст ${lv} ${i}` } })))
+    const backend = { '/mobile/speed-reading/texts': texts }
+    const b1 = await buildItemCatalog({ kinds: ['speedread'], level: 'B1', token: 't', deps: fakeDeps({ backend }) })
+    expect([...b1.items.keys()].filter((k) => k.startsWith('speedread.'))).toHaveLength(50)
+    expect(b1.text).toContain('- speedread.b1-t0 — «Текст B1 0» (B1)')
+    expect(b1.text).not.toContain('a1-t0')
+    const a0 = await buildItemCatalog({ kinds: ['speedread'], level: 'A0', token: 't', deps: fakeDeps({ backend }) })
+    expect(a0.text).toContain('speedread.a1-t0')
+    // уровня ученика среди текстов нет — не пусто, а общий список под потолком
+    const none = await buildItemCatalog({ kinds: ['speedread'], level: 'X9', token: 't', deps: fakeDeps({ backend }) })
+    expect([...none.items.keys()].filter((k) => k.startsWith('speedread.')).length).toBeGreaterThan(0)
+  })
+
   it('письмо по шагам и уроки воркбука уровня', async () => {
     const files = {
       ...FILES,

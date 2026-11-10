@@ -10,6 +10,10 @@ import { mockGates } from './helpers/login.js'
 // текста. Микрофон — фальшивое устройство Chrome, которое читает файл с тоном: MediaRecorder пишет настоящий
 // звук, и в /api/transcribe уходит настоящий WAV. Правила итога — оракул прототипа (rules.test.js), движок по
 // шагам — engine.test.js; здесь — путь ученика целиком в браузере.
+//
+// v1.2: тексты на разных уровнях (вкладки A1/B1), у каждого — фоновая сцена; её сигнал звучит до отсчёта и до
+// образца (настоящий Web Audio, без звука в headless), поэтому ожидания отсчёта длиннее. Запись, которую ученик
+// слушает и скачивает, — «голос + фон» (тоже WAV), а на распознавание по-прежнему уходит WAV чистого голоса.
 
 const TONE_FILE = path.join(os.tmpdir(), 'jts-e2e-speed-tone.wav')
 fs.writeFileSync(TONE_FILE, toneWav(16000 * 8, 16000))
@@ -27,8 +31,8 @@ const BODY_B = 'Good morning, ladies and gentlemen, and welcome aboard Flight 51
 const WORDS_B = BODY_B.split(/\s+/)
 const SAMPLE_B = { url: 'https://files.e2e.test/sample-b.wav', words: WORDS_B.map((w, i) => [w, +(i * 0.15).toFixed(2), +(i * 0.15 + 0.12).toFixed(2)]), wpm: 180 }
 const TEXTS = [
-  { id: 'hello', level: 'A1', icon: '👋', title: { ru: 'Знакомство', kk: 'Танысу', en: 'Introduce yourself' }, body: BODY_A, words: 20, sample: { ...SAMPLE_B, url: 'https://files.e2e.test/sample-a.wav', words: BODY_A.split(/\s+/).map((w, i) => [w, i * 0.4, i * 0.4 + 0.3]), wpm: 150 } },
-  { id: 'flight', level: 'B1', icon: '✈️', title: { ru: 'Объявление в самолёте', kk: 'Ұшақтағы хабарландыру', en: 'Flight announcement' }, body: BODY_B, words: WORDS_B.length, sample: null },
+  { id: 'hello', level: 'A1', icon: '👋', genre: 'intro', category: 'life', sound: 'school', title: { ru: 'Знакомство', kk: 'Танысу', en: 'Introduce yourself' }, body: BODY_A, words: 20, sample: { ...SAMPLE_B, url: 'https://files.e2e.test/sample-a.wav', words: BODY_A.split(/\s+/).map((w, i) => [w, i * 0.4, i * 0.4 + 0.3]), wpm: 150 } },
+  { id: 'flight', level: 'B1', icon: '✈️', genre: 'inflight', category: 'travel', sound: 'plane', title: { ru: 'Объявление в самолёте', kk: 'Ұшақтағы хабарландыру', en: 'Flight announcement' }, body: BODY_B, words: WORDS_B.length, sample: null },
 ]
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
@@ -104,23 +108,35 @@ test('Практика → Чтение → Скорочтение: образе
   await expect(h).toHaveAttribute('data-texts', '2', { timeout: 30_000 })
   await expect(h).toHaveAttribute('data-source', 'api')
 
-  // текст без образца — образец создаётся при открытии
-  await h.locator('[data-act="text"][data-arg="flight"]').click()
+  // уровень ученика (A2) вкладкой не представлен — открыт первый, A1; на B1 — текст без образца, он создаётся
+  await expect(h.locator('.srlv button.on')).toHaveAttribute('data-arg', 'A1')
+  await h.locator('[data-act="level"][data-arg="B1"]').click()
+  await expect(h.locator('.srtexts button.on')).toHaveAttribute('data-arg', 'flight')
   await expect.poll(() => server.sampleCalls).toEqual([{ id: 'flight' }])
   const listen = h.locator('[data-act="listen"]')
-  await expect(listen).toContainText('Послушать образец')
-  await expect(h.locator('.srstart')).toContainText('180 сл/мин')
+  await expect(listen).toContainText('Послушать образец · 1x')
+  await expect(h.locator('.srbg')).toContainText('Салон самолёта')
+  // 1x — 150 сл/мин, темп образца (180) больше не основа
+  await expect(h.locator('#srspdi')).toContainText('150 сл/мин')
 
   await h.locator('[data-act="speed"][data-arg="2"]').click()
-  await expect(h.locator('.srstart')).toContainText('360 сл/мин')
+  await expect(h.locator('#srspdi')).toContainText('300 сл/мин')
+  // ползунок: 1,3x — между кнопками
+  await h.locator('input[data-act="slide"]').fill('1.3')
+  await expect(h.locator('#srspdv')).toHaveText('1,3x')
+  await expect(h.locator('#srspdi')).toContainText('195 сл/мин')
+  await h.locator('[data-act="speed"][data-arg="2"]').click()
   await listen.click()
-  await expect(h.locator('#srlist span.on')).toHaveCount(1, { timeout: 5_000 })
-  await expect(h.locator('#srlist')).toHaveCount(0, { timeout: 10_000 })
+  // сначала сигнал сцены, потом голос — подсветка идёт по времени записи
+  await expect(h.locator('#srlist span.on')).toHaveCount(1, { timeout: 8_000 })
+  await expect(h.locator('#srlist')).toHaveCount(0, { timeout: 12_000 })
 
-  // запись: отсчёт 3-2-1, бегущая строка, «Стоп»
+  // запись: сигнал сцены (значок), отсчёт 3-2-1, бегущая строка, «Стоп»
   await h.locator('[data-act="begin"]').click()
   await expect(h.locator('.tele')).toBeVisible()
-  await expect(h.locator('#telecount')).toHaveText('', { timeout: 5_000 })
+  await expect(h.locator('#telecount')).toHaveText('✈️')
+  await expect(h.locator('.tele-top b')).toHaveText('✈️ Объявление в самолёте · 2x')
+  await expect(h.locator('#telecount')).toHaveText('', { timeout: 10_000 })
   await page.waitForTimeout(1500)
   await h.locator('[data-act="stop"]').click()
   await expect(h.locator('.chero h2')).toHaveText('Прочитано 75%', { timeout: 30_000 })
@@ -136,7 +152,9 @@ test('Практика → Чтение → Скорочтение: образе
   expect(body).toMatchObject({ textId: 'flight', speed: 2, wordsTotal: 20, wordsRead: 15, percent: 75, stars: 2, scoredBy: 'server' })
   expect(body.durationSec).toBeGreaterThanOrEqual(1)
   await expect(h.locator('audio').first()).toHaveAttribute('src', /^blob:/)
+  // слушается и скачивается «голос + фон»; сведённая дорожка тоже переводится в WAV: webm из Chrome не перематывается
   await expect(h.locator('a[download]')).toHaveAttribute('download', /^speed-flight-\d{4}-\d{2}-\d{2}\.wav$/)
+  await expect(h.locator('.card').first()).toContainText('В записи твой голос и фон ситуации')
 
   // «Мои попытки»: своя — с плеером, с сервера — без
   const rows = h.locator('.srtries .lrow')
@@ -146,7 +164,7 @@ test('Практика → Чтение → Скорочтение: образе
 
   // ещё раз — вторая попытка, монет уже нет
   await h.locator('[data-act="begin"]').click()
-  await expect(h.locator('#telecount')).toHaveText('', { timeout: 5_000 })
+  await expect(h.locator('#telecount')).toHaveText('', { timeout: 10_000 })
   await page.waitForTimeout(800)
   await h.locator('[data-act="stop"]').click()
   await expect(h.locator('#srsave')).toContainText('Попытка сохранена', { timeout: 30_000 })
@@ -169,7 +187,7 @@ test('нет доступа к микрофону — экран-инструк�
   await expect(h.locator('.srstart')).toContainText('NotAllowedError')
   await h.locator('[data-act="demo"]').click()
   await expect(h.locator('.tele')).toBeVisible()
-  await expect(h.locator('#telecount')).toHaveText('', { timeout: 5_000 })
+  await expect(h.locator('#telecount')).toHaveText('', { timeout: 10_000 })
   await page.waitForTimeout(1000)
   await h.locator('[data-act="stop"]').click()
   await expect(h.locator('.card').first()).toContainText('Это демо без микрофона')
@@ -202,7 +220,7 @@ test('360px: выбор, телесуфлёр и итог без горизон�
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(await overflow(), 'выбор').toBeLessThanOrEqual(0)
   await h.locator('[data-act="demo"]').click()
-  await expect(h.locator('#telecount')).toHaveText('', { timeout: 5_000 })
+  await expect(h.locator('#telecount')).toHaveText('', { timeout: 10_000 })
   expect(await overflow(), 'телесуфлёр').toBeLessThanOrEqual(0)
   await h.locator('[data-act="stop"]').click()
   await expect(h.locator('.chero')).toBeVisible()
