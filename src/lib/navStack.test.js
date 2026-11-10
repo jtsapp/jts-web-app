@@ -118,6 +118,7 @@ describe('подпись кнопки', () => {
     expect(backLabelKey('listening')).toBe('nav.back.listening')
     expect(backLabelKey('prepositions')).toBe('nav.back.prepositions')
     expect(backLabelKey('pronunciation')).toBe('nav.back.pronunciation')
+    expect(backLabelKey('punctuation')).toBe('nav.back.punctuation')
     expect(backLabelKey('grammar-games')).toBe('nav.back.grammarGames')
     expect(backLabelKey('нечто')).toBe('nav.back.default')
     expect(backLabelKey(null)).toBe('nav.back.default')

@@ -38,6 +38,7 @@ const AREA_NAMES = {
   prepositions: 'Prepositions World',
   wordhunt: 'Word Hunt',
   pronunciation: 'Pronunciation World',
+  punctuation: 'Punctuation World',
 }
 
 // Куда звала Луна (destinations.js) → разделы Практики, заход в которые и есть
@@ -56,6 +57,7 @@ const TARGET_AREAS = {
   listen: ['listen'],
   prepositions: ['prepositions'],
   pronunciation: ['pronunciation'],
+  punctuation: ['punctuation'],
   reading: ['reading'],
   wordhunt: ['wordhunt'],
   writing: ['writing'],
