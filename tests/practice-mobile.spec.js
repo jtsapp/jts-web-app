@@ -76,8 +76,8 @@ test.describe('Практика — мобильная адаптация', () =
   test('карточки тренажёров — в две колонки', async ({ page }) => {
     await openPractice(page)
     const [a, b, c] = await Promise.all(
-      // Третья карточка «Аудирования» — «Скорочтение» (с 08.11.2026), она открывает второй ряд.
-      ['#sec-listenchoose', '#sec-listen', '#sec-speed-reading'].map((sel) => page.locator(sel).boundingBox()),
+      // Третья карточка «Аудирования» — Cartoon World («Скорочтение» с 10.11.2026 — в «Чтении»), она открывает второй ряд.
+      ['#sec-listenchoose', '#sec-listen', '#sec-cartoons'].map((sel) => page.locator(sel).boundingBox()),
     )
     expect(Math.abs(a.y - b.y)).toBeLessThan(1)
     expect(b.x).toBeGreaterThanOrEqual(a.x + a.width)
