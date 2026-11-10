@@ -55,6 +55,10 @@ import { mergeReadingState } from './readingState.js'
 // 'tenses' — стейт-объект Tenses World {practice, visited, last} (результаты наборов практики, открытые страницы
 // времён, последнее время). Replace; клиент сводит с серверным (tenses/progress.js merge): пройденный набор остаётся
 // пройденным, лучший счёт — максимум. Area 'tenses' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
+// 'punctuation' — стейт-объект Punctuation World {read, p, fin} (прочитанные страницы, звёзды приключений).
+// Replace; клиент сводит с серверным (punctuation/progress.js merge): прочитанное остаётся прочитанным, звёзды —
+// лучшие. Недоигранное приключение сюда не идёт — только устройство. Area 'punctuation' бэкенду неизвестна — в
+// домашнюю работу раздел не отчитывается.
 // 'vocabLearned' / 'vocabMisses' — «изучено» и «хуже запомненные» «Словаря»
 // ({scopes} и {words}, см. practiceKeys.js). Replace: снятая отметка и снятая
 // ошибка не должны воскресать от объединения.
@@ -78,6 +82,7 @@ export const PRACTICE_MODULES = [
   'wordhunt',
   'pronunciation',
   'tenses',
+  'punctuation',
   'vocabLearned',
   'vocabMisses',
 ]

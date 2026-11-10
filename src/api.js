@@ -2445,6 +2445,13 @@ export function getTenses(token, onFresh) {
   return cachedAuthGet('/mobile/tenses', token, onFresh)
 }
 
+// Punctuation World: 20 страниц и банк игры одним бандлом (~250 КБ, форма прототипа, картинки — ссылки MinIO; спека
+// 2026-11-10-tenses-punctuation-world-design.md). Тот же путь, что у Pronunciation World: ответ больше порога
+// localStorage, cachedAuthGet держит его только в памяти вкладки. 404 — раздел ещё не залит через админку.
+export function getPunctuation(token, onFresh) {
+  return cachedAuthGet('/mobile/punctuation', token, onFresh)
+}
+
 // «Грамматика · игры»: список тем (шапки и набор игр), тема целиком, общий словарь кликабельных слов, звёзды
 // ученика и сдача игры (контракт — backend docs/practice/GRAMMAR_GAMES.md). Без cachedAuthGet: его копия в
 // localStorage вытесняла бы прогресс других разделов (словарь ~120 КБ), а звёзды должны быть свежими. Темы и

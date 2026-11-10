@@ -97,6 +97,12 @@ describe('куда Луна умеет вести', () => {
     expect(destinationsText()).toContain('- tenses — Tenses World (12 времён): 12 английских времён')
   })
 
+  it('Punctuation World открывается напрямую', () => {
+    expect(validAction('open', 'punctuation')).toEqual({ kind: 'open', target: 'punctuation', now: false })
+    expect(destinationIdForScreen('punctuation')).toBe('punctuation')
+    expect(destinationsText()).toContain('- punctuation — Punctuation World (пунктуация): пунктуация английского A0–C2')
+  })
+
   it('«Грамматика · игры» открываются напрямую', () => {
     expect(validAction('open', 'grammar-games')).toEqual({ kind: 'open', target: 'grammar-games', now: false })
     expect(destinationIdForScreen('grammar-games')).toBe('grammar-games')

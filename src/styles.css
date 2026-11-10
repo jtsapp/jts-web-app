@@ -4498,6 +4498,19 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
 @media (max-width: 560px) {
   .tns-top { padding: 8px 16px 0; }
 }
+/* Punctuation World: оболочка как у Pronunciation World — липкие шапка раздела и полоса шагов урока липнут к окну
+   (overflow: visible), а пока идёт приключение (data-game), кнопки Луны нет: она ложилась на камни и ворота справа
+   и на кнопку «Send Dexter across». */
+.pct-top { display: flex; align-items: center; margin: 0 0 12px; padding: 12px 32px 0; }
+.pct-host { display: block; }
+.pct-host[hidden] { display: none; }
+.learn__main:has(.pct-host) { overflow: visible; }
+body:has(.pct-host[data-game='1']) .asst__launcher,
+body:has(.pct-host[data-game='1']) .asst__hint,
+body:has(.pct-host[data-game='1']) .asst__badge { display: none; }
+@media (max-width: 560px) {
+  .pct-top { padding: 8px 16px 0; }
+}
 /* «Грамматика · игры» своим экраном (карточка «Темы по уровням») — оболочка как у Prepositions World; тумблер
    звука стоит слева, у кнопки «назад»: правый верхний угол занят группой .learn__bell. */
 .ggp-top { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 12px 32px 0; }

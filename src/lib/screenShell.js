@@ -6,7 +6,7 @@
 // сайдбар на время загрузки.
 const PRACTICE = [
   'practice', 'listening', 'shadowing', 'writing', 'workbook', 'words', 'listen', 'numbers', 'prepositions',
-  'pronunciation', 'tenses', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'speakspin', 'verbs', 'situations',
+  'pronunciation', 'tenses', 'punctuation', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'speakspin', 'verbs', 'situations',
   'listenchoose', 'arcade', 'reading',
 ]
 const TUTOR = [

@@ -10,3 +10,5 @@ src/practice/cartoons/__fixtures__/*.html -text
 src/practice/pronunciation/__fixtures__/*.html -text
 # Фикстура «Tenses World» — по той же причине; её же заливают в дев-админку («движок совпадает»).
 src/practice/tenses/__fixtures__/*.html -text
+# Фикстура «Punctuation World» — движок байт в байт с прототипом (хэш сверяет бэкенд).
+src/practice/punctuation/__fixtures__/*.html -text

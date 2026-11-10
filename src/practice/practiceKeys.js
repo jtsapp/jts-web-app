@@ -98,6 +98,17 @@ export const TENSES_KEY = 'jts-tenses-world'
 // Язык перевода раздела (en | kz | ru — коды прототипа) — настройка устройства, не синкается, но чистится вместе с
 // прогрессом, как язык «Чисел».
 export const TENSES_LANG_KEY = 'jts_tenses_lang'
+// Прогресс Punctuation World: { read: { <страница>: 1 }, p: { <страница>: звёзды 1–3 }, fin } — ключ прототипа
+// (pw-world-1), без настроек вида. Replace со сведением merge (punctuation/progress.js): прочитанная страница не
+// «распрочитывается», звёзды — лучшие с любого устройства.
+export const PUNCTUATION_KEY = 'pw-world-1'
+// Вид Punctuation World { tr, mute, luna } (перевод, звук, Луна) — настройка устройства, не синкается; чистится при
+// выходе: язык перевода — выбор ученика, как у «Чисел».
+export const PUNCTUATION_PREFS_KEY = 'jts_punctuation_prefs'
+// Недоигранное приключение { <страница>: { s: стадия, res: [1|0…], marks: { <семья знака>: N } } } — только
+// устройство (как недорешённые сетки Word Hunt): стадию, начатую на телефоне, на ноутбук не везём — сведение
+// воскрешало бы приключение, уже пройденное на другом устройстве. Чистится вместе с прогрессом.
+export const PUNCTUATION_RUN_KEY = 'jts_punctuation_run'
 // «Грамматика · игры»: звук ответов вкл/выкл ('0' — выключен) — настройка устройства, как громкость; не синкается и
 // при выходе не чистится. Звёзды раздела живут на бэкенде (/mobile/grammar-games/progress), ключа в хранилище нет.
 export const GRAMMAR_GAMES_SOUND_KEY = 'jts_grammar_games_sound'
@@ -127,6 +138,7 @@ export const CARTOONS_PROGRESS_EVENT = 'cartoons-progress'
 export const WORDHUNT_PROGRESS_EVENT = 'wordhunt-progress'
 export const PRONUNCIATION_PROGRESS_EVENT = 'pronunciation-progress'
 export const TENSES_PROGRESS_EVENT = 'tenses-progress'
+export const PUNCTUATION_PROGRESS_EVENT = 'punctuation-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }

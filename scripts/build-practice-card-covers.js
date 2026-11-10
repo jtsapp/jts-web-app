@@ -11,10 +11,11 @@
 //
 // Рисует настоящий браузер: текст и тени иначе не повторить. Итог — 480×296 с альфой, как у экспортов макета.
 //
-// Материалов Prepositions World, Pronunciation World, Tenses World и Cartoon World в репозитории нет (раздел живёт на
-// бэкенде), поэтому выбранные картинки лежат в data/practice-cards/: prep-* и pron-* — из прототипов методиста,
-// tenses-* — постеры видеоуроков прототипа (обрезаны до номера, названия и мини-карты времён), cartoon-* — превью
-// видео каталога с i.ytimg.com, saw/tree — рисунки из src/screens/arcade/ArcadeScene.jsx.
+// Материалов Prepositions World, Pronunciation World, Tenses World, Punctuation World и Cartoon World в репозитории нет
+// (раздел живёт на бэкенде), поэтому выбранные картинки лежат в data/practice-cards/: prep-*, pron-* и punct-* — из
+// прототипов методиста (у Punctuation World строка банка — из фикстуры тестов, это настоящие данные), tenses-* —
+// постеры видеоуроков прототипа (обрезаны до номера, названия и мини-карты времён), cartoon-* — превью видео каталога
+// с i.ytimg.com, saw/tree — рисунки из src/screens/arcade/ArcadeScene.jsx.
 //
 //   node scripts/build-practice-card-covers.js              все обложки
 //   node scripts/build-practice-card-covers.js verbs words  только эти
@@ -149,6 +150,19 @@ function tenses() {
   return fan(photo(poster('past-continuous')), photo(poster('present-simple'), play), photo(poster('future-perfect')))
 }
 
+// Пунктуация — урок и игра: строка банка со знаком на выбор, мир островов с Декстером и гавань приключения.
+function punctuation() {
+  const { BANK, CUE } = json('src/practice/punctuation/__fixtures__/bundle.json')
+  const row = must(BANK.find((r) => r[3] === 'The ferry leaves at six⟨.|stop⟩'), 'punctuation: строка банка')
+  const [, answer, rule] = row[3].match(/⟨([^|⟩]*)\|([^⟩~]*)/)
+  const wrong = must(CUE[rule]?.alt.find((x) => x && x !== answer), `punctuation: неверный знак правила ${rule}`)
+  // видна только левая половина задней карточки — конец строки банка с пропуском, а не вся строка
+  const text = row[3].replace(/⟨[^⟩]*⟩/g, '').split(' ').slice(-2).join(' ')
+  const gap = `<div class="f tx ch"><i class="lbl">Which mark?</i><b>…${text} _</b><span class="opts"><b class="on">${answer}</b><b>${wrong}</b></span></div>`
+  const dex = `<img class="hero" style="height:70%;left:58%" src="${data('punct-dexter.webp')}" alt="">`
+  return fan(gap, photo(data('punct-world.webp'), dex), photo(data('punct-harbour.webp')))
+}
+
 // ---------- Текстовые разделы: настоящие строки своих данных ----------
 
 function reading() {
@@ -275,6 +289,7 @@ const COVERS = {
   speakspin: ['speaking', speakspin],
   topics: ['grammar', topics],
   tenses: ['grammar', tenses],
+  punctuation: ['grammar', punctuation],
   speedReading: ['grammar', speedReading],
   listening: ['grammar', listening],
   words: ['grammar', words],

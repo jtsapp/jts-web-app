@@ -25,7 +25,8 @@ export const SKILLS = [
     key: 'grammarGames',
     sub: 'practice.skillSub.grammarGames',
     groups: [
-      { title: 'practice.group.trainers', cards: ['topics', 'tenses'] },
+      // Tenses World è Punctuation World (10.11.2026)  òðåíàæ¸ðû ðÿäîì ñ òåìàìè, ñíà÷àëà âðåìåíà.
+      { title: 'practice.group.trainers', cards: ['topics', 'tenses', 'punctuation'] },
       {
         title: 'practice.group.games',
         sub: 'practice.group.gamesSub',

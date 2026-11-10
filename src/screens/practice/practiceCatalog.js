@@ -43,6 +43,8 @@ export const CARDS = {
   topics: { nav: 'grammar-games', module: 'grammarGames', chip: 'practice.card.topics.chip' },
   // Tenses World — 12 времён своим экраном: материал с бэкенда, движок прототипа в тени.
   tenses: { nav: 'tenses' },
+  // Punctuation World — 20 страниц пунктуации и приключение; материал с бэкенда, без квоты.
+  punctuation: { nav: 'punctuation' },
   speedReading: { nav: 'speed-reading', badge: 'new' },
   // Грамматика: игры, собранные из других вкладок. «Аркада» больше не зал из двух игр, а две карточки — каждая
   // открывает свою игру; вкладка едет в переходе, чтобы «назад» из игры вернул сюда.
