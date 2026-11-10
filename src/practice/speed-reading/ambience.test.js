@@ -151,8 +151,10 @@ describe('createAmbience', () => {
     amb.route(null)
     expect(intoBus()).toHaveLength(0)
     amb.route(m.bus)
+    const before = intoBus().length
     amb.start('airport') // выключили и включили фон посреди записи — новая сцена сразу в шине
-    expect(intoBus().length).toBeGreaterThanOrEqual(1)
+    // прежняя сцена отключается отложенно (затухание), поэтому новая — плюс одна
+    expect(intoBus()).toHaveLength(before + 1)
     m.setOn(false)
     expect(m.bus.gain.value).toBe(0)
     m.release()

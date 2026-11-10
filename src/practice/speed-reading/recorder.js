@@ -5,8 +5,12 @@
 //
 // ТЗ v1.2 §7: запись, которую ученик слушает и скачивает, — голос вместе с фоном сцены на 45 %, «как настоящее
 // объявление», а распознаётся чистый голос. Поэтому при mixWith пишутся две дорожки: чистый микрофон (WAV на
-// распознавание) и сведённый поток (take() — как есть, webm/opus или mp4/aac). Без mixWith или без сведения
-// take() отдаёт null, и слушается WAV, как до v1.2. Записи по-прежнему никуда не уходят (Д6).
+// распознавание) и сведённый поток (take()). Сведённая тоже переводится в WAV: webm от MediaRecorder в Chrome
+// приходит без длительности, и плеер не перематывал бы его. Вторая дорожка — украшение, поэтому она не может ни
+// задержать основную (её остановку ждём не дольше MIX_STOP_MS), ни подменить её тишиной: сведение идёт через
+// контекст фона, и пока он стоит (iOS оставляет его «interrupted» после микрофона), туда пишутся нули — тогда
+// take() отдаёт null и слушается чистый голос. Без mixWith take() тоже null, как до v1.2. Записи по-прежнему
+// никуда не уходят (Д6).
 //
 // Микрофон открывается по нажатию «Начать запись» (openRecorder), а сама запись — после отсчёта 3-2-1
 // (start), как в прототипе: разрешение браузер спрашивает до отсчёта, а не посреди него. Потолок — 3 минуты:
@@ -16,6 +20,26 @@
 import { blobToWav16kMono } from '../../lib/ielts-audio.js'
 
 export const MAX_RECORD_MS = 180000
+/** Сколько ждать остановки сведённой дорожки: дольше — запись идёт без неё (сбои MediaRecorder на WebAudio-потоке). */
+export const MIX_STOP_MS = 1500
+// Пик ниже ~0,3 % полной шкалы — тишина: так выглядит дорожка, записанная со спящего контекста.
+const SILENT_PEAK = 100
+
+/** Пик 16-битного PCM в WAV (после 44-байтного заголовка blobToWav16kMono); 0 — данных нет. */
+export async function wavPeak(wav) {
+  try {
+    const buf = await wav.arrayBuffer()
+    const v = new DataView(buf)
+    let peak = 0
+    for (let i = 44; i + 1 < buf.byteLength; i += 2) {
+      const x = Math.abs(v.getInt16(i, true))
+      if (x > peak) peak = x
+    }
+    return peak
+  } catch {
+    return 0
+  }
+}
 // ТЗ §7: эхоподавление, шумоподавление и автоусиление. Эхоподавление ещё и вычитает фон сцены из микрофона,
 // если ученик читает без наушников.
 export const MIC_CONSTRAINTS = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }
@@ -50,6 +74,7 @@ export async function openRecorder({
   let mixRec = null
   const mixChunks = []
   let mixDone = null
+  let takeDone = null
   let limit = null
   let released = false
   let stopping = null
@@ -79,14 +104,22 @@ export async function openRecorder({
     if (mixDone) return mixDone
     mixDone = new Promise((resolve) => {
       if (!mixRec || mixRec.state === 'inactive') return resolve(null)
+      let done = false
+      const finish = (v) => {
+        if (done) return
+        done = true
+        timers.clearTimeout(wait)
+        resolve(v)
+      }
+      const wait = timers.setTimeout(() => finish(null), MIX_STOP_MS)
       mixRec.onstop = () => {
         const blob = new Blob(mixChunks, { type: mixChunks[0]?.type || mixRec.mimeType || 'audio/webm' })
-        resolve(blob.size ? blob : null)
+        finish(blob.size ? blob : null)
       }
       try {
         mixRec.stop()
       } catch {
-        resolve(null)
+        finish(null)
       }
     })
     return mixDone
@@ -155,9 +188,26 @@ export async function openRecorder({
       })
       return stopping
     },
-    /** Запись «голос + фон» после stop(); null — сведения не было или оно не записалось. */
+    /**
+     * Запись «голос + фон» WAV-ом после stop(); null — сведения не было, оно не записалось или записалось тишиной
+     * при живом голосе (контекст фона спал).
+     */
     take() {
-      return mixDone || Promise.resolve(null)
+      if (takeDone) return takeDone
+      if (!stopping || !mixDone) return Promise.resolve(null)
+      takeDone = Promise.all([stopping, mixDone]).then(async ([clean, mixed]) => {
+        if (!mixed) return null
+        let wav
+        try {
+          wav = await toWav(mixed)
+        } catch {
+          return null
+        }
+        if (!wav) return null
+        if (clean && (await wavPeak(wav)) < SILENT_PEAK && (await wavPeak(clean)) >= SILENT_PEAK) return null
+        return wav
+      })
+      return takeDone
     },
     cancel() {
       if (mixRec && mixRec.state !== 'inactive') {

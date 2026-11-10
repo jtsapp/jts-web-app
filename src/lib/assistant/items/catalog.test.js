@@ -169,6 +169,9 @@ describe('каталог для Луны', () => {
     expect(b1.text).not.toContain('a1-t0')
     const a0 = await buildItemCatalog({ kinds: ['speedread'], level: 'A0', token: 't', deps: fakeDeps({ backend }) })
     expect(a0.text).toContain('speedread.a1-t0')
+    // уровня ученика среди текстов нет — не пусто, а общий список под потолком
+    const none = await buildItemCatalog({ kinds: ['speedread'], level: 'X9', token: 't', deps: fakeDeps({ backend }) })
+    expect([...none.items.keys()].filter((k) => k.startsWith('speedread.')).length).toBeGreaterThan(0)
   })
 
   it('письмо по шагам и уроки воркбука уровня', async () => {

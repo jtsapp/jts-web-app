@@ -156,7 +156,7 @@ describe('стартовый экран', () => {
     click('.srlv button[data-arg="B1"]')
     expect($('.srtexts button.on').dataset.arg).toBe('d') // airport и на B1
     expect($$('.srcat button').map((b) => b.dataset.arg)).toEqual(['travel', 'city', 'other'])
-    expect(text()).toContain('· 4 жанров на уровне')
+    expect(text()).toContain('· 4 жанра на уровне') // жанры, а не тексты; f без жанра — свой
     click('.srcat button[data-arg="city"]')
     // shop — первый жанр «Города», cafe — третий: порядок справочника, а не сервера.
     expect($$('.srtexts button').map((b) => b.dataset.arg)).toEqual(['e', 'c'])
@@ -167,7 +167,9 @@ describe('стартовый экран', () => {
     expect($('.srtexts button.on').dataset.arg).toBe('a') // у «Других» жанра нет — первая ситуация уровня
   })
 
-  it('уровень ученика — вкладка по умолчанию; A0 открывает A1, неизвестный — первый уровень', () => {
+  it('уровень ученика — вкладка по умолчанию; A0 открывает A1, C2 — C1, своих текстов нет — первый уровень', () => {
+    const c1 = { id: 'g', level: 'C1', icon: '🎓', genre: 'graduation', category: 'work', sound: 'hall', title: { ru: 'Выпускная речь', kk: 'Сөз', en: 'Speech' }, body: 'Dear graduates', words: 2, sample: null }
+    const a0 = { ...c1, id: 'z', level: 'A0', title: { ru: 'Привет', kk: 'Сәлем', en: 'Hi' } }
     mount({ initialLevel: 'B1' })
     expect($('.srlv button.on').dataset.arg).toBe('B1')
     expect($('.srtexts button.on').dataset.arg).toBe('d')
@@ -175,8 +177,30 @@ describe('стартовый экран', () => {
     mount({ initialLevel: 'A0' })
     expect($('.srlv button.on').dataset.arg).toBe('A1')
     api.destroy()
+    mount({ initialLevel: 'C2', texts: [...TEXTS(), c1] })
+    expect($('.srlv button.on').dataset.arg).toBe('C1')
+    api.destroy()
     mount({ initialLevel: 'C2' })
-    expect($('.srlv button.on').dataset.arg).toBe('A1')
+    expect($('.srlv button.on').dataset.arg).toBe('A1') // ни C2, ни C1 — первый уровень
+    api.destroy()
+    // у уровня ученика есть свои тексты — своя вкладка, а не соседняя
+    mount({ initialLevel: 'A0', texts: [...TEXTS(), a0] })
+    expect($$('.srlv button').map((b) => b.dataset.arg)).toEqual(['A0', 'A1', 'B1'])
+    expect($('.srlv button.on').dataset.arg).toBe('A0')
+  })
+
+  it('ползунок под пальцем — фоновые перерисовки ждут, пока его отпустят', async () => {
+    let done
+    mount({ ensureSample: vi.fn(() => new Promise((r) => (done = r))) })
+    click('.srtexts button[data-arg="b"]')
+    const slider = $('input[data-act="slide"]')
+    slider.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    done({ status: 'ready', sample: { url: 'https://f/b.mp3', words: [['Good', 0, 0.3]], wpm: 150 } })
+    await flush()
+    expect($('input[data-act="slide"]')).toBe(slider) // образец доехал, но экран не перерисован
+    document.dispatchEvent(new Event('pointerup'))
+    expect($('input[data-act="slide"]')).not.toBe(slider)
+    expect($('[data-act="listen"]').disabled).toBe(false)
   })
 
   it('ползунок: подписи на ходу без перерисовки, отпустил — 0,1x и пересчёт', () => {
@@ -267,9 +291,13 @@ describe('образец', () => {
     expect(env.cfg.playSample).not.toHaveBeenCalled()
     vi.advanceTimersByTime(1)
     expect(env.cfg.playSample).toHaveBeenCalledWith('https://f/a.mp3', 1, expect.any(Object))
+    env.handlers.onTime(1.6)
+    expect($('#srl3').classList.contains('on')).toBe(true)
     click('.srspd button[data-arg="2"]')
     expect(env.cfg.stopSample).not.toHaveBeenCalled()
-    expect($('#srlist')).not.toBeNull()
+    // список перерисован — подсветка возвращается следующим кадром звука, а не следующим словом
+    env.handlers.onTime(1.7)
+    expect($('#srl3').classList.contains('on')).toBe(true)
     env.handlers.onEnd('ended')
     expect(env.amb.stop).toHaveBeenLastCalledWith(1.2)
   })
@@ -353,11 +381,16 @@ describe('запись и итог', () => {
     click('[data-act="bgToggle"]')
     expect($('#teletext')).toBe(tele)
     expect(amb.mix.setOn).toHaveBeenLastCalledWith(false)
-    expect(amb.stop).toHaveBeenCalled()
+    expect(amb.stop).toHaveBeenLastCalledWith(0.3)
     click('[data-act="bgToggle"]')
     expect(amb.mix.setOn).toHaveBeenLastCalledWith(true)
+    expect(amb.start).toHaveBeenCalledTimes(2)
+    expect(amb.start).toHaveBeenLastCalledWith('airport')
     vi.advanceTimersByTime(3000)
+    const routedBeforeStop = amb.route.mock.calls.length
     click('[data-act="stop"]')
+    // шина ещё подключена: хвост записи дописывается вместе с затухающим фоном
+    expect(amb.route.mock.calls.length).toBe(routedBeforeStop)
     await flush()
     await flush()
     expect(amb.route).toHaveBeenLastCalledWith(null)
@@ -366,6 +399,28 @@ describe('запись и итог', () => {
     expect($('a[download]').getAttribute('download')).toMatch(/^speed-a-\d{4}-\d{2}-\d{2}\.webm$/)
     expect(text()).toContain('В записи твой голос и фон ситуации')
     expect(env.cfg.submitAttempt.mock.calls[0][0].speed).toBe(1.5)
+  })
+
+  it('текст без сцены (v1.1 до переимпорта) — одна дорожка, без подписи про фон', async () => {
+    const amb = fakeAmbience({ cue: 1.5 })
+    mount({ ambience: amb, initialLevel: 'B1' })
+    click('.srcat button[data-arg="other"]')
+    expect($('.srbg')).toBeNull()
+    await record()
+    expect(env.cfg.openRecorder.mock.calls[0][0].mixWith).toBeNull()
+    expect(amb.start).not.toHaveBeenCalled()
+    expect(text()).not.toContain('фон ситуации')
+  })
+
+  it('демо: выключенный фон включается обратно', async () => {
+    const amb = fakeAmbience({ cue: 0 })
+    mount({ ambience: amb })
+    click('[data-act="demo"]')
+    await flush()
+    expect(amb.start).toHaveBeenCalledTimes(1)
+    click('[data-act="bgToggle"]')
+    click('[data-act="bgToggle"]')
+    expect(amb.start).toHaveBeenCalledTimes(2)
   })
 
   it('скорость с ползунка уходит на бэкенд как есть (1,3x), а не ближайшей кнопкой', async () => {
@@ -383,8 +438,12 @@ describe('запись и итог', () => {
     click('[data-act="bgPreview"]')
     expect(env.amb.start).toHaveBeenCalledWith('airport', expect.objectContaining({ preview: 7 }))
     expect($('[data-act="bgPreview"]').textContent).toContain('Стоп')
-    env.amb.now.onPreviewEnd()
+    const vol0 = $('input[data-act="vol"]')
     env.amb.now = null
+    env.amb.start.mock.calls[0][1].onPreviewEnd()
+    // конец «послушать» — только кнопка: ползунок громкости тот же элемент
+    expect($('[data-act="bgPreview"]').textContent).toContain('Послушать фон')
+    expect($('input[data-act="vol"]')).toBe(vol0)
     const vol = $('input[data-act="vol"]')
     vol.value = '80'
     vol.dispatchEvent(new Event('input', { bubbles: true }))

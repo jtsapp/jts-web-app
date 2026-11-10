@@ -138,6 +138,11 @@ export function mountSpeedReading(root, cfg) {
     root.append(d)
     later(() => d.remove(), 1800)
   }
+  const ruPlural = (n, one, few, many) => {
+    const d = n % 10
+    const dd = n % 100
+    return d === 1 && dd !== 11 ? one : d >= 2 && d <= 4 && (dd < 12 || dd > 14) ? few : many
+  }
   // «+4 монеты», «+5 монет», «+1 монета»: число монет задаёт админка, склонение нужно любое.
   function coinWord(n) {
     if (lang === 'kk') return 'тиын'
@@ -174,8 +179,8 @@ export function mountSpeedReading(root, cfg) {
   const startText = () => {
     if (byId.has(initialText)) return byId.get(initialText)
     const lv = String(initialLevel || '').toUpperCase()
-    // A0 → вкладка A1, C2 → C1: уровни Скорочтения уже, чем уровни ученика.
-    const near = lv === 'A0' ? 'A1' : lv === 'C2' ? 'C1' : lv
+    // A0 → вкладка A1, C2 → C1: уровни Скорочтения уже, чем уровни ученика (если своих текстов у уровня нет).
+    const near = LEVELS.includes(lv) ? lv : lv === 'A0' ? 'A1' : lv === 'C2' ? 'C1' : lv
     return firstOf(LEVELS.includes(near) ? near : LEVELS[0]) || texts[0] || null
   }
   const first = startText()
@@ -289,19 +294,25 @@ export function mountSpeedReading(root, cfg) {
       stopSample()
     }
     amb.wake()
-    amb.start(tx?.sound, { preview: 7, onPreviewEnd: () => SR.step === 'start' && render() })
+    // Конец «послушать» меняет только кнопку: полная перерисовка оборвала бы ползунок громкости, который ученик тянет.
+    amb.start(tx?.sound, { preview: 7, onPreviewEnd: () => SR.step === 'start' && previewButton() })
     render()
+  }
+  function previewButton() {
+    const b = $('srbgprev')
+    const on = !!amb.playing()?.preview
+    if (b) b.innerHTML = `${icon(on ? 'stop' : 'play_arrow')}${on ? X('Стоп', 'Тоқта', 'Stop') : X('Послушать фон', 'Фонды тыңдау', 'Preview')}`
   }
   function srBgToggle() {
     SR.bg = !SR.bg
     const tx = SR.step === 'rec' ? SR.cur : srText()
     if (!SR.bg) amb.stop(0.3)
-    else if ((SR.step === 'rec' && SRX && !SRX.demo) || SRL) {
+    else if ((SR.step === 'rec' && SRX) || SRL) {
       amb.wake()
       amb.start(tx?.sound)
     }
     SRX?.mixer?.setOn(SR.bg)
-    if (SRX && SR.bg && SR.t0) SRX.bgUsed = true
+    if (SRX && SR.bg && SR.t0 && sceneTx(SR.cur)) SRX.bgUsed = true
     // Посреди записи — только значок: бегущая строка измерена под текущую разметку.
     if (SR.step === 'rec') {
       const b = $('srbgbtn')
@@ -315,7 +326,7 @@ export function mountSpeedReading(root, cfg) {
     if (!sc) return ''
     const on = !!amb.playing()?.preview
     return `<div class="srbg ${SR.bg ? '' : 'off'}"><span class="sbic">${esc(sc.ic)}</span><div class="sbt"><b>${X('Фон', 'Фон', 'Background')}: ${esc(X(...sc.n))}</b><span>${SR.bg ? X('Звучит во время записи и образца — как в настоящей ситуации', 'Жазба мен үлгі кезінде естіледі — нақты жағдайдағыдай', 'Plays while you record and in the model — like the real place') : X('Фон выключен', 'Фон өшірулі', 'Background is off')}</span></div>
- <div class="sbc"><button class="cbtn sm line" data-act="bgPreview">${icon(on ? 'stop' : 'play_arrow')}${on ? X('Стоп', 'Тоқта', 'Stop') : X('Послушать фон', 'Фонды тыңдау', 'Preview')}</button>
+ <div class="sbc"><button class="cbtn sm line" id="srbgprev" data-act="bgPreview">${icon(on ? 'stop' : 'play_arrow')}${on ? X('Стоп', 'Тоқта', 'Stop') : X('Послушать фон', 'Фонды тыңдау', 'Preview')}</button>
  <button class="cbtn sm ${SR.bg ? '' : 'line'}" data-act="bgToggle" aria-pressed="${SR.bg}">${SR.bg ? X('Вкл', 'Қосулы', 'On') : X('Выкл', 'Өшірулі', 'Off')}</button>
  <label class="srvol" title="${X('Громкость фона', 'Фон дыбысы', 'Background volume')}">${icon('volume_down')}<input type="range" min="0" max="100" step="5" value="${amb.volume}" data-act="vol" aria-label="${X('Громкость фона', 'Фон дыбысы', 'Background volume')}"></label></div></div>`
   }
@@ -440,8 +451,9 @@ export function mountSpeedReading(root, cfg) {
     if (tx.level !== SR.lv) SR.lv = tx.level
     SR.cat = categoryOf(tx)
     const list = listOf(SR.lv, SR.cat)
-    const lvN = ofLevel(SR.lv).length
-    const genreWord = X('жанров на уровне', 'жанр деңгейде', 'genres in this level')
+    // Жанров, а не текстов: текст без жанра (v1.1 до переимпорта) считается своим жанром.
+    const lvN = new Set(ofLevel(SR.lv).map((t) => t.genre || `#${t.id}`)).size
+    const genreWord = X(`${ruPlural(lvN, 'жанр', 'жанра', 'жанров')} на уровне`, 'жанр деңгейде', `${lvN === 1 ? 'genre' : 'genres'} in this level`)
     return `<div class="srstart"><div class="srava"><img src="${esc(img('dexter'))}" alt=""></div><h2>${X('Скорочтение', 'Жылдам оқу', 'Speed reading')} <span class="cpill st-new" style="vertical-align:middle">new</span></h2>
  <p class="muted">${X('Выбери ситуацию, включи диктофон и читай вслух текст, который бежит снизу вверх, — под звуки аэропорта, стадиона или радиостудии. Потом послушай свою запись и посмотри, сколько слов получилось.', 'Жағдайды таңда, диктофонды қосып, төменнен жоғары жылжитын мәтінді дауыстап оқы — әуежай, стадион не радиостудия дыбыстарымен. Содан кейін жазбаңды тыңдап, қанша сөз шыққанын көр.', 'Pick a situation, turn on the recorder and read aloud the text that scrolls up — with the sounds of an airport, a stadium or a radio studio. Then listen to yourself and see how many words you got.')}</p>
  <div class="srnote">🎧 ${X('Лучше читать в наушниках: так фон не мешает распознаванию речи', 'Құлаққаппен оқыған дұрыс: сонда фон сөйлеуді тануға кедергі келтірмейді', 'Headphones work best: the background won’t confuse speech recognition')}</div>
@@ -532,7 +544,8 @@ export function mountSpeedReading(root, cfg) {
         if (SRX?.rec === rec) SRX.mixer = m
         return m
       }
-      const rec = await openRecorder({ onLimit: () => SRX?.rec === rec && srStop(), mixWith })
+      // Текст без сцены (v1.1 до переимпорта) пишется одной дорожкой, как до v1.2.
+      const rec = await openRecorder({ onLimit: () => SRX?.rec === rec && srStop(), mixWith: sceneTx(tx) ? mixWith : null })
       go({ rec })
     } catch (e) {
       if (dead || my !== waitSeq || SR.step !== 'count') return
@@ -589,7 +602,7 @@ export function mountSpeedReading(root, cfg) {
 
   function srRecord(x) {
     SR.t0 = performance.now()
-    x.bgUsed = SR.bg
+    x.bgUsed = SR.bg && !!sceneTx(SR.cur)
     beep('ok')
     if (x.demo) {
       SR.asr = true
@@ -666,9 +679,10 @@ export function mountSpeedReading(root, cfg) {
     if (x.raf) cancelAnimationFrame(x.raf)
     x.raf = null
     x.live?.stop()
-    // Фон гаснет вместе с записью; шина записи отпускается — дальше сцена (образец, «послушать») идёт только в уши.
-    amb.route(null)
+    // Фон гаснет вместе с записью (затухает секунду — запись дописывает хвост с ним); шину записи отпускаем, когда
+    // рекордеры остановлены (srFinish), а при отмене — сразу.
     amb.stop(silent ? 0.2 : 1)
+    if (silent || !SR.t0) amb.route(null)
     // Стоп во время отсчёта: записи ещё нет — просто обратно к выбору.
     if (silent || !SR.t0) {
       SRX = null
@@ -704,6 +718,7 @@ export function mountSpeedReading(root, cfg) {
       SR.step = 'scoring'
       render()
       wav = await x.rec.stop().catch(() => null)
+      amb.route(null)
       // Слушается и скачивается «голос + фон», распознаётся чистый голос (WAV).
       take = (await Promise.resolve(x.rec.take?.()).catch(() => null)) || null
       if (dead || SRX !== x) return
@@ -771,7 +786,7 @@ export function mountSpeedReading(root, cfg) {
     return `✓ ${X('Попытка сохранена', 'Әрекет сақталды', 'Try saved')}`
   }
 
-  // Расширение файла записи по её типу: сведённая дорожка — как пишет браузер (webm/opus, в Safari — mp4/aac).
+  // Расширение файла по типу записи: обычно WAV (recorder.js переводит в него и сведённую дорожку), прочее — на случай подмены.
   const extOf = (b) => {
     const t = String(b?.type || '')
     return /wav/.test(t) ? 'wav' : /mp4|aac|m4a/.test(t) ? 'm4a' : /ogg/.test(t) ? 'ogg' : 'webm'
@@ -820,6 +835,14 @@ export function mountSpeedReading(root, cfg) {
   }
   function render() {
     if (dead) return
+    // Пока ученик тянет ползунок, стартовый экран не перерисовываем — перерисуем, когда отпустит.
+    if (SR.step === 'start' && dragging) {
+      renderLater = true
+      return
+    }
+    renderLater = false
+    // Список образца рисуется заново — подсветку и прокрутку вернёт следующий кадр звука.
+    if (SRL) SRL.k = -1
     root.innerHTML = view()
   }
 
@@ -847,6 +870,22 @@ export function mountSpeedReading(root, cfg) {
       scrollTop()
     },
   }
+  let dragging = false
+  let renderLater = false
+  root.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (e.target?.matches?.('input[type="range"]')) dragging = true
+    },
+    { signal: ac.signal },
+  )
+  const dragEnd = () => {
+    if (!dragging) return
+    dragging = false
+    if (renderLater) render()
+  }
+  root.ownerDocument.addEventListener('pointerup', dragEnd, { signal: ac.signal })
+  root.ownerDocument.addEventListener('pointercancel', dragEnd, { signal: ac.signal })
   // Ползунки (скорость, громкость фона) — по input, отпущенная скорость — по change: полная перерисовка.
   root.addEventListener(
     'input',

@@ -13,7 +13,7 @@ import { mockGates } from './helpers/login.js'
 //
 // v1.2: тексты на разных уровнях (вкладки A1/B1), у каждого — фоновая сцена; её сигнал звучит до отсчёта и до
 // образца (настоящий Web Audio, без звука в headless), поэтому ожидания отсчёта длиннее. Запись, которую ученик
-// слушает и скачивает, — «голос + фон» (webm), а на распознавание по-прежнему уходит WAV чистого голоса.
+// слушает и скачивает, — «голос + фон» (тоже WAV), а на распознавание по-прежнему уходит WAV чистого голоса.
 
 const TONE_FILE = path.join(os.tmpdir(), 'jts-e2e-speed-tone.wav')
 fs.writeFileSync(TONE_FILE, toneWav(16000 * 8, 16000))
@@ -152,8 +152,8 @@ test('Практика → Чтение → Скорочтение: образе
   expect(body).toMatchObject({ textId: 'flight', speed: 2, wordsTotal: 20, wordsRead: 15, percent: 75, stars: 2, scoredBy: 'server' })
   expect(body.durationSec).toBeGreaterThanOrEqual(1)
   await expect(h.locator('audio').first()).toHaveAttribute('src', /^blob:/)
-  // слушается и скачивается «голос + фон» — запись браузера (webm), а не WAV распознавания
-  await expect(h.locator('a[download]')).toHaveAttribute('download', /^speed-flight-\d{4}-\d{2}-\d{2}\.webm$/)
+  // слушается и скачивается «голос + фон»; сведённая дорожка тоже переводится в WAV: webm из Chrome не перематывается
+  await expect(h.locator('a[download]')).toHaveAttribute('download', /^speed-flight-\d{4}-\d{2}-\d{2}\.wav$/)
   await expect(h.locator('.card').first()).toContainText('В записи твой голос и фон ситуации')
 
   // «Мои попытки»: своя — с плеером, с сервера — без

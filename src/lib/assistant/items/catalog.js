@@ -289,8 +289,10 @@ async function speedreadItems(level, { token, deps, lang = 'ru' }) {
     (t) => t?.id != null && /^[A-Za-z0-9_-]{1,48}$/.test(String(t.id)) && strip(titleIn(t.title)),
   )
   const raw = String(level || '').toUpperCase()
-  const L = raw === 'A0' ? 'A1' : raw === 'C2' ? 'C1' : raw
-  const pool = all.length > MAX_LINES && L ? all.filter((t) => String(t.level).toUpperCase() === L) : all
+  const at = (lv) => all.filter((t) => String(t.level).toUpperCase() === lv)
+  const own = at(raw).length ? at(raw) : at(raw === 'A0' ? 'A1' : raw === 'C2' ? 'C1' : raw)
+  // Уровня ученика среди текстов нет — пусть лучше обрежется общим потолком, чем Луна останется без Скорочтения.
+  const pool = all.length > MAX_LINES && own.length ? own : all
   return pool.map((t) => item(`speedread.${t.id}`, 'speedread', quote(titleIn(t.title)), t.level ? ` (${String(t.level).toUpperCase()})` : '', { name: titleIn(t.title, lang) }))
 }
 
