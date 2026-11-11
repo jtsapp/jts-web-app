@@ -8,6 +8,7 @@ import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import { readSituationsDone } from '../practice/situations/situationsProgress.js'
 import { loadLevel as loadSituationsLevel } from '../practice/situations/situationsData.js'
 import { readDoneItems } from '../practice/situations/itemsProgress.js'
+import { isStaticMirror, pickSituationsLevel } from '../practice/situations/backendMirrors.js'
 import { pickLang } from './situations/SituationsCatalog.jsx'
 import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
 import { readWorkbooksDone } from '../practice/workbooks/workbooksProgress.js'
@@ -61,7 +62,7 @@ import {
   visibleComics,
 } from '../practice/comics/comicsData.js'
 import { loadKaraokeIndex, trackProgress as karaokeProgress } from '../practice/karaoke/karaokeData.js'
-import { PRACTICE_LEVELS, matchesLevel, nearestLevelCode, cefrOf } from '../practice/practiceLevel.js'
+import { PRACTICE_LEVELS, matchesLevel, cefrOf } from '../practice/practiceLevel.js'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import { canOpenSeen, markSeen } from '../practice/overlaySeen.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
@@ -593,8 +594,9 @@ export default function PracticePage({
   // одной карточкой уровня. Данные — тот же JSON уровня, что читает экран
   // раздела, и тот же кэш вкладки (situationsData.js): после Практики он
   // открывается уже без загрузки. Тянем, только когда открыт список: в обзоре у «Ситуаций» одна карточка.
-  // У C2 своей программы нет — берём ближайший уровень, как грамматика.
-  const situLevel = nearestLevelCode(level, SITUATION_CODES)
+  // У C2 своей программы нет — берём ближайший уровень, как грамматика. На
+  // «Все» — первый уровень, который админ ученику не закрыл (backendMirrors.js).
+  const situLevel = pickSituationsLevel(level, SITUATION_CODES, levelLocked)
   const [situ, setSitu] = useState({ level: null, items: [] })
   const wantSitu = expanded === 'situations'
   useEffect(() => {
@@ -612,7 +614,11 @@ export default function PracticePage({
   // Пройденное меняется только на экране раздела, а возврат оттуда
   // перемонтирует Практику — перечитывать по уровню достаточно.
   const situDone = useMemo(() => new Set(situLevel ? readDoneItems(situLevel) : []), [situLevel])
-  const levelSituativki = situativkiAll.filter((s) => !s.locked && (level == null || cefrOf(s.level) === level))
+  // Зеркала сценариев статики своей карточки не получают: они только источник
+  // замка уровня (levelLocked), а сам сценарий — карточка статики выше.
+  const levelSituativki = situativkiAll.filter(
+    (s) => !s.locked && !isStaticMirror(s) && (level == null || cefrOf(s.level) === level),
+  )
 
   // Онбординг-тур: сам выходит при первом заходе, дальше — по кнопке «?» в
   // углу (с редизайна 29.10.2026 угол виден и на десктопе: переключатель уровня
