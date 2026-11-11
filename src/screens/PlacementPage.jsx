@@ -5,6 +5,7 @@ import { useI18n } from '../i18n.jsx'
 import { installBridge } from '../placement/bridge.js'
 import SpeakingTask from '../placement/SpeakingTask.jsx'
 import MicNotice from '../placement/MicNotice.jsx'
+import { clearFinishedAttempt, storageNs } from '../placement/freshAttempt.js'
 
 // Тест уровня v16 (спека 2026-10-14-placement-v16-first-login-design.md): тест методиста встроен как есть — страница
 // public/placement/v16/index.html в iframe с того же адреса, — а своё приложение подключает его крючками (bridge.js).
@@ -13,15 +14,16 @@ import MicNotice from '../placement/MicNotice.jsx'
 // Прогон v16 хранит в localStorage сам и по пространству профиля (ns): вернувшись на экран (или после F5), ученик
 // продолжает с того же места, а другой ученик на том же устройстве начинает свой.
 
-function storageNs(profileId) {
-  return String(profileId || 'guest').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64)
-}
-
-export default function PlacementPage({ token, profileId, onExit, onResult, onContinue, onActivity, onSection }) {
+// `fresh` — пересдача: законченный прогон убираем до загрузки iframe (freshAttempt.js), незаконченный продолжается.
+export default function PlacementPage({ token, profileId, fresh = false, onExit, onResult, onContinue, onActivity, onSection }) {
   const { t, lang } = useI18n()
   // Адрес считаем один раз: смена языка приложения посреди теста не должна перезагружать iframe — у теста свой
   // переключатель, и выбор там запоминается.
-  const [src] = useState(() => `/placement/v16/index.html?lang=${encodeURIComponent(lang)}&ns=${storageNs(profileId)}`)
+  const [src] = useState(() => {
+    const ns = storageNs(profileId)
+    if (fresh) clearFinishedAttempt(ns)
+    return `/placement/v16/index.html?lang=${encodeURIComponent(lang)}&ns=${ns}`
+  })
   const frame = useRef(null)
   const [speaking, setSpeaking] = useState(null) // { args, resolve, reject }
   // Крючки ставятся в окно iframe один раз на загрузку, а пропсы меняются с каждым рендером App — мост зовёт их через

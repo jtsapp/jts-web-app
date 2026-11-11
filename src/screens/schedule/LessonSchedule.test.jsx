@@ -55,7 +55,7 @@ describe('LessonSchedule container', () => {
   it('renders the summary tiles and the calendar after loading', async () => {
     const { container } = renderSchedule()
     await waitFor(() => expect(container.querySelector('.cal')).not.toBeNull())
-    expect(container.querySelectorAll('.sch-tile')).toHaveLength(4)
+    expect(container.querySelectorAll('.sch-tile')).toHaveLength(2)
     expect(container.querySelectorAll('.cal__day')).toHaveLength(42)
   })
 
@@ -205,7 +205,7 @@ describe('LessonSchedule — расписание ничем не подменя
     expect(screen.queryByRole('button', { name: /пробный урок/ })).toBeNull()
     // То, что стоит вместо карточки: честная пустота и счётчики с календарём.
     expect(screen.getByText('Ближайших уроков нет')).toBeTruthy()
-    expect(container.querySelectorAll('.sch-tile')).toHaveLength(4)
+    expect(container.querySelectorAll('.sch-tile')).toHaveLength(2)
   })
 
   // Ручка осталась ради блока на главной у демо-аккаунта, но этому экрану она

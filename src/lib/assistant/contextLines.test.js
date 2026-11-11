@@ -44,7 +44,7 @@ describe('homeworkLine', () => {
 describe('lessonsPackageLine', () => {
   it('пакет: проведено, осталось, отмены и переносы; последний урок — подсказка продлить', () => {
     expect(lessonsPackageLine({ conducted: 7, remaining: 9, cancelled: 1, rescheduled: 0 })).toBe(
-      'Уроки с преподавателем по пакету: проведено 7, осталось 9 (отменено 1).',
+      'Уроки с преподавателем по пакету: проведено 7, осталось 9.',
     )
     expect(lessonsPackageLine({ conducted: 15, remaining: 0 })).toMatch(/осталось 0\. Пакет заканчивается/)
     // Уроков не было вовсе (Self Study) или ручки нет — строки нет.

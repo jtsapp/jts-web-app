@@ -37,6 +37,16 @@ describe('transcribeTake', () => {
     expect(await transcribeTake(take())).toBe('I woke up')
   })
 
+  // Обратная связь 11.11: распознавание пения теряло слова — текст песни идёт подсказкой.
+  it('текст песни уходит полем hint вместе с записью', async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ text: 'la la' }) }))
+    vi.stubGlobal('fetch', fetchMock)
+    await transcribeTake(take(), { hint: 'I woke up\nin the morning' })
+    const form = fetchMock.mock.calls[0][1].body
+    expect(form.get('hint')).toBe('I woke up\nin the morning')
+    expect(form.get('audio')).toBeTruthy()
+  })
+
   it('сервер молчит — через минуту null (слова не оцениваются), запрос закрыт', async () => {
     vi.useFakeTimers()
     const seen = hangingFetch()

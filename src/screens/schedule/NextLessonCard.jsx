@@ -2,6 +2,7 @@ import { useI18n } from '../../i18n.jsx'
 import { ChevronRightIcon } from '../../components/icons.jsx'
 import { isLessonLive, canOpenLesson, dayLabelKey, lessonTimeRange, parseLessonDate } from './lessonFormat.js'
 import MeetLink from './MeetLink.jsx'
+import MovedNote from './MovedNote.jsx'
 
 // Инициалы вместо фото: фотографии преподавателя бэкенд в расписании не отдаёт,
 // а безликая серая заглушка на месте человека выглядит поломкой.
@@ -76,6 +77,7 @@ export default function NextLessonCard({ occ, topic, card, onOpenLesson }) {
             {topic && <span className="lesson-card__when">{when}</span>}
             <MeetLink url={meetingUrl} />
           </div>
+          <MovedNote occ={occ} />
         </div>
 
         {/* Вход открыт и до начала урока: ученик заходит и делает задания, не

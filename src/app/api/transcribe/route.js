@@ -8,6 +8,7 @@
 
 import { transcribeWav, transcribeWavFast } from '@/lib/ielts/azure-pronunciation.js'
 import { transcribeWavSoniox, isSonioxConfigured } from '@/lib/soniox-stt.js'
+import { singingContext, sttHint } from '@/lib/sttHint.js'
 
 export const runtime = 'nodejs'
 // maxDuration тут больше нет: это понятие Vercel, а мы под `next start` в
@@ -78,6 +79,9 @@ export async function POST(request) {
     return Response.json({ error: `Unsupported content type: ${mimeType}` }, { status: 415 })
   }
 
+  // Необязательное поле `hint` — ожидаемый текст (караоке шлёт строки песни, sttHint.js).
+  const hint = sttHint(form.get('hint'))
+
   try {
     const buf = Buffer.from(await file.arrayBuffer())
     let text
@@ -85,9 +89,10 @@ export async function POST(request) {
       // Fast Transcription отдаёт длинный ответ целиком за секунды, но живёт
       // не во всех регионах (centralus — нет, eastus — да). Пробуем её, а на
       // null уходим в потоковый SDK: он медленнее, зато работает везде.
-      text = (await transcribeWavFast(buf)) ?? (await transcribeWav(buf))
+      const phrases = hint?.phrases ?? null
+      text = (await transcribeWavFast(buf, { phrases })) ?? (await transcribeWav(buf, { phrases }))
     } else {
-      text = await transcribeWavSoniox(buf)
+      text = await transcribeWavSoniox(buf, hint ? { context: singingContext(hint) } : {})
     }
     return Response.json({ text })
   } catch (e) {

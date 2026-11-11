@@ -290,7 +290,9 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
     if (run !== runRef.current) return
     const ctrl = new AbortController()
     transcribeRef.current = ctrl
-    const text = await transcribeTake(blob, { signal: ctrl.signal })
+    // Подсказка распознаванию — ровно то, что пели: строка повтора или вся песня.
+    const hint = (range ? [range.line] : lines).map((l) => l.text).join('\n')
+    const text = await transcribeTake(blob, { signal: ctrl.signal, hint })
     if (transcribeRef.current === ctrl) transcribeRef.current = null
     if (run !== runRef.current) return
     if (range) {

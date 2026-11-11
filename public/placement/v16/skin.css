@@ -2565,6 +2565,19 @@ html[lang='kk'] #app .progress-mini::before {
   -webkit-mask: url(skin/ico/my_location.svg) center / contain no-repeat;
   mask: url(skin/ico/my_location.svg) center / contain no-repeat;
 }
+/* «Пройти заново» на итоге у автора — серый текст 11–12 px: ученица его не находила (обратная связь 11.11). Тот же вид,
+   что у соседней «Перепроверить разделы». */
+#app .result-actions #restart {
+  height: 48px;
+  padding: 0 24px;
+  border: 2px solid var(--jts-ac);
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--jts-ac);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+}
 #app .pr-text-button {
   align-self: flex-start;
   border: 0;

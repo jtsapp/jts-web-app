@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   parseLessonDate, isLessonLive, canOpenLesson, lessonStateKey, dayKey,
   buildMonthMatrix, occurrencesByDayKey, monthShift, dateFromKey,
-  lessonTimeRange, lessonTopicFromSections,
+  lessonTimeRange, lessonTopicFromSections, lessonMove,
 } from './lessonFormat.js'
 
 describe('lessonFormat', () => {
@@ -188,5 +188,22 @@ describe('lessonTopicFromSections', () => {
     expect(lessonTopicFromSections([sections([]), sections([{ title: '  ' }])])).toBeNull()
     expect(lessonTopicFromSections([])).toBeNull()
     expect(lessonTopicFromSections(null)).toBeNull()
+  })
+})
+
+describe('lessonMove — куда перенесён урок (обратная связь 11.11)', () => {
+  it('у переехавшего урока — прежнее время, у исходного — новое', () => {
+    const from = lessonMove({ movedFrom: '2026-11-12T18:00:00' }, 'ru')
+    expect(from.key).toBe('schedule.movedFrom')
+    expect(from.when).toContain('12')
+    expect(from.when).toContain('18:00')
+    expect(lessonMove({ movedTo: '2026-11-14T19:30:00' }, 'ru')).toMatchObject({ key: 'schedule.movedTo' })
+    expect(lessonMove({ movedTo: '2026-11-14T19:30:00' }, 'ru').when).toContain('19:30')
+  })
+
+  it('не переносили или время битое — подписи нет', () => {
+    expect(lessonMove({}, 'ru')).toBeNull()
+    expect(lessonMove({ movedFrom: null, movedTo: null }, 'ru')).toBeNull()
+    expect(lessonMove({ movedFrom: 'вчера' }, 'ru')).toBeNull()
   })
 })

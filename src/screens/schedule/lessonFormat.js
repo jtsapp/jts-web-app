@@ -81,6 +81,17 @@ export function lessonStateKey(occ, now = new Date()) {
   }
 }
 
+// Перенос урока для подписи в расписании: прежнее время у переехавшего урока
+// (movedFrom), новое — у исходного, оставшегося на месте (movedTo).
+export function lessonMove(occ, locale = 'ru') {
+  const at = occ?.movedFrom || occ?.movedTo
+  if (!at) return null
+  const date = parseLessonDate(at)
+  if (Number.isNaN(date.getTime())) return null
+  const when = date.toLocaleString(locale, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+  return { key: occ.movedFrom ? 'schedule.movedFrom' : 'schedule.movedTo', when }
+}
+
 export function dayKey(date) {
   const p = (n) => String(n).padStart(2, '0')
   return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`

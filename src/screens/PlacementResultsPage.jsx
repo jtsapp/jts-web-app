@@ -9,11 +9,12 @@ import { PlacementNext, PlacementResults, usePlacementReport } from './home/Plac
  * навыки, отзыв о говорении, цель, на что сделать упор и задания для тебя. С «Главной» он ушёл — там было десять блоков
  * и четыре источника советов, — и открывается ссылкой «Результаты теста →» из «Сильных и слабых сторон».
  *
- * Пересдачи здесь нет, как и на «Главной»: она в Профиле («Тест на уровень»). Кнопка теста остаётся только тому, кто
- * теста ещё не проходил, — иначе страница «Не пройден» вела бы в никуда. Цель — та же, что на баннере (профиль GE),
- * а не предложенная тестом в день прохождения.
+ * «Пройти тест заново» — здесь, в шапке «Что делать дальше» (обратная связь 11.11, решение владельца: из Профиля
+ * пересдачу не находили). Тест открывается с первого экрана, а не на прошлом итоге (onRetake → freshAttempt.js).
+ * Теста ещё нет — вместо неё кнопка теста. Цель — та же, что на баннере (профиль GE), а не предложенная тестом в
+ * день прохождения.
  */
-export default function PlacementResultsPage({ token, userName, userLevel, geTarget = null, placementVersion = 0, onNav, onProfile, onStartTest }) {
+export default function PlacementResultsPage({ token, userName, userLevel, geTarget = null, placementVersion = 0, onNav, onProfile, onStartTest, onRetake }) {
   const { t } = useI18n()
   const placement = usePlacementReport(token, placementVersion)
   const report = geTarget ? { ...placement, view: withProfileGoal(placement.view, geTarget) } : placement
@@ -32,9 +33,8 @@ export default function PlacementResultsPage({ token, userName, userLevel, geTar
           </button>
           <h1 className="hm-top__title">{t('placement.page.title')}</h1>
         </header>
-        <PlacementResults report={report} onRetake={missing ? onStartTest : undefined} token={token} collapsible={false} />
-        <PlacementNext report={report} onNav={onNav} />
-        {!missing && placement.loaded && <p className="pl-results__note">{t('placement.page.retakeNote')}</p>}
+        <PlacementResults report={report} onRetake={missing ? onStartTest : onRetake} token={token} collapsible={false} />
+        <PlacementNext report={report} onNav={onNav} onRetake={onRetake} />
       </div>
     </LearningLayout>
   )
