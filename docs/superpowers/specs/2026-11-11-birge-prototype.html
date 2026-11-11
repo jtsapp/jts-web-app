@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Just to Study — прототип раздела «Ветки»</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--p:#9047FF;--p2:#EFE7FF;--p3:#F6F1FF;--ink:#171326;--mut:#5A5A66;--line:#ECE8F5;--bg:#FAF9FE;--ok:#18A957;--okb:#E6F7EE;--warn:#E8890C;--warnb:#FFF4E2;--bad:#E5484D;--badb:#FDECEC}
+*{box-sizing:border-box}
+body{margin:0;font-family:Manrope,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);font-size:14px}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+textarea,input,select{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+aside{background:#fff;border-right:1px solid var(--line);padding:20px 16px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.logo{color:var(--p);font-weight:800;font-size:18px;margin:0 8px 14px}
+.me{display:flex;align-items:center;gap:10px;background:var(--p3);border-radius:20px;padding:10px 12px;margin-bottom:10px}
+.av{width:34px;height:34px;border-radius:50%;background:var(--p);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.av.sm{width:30px;height:30px;font-size:12px}
+.me b{display:block;font-size:14px}.me small{color:var(--mut)}
+.nav{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;color:var(--p);font-weight:600;text-align:left;width:100%}
+.nav.on{background:var(--p);color:#fff}
+.nav:not(.on):hover{background:var(--p3)}
+.tag-new{margin-left:auto;background:var(--bad);color:#fff;font-size:10px;padding:2px 7px;border-radius:999px}
+.nav.on .tag-new{background:#fff;color:var(--p)}
+.cnt{margin-left:auto;background:var(--p2);color:var(--p);font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700}
+.nav.on .cnt{background:#fff}
+.role{margin-top:auto;background:var(--p3);border-radius:16px;padding:10px}
+.role p{margin:0 0 8px;font-size:12px;color:var(--mut)}
+.seg{display:flex;background:#fff;border-radius:12px;padding:3px}
+.seg button{flex:1;padding:7px 4px;border-radius:10px;font-weight:600;font-size:12px;color:var(--mut)}
+.seg button.on{background:var(--p);color:#fff}
+main{padding:24px 32px 60px;max-width:1180px;width:100%}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.top h1{font-size:24px;margin:0;font-weight:800}
+.top .sp{flex:1}
+.bell{position:relative;width:38px;height:38px;border-radius:12px;background:var(--p3);color:var(--p);display:grid;place-items:center}
+.bell i{position:absolute;top:-4px;right:-4px;background:var(--bad);color:#fff;font-style:normal;font-size:10px;min-width:17px;height:17px;border-radius:999px;display:grid;place-items:center;font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px}
+.card h3{margin:0 0 10px;font-size:15px}
+.composer textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px;min-height:84px;resize:vertical;background:var(--bg);outline:none}
+.composer textarea:focus{border-color:var(--p)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{padding:6px 12px;border-radius:999px;background:var(--p3);color:var(--p);font-weight:600;font-size:12px}
+.chip.on{background:var(--p);color:#fff}
+.btn{background:var(--p);color:#fff;font-weight:700;padding:10px 18px;border-radius:14px}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:#fff;color:var(--p);border:1px solid var(--p2)}
+.btn.ok{background:var(--ok)}.btn.bad{background:var(--bad)}
+.btn.sm{padding:7px 12px;border-radius:11px;font-size:12px}
+.hint{color:var(--mut);font-size:12px}
+.pipe{margin-top:12px;border-radius:14px;background:var(--p3);padding:12px 14px;display:none}
+.pipe.show{display:block}
+.step{display:flex;align-items:center;gap:8px;padding:4px 0;color:var(--mut);font-size:13px}
+.step .d{width:16px;height:16px;border-radius:50%;border:2px solid #CFC3EE;flex:none}
+.step.run .d{border-color:var(--p);border-top-color:transparent;animation:sp .7s linear infinite}
+.step.done{color:var(--ink)}.step.done .d{background:var(--ok);border-color:var(--ok)}
+.step.fail .d{background:var(--bad);border-color:var(--bad)}
+@keyframes sp{to{transform:rotate(360deg)}}
+.res{margin-top:10px;padding:12px 14px;border-radius:14px;font-size:13px;line-height:1.45}
+.res.ok{background:var(--okb)}.res.warn{background:var(--warnb)}.res.bad{background:var(--badb)}
+.res b{display:block;margin-bottom:2px}
+mark{background:#FFD6D8;color:var(--bad);border-radius:4px;padding:0 2px}
+.post{padding:16px 18px;border-bottom:1px solid var(--line)}
+.post:last-child{border-bottom:0}
+.ph{display:flex;align-items:center;gap:10px}
+.ph b{font-size:14px}.ph small{color:var(--mut)}
+.lvl{font-size:11px;font-weight:700;color:var(--p);background:var(--p2);border-radius:999px;padding:1px 7px}
+.pt{margin:10px 0 10px 40px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.pa{margin-left:34px;display:flex;gap:4px;align-items:center}
+.pa button{display:flex;align-items:center;gap:5px;color:var(--mut);padding:5px 8px;border-radius:10px;font-weight:600;font-size:13px}
+.pa button:hover{background:var(--p3);color:var(--p)}
+.pa button.liked{color:var(--bad)}
+.badge{font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px}
+.b-pend{background:var(--warnb);color:var(--warn)}.b-rej{background:var(--badb);color:var(--bad)}.b-ok{background:var(--okb);color:var(--ok)}.b-hid{background:#EEE;color:#666}
+.topic{font-size:11px;font-weight:700;color:var(--mut);background:#F2F1F6;border-radius:999px;padding:2px 8px}
+.filters{display:flex;gap:6px;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.back{color:var(--p);font-weight:600;margin-bottom:12px;display:inline-block}
+.cm{margin-left:40px;padding:12px 0;border-top:1px dashed var(--line)}
+.rules li{margin:6px 0;color:var(--mut);line-height:1.4}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px 16px}
+.stat small{color:var(--mut);font-weight:600}
+.stat b{display:block;font-size:26px;margin-top:4px}
+.bar{height:8px;background:var(--p2);border-radius:99px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:var(--p);border-radius:99px}
+.q{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;background:#fff}
+.q .why{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.reason{font-size:11px;font-weight:700;background:var(--warnb);color:var(--warn);border-radius:8px;padding:3px 8px}
+.score{margin-left:auto;font-weight:800;font-size:13px}
+.empty{padding:30px;text-align:center;color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:600;font-size:12px}
+.set label{display:block;font-weight:600;margin:14px 0 6px}
+.set input[type=range]{width:100%;accent-color:var(--p)}
+.set textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg)}
+.radio{display:flex;flex-direction:column;gap:6px}
+.radio label{font-weight:500;margin:0;display:flex;gap:8px;align-items:flex-start}
+.scale{position:relative;height:28px;border-radius:10px;overflow:hidden;display:flex;font-size:11px;font-weight:700;color:#fff;margin-top:6px}
+.scale div{display:grid;place-items:center}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:14px;transition:.3s;z-index:9;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.notif{position:absolute;right:0;top:46px;width:320px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 40px rgba(60,30,120,.15);padding:8px;z-index:5;display:none}
+.notif.show{display:block}
+.notif div{padding:10px;border-radius:10px;font-size:13px;line-height:1.4}
+.notif div+div{border-top:1px solid var(--line)}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;font-size:12px}
+.flow div{background:var(--p3);border-radius:12px;padding:10px;line-height:1.35}
+.flow b{display:block;color:var(--p);margin-bottom:3px}
+
+.cw{display:flex;gap:12px}.cl{display:flex;flex-direction:column;align-items:center;gap:6px}
+.vline{width:2px;flex:1;min-height:20px;background:var(--line);border-radius:2px}
+.av.xs{width:20px;height:20px;font-size:9px;opacity:.5}
+.cr{flex:1;min-width:0}
+.cr .who{display:flex;align-items:center;gap:6px;font-size:14px}
+.cr .who select{border:0;background:none;color:var(--mut);font-weight:500;padding:0;cursor:pointer;outline:none}
+.tw textarea{border:0;background:none;padding:6px 0;min-height:44px;border-radius:0;resize:none;overflow:hidden;font-size:15px}
+.tw textarea:focus{border:0}
+.tools{display:flex;gap:4px;margin:4px 0 6px;position:relative}
+.tools>button,.tools>label{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--mut);cursor:pointer}
+.tools>button:hover,.tools>label:hover,.tools>.on{background:var(--p3);color:var(--p)}
+.addpart{display:flex;align-items:center;gap:10px;color:#B5B0C4;font-size:14px;padding:4px 0;width:100%;text-align:left}
+.part{display:flex;gap:6px;align-items:flex-start;border-left:2px solid var(--line);padding-left:10px;margin:4px 0}
+.part textarea{flex:1}
+.x{width:22px;height:22px;border-radius:50%;background:rgba(23,19,38,.65);color:#fff;font-size:13px;line-height:22px;text-align:center}
+.mrow{display:flex;gap:8px;overflow-x:auto;padding:6px 0}
+.mitem{position:relative;flex:none}
+.mitem .x{position:absolute;top:6px;right:6px}
+.mitem img,.gif{width:150px;height:150px;object-fit:cover;border-radius:14px;display:block}
+.media{margin:0 0 10px 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;max-width:520px}
+.media img,.media .gif{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:14px}
+.gif{display:grid;place-items:center;align-content:center;color:#fff;font-weight:800;position:relative;overflow:hidden;font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,.2)}
+.gif span{font-size:48px;display:block;text-align:center}
+.gif:after{content:'GIF';position:absolute;bottom:6px;left:6px;font-size:10px;background:rgba(0,0,0,.45);padding:2px 5px;border-radius:5px}
+.a-bounce span{animation:bo 0.8s ease-in-out infinite}.a-pulse span{animation:pu 1s ease-in-out infinite}.a-shake span{animation:sh .5s linear infinite}.a-spin span{animation:sp 1.6s linear infinite}.a-float span{animation:fl 2s ease-in-out infinite}
+@keyframes bo{50%{transform:translateY(-12px)}}@keyframes pu{50%{transform:scale(1.25)}}@keyframes sh{25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}@keyframes fl{50%{transform:translateY(-6px) rotate(-6deg)}}
+.pop{position:absolute;top:42px;left:0;z-index:6;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 40px rgba(60,30,120,.16);padding:10px;width:380px;max-width:86vw}
+.emo{display:grid;grid-template-columns:repeat(9,1fr);gap:0;max-height:250px;overflow-y:auto}
+.ecats{display:flex;gap:2px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px}
+.ecats button{flex:1;font-size:18px;height:34px;border-radius:9px;opacity:.55}.ecats button.on{background:var(--p3);opacity:1}
+.etitle{font-size:12px;font-weight:700;color:var(--mut);margin:2px 4px 4px}
+.gcats{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}.gcats .chip{padding:4px 10px;font-size:11px}
+.a-wave span{animation:wv 1s ease-in-out infinite;transform-origin:70% 80%}.a-jump span{animation:jp .9s cubic-bezier(.3,0,.3,1) infinite}.a-zoom span{animation:zm 1.2s ease-in-out infinite}
+@keyframes wv{0%,100%{transform:rotate(0)}25%{transform:rotate(20deg)}75%{transform:rotate(-14deg)}}@keyframes jp{0%,100%{transform:translateY(0) scale(1,1)}40%{transform:translateY(-16px) scale(.95,1.05)}80%{transform:translateY(0) scale(1.08,.92)}}@keyframes zm{0%,100%{transform:scale(.85)}50%{transform:scale(1.2) rotate(6deg)}}
+.emo button{font-size:23px;width:auto;height:36px;border-radius:8px}.emo button:hover{background:var(--p3)}
+.gifs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:300px;overflow:auto}
+.gifs .gif{width:100%;height:auto;aspect-ratio:1;cursor:pointer;font-size:11px}.gifs .gif span{font-size:32px}
+.pop input[type=search]{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;background:var(--bg)}
+.more{margin:0 0 10px 40px;border-left:2px solid var(--line);padding-left:12px;white-space:pre-wrap;line-height:1.5}
+.cnt2{font-size:12px;color:var(--mut)}
+@media(max-width:900px){.app{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap}aside .nav:not(.keep),.me,.logo{display:none}.role{margin:0;width:100%}.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}main{padding:16px}.flow{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside id="side"></aside>
+<main id="main"></main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const I={
+ heart:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
+ heartF:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
+ com:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
+ flag:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22V4m0 0h12l-2 4 2 4H4"/></svg>',
+ bell:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>'
+};
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const now=()=>new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+const NAMES=[['Just to Study Birge','Учимся вместе — сообщество студентов JTS','Birge'],['SmallTalk','Болтаем по-английски'],['Dastarkhan','Собираемся за общим столом'],['Birge','Учимся вместе'],['Kenes','Советуемся и помогаем'],['Common Room','Общая комната студентов'],['JTS Café','Кофе, вопросы и английский'],['Study Circle','Круг учеников'],['Campfire','Истории у костра']];
+const EMO={
+ 'Недавние':[],
+ 'Эмоции':'😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 🫠 😉 😊 😇 🥰 😍 🤩 😘 😗 ☺️ 😚 😙 🥲 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🫢 🫣 🤫 🤔 🫡 🤐 🤨 😐 😑 😶 🫥 😶‍🌫️ 😏 😒 🙄 😬 😮‍💨 🤥 🫨 😌 😔 😪 🤤 😴 😷 🤒 🤕 🤢 🤮 🤧 🥵 🥶 🥴 😵 😵‍💫 🤯 🤠 🥳 🥸 😎 🤓 🧐 😕 🫤 😟 🙁 ☹️ 😮 😯 😲 😳 🥺 🥹 😦 😧 😨 😰 😥 😢 😭 😱 😖 😣 😞 😓 😩 😫 🥱 😤 😡 😠 😈 💀 🤡 👻 👽 🤖 😺 😸 😹 😻 😼 😽 🙀 😿 😾 🙈 🙉 🙊'.split(' '),
+ 'Сердца':'❤️ 🩷 🧡 💛 💚 💙 🩵 💜 🤎 🖤 🩶 🤍 💔 ❤️‍🔥 ❤️‍🩹 ❣️ 💕 💞 💓 💗 💖 💘 💝 💯 💢 💥 💫 💦 💨 💬 💭 💤 ✨ 🔥 ⭐ 🌟'.split(' '),
+ 'Жесты':'👋 🤚 🖐️ ✋ 🖖 🫱 🫲 👌 🤌 🤏 ✌️ 🤞 🫰 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ 🫵 👍 👎 ✊ 👊 🤛 🤜 👏 🙌 🫶 👐 🤲 🤝 🙏 ✍️ 💅 🤳 💪 🧠 👀 👁️ 👄 🙋 🙋‍♀️ 🙋‍♂️ 🤷 🤷‍♀️ 🤷‍♂️ 🤦 🤦‍♀️ 🤦‍♂️ 🙆 🙅 💁 🙇 🧑‍🎓 👩‍🎓 👨‍🎓 🧑‍🏫 👩‍🏫 👨‍🏫 🧑‍💻 🏃 💃 🕺 🧘'.split(' '),
+ 'Учёба':'📚 📖 📝 ✏️ 🖊️ 📒 📓 📕 📗 📘 📙 🎓 🏫 💡 🔍 📌 📎 🗂️ 📅 ⏰ ⏳ ✅ ☑️ ❌ ❓ ❗ ‼️ ⁉️ 🔤 🔠 🅰️ 🗣️ 🎧 🎤 💻 📱 🏆 🥇 🥈 🥉 🎯 📈 🚀 🎉 🎊 🎁 🧩 🌐'.split(' '),
+ 'Природа':'🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🦄 🐝 🦋 🐢 🐙 🐬 🐳 🐎 🐫 🦅 🌸 🌹 🌻 🌷 🌱 🌿 🍀 🍁 🌵 🌴 🌍 🌙 ☀️ 🌈 ⛅ 🌧️ ❄️ ⚡ 🌊 ⛰️'.split(' '),
+ 'Еда':'🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🫐 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🥑 🥕 🌽 🥐 🍞 🧀 🥚 🍳 🥞 🍔 🍟 🍕 🌭 🥪 🌮 🍝 🍜 🍣 🍩 🍪 🎂 🍰 🧁 🍫 🍬 🍭 🍿 ☕ 🍵 🧋 🥤 🧃 🍯'.split(' '),
+ 'Хобби':'⚽ 🏀 🏐 🎾 🏓 🥊 🎮 🎲 🎨 🎬 🎵 🎸 🎹 ✈️ 🚗 🚕 🚌 🚲 🏠 🏙️ 🗽 🗼 🎡 🏖️ 🏔️ ⛺ 🧳 🎈 🛍️ 💼 ⌚ 📷 🔑'.split(' '),
+ 'Флаги':'🇰🇿 🇬🇧 🇺🇸 🇨🇦 🇦🇺 🇮🇪 🇳🇿 🇺🇿 🇰🇬 🇹🇷 🇷🇺 🇩🇪 🇫🇷 🇪🇸 🇮🇹 🇨🇳 🇯🇵 🇰🇷 🇦🇪 🇬🇪 🏁'.split(' ')
+};
+const ECAT={'Недавние':'🕘','Эмоции':'😀','Сердца':'❤️','Жесты':'👋','Учёба':'📚','Природа':'🐶','Еда':'🍕','Хобби':'⚽','Флаги':'🇰🇿'};
+const GIFS=[
+ ['🎉','Yay!','#FFB86B,#FF6FA5','bounce','Праздник'],['👏','Well done!','#7CE0B5,#3BA7FF','pulse','Реакции'],['🔥','Streak!','#FF9A3C,#FF4D4D','shake','Мотивация'],['🤯','Grammar…','#B18CFF,#6B4CFF','spin','Учёба'],['😴','Monday','#A3B1C6,#6C7A96','float','Реакции'],['💪',"Let's go",'#FFD84D,#FF8A3D','bounce','Мотивация'],['🙏','Help pls','#8FD3FF,#9047FF','pulse','Учёба'],['🥳','B1 reached','#FF7AD9,#9047FF','shake','Праздник'],['🤔','Hmm…','#9BE15D,#00B3A4','float','Реакции'],
+ ['👋','Hello!','#FFC371,#FF5F6D','wave','Привет'],['🙋','Hi everyone','#89F7FE,#66A6FF','wave','Привет'],['🌞','Good morning','#FDEB71,#F8D800','pulse','Привет'],['🌙','Good night','#5B6CFF,#2B2E83','float','Привет'],['🤝','Nice to meet you','#84FAB0,#8FD3F4','pulse','Привет'],['😘','Bye-bye','#FBC2EB,#A6C1EE','wave','Привет'],
+ ['😂','LOL','#FFE259,#FFA751','shake','Реакции'],['😭','I cry','#A1C4FD,#6E8EFB','bounce','Реакции'],['😱','OMG!','#F093FB,#F5576C','zoom','Реакции'],['🙄','Seriously?','#D4D3DD,#8E8BA3','spin','Реакции'],['😍','Love it','#FF9A9E,#FECFEF','pulse','Реакции'],['🤷','No idea','#E0C3FC,#8EC5FC','shake','Реакции'],['👍','Agree','#43E97B,#38F9D7','jump','Реакции'],['🫠','Melting…','#FFD3A5,#FD6585','float','Реакции'],['😎','Too easy','#30CFD0,#330867','bounce','Реакции'],['🥺','Pleeease','#FAD0C4,#FFD1FF','pulse','Реакции'],
+ ['📚','Study time','#A18CD1,#FBC2EB','jump','Учёба'],['✍️','Homework…','#C2E9FB,#A1C4FD','shake','Учёба'],['🧠','Big brain','#F6D365,#FDA085','pulse','Учёба'],['📝','Test tomorrow','#FF9A8B,#FF6A88','bounce','Учёба'],['🗣️','Speak English!','#13F1FC,#0470DC','zoom','Учёба'],['🎧','Listening','#667EEA,#764BA2','float','Учёба'],['✅','Done!','#0BA360,#3CBA92','zoom','Учёба'],['❓','What does it mean?','#FFB199,#FF0844','jump','Учёба'],
+ ['🚀','Level up','#4FACFE,#00F2FE','jump','Мотивация'],['🏆','Champion','#F7CE68,#FBAB7E','bounce','Мотивация'],['⭐','You can do it','#FFF07C,#FF9A3C','spin','Мотивация'],['🎯','Goal!','#FF5858,#F09819','zoom','Мотивация'],['☕','Coffee & English','#C79081,#7A4E3B','float','Мотивация'],['🐢','Step by step','#96E6A1,#3CB371','shake','Мотивация'],
+ ['🎂','Happy birthday','#FF9A9E,#F6416C','bounce','Праздник'],['🎊','Congrats!','#FA709A,#FEE140','shake','Праздник'],['🥇','First place','#FFD86F,#FC6262','jump','Праздник'],['🎁','Surprise','#B721FF,#21D4FD','zoom','Праздник'],['🇰🇿','Kazakhstan!','#00C6FF,#FFD200','wave','Праздник']
+];
+const GCAT=['Все','Реакции','Привет','Учёба','Мотивация','Праздник'];
+const gifHTML=(i,cls='')=>{const g=GIFS[i];return `<div class="gif a-${g[3]} ${cls}" style="background:linear-gradient(135deg,${g[2]})"><span>${g[0]}</span>${esc(g[1])}</div>`};
+const mediaHTML=m=>m.type==='gif'?gifHTML(m.g):`<img src="${m.src}" alt="">`;
+const TOPICS=['Грамматика','Speaking','Словарь','Мотивация','Вопрос'];
+
+/* ---------- STATE ---------- */
+const S={
+ role:'student', name:0, draft:{text:'',more:[],media:[]}, pop:null, ecat:'Эмоции', gcat:'Все', caret:null, view:'feed', tid:null, mview:'queue', topic:'Все', ntopic:'Вопрос', notifOpen:false,
+ settings:{auto:30, reject:70, limit:3, overflow:'reject',
+  profanity:'бля, хуй, хуе, хуё, пизд, ебат, ебан, ёба, еба, сука, суки, мудак, гандон, долбоёб, долбоеб, fuck, shit, bitch, асшол',
+  complaint:'развод, мошенн, верните деньги, худш, отстой, ужасн, не рекомендую, бесполезн, scam, обман, деньги на ветер, кидалов',
+  critic:'не нравится, дорого, слишком быстро, плохо объясня, разочар, жалоб, не понимаю тьютор, неудобн, глючит, тормозит'},
+ escalated:1, autoPub:14, autoRej:3,
+ notifs:[{t:'Ваша ветка «Как запомнить неправильные глаголы?» опубликована', time:'10:12', unread:false}],
+ threads:[
+  {id:1,author:'Аружан К.',lvl:'A2',topic:'Грамматика',text:'Present Perfect vs Past Simple — кто может объяснить на пальцах? 🙏 Я всегда путаю «I have been» и «I was».',time:'09:40',likes:12,liked:false,status:'published',score:4,comments:[
+   {author:'Тимур Б.',lvl:'B1',text:'Past Simple — когда есть конкретное время (yesterday, in 2020). Present Perfect — когда важен результат сейчас, без точного времени.',time:'09:52',status:'published'},
+   {author:'Дана С.',lvl:'A2',text:'Мне помогло правило: если можно спросить «когда именно?» — это Past Simple.',time:'10:05',status:'published'}]},
+  {id:2,author:'Ерлан М.',lvl:'A1',topic:'Speaking',text:'Ищу партнёра для Speaking практики по вечерам, уровень A1–A2. Можно тренироваться прямо со Speaking Buddy и потом сравнивать результаты 💪',time:'08:15',likes:7,liked:false,status:'published',score:8,comments:[
+   {author:'Мадина Ж.',lvl:'A2',text:'Я тоже! Давай после 20:00',time:'08:30',status:'published'}]},
+  {id:3,author:'JTS Student',lvl:'A0',topic:'Словарь',text:'Как запомнить неправильные глаголы? Я учу по 5 в день, но через неделю забываю.',time:'10:11',likes:3,liked:false,status:'published',score:6,mine:true,comments:[]},
+  {id:4,author:'Алия Н.',lvl:'A2',topic:'Мотивация',text:'60 дней подряд без пропусков 🔥 Кто ещё держит стрик?',media:[{type:'gif',g:2}],time:'Вчера',likes:31,liked:false,status:'published',score:2,comments:[]}
+ ],
+ queue:[
+  {qid:1,kind:'thread',author:'Нурлан А.',lvl:'A1',topic:'Вопрос',text:'Тьютор сегодня объяснял слишком быстро, я ничего не понял. Это только у меня так?',time:'09:58',score:48,reasons:['Критика — нужно решение человека'],status:'pending'}
+ ],
+ log:[
+  {time:'10:11',author:'JTS Student',text:'Как запомнить неправильные глаголы?…',score:6,decision:'auto-pub'},
+  {time:'09:31',author:'Аноним А.',text:'Это развод, верните деньги…',score:78,decision:'auto-rej',why:'Негативный отзыв → перенаправлен в Feedback'},
+  {time:'09:02',author:'Самат Е.',text:'бля опять этот тест…',score:96,decision:'auto-rej',why:'Нецензурная лексика'}
+ ],
+ nextId:100
+};
+const list=k=>S.settings[k].split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+
+/* ---------- MODERATION ENGINE (simulates: словарь + ML-классификатор + правила) ---------- */
+function normalize(t){return t.toLowerCase().replace(/ё/g,'е').replace(/@/g,'а').replace(/0/g,'о').replace(/3/g,'з').replace(/\$/g,'с').replace(/6/g,'б').replace(/(.)\1{2,}/g,'$1$1');}
+function moderate(text){
+ const n=normalize(text); const r=[]; const hits=[];
+ const prof=list('profanity').filter(w=>n.includes(w.replace(/ё/g,'е')));
+ if(prof.length){r.push({s:96,t:'Нецензурная лексика',k:'prof'});hits.push(...prof)}
+ if(/[а-яa-z][*#%]+[а-яa-z]?/i.test(text)){r.push({s:58,t:'Похоже на замаскированный мат'});hits.push(...(text.match(/\S*[*#%]+\S*/g)||[]))}
+ const comp=list('complaint').filter(w=>n.includes(w));
+ if(comp.length){r.push({s:78,t:'Негативный отзыв о платформе',k:'comp'});hits.push(...comp)}
+ const crit=list('critic').filter(w=>n.includes(w));
+ if(crit.length){r.push({s:48,t:'Критика — нужно решение человека'});hits.push(...crit)}
+ if(/(https?:\/\/|www\.|t\.me|@[a-z0-9_]{3,}|\+?\d[\d\s\-()]{8,})/i.test(text)){r.push({s:52,t:'Ссылка или контакты'})}
+ const letters=text.replace(/[^A-Za-zА-Яа-яЁё]/g,'');const caps=letters.replace(/[^A-ZА-ЯЁ]/g,'');
+ if(letters.length>12&&caps.length/letters.length>.6){r.push({s:35,t:'Текст капсом (крик)'})}
+ if(text.trim().length<6){r.push({s:40,t:'Слишком короткий текст'})}
+ r.sort((a,b)=>b.s-a.s);
+ let score=r.length?Math.min(99,r[0].s+(r.length-1)*6):Math.floor(Math.random()*12)+2;
+ return {score,reasons:r,hits:[...new Set(hits)]};
+}
+function decide(m){
+ const st=S.settings;
+ if(m.score<st.auto) return 'pub';
+ if(m.score>=st.reject) return 'rej';
+ if(S.escalated<st.limit) return 'queue';
+ return 'overflow';
+}
+function highlight(text,hits){let h=esc(text);hits.forEach(w=>{if(!w)return;const re=new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');h=h.replace(re,m=>'<mark>'+m+'</mark>')});return h}
+
+/* ---------- SUBMIT FLOW ---------- */
+let busy=false;
+async function submit(kind){
+ const dr=S.draft;const text=dr.text.trim();const more=dr.more.map(x=>x.trim()).filter(Boolean);const media=dr.media.slice();if((!text&&!media.length)||busy)return;
+ const full=[text,...more].join('\n');S.pop=null;
+ busy=true;document.getElementById('send').disabled=true;
+ const pipe=document.getElementById('pipe');pipe.className='pipe show';
+ const steps=[...(media.length?['Проверка фото и GIF: 18+, насилие, текст на картинке ('+media.length+' шт.)']:[]),'Проверка по словарю стоп-слов (RU / KZ / EN, обход «х@й», «б*я»)','AI-классификатор: тон, оскорбления, отзывы о платформе','Правила: ссылки, контакты, спам, КАПС'];
+ pipe.innerHTML=steps.map((s,i)=>`<div class="step" id="st${i}"><span class="d"></span>${s}</div>`).join('')+'<div id="out"></div>';
+ const m=moderate(full||'фото');if(!text&&media.length&&m.reasons.every(r=>r.t==='Слишком короткий текст')){m.reasons=[];m.score=5}
+ for(let i=0;i<steps.length;i++){const el=document.getElementById('st'+i);el.className='step run';await new Promise(r=>setTimeout(r,550));el.className='step done'}
+ const d=decide(m);const reasonsTxt=m.reasons.map(x=>x.t).join(', ');
+ const base={author:'JTS Student',lvl:'A0',text,more,media,time:now(),score:m.score,mine:true};
+ let html='';
+ S.log.unshift({time:now(),author:'JTS Student',text:text.slice(0,40)+(text.length>40?'…':''),score:m.score,decision:d==='pub'?'auto-pub':d==='queue'?'queue':'auto-rej',why:reasonsTxt});
+ if(d==='pub'){
+  S.autoPub++;
+  if(kind==='thread'){S.threads.unshift({...base,id:S.nextId++,topic:S.ntopic,likes:0,liked:false,status:'published',comments:[]})}
+  else{curT().comments.push({...base,status:'published'})}
+  html=`<div class="res ok"><b>Опубликовано автоматически ✓</b>Риск ${m.score}/100 — ниже порога ${S.settings.auto}. Контент-менеджер не участвовал.</div>`;
+ } else if(d==='rej' || (d==='overflow'&&S.settings.overflow==='reject')){
+  S.autoRej++;
+  const toFb=m.reasons[0]&&m.reasons[0].k==='comp';
+  const ov=d==='overflow';
+  html=`<div class="res bad"><b>${ov?'Не опубликовано':'Не прошло проверку'}</b>${ov?'Система не уверена, а лимит ручных проверок на сегодня исчерпан. ':''}Причина: ${reasonsTxt}. Риск ${m.score}/100.<br>${m.hits.length?'<div style="margin-top:6px;padding:8px;background:#fff;border-radius:10px">'+highlight(full,m.hits)+'</div>':''}${toFb?'<div style="margin-top:6px">📨 Ваш отзыв не потерян — он отправлен в раздел <b style="display:inline">Feedback</b>, команда его прочитает.</div>':'<div style="margin-top:6px">Перепишите текст и попробуйте ещё раз — текст остался в поле ввода.</div>'}</div>`;
+  if(ov){S.log[0].decision='auto-rej';S.log[0].why='Лимит заявок исчерпан: '+reasonsTxt}
+  if(toFb){S.log[0].why='Негативный отзыв → перенаправлен в Feedback'}
+  busy=false;document.getElementById('send').disabled=false;pipe.querySelector('#out').innerHTML=html;toastMsg('Текст не опубликован');return;
+ } else {
+  // queue (or overflow handled as queue-tomorrow / hidden)
+  const tomorrow=d==='overflow'&&S.settings.overflow==='tomorrow';
+  const hidden=d==='overflow'&&S.settings.overflow==='hidden';
+  if(!tomorrow&&!hidden)S.escalated++;
+  const qid=S.nextId++;
+  const item={qid,kind,author:'JTS Student',lvl:'A0',topic:kind==='thread'?S.ntopic:(curT().topic),text,more,media,time:now(),score:m.score,reasons:m.reasons.map(x=>x.t),status:tomorrow?'tomorrow':'pending',tid:kind==='comment'?S.tid:null};
+  S.queue.unshift(item);
+  if(kind==='thread'){S.threads.unshift({...base,id:qid,topic:S.ntopic,likes:0,liked:false,status:'pending',comments:[],qid})}
+  else{curT().comments.push({...base,status:'pending',qid})}
+  S.log[0].decision=tomorrow?'tomorrow':'queue';
+  html=`<div class="res warn"><b>${tomorrow?'Отправлено в очередь на завтра':'Отправлено контент-менеджеру'}</b>Система не уверена (риск ${m.score}/100: ${reasonsTxt}). ${tomorrow?'Сегодняшний лимит ручных проверок исчерпан — проверим завтра.':'Видно только вам, пока модератор не проверит. Заявок сегодня: '+S.escalated+' из '+S.settings.limit+'.'}</div>`;
+ }
+ S.draft={text:'',more:[],media:[]};busy=false;
+ render();
+ const p=document.getElementById('pipe');p.className='pipe show';p.innerHTML=steps.map(s=>`<div class="step done"><span class="d"></span>${s}</div>`).join('')+html;
+}
+const curT=()=>S.threads.find(t=>t.id===S.tid);
+
+/* ---------- MANAGER ACTIONS ---------- */
+function act(qid,ok){
+ const q=S.queue.find(x=>x.qid===qid);if(!q)return;q.status=ok?'approved':'rejected';
+ const label=ok?'одобрил':'отклонил';
+ if(q.kind==='thread'){const t=S.threads.find(t=>t.qid===qid||t.id===qid);if(t)t.status=ok?'published':'rejected';
+  if(!t&&ok)S.threads.unshift({id:q.qid,author:q.author,lvl:q.lvl,topic:q.topic,text:q.text,time:q.time,likes:0,liked:false,status:'published',comments:[]});}
+ else{const t=S.threads.find(t=>t.id===q.tid);const c=t&&t.comments.find(c=>c.qid===qid);if(c)c.status=ok?'published':'rejected'}
+ if(q.author==='JTS Student')S.notifs.unshift({t:ok?`Модератор одобрил вашу ${q.kind==='thread'?'ветку':'комментарий'} — опубликовано`:`Модератор отклонил вашу ${q.kind==='thread'?'ветку':'комментарий'}. Причина: не соответствует правилам сообщества`,time:now(),unread:true});
+ S.log.unshift({time:now(),author:q.author,text:q.text.slice(0,40)+'…',score:q.score,decision:ok?'man-pub':'man-rej',why:'Контент-менеджер '+label});
+ toastMsg('Решение сохранено, автор получил уведомление');render();
+}
+function revert(i){
+ const l=S.log[i];l.reverted=true;
+ toastMsg(l.decision.includes('pub')?'Публикация скрыта из ленты':'Текст восстановлен и опубликован');render();
+}
+function report(id){
+ const t=S.threads.find(t=>t.id===id);t.reports=(t.reports||0)+1;
+ if(t.reports>=3){t.status='hidden';S.queue.unshift({qid:S.nextId++,kind:'thread',author:t.author,lvl:t.lvl,topic:t.topic,text:t.text,time:t.time,score:t.score,reasons:['Жалобы студентов: '+t.reports],status:'pending',report:true});
+  toastMsg('Ветка скрыта после жалоб и отправлена модератору (жалобы не тратят дневной лимит)')}
+ else toastMsg('Жалоба отправлена. Спасибо!');
+ render();
+}
+
+/* ---------- RENDER ---------- */
+function side(){
+ const pend=S.queue.filter(q=>q.status==='pending').length;
+ const studentNav=[['Главная'],['Практика'],['Speaking Buddy'],['Уроки'],['Домашняя работа'],['Словарь'],[NAMES[S.name][2]||NAMES[S.name][0],'threads'],['Feedback','fb']];
+ const mgrNav=[['Очередь проверки','queue'],['Журнал решений','log'],['Настройки модерации','settings'],['Лента (как видят студенты)','feedview']];
+ let h=`<div class="logo">just to study</div><div class="me"><div class="av">${S.role==='student'?'J':'К'}</div><div><b>${S.role==='student'?'JTS Student':'Контент-менеджер'}</b><small>${S.role==='student'?'Профиль':'Кабинет модерации'}</small></div></div>`;
+ if(S.role==='student')h+=studentNav.map(([n,k])=>`<button class="nav ${k==='threads'?'on keep':''}" ${k==='threads'?'onclick="S.view=\'feed\';render()"':'onclick="toastMsg(\'В прототипе работает только раздел «Ветки»\')"'}>${n}${k==='threads'?'<span class="tag-new">new</span>':''}${k==='fb'?'<span class="tag-new">new</span>':''}</button>`).join('');
+ else h+=mgrNav.map(([n,k])=>`<button class="nav keep ${S.mview===k?'on':''}" onclick="S.mview='${k}';render()">${n}${k==='queue'&&pend?'<span class="cnt">'+pend+'</span>':''}</button>`).join('');
+ h+=`<div class="role"><p>Название раздела (вариант)</p><select style="width:100%;padding:8px;border-radius:10px;border:1px solid var(--line);margin-bottom:10px;font-weight:600" onchange="S.name=+this.value;render()">${NAMES.map((n,i)=>`<option value="${i}" ${S.name===i?'selected':''}>${n[0]} — ${n[1]}</option>`).join('')}</select><p>Прототип: переключить роль</p><div class="seg"><button class="${S.role==='student'?'on':''}" onclick="S.role='student';render()">Студент</button><button class="${S.role==='manager'?'on':''}" onclick="S.role='manager';render()">Контент-менеджер</button></div></div>`;
+ document.getElementById('side').innerHTML=h;
+}
+function postHTML(t,inFeed){
+ const badge=t.status==='pending'?'<span class="badge b-pend">На проверке у модератора</span>':t.status==='rejected'?'<span class="badge b-rej">Отклонено</span>':'';
+ return `<div class="post"><div class="ph"><div class="av sm">${t.author[0]}</div><div><b>${esc(t.author)}</b> <span class="lvl">${t.lvl}</span><br><small>${t.time}</small></div><span style="margin-left:auto" class="row">${badge}<span class="topic">${t.topic}</span></span></div>
+ ${body(t)}
+ <div class="pa"><button class="${t.liked?'liked':''}" onclick="like(${t.id})">${t.liked?I.heartF:I.heart}${t.likes}</button>
+ <button onclick="openT(${t.id})">${I.com}${t.comments.filter(c=>c.status==='published').length}</button>
+ ${!t.mine?`<button style="margin-left:auto" title="Пожаловаться" onclick="report(${t.id})">${I.flag}</button>`:''}</div></div>`;
+}
+function like(id){const t=S.threads.find(t=>t.id===id);t.liked=!t.liked;t.likes+=t.liked?1:-1;render()}
+function openT(id){S.draft={text:'',more:[],media:[]};S.pop=null;S.view='thread';S.tid=id;render();scrollTo(0,0)}
+function visible(t){return t.status==='published'||(t.mine&&(t.status==='pending'||t.status==='rejected'))}
+function body(t){return `${t.text?`<div class="pt">${esc(t.text)}</div>`:'<div style="height:8px"></div>'}${(t.media&&t.media.length)?`<div class="media">${t.media.map(mediaHTML).join('')}</div>`:''}${(t.more||[]).map(x=>`<div class="more">${esc(x)}</div>`).join('')}`}
+const ICO={img:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg>',
+ emo:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9.5" r=".8" fill="currentColor"/><circle cx="15" cy="9.5" r=".8" fill="currentColor"/></svg>',
+ gif:'<svg width="22" height="20" viewBox="0 0 26 22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1.5" y="2" width="23" height="18" rx="4"/><text x="13" y="15" text-anchor="middle" font-size="8.5" font-weight="800" fill="currentColor" stroke="none" font-family="Manrope,sans-serif">GIF</text></svg>'};
+function setText(i,v){if(i<0)S.draft.text=v;else S.draft.more[i]=v}
+function grow(el){el.style.height='auto';el.style.height=el.scrollHeight+'px'}
+function caret(el,i){S.caret={i,pos:el.selectionStart}}
+function addEmoji(e){const R=EMO['Недавние'];const k=R.indexOf(e);if(k>=0)R.splice(k,1);R.unshift(e);R.length>27&&(R.length=27);const c=S.caret||{i:-1,pos:S.draft.text.length};const cur=c.i<0?S.draft.text:S.draft.more[c.i];const pos=Math.min(c.pos??cur.length,cur.length);setText(c.i,cur.slice(0,pos)+e+cur.slice(pos));S.caret={i:c.i,pos:pos+e.length};render()}
+function addFiles(inp){const fs=[...inp.files].slice(0,4-S.draft.media.length);if(!fs.length){toastMsg('Максимум 4 вложения');return}
+ let n=0;fs.forEach(f=>{if(f.size>10*1024*1024){toastMsg('Файл больше 10 МБ');return}const r=new FileReader();r.onload=()=>{S.draft.media.push({type:'img',src:r.result});if(++n===fs.length)render()};r.readAsDataURL(f)})}
+function addGif(i){if(S.draft.media.length>=4){toastMsg('Максимум 4 вложения');return}S.draft.media.push({type:'gif',g:i});S.pop=null;render()}
+function composer(kind){
+ const d=S.draft,th=kind==='thread';
+ const ecats=Object.keys(EMO).filter(k=>k!=='Недавние'||EMO['Недавние'].length);if(!ecats.includes(S.ecat))S.ecat='Эмоции';
+ const pop=S.pop==='emoji'?`<div class="pop"><div class="ecats">${ecats.map(k=>`<button title="${k}" class="${S.ecat===k?'on':''}" onclick="S.ecat='${k}';render()">${ECAT[k]}</button>`).join('')}</div><div class="etitle">${S.ecat}</div><div class="emo">${EMO[S.ecat].map(e=>`<button onclick="addEmoji('${e}')">${e}</button>`).join('')}</div></div>`
+  :S.pop==='gif'?`<div class="pop"><input type="search" placeholder="Поиск GIF: hello, lol, study…" oninput="document.querySelectorAll('.gifs > div').forEach(g=>g.style.display=g.dataset.k.includes(this.value.toLowerCase())?'':'none')"><div class="gcats">${GCAT.map(c=>`<button class="chip ${S.gcat===c?'on':''}" onclick="S.gcat='${c}';render()">${c}</button>`).join('')}</div><div class="gifs">${GIFS.map((g,i)=>[g,i]).filter(([g])=>S.gcat==='Все'||g[4]===S.gcat).map(([g,i])=>`<div data-k="${esc((g[1]+' '+g[4]).toLowerCase())}" onclick="addGif(${i})">${gifHTML(i)}</div>`).join('')}</div><label class="hint" style="display:block;margin-top:8px;cursor:pointer;color:var(--p);font-weight:600">+ Загрузить свой GIF<input type="file" accept="image/gif" hidden onchange="addFiles(this);S.pop=null"></label><div class="hint" style="margin-top:4px;font-size:11px">В рабочей версии — тысячи GIF из Tenor/GIPHY с фильтром «безопасные»</div></div>`:'';
+ return `<div class="card composer tw"><div class="cw"><div class="cl"><div class="av">J</div>${th?'<div class="vline"></div><div class="av xs">J</div>':''}</div><div class="cr">
+ <div class="who"><b>JTS Student</b>${th?`<span style="color:var(--mut)">›</span><select onchange="S.ntopic=this.value">${TOPICS.map(x=>`<option ${S.ntopic===x?'selected':''}>${x}</option>`).join('')}</select>`:''}</div>
+ <textarea id="ta" rows="1" placeholder="${th?'Что нового?':'Ответить…'}" oninput="setText(-1,this.value);grow(this)" onkeyup="caret(this,-1)" onclick="caret(this,-1)" onfocus="S.pop&&(S.pop=null,render())">${esc(d.text)}</textarea>
+ ${d.media.length?`<div class="mrow">${d.media.map((m,i)=>`<div class="mitem">${mediaHTML(m)}<button class="x" onclick="S.draft.media.splice(${i},1);render()">×</button></div>`).join('')}</div>`:''}
+ <div class="tools">
+  <label title="Фото">${ICO.img}<input type="file" accept="image/*" multiple hidden onchange="addFiles(this)"></label>
+  <button title="Смайлики" class="${S.pop==='emoji'?'on':''}" onclick="S.pop=S.pop==='emoji'?null:'emoji';render()">${ICO.emo}</button>
+  <button title="GIF" class="${S.pop==='gif'?'on':''}" onclick="S.pop=S.pop==='gif'?null:'gif';render()">${ICO.gif}</button>
+  ${pop}</div>
+ ${th?d.more.map((x,i)=>`<div class="part"><textarea id="part${i}" rows="1" placeholder="Продолжение…" oninput="setText(${i},this.value);grow(this)" onkeyup="caret(this,${i})" onclick="caret(this,${i})">${esc(x)}</textarea><button class="x" style="background:var(--line);color:var(--mut)" onclick="S.draft.more.splice(${i},1);render()">×</button></div>`).join('')
+  +(d.more.length<4?`<button class="addpart" onclick="S.draft.more.push('');render();document.getElementById('part${d.more.length}').focus()">Дополните ветку</button>`:''):''}
+ </div></div>
+ <div class="row" style="margin-top:10px;border-top:1px solid var(--line);padding-top:12px"><span class="hint">Фото, GIF и текст проверяет AI — публикация за пару секунд</span><span style="flex:1"></span><button class="btn" id="send" onclick="submit('${kind}')">Опубликовать</button></div>
+ <div class="row" style="margin-top:10px"><span class="hint">Демо:</span>${[['Хороший пост','Какие сериалы посоветуете для уровня A2? 🎧'],['Мат','бля, опять не понимаю этот Present Perfect'],['Скрытый мат','х*р поймёшь эти артикли'],['Плохой отзыв','Это развод, верните деньги, не рекомендую'],['Критика','Тьютор объясняет слишком быстро, не нравится'],['Ссылка','Пишите мне в t.me/eng_chat']].map(([l,v])=>`<button class="chip" onclick="S.draft.text='${v}';render()">${l}</button>`).join('')}</div>
+ <div class="pipe" id="pipe"></div></div>`;
+}
+function student(){
+ const unread=S.notifs.filter(n=>n.unread).length;
+ let h=`<div class="top"><div><h1>${NAMES[S.name][0]}</h1><div class="hint" style="margin-top:2px">${NAMES[S.name][1]}</div></div><span class="sp"></span><div style="position:relative"><button class="bell" onclick="S.notifOpen=!S.notifOpen;S.notifs.forEach(n=>n.unread=false);render()">${I.bell}${unread?'<i>'+unread+'</i>':''}</button><div class="notif ${S.notifOpen?'show':''}">${S.notifs.map(n=>`<div>${esc(n.t)}<br><small class="hint">${n.time}</small></div>`).join('')||'<div>Нет уведомлений</div>'}</div></div></div>`;
+ if(S.view==='thread'){
+  const t=curT();
+  h+=`<button class="back" onclick="S.view='feed';S.draft={text:'',more:[],media:[]};render()">← Все ветки</button><div class="grid"><div><div class="card" style="padding:0">${postHTML(t)}
+  ${t.comments.filter(c=>c.status==='published'||c.mine).map(c=>`<div class="post" style="padding-left:40px"><div class="ph"><div class="av sm">${c.author[0]}</div><div><b>${esc(c.author)}</b> <span class="lvl">${c.lvl}</span><br><small>${c.time}</small></div>${c.status==='pending'?'<span class="badge b-pend" style="margin-left:auto">На проверке</span>':c.status==='rejected'?'<span class="badge b-rej" style="margin-left:auto">Отклонено</span>':''}</div>${body(c)}</div>`).join('')||'<div class="empty">Пока нет комментариев — будьте первым</div>'}
+  </div><div style="margin-top:16px">${composer('comment')}</div></div>${rules()}</div>`;
+ } else {
+  const ts=S.threads.filter(visible).filter(t=>S.topic==='Все'||t.topic===S.topic);
+  h+=`<div class="grid"><div>${composer('thread')}<div class="card" style="padding:0;margin-top:16px"><div class="filters">${['Все',...TOPICS].map(x=>`<button class="chip ${S.topic===x?'on':''}" onclick="S.topic='${x}';render()">${x}</button>`).join('')}</div>${ts.map(t=>postHTML(t,true)).join('')||'<div class="empty">В этой теме пока пусто</div>'}</div></div>${rules()}</div>`;
+ }
+ return h;
+}
+function rules(){return `<div class="card"><h3>Правила сообщества</h3><ul class="rules" style="padding-left:18px;margin:0"><li>Пишем уважительно, без мата и оскорблений</li><li>Отзывы и жалобы на обучение — в раздел <b>Feedback</b>, там их читает команда</li><li>Без ссылок, рекламы и личных контактов</li><li>Посты проверяет AI за пару секунд; спорные — смотрит модератор</li></ul></div>`}
+function manager(){
+ const st=S.settings;const pend=S.queue.filter(q=>q.status==='pending');
+ let h=`<div class="top"><h1>${{queue:'Очередь проверки',log:'Журнал решений',settings:'Настройки модерации',feedview:'Лента'}[S.mview]}</h1><span class="sp"></span><span class="hint">Сегодня, ${new Date().toLocaleDateString('ru',{day:'numeric',month:'long'})}</span></div>
+ <div class="stats"><div class="stat"><small>Опубликовано автоматически</small><b style="color:var(--ok)">${S.autoPub}</b></div><div class="stat"><small>Отклонено автоматически</small><b style="color:var(--bad)">${S.autoRej}</b></div><div class="stat"><small>Ждут решения</small><b style="color:var(--warn)">${pend.length}</b></div><div class="stat"><small>Ручных заявок сегодня</small><b>${S.escalated} / ${st.limit}</b><div class="bar"><i style="width:${Math.min(100,S.escalated/st.limit*100)}%"></i></div></div></div>`;
+ if(S.mview==='queue'){
+  h+=`<div class="card" style="margin-bottom:16px"><h3>Как работает модерация</h3><div class="flow"><div><b>1. Студент пишет</b>ветку или комментарий</div><div><b>2. AI-проверка</b>стоп-слова, классификатор тона, ссылки, спам → риск 0–100</div><div><b>3. Риск &lt; ${st.auto}</b>публикуется сразу, без менеджера</div><div><b>4. Риск ≥ ${st.reject}</b>отклоняется; плохие отзывы уходят в Feedback</div><div><b>5. Между</b>сюда, но не больше ${st.limit} в день. Дальше — «${{reject:'отклонять',tomorrow:'на завтра',hidden:'скрыто'}[st.overflow]}»</div></div></div>`;
+  h+=pend.length?pend.map(q=>`<div class="q"><div class="ph"><div class="av sm">${q.author[0]}</div><div><b>${esc(q.author)}</b> <span class="lvl">${q.lvl}</span><br><small>${q.time} · ${q.kind==='thread'?'Новая ветка':'Комментарий'} · ${q.topic}</small></div><span class="score" style="color:var(--warn)">Риск ${q.score}/100</span></div>
+  <div class="why">${q.reasons.map(r=>`<span class="reason">${esc(r)}</span>`).join('')}${q.report?'<span class="reason" style="background:var(--p2);color:var(--p)">не тратит лимит</span>':''}</div>
+  <div style="background:var(--bg);border-radius:12px;padding:12px;line-height:1.5">${esc(q.text)}${(q.more||[]).map(x=>"<br>↳ "+esc(x)).join("")}${(q.media&&q.media.length)?`<div class="media" style="margin:10px 0 0">${q.media.map(mediaHTML).join("")}</div>`:""}</div>
+  <div class="row" style="margin-top:12px"><button class="btn ok sm" onclick="act(${q.qid},true)">Одобрить и опубликовать</button><button class="btn bad sm" onclick="act(${q.qid},false)">Отклонить</button><span style="flex:1"></span><span class="hint">Автор увидит решение в уведомлениях</span></div></div>`).join(''):`<div class="card empty">Очередь пуста 🎉 Всё остальное система решила сама.<br><span class="hint">Переключитесь на «Студент» и отправьте спорный текст (например, «Критика»).</span></div>`;
+  const tm=S.queue.filter(q=>q.status==='tomorrow');if(tm.length)h+=`<div class="card" style="margin-top:12px"><h3>Отложено на завтра (${tm.length})</h3>${tm.map(q=>`<div class="hint" style="padding:6px 0">${esc(q.author)}: ${esc(q.text)}</div>`).join('')}</div>`;
+ }
+ if(S.mview==='log'){
+  const lab={'auto-pub':['b-ok','AI: опубликовано'],'auto-rej':['b-rej','AI: отклонено'],'queue':['b-pend','В очередь'],'tomorrow':['b-pend','На завтра'],'man-pub':['b-ok','Менеджер: одобрено'],'man-rej':['b-rej','Менеджер: отклонено']};
+  h+=`<div class="card"><p class="hint" style="margin-top:0">Все автоматические решения можно выборочно перепроверить и отменить — так AI не работает «вслепую».</p><table><tr><th>Время</th><th>Автор</th><th>Текст</th><th>Риск</th><th>Решение</th><th></th></tr>${S.log.map((l,i)=>`<tr><td>${l.time}</td><td>${esc(l.author)}</td><td>${esc(l.text)}${l.why?'<br><small class="hint">'+esc(l.why)+'</small>':''}</td><td><b>${l.score}</b></td><td><span class="badge ${lab[l.decision][0]}">${lab[l.decision][1]}</span></td><td>${l.decision.startsWith('auto')?(l.reverted?'<span class="badge b-hid">Отменено</span>':`<button class="btn ghost sm" onclick="revert(${i})">${l.decision==='auto-pub'?'Скрыть':'Опубликовать'}</button>`):''}</td></tr>`).join('')}</table></div>`;
+ }
+ if(S.mview==='settings'){
+  h+=`<div class="grid"><div class="card set"><h3>Пороги AI-модерации</h3>
+  <div class="scale"><div style="width:${st.auto}%;background:var(--ok)">авто-публикация</div><div style="width:${st.reject-st.auto}%;background:var(--warn)">менеджеру</div><div style="width:${100-st.reject}%;background:var(--bad)">отказ</div></div>
+  <label>Публиковать автоматически, если риск ниже: <b>${st.auto}</b></label><input type="range" min="5" max="60" value="${st.auto}" oninput="S.settings.auto=Math.min(+this.value,S.settings.reject-5);render()">
+  <label>Отклонять автоматически, если риск от: <b>${st.reject}</b></label><input type="range" min="40" max="95" value="${st.reject}" oninput="S.settings.reject=Math.max(+this.value,S.settings.auto+5);render()">
+  <label>Максимум ручных заявок в день: <b>${st.limit}</b></label><input type="range" min="1" max="10" value="${st.limit}" oninput="S.settings.limit=+this.value;render()">
+  <label>Если лимит исчерпан, спорные тексты:</label><div class="radio">${[['reject','Отклонять с подсказкой «перепишите» (рекомендуется)'],['tomorrow','Ставить в очередь на завтра'],['hidden','Публиковать скрыто — видно только автору']].map(([v,l])=>`<label><input type="radio" name="ov" ${st.overflow===v?'checked':''} onchange="S.settings.overflow='${v}';render()">${l}</label>`).join('')}</div>
+  <button class="btn ghost sm" style="margin-top:14px" onclick="S.escalated=0;render();toastMsg('Счётчик сброшен (в продакшене — в 00:00 по Алматы)')">Сбросить счётчик дня</button>
+  </div><div class="card set"><h3>Словари</h3>
+  <label>Нецензурная лексика (корни, ловят формы и замены @→а, 0→о)</label><textarea onchange="S.settings.profanity=this.value">${st.profanity}</textarea>
+  <label>Плохие отзывы о платформе → Feedback</label><textarea onchange="S.settings.complaint=this.value">${st.complaint}</textarea>
+  <label>Мягкая критика → на ручную проверку</label><textarea onchange="S.settings.critic=this.value">${st.critic}</textarea></div></div>`;
+ }
+ if(S.mview==='feedview'){
+  h+=`<div class="card" style="padding:0">${S.threads.map(t=>`<div style="position:relative">${postHTML({...t,mine:true})}<div style="position:absolute;top:16px;right:18px;display:none"></div><div class="row" style="padding:0 18px 14px 58px"><span class="badge ${t.status==='published'?'b-ok':t.status==='pending'?'b-pend':t.status==='hidden'?'b-hid':'b-rej'}">${{published:'Опубликовано',pending:'На проверке',rejected:'Отклонено',hidden:'Скрыто'}[t.status]}</span><span class="hint">риск ${t.score??'—'}</span><span style="flex:1"></span>${t.status==='published'?`<button class="btn ghost sm" onclick="S.threads.find(x=>x.id===${t.id}).status='hidden';render()">Скрыть</button>`:`<button class="btn ghost sm" onclick="S.threads.find(x=>x.id===${t.id}).status='published';render()">Опубликовать</button>`}</div></div>`).join('')}</div>`;
+ }
+ return h;
+}
+function render(){side();document.getElementById('main').innerHTML=S.role==='student'?student():manager()}
+let tt;function toastMsg(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
+render();
+</script>
+</body>
+</html>
