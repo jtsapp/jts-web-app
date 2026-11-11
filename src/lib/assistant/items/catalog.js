@@ -282,11 +282,18 @@ async function taleItems() {
   return TALES.map((tl) => item(`tale.${tl.id}`, 'tale', quote(tl.title), '', { name: tl.title }))
 }
 
+// С ТЗ v1.2 текстов 250 (A1–C1 × 50 жанров) — больше MAX_LINES, поэтому, как у мультфильмов, список режется уровнем
+// ученика; у Скорочтения нет A0 и C2 — их ученик получает A1 и C1, как на экране раздела.
 async function speedreadItems(level, { token, deps, lang = 'ru' }) {
-  const list = listOf(await deps.getJson('/mobile/speed-reading/texts', token))
-  return list
-    .filter((t) => t?.id != null && /^[A-Za-z0-9_-]{1,48}$/.test(String(t.id)) && strip(titleIn(t.title)))
-    .map((t) => item(`speedread.${t.id}`, 'speedread', quote(titleIn(t.title)), t.level ? ` (${String(t.level).toUpperCase()})` : '', { name: titleIn(t.title, lang) }))
+  const all = listOf(await deps.getJson('/mobile/speed-reading/texts', token)).filter(
+    (t) => t?.id != null && /^[A-Za-z0-9_-]{1,48}$/.test(String(t.id)) && strip(titleIn(t.title)),
+  )
+  const raw = String(level || '').toUpperCase()
+  const at = (lv) => all.filter((t) => String(t.level).toUpperCase() === lv)
+  const own = at(raw).length ? at(raw) : at(raw === 'A0' ? 'A1' : raw === 'C2' ? 'C1' : raw)
+  // Уровня ученика среди текстов нет — пусть лучше обрежется общим потолком, чем Луна останется без Скорочтения.
+  const pool = all.length > MAX_LINES && own.length ? own : all
+  return pool.map((t) => item(`speedread.${t.id}`, 'speedread', quote(titleIn(t.title)), t.level ? ` (${String(t.level).toUpperCase()})` : '', { name: titleIn(t.title, lang) }))
 }
 
 // Just to Listen: наборы уровней и профессий (/mobile/listen).

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseHosts, requestHost, routeLanding, appLink, sameHostUrl } from './hostRouting.js'
+import { parseHosts, requestHost, routeLanding, appLink, sameHostUrl, checkoutOrigin } from './hostRouting.js'
 
 const hosts = parseHosts('\uFEFFjusttostudy-english.kz, WWW.justtostudy-english.kz ')
 const APP = 'https://ai-tutor.justtostudy.kz'
@@ -36,7 +36,19 @@ describe('домен лендинга', () => {
     // ученик окажется разлогиненным.
     expect(on('justtostudy-english.kz', '/', '?screen=chat')).toEqual({ action: 'redirect', to: APP + '/?screen=chat' })
     expect(on('justtostudy-english.kz', '/trial/abc')).toEqual({ action: 'redirect', to: APP + '/trial/abc' })
-    expect(on('justtostudy-english.kz', '/api/tts', '?t=1')).toEqual({ action: 'redirect', to: APP + '/api/tts?t=1' })
+  })
+  // Оплата картой — на домене лендинга (анкета Freedom Pay, оферта, политика):
+  // витрина, её вход и роуты приложения отвечают здесь.
+  it('витрина тарифов и минут, API — на домене лендинга', () => {
+    expect(on('justtostudy-english.kz', '/', '?screen=pricing&offer=ind-60-12')).toEqual({ action: 'next' })
+    expect(on('justtostudy-english.kz', '/', '?screen=minutes')).toEqual({ action: 'next' })
+    expect(on('justtostudy-english.kz', '/api/tts', '?t=1')).toEqual({ action: 'next' })
+    expect(on('justtostudy-english.kz', '/api/profile')).toEqual({ action: 'next' })
+  })
+  it('куда уводить оплату', () => {
+    expect(checkoutOrigin({ onLandingHost: false, landingHosts: hosts })).toBe('https://justtostudy-english.kz')
+    expect(checkoutOrigin({ onLandingHost: true, landingHosts: hosts })).toBeNull()
+    expect(checkoutOrigin({ onLandingHost: false, landingHosts: parseHosts('') })).toBeNull()
   })
   it('без адреса приложения — не уводим в никуда', () => {
     expect(on('justtostudy-english.kz', '/trial/abc', '', { appUrl: '' })).toEqual({ action: 'next' })

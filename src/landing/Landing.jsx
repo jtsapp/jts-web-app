@@ -39,6 +39,8 @@ export function Header({ c, lang, links, home = '' }) {
             <a className={'ld-lang__opt' + (lang === 'kz' ? ' is-on' : '')} href={links.langKz} hrefLang="kk">{c.nav.langKz}</a>
           </nav>
           <div className="ld-header__btns">
+            {/* Тарифы с кнопкой «Купить» — путь к оплате с главной (замечание Freedom Pay 10.11.2026). */}
+            <a className="ld-btn ld-btn--ghost ld-header__tariffs" href={infoUrl('tariffs', lang)}>{c.nav.tariffs}</a>
             <a className="ld-btn ld-btn--ghost" href={links.login}>{c.nav.login}</a>
             <a className="ld-btn ld-btn--primary" href={home + '#trial'}>{c.nav.start}</a>
           </div>

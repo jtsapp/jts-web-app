@@ -11,7 +11,16 @@
 // повторит (CORS), и заявка тихо пропала бы. /info/ — страницы для покупателя
 // (тарифы, оплата, возврат, контакты): их проверяет платёжный провайдер на
 // публичном домене, поэтому они живут здесь, а не в приложении.
-const PASS_PREFIXES = ['/_next/', '/landing/', '/assets/', '/legal/', '/fonts/', '/api/landing/', '/info/']
+// /api/ — целиком: оформление заказа (см. CHECKOUT_SCREENS) идёт приложением на
+// этом же домене, и его вход, профиль и прочие роуты должны отвечать здесь, а не
+// уводиться на домен приложения (fetch за редиректом на чужой домен ломает CORS).
+const PASS_PREFIXES = ['/_next/', '/landing/', '/assets/', '/legal/', '/fonts/', '/api/', '/info/']
+
+// Экраны приложения, которые открываются на домене лендинга, а не уводятся:
+// оформление и оплата заказа. Freedom Pay принимает оплату на домене из анкеты
+// и публичных документов (оферта, политика) — это justtostudy-english.kz
+// (решение владельца 10.11.2026). Вход здесь — свой: localStorage у доменов разный.
+export const CHECKOUT_SCREENS = new Set(['pricing', 'minutes'])
 const PASS_FILES = new Set(['/favicon.ico', '/robots.txt', '/sitemap.xml'])
 
 // Локальная разработка видит /landing всегда — иначе страницу не посмотреть.
@@ -67,8 +76,9 @@ export function normalizeAppUrl(raw) {
 export function routeLanding({ host, pathname, search = '', landingHosts, appUrl = '', preview = false }) {
   if (landingHosts.has(host)) {
     if (pathname === '/landing') return { action: 'redirect', to: '/' + search }
-    const isAppScreen = pathname === '/' && new URLSearchParams(search).has('screen')
-    if (pathname === '/' && !isAppScreen) return { action: 'rewrite', to: '/landing' + search }
+    const screen = pathname === '/' ? new URLSearchParams(search).get('screen') : null
+    if (pathname === '/' && !screen) return { action: 'rewrite', to: '/landing' + search }
+    if (CHECKOUT_SCREENS.has(screen)) return { action: 'next' }
     if (PASS_FILES.has(pathname) || PASS_PREFIXES.some((p) => pathname.startsWith(p))) return { action: 'next' }
     // Экран приложения на домене лендинга — уводим в приложение: вход
     // хранится в localStorage домена, и зарегистрированный здесь ученик
@@ -87,4 +97,13 @@ export function routeLanding({ host, pathname, search = '', landingHosts, appUrl
 // приложения. На самом приложении (и локально) — как было, относительно.
 export function appLink(path, { onLandingHost, appUrl }) {
   return onLandingHost && appUrl ? appUrl + path : path
+}
+
+/**
+ * Где оформлять заказ: на домене лендинга (первый из LANDING_HOSTS). Уже на нём
+ * или доменов лендинга нет (локально, дев без лендинга) — здесь же, null.
+ */
+export function checkoutOrigin({ onLandingHost, landingHosts }) {
+  const first = [...landingHosts][0]
+  return onLandingHost || !first ? null : `https://${first}`
 }

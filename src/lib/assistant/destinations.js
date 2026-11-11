@@ -104,11 +104,23 @@ export const DESTINATIONS = [
     name: { ru: 'Prepositions World (предлоги)', kk: 'Prepositions World', en: 'Prepositions World' },
     about: 'курс английских предлогов: уроки с картинками и переводом, практика на сценах',
   },
+  // 12 времён Tenses World — тоже с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'tenses', nav: 'tenses', screen: 'tenses',
+    name: { ru: 'Tenses World (12 времён)', kk: 'Tenses World', en: 'Tenses World' },
+    about: '12 английских времён (вкладка «Грамматика», группа «Тренажёры»): карта времён, у каждого видеоурок, правила и формулы, Formula Lab, затем практика в пять этапов — от узнавания времени до всех двенадцати вместе',
+  },
   // Курс Pronunciation World тоже с бэкенда; без входа экран сам просит войти.
   {
     id: 'pronunciation', nav: 'pronunciation', screen: 'pronunciation',
     name: { ru: 'Pronunciation World (произношение)', kk: 'Pronunciation World', en: 'Pronunciation World' },
     about: 'курс английского произношения A0–C1 (вкладка «Говорение»): объяснение звука со схемами рта и губ, запись своего голоса для сравнения, игра на слух Echo Gates',
+  },
+  // Punctuation World тоже с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'punctuation', nav: 'punctuation', screen: 'punctuation',
+    name: { ru: 'Punctuation World (пунктуация)', kk: 'Punctuation World', en: 'Punctuation World' },
+    about: 'пунктуация английского A0–C2 (вкладка «Грамматика»): 20 страниц-уроков на пяти островах — знак, его работа, когда и как ставить, — и после каждой игра-приключение Декстера в семь стадий',
   },
   {
     id: 'reading', nav: 'reading', screen: 'reading',

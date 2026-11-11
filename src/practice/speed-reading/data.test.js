@@ -4,7 +4,12 @@ import { normalizeText, normalizeSample, normalizeAttempt, attemptBody } from '.
 describe('normalizeText', () => {
   it('ответ бэкенда как есть', () => {
     const t = normalizeText({ id: 'hello', level: 'A1', icon: '👋', title: { ru: 'Знакомство', kk: 'Танысу', en: 'Hi' }, body: 'Hello  everyone!\nMy name', words: 99, sample: null })
-    expect(t).toEqual({ id: 'hello', level: 'A1', icon: '👋', title: { ru: 'Знакомство', kk: 'Танысу', en: 'Hi' }, body: 'Hello  everyone!\nMy name', words: 4, sample: null })
+    expect(t).toEqual({ id: 'hello', level: 'A1', icon: '👋', title: { ru: 'Знакомство', kk: 'Танысу', en: 'Hi' }, genre: null, category: null, sound: null, body: 'Hello  everyone!\nMy name', words: 4, sample: null })
+  })
+  it('v1.2: жанр, группа и сцена — ключами; кривой ключ — null', () => {
+    expect(normalizeText({ id: 'a1air', level: 'A1', genre: 'airport', category: 'travel', sound: 'airport', body: 'Hi' })).toMatchObject({ genre: 'airport', category: 'travel', sound: 'airport' })
+    expect(normalizeText({ id: 'x', g: 'cafe', c: 'city', snd: 'cafe', x: 'Hi' })).toMatchObject({ genre: 'cafe', category: 'city', sound: 'cafe' })
+    expect(normalizeText({ id: 'x', genre: '<b>', category: 'Travel', sound: 12, body: 'Hi' })).toMatchObject({ genre: null, category: null, sound: null })
   })
   it('терпит форму прототипа и заголовок строкой JSON', () => {
     const t = normalizeText({ id: 'w', lv: 'A2', ic: '⛅', t: '{"ru":"Погода","kk":"Ауа","en":"Weather"}', x: 'It is cold.' })
@@ -56,6 +61,11 @@ describe('attemptBody', () => {
     })
   })
   it('темп — не больше 1000 (проверка бэкенда)', () => {
+    // v1.2: ползунок — 0,5–3 с шагом 0,1, а не ближайшая из семи кнопок.
+    expect(attemptBody({ textId: 'a', speed: 1.3, durationSec: 1, wordsTotal: 1, wordsRead: 1, percent: 100, stars: 3, wpm: 1, scoredBy: 'server' }).speed).toBe(1.3)
+    expect(attemptBody({ textId: 'a', speed: 1.2999999, durationSec: 1, wordsTotal: 1, wordsRead: 1, percent: 100, stars: 3, wpm: 1, scoredBy: 'server' }).speed).toBe(1.3)
+    expect(attemptBody({ textId: 'a', speed: 7, durationSec: 1, wordsTotal: 1, wordsRead: 1, percent: 100, stars: 3, wpm: 1, scoredBy: 'server' }).speed).toBe(3)
+    expect(attemptBody({ textId: 'a', speed: 0.1, durationSec: 1, wordsTotal: 1, wordsRead: 1, percent: 100, stars: 3, wpm: 1, scoredBy: 'server' }).speed).toBe(0.5)
     expect(attemptBody({ textId: 'a', speed: 3, durationSec: 1, wordsTotal: 10, wordsRead: 10, percent: 100, stars: 3, wpm: 4200, scoredBy: 'server' }).wpm).toBe(1000)
   })
   it('прочитано не больше, чем слов', () => {

@@ -175,6 +175,9 @@
     "pronunciation": [
       "pronunciation"
     ],
+    "punctuation": [
+      "punctuation"
+    ],
     "reading": [
       "reading"
     ],
@@ -270,6 +273,9 @@
     ],
     "teacher-wizard": [
       "cabinet"
+    ],
+    "tenses": [
+      "tenses"
     ],
     "test": [
       "placement"
@@ -573,6 +579,14 @@
           "title": "Темы по уровням"
         },
         {
+          "id": "tenses",
+          "title": "Tenses World"
+        },
+        {
+          "id": "punctuation",
+          "title": "Punctuation World"
+        },
+        {
           "id": "listening",
           "title": "Тренируй Listening в мини-игре"
         },
@@ -669,8 +683,16 @@
       "screen": "prepositions"
     },
     {
+      "id": "tenses",
+      "screen": "tenses"
+    },
+    {
       "id": "pronunciation",
       "screen": "pronunciation"
+    },
+    {
+      "id": "punctuation",
+      "screen": "punctuation"
     },
     {
       "id": "reading",
@@ -847,7 +869,7 @@
     },
     "practice": {
       "title": "Практика: обзор и лимиты",
-      "hash": "z78e2l"
+      "hash": "17bjcf4"
     },
     "grammar": {
       "title": "Практика: Грамматика",
@@ -908,6 +930,14 @@
     "pronunciation": {
       "title": "Практика: Pronunciation World",
       "hash": "1152dbh"
+    },
+    "tenses": {
+      "title": "Практика: Tenses World",
+      "hash": "1g3mjwo"
+    },
+    "punctuation": {
+      "title": "Практика: Punctuation World",
+      "hash": "dg4gf3"
     },
     "grammar-games": {
       "title": "Практика: Грамматика · игры",

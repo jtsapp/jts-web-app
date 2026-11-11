@@ -13,13 +13,19 @@
 // на бэкенд — цифры попытки. Живая подсветка — распознавание самого браузера (в Chrome — сервис Google), как в
 // прототипе; включена только в Chrome и Edge на компьютере (live.js liveAllowed). Образец озвучки создаёт роут сайта /api/practice/speed-reading/sample при первом
 // открытии текста и играет общим элементом озвучки (playUrl) — там же разрешение iPhone на звук.
+//
+// ТЗ v1.2: 250 текстов (A1–C1 × 50 жанров в пяти группах), фоновые сцены (синтез в браузере, ambience.js), образец
+// всегда в 1x, ползунок скорости. Запись, которую ученик слушает и скачивает, — голос вместе с фоном сцены; на
+// распознавание уходит чистый голос, на бэкенд — по-прежнему только цифры.
 
 import { useEffect, useRef } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
-import { playUrl, stopTts } from '../lib/speech.js'
+import { playUrl, stopTts, unlockSpeech } from '../lib/speech.js'
 import { mountSpeedReading } from '../practice/speed-reading/engine.js'
 import { SPEED_READING_CSS } from '../practice/speed-reading/styles.js'
+import { SPEED_READING_DARK_CSS } from '../practice/speed-reading/styles.dark.js'
+import { watchAppTheme } from '../practice/hostTheme.js'
 import { canRecord, openRecorder } from '../practice/speed-reading/recorder.js'
 import { browserRecognition, startLive } from '../practice/speed-reading/live.js'
 import { requestSample } from '../practice/speed-reading/sampleClient.js'
@@ -61,8 +67,11 @@ export default function SpeedReadingPage({ userName, userLevel, token, onNav, on
   // Язык и текст по ссылке нужны движку только при монтировании: смена языка дальше идёт через setLang, а
   // пересоздание по каждому из них выкидывало бы ученика из записи на стартовый экран.
   const live = useRef({})
+  // Тёмная тема — приложения: тень её не видит, поэтому атрибутом хоста и вслед за кнопкой темы.
+  useEffect(() => (hostRef.current ? watchAppTheme(hostRef.current) : undefined), [])
+
   useEffect(() => {
-    live.current = { lang, text: initialTarget?.text || null }
+    live.current = { lang, text: initialTarget?.text || null, level: userLevel || null }
   })
   // Без истории — во вкладку «Грамматика»: карточка «Скорочтения» там с редизайна 29.10.2026.
   const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammarGames' }))
@@ -83,14 +92,17 @@ export default function SpeedReadingPage({ userName, userLevel, token, onNav, on
     const shadow = host.shadowRoot || host.attachShadow({ mode: 'open' })
     // Шрифт сайта внутрь тени (Manrope, в kk — Inter) — до отрисовки.
     host.style.setProperty('--sr-font', hostFont(host))
-    shadow.innerHTML = `<style>${SPEED_READING_CSS}</style><div class="sr"></div>`
+    shadow.innerHTML = `<style>${SPEED_READING_CSS}\n${SPEED_READING_DARK_CSS}</style><div class="sr"></div>`
     const api = mountSpeedReading(shadow.querySelector('.sr'), {
       // Копии: движок дописывает образец в текст, а список хука остаётся как пришёл.
       texts: texts.map((x) => ({ ...x })),
       attempts,
       lang: now.lang,
       initialText: now.text,
+      // v1.2: экран открывается на уровне ученика (вкладки A1–C1), а не на первом тексте списка.
+      initialLevel: now.level,
       img,
+      unlockSample: unlockSpeech,
       playSample: (url, rate, h) => playUrl(url, { rate, onTime: h.onTime, onEnd: h.onEnd, onCancel: h.onEnd, onFail: h.onFail }),
       stopSample: stopTts,
       ensureSample: (id) => requestSample(id, { token: tokenRef.current, alive: () => mounted }),

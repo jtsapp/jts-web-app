@@ -11,6 +11,8 @@ import { PricingIncluded } from '../components/PricingDecorations.jsx'
 import LegalDocumentsPanel from '../components/LegalDocumentsPanel.jsx'
 import { CURRENCY, formatPrice, offerCategory, offerTitle, offerDetails } from '../data/pricing.js'
 import { addItem, cartCount, cartTotal, qtyOf, removeItem, setQty } from '../lib/cart.js'
+import { consumePendingOffer } from '../lib/pendingOffer.js'
+import { checkoutUrl, fetchCheckoutOrigin } from '../lib/checkoutOrigin.js'
 
 
 /**
@@ -31,7 +33,7 @@ function newOrderKey() {
 // считает сервер, и вторая копия прайса на клиенте означала бы, что человек
 // видит одно, а платит другое. Подписи при этом строятся здесь — сервер владеет
 // ценой и составом, клиент словами, поэтому экран остаётся трёхъязычным.
-export default function PricingPage({ token, onBack, onDone }) {
+export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
   const { t, lang } = useI18n()
   const { offers, failed, reload } = useOffers()
   const [items, setItems] = useState([])
@@ -50,6 +52,24 @@ export default function PricingPage({ token, onBack, onDone }) {
     price: offer.price,
   })
   const add = (offer) => setItems((prev) => addItem(prev, cartLine(offer)))
+
+  // Пришли кнопкой «Купить» со страницы тарифов сайта — этот тариф сразу в
+  // корзине (и вся корзина, с которой приложение увело оплату на домен
+  // лендинга). Забирается один раз, когда каталог доехал.
+  const pendingDone = useRef(false)
+  useEffect(() => {
+    if (pendingDone.current || !offers?.length) return
+    pendingDone.current = true
+    const lines = consumePendingOffer()
+      .map((l) => ({ offer: offers.find((o) => o.code === l.code), qty: l.qty }))
+      .filter((l) => l.offer)
+    if (!lines.length) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- разовая подстановка из ссылки
+    setItems((prev) => lines.reduce(
+      (acc, l) => (qtyOf(acc, l.offer.code) ? acc : addItem(acc, { ...cartLine(l.offer), qty: l.qty })),
+      prev,
+    ))
+  }, [offers]) // eslint-disable-line react-hooks/exhaustive-deps -- cartLine зависит от языка, подстановка одна
   const bump = (id, delta) => setItems((prev) => setQty(prev, id, qtyOf(prev, id) + delta))
 
   // Ключ идемпотентности живёт, пока не изменилась корзина: повторный клик по
@@ -66,6 +86,23 @@ export default function PricingPage({ token, onBack, onDone }) {
   }
 
   const pay = async (method) => {
+    // Картой платят на домене лендинга (он в анкете Freedom Pay, оферте и
+    // политике): с домена приложения уводим туда вместе с корзиной.
+    if (method === 'card') {
+      const origin = await fetchCheckoutOrigin()
+      if (origin) {
+        setPayOpen(false)
+        window.location.assign(checkoutUrl(origin, 'pricing', items.map((x) => ({ code: x.id, qty: x.qty }))))
+        return
+      }
+    }
+    // Оплата картой — из аккаунта: заказ привязан к ученику, которому выдаётся
+    // доступ. Гостя ведём ко входу, после него он вернётся сюда.
+    if (method === 'card' && !token && onNeedLogin) {
+      setPayOpen(false)
+      onNeedLogin()
+      return
+    }
     const lines = items.map(
       (x) => `• ${x.title} — ${x.subtitle} × ${x.qty} = ${formatPrice(x.price * x.qty)} ${CURRENCY}`,
     )
@@ -88,20 +125,24 @@ export default function PricingPage({ token, onBack, onDone }) {
     // Настоящая оплата, если эквайринг подключён. Ссылки нет (провайдер не
     // настроен или не ответил) — идём прежним путём, к менеджеру: пустая
     // страница оплаты хуже, чем живой человек.
-    try {
-      const order = await createOrder(token, {
-        items: items.map((x) => ({ offerCode: x.id, quantity: x.qty })),
-        idempotencyKey: orderKey(),
-        returnUrl: typeof window === 'undefined' ? undefined : window.location.href,
-      })
-      if (order?.paymentUrl) {
-        setPayOpen(false)
-        onDone?.(method)
-        window.location.assign(order.paymentUrl)
-        return
+    // Заказ и платёж — только для «Оплатить картой»: выбравший менеджера
+    // не должен внезапно оказаться на странице оплаты.
+    if (method === 'card') {
+      try {
+        const order = await createOrder(token, {
+          items: items.map((x) => ({ offerCode: x.id, quantity: x.qty })),
+          idempotencyKey: orderKey(),
+          returnUrl: typeof window === 'undefined' ? undefined : window.location.href,
+        })
+        if (order?.paymentUrl) {
+          setPayOpen(false)
+          onDone?.(method)
+          window.location.assign(order.paymentUrl)
+          return
+        }
+      } catch {
+        /* заказ не создался — остаётся запасной путь ниже */
       }
-    } catch {
-      /* заказ не создался — остаётся запасной путь ниже */
     }
 
     setPayOpen(false)

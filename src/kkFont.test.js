@@ -82,6 +82,11 @@ const ENGINES = {
   prepositions: (css) => expect(css).toContain(`.pw [lang="kk"]{font-family:'Inter'`),
   // Интерфейс английский, гарнитура — сайта через --pron-font; казахский перевод с lang="kk" — на Inter.
   pronunciation: (css) => expect(css).toContain(`.pron [lang="kk"]{font-family:'Inter'`),
+  // Интерфейс английский, гарнитуры — сайта через --tw-font; перевод на казахский ставит lang="kk" на корень раздела
+  // (прототип — на <html>), и тогда обе гарнитуры раздела — Inter.
+  tenses: (css) => expect(css).toContain(`.tws[lang="kk"] { --font-head: 'Inter'`),
+  // Интерфейс английский, гарнитура — сайта через --punct-font; казахский перевод с lang="kk" — на Inter.
+  punctuation: (css) => expect(css).toContain(`.punct [lang="kk"]{font-family:'Inter'`),
   // Интерфейс раздела — на языке приложения, гарнитура — сайта через --cw-font (в kk экран отдаёт Inter).
   cartoons: (css) => expect(css).toContain('--ct-font-text: var(--cw-font, inherit);'),
   // Интерфейс — на языке приложения, гарнитура — сайта через --gg-font (в kk экран отдаёт Inter).

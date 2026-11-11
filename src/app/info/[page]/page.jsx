@@ -10,7 +10,7 @@ import { Footer, Header } from '../../../landing/Landing.jsx'
 import InfoContent from '../../../landing/InfoContent.jsx'
 import { APP_LOGIN_URL, pickContent } from '../../../landing/content.js'
 import { INFO_PAGES, pickInfo } from '../../../landing/info.js'
-import { appLink, normalizeAppUrl, parseHosts, requestHost } from '../../../landing/hostRouting.js'
+import { appLink, checkoutOrigin, normalizeAppUrl, parseHosts, requestHost } from '../../../landing/hostRouting.js'
 import { BACKEND_URL } from '../../../lib/auth-server.js'
 
 async function langOf(searchParams) {
@@ -61,6 +61,10 @@ export default async function InfoPage({ params, searchParams }) {
     langKz: '?lang=kz',
   }
   const offers = page === 'tariffs' ? await loadOffers() : null
+  // «Купить» — витрина с тарифом в корзине на домене лендинга: вход, заказ и
+  // оплата картой идут там (этот домен — в анкете Freedom Pay, оферте и политике).
+  const shopOrigin = checkoutOrigin({ onLandingHost, landingHosts }) || ''
+  const buyUrl = (code) => `${shopOrigin}/?screen=pricing&offer=${encodeURIComponent(code)}`
 
   return (
     <>
@@ -68,7 +72,7 @@ export default async function InfoPage({ params, searchParams }) {
       <div className="ld" id="top" lang={lang === 'kz' ? 'kk' : 'ru'}>
         <Header c={pickContent(lang)} lang={lang} links={links} home={homeWithLang} />
         <main className="ld-info">
-          <InfoContent page={page} lang={lang} offers={offers} home={homeWithLang} />
+          <InfoContent page={page} lang={lang} offers={offers} home={homeWithLang} buyUrl={buyUrl} />
         </main>
         <Footer c={pickContent(lang)} lang={lang} home={homeWithLang} />
       </div>

@@ -5,7 +5,7 @@
 // объектом или строкой JSON, попытка — camelCase или snake_case. Разойдётся контракт — правится эта функция,
 // а не движок. Отправка, наоборот, строгая: ровно девять полей (бэкенд отвечает 400 на лишние).
 
-import { SPEEDS, srWords } from './rules.js'
+import { clampSpeed, srWords } from './rules.js'
 
 const LANGS = ['ru', 'kk', 'en']
 const SCORED_BY = new Set(['server', 'browser', 'none'])
@@ -28,6 +28,10 @@ function titleOf(raw, fallback) {
   const s = typeof t === 'string' && t.trim() ? t : fallback
   return { ru: s, kk: s, en: s }
 }
+
+// Ключ справочника (жанр, группа, сцена): строка из латиницы, цифр и дефисов, иначе null — карточка уйдёт
+// во «Другие», а сцена просто не зазвучит.
+const key = (v) => (typeof v === 'string' && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(v.trim()) ? v.trim() : null)
 
 const num = (v) => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null)
 
@@ -53,6 +57,11 @@ export function normalizeText(raw) {
     level: String(raw.level ?? raw.lv ?? ''),
     icon: String(raw.icon ?? raw.ic ?? ''),
     title: titleOf(raw.title ?? raw.t, id),
+    // v1.2: жанр (при смене уровня остаётся тот же), группа (вкладка) и фоновая сцена. У текстов v1.1 до
+    // переимпорта их нет — null.
+    genre: key(raw.genre ?? raw.g),
+    category: key(raw.category ?? raw.c),
+    sound: key(raw.sound ?? raw.snd),
     body,
     // Число слов — своим разбиением: тем же, что режет телесуфлёр и выравнивает прочитанное.
     words: srWords(body).length,
@@ -86,12 +95,12 @@ const clampInt = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(v) |
 
 /**
  * Тело POST /mobile/speed-reading/attempts — ровно поля из проверки бэкенда (docs/practice/SPEED_READING.md):
- * скорость из семи, длительность не больше 200 с, прочитано не больше слов, звёзды 0–3, темп не больше 1000.
+ * скорость 0,5–3 с шагом 0,1 (v1.2: ползунок), длительность не больше 200 с, прочитано не больше слов, звёзды 0–3, темп не больше 1000.
  * Записи здесь нет и быть не может (Д6).
  */
 export function attemptBody(a) {
   const wordsTotal = clampInt(a.wordsTotal, 0, 100000)
-  const speed = SPEEDS.reduce((best, s) => (Math.abs(s - a.speed) < Math.abs(best - a.speed) ? s : best), 1)
+  const speed = clampSpeed(a.speed)
   return {
     textId: String(a.textId),
     speed,

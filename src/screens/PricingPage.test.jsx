@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import PricingPage from './PricingPage.jsx'
+import { rememberPendingOffer } from '../lib/pendingOffer.js'
 
 // Каталог приезжает с бэкенда — в тесте сети нет. Ответы держим в объекте:
 // vi.mock поднимается наверх файла, и подменить их внутри it нечем.
@@ -159,15 +160,14 @@ describe('Витрина тарифов', () => {
 
   /* ------------------------------- оплата ------------------------------- */
 
-  // Kaspi скрыт до подключения эквайринга: кнопка вела туда же, куда и
-  // остальные две, а обещание автоматической оплаты, которой нет, злит сильнее
-  // её отсутствия.
-  it('способа «Kaspi» в окне оплаты нет — остались два пути к менеджеру', async () => {
+  // Kaspi напрямую не подключён; карта — через Freedom Pay.
+  it('в окне оплаты — карта и два пути к менеджеру, Kaspi нет', async () => {
     const { container } = await renderLoaded()
     await addTile(container, '12 уроков')
     fireEvent.click(container.querySelector('.pr-cart__pay'))
 
     expect(screen.queryByText('Оплатить через Kaspi.kz')).toBeNull()
+    expect(screen.getByText('Оплатить картой')).toBeTruthy()
     expect(screen.getByText('Связаться с менеджером')).toBeTruthy()
     expect(screen.getByText('Связаться со мной')).toBeTruthy()
   })
@@ -177,7 +177,7 @@ describe('Витрина тарифов', () => {
     const { container } = await renderLoaded()
     await addTile(container, '12 уроков')
     fireEvent.click(container.querySelector('.pr-cart__pay'))
-    fireEvent.click(screen.getByText('Связаться с менеджером'))
+    fireEvent.click(screen.getByText('Оплатить картой'))
 
     await waitFor(() => expect(backend.orderCalls).toHaveLength(1))
     const sent = backend.orderCalls[0]
@@ -198,10 +198,80 @@ describe('Витрина тарифов', () => {
     const { container } = await renderLoaded()
     await addTile(container, '12 уроков')
     fireEvent.click(container.querySelector('.pr-cart__pay'))
-    fireEvent.click(screen.getByText('Связаться с менеджером'))
+    fireEvent.click(screen.getByText('Оплатить картой'))
 
     await waitFor(() => expect(href).toHaveBeenCalledWith('https://pay.example/1'))
     expect(window.open).not.toHaveBeenCalled()
+  })
+
+  // «Купить» на странице тарифов сайта ведёт сюда с кодом тарифа.
+  it('корзина из ссылки — с количеством', async () => {
+    rememberPendingOffer('ind-60-12:2,group-12')
+    const { container } = await renderLoaded()
+    await waitFor(() => expect(container.querySelectorAll('.pr-line')).toHaveLength(2))
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Оплатить картой'))
+    await waitFor(() => expect(backend.orderCalls).toHaveLength(1))
+    expect(backend.orderCalls[0].items).toEqual([
+      { offerCode: 'ind-60-12', quantity: 2 },
+      { offerCode: 'group-12', quantity: 1 },
+    ])
+  })
+
+  // На домене приложения карта уводит на домен лендинга вместе с корзиной.
+  it('карта на домене приложения — переход на домен оплаты с корзиной', async () => {
+    const assign = vi.fn()
+    Object.defineProperty(window, 'location', { configurable: true, value: { href: 'http://localhost/', assign } })
+    const realFetch = globalThis.fetch
+    globalThis.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ origin: 'https://justtostudy-english.kz' }) }))
+    try {
+      const { container } = await renderLoaded()
+      await addTile(container, '12 уроков')
+      fireEvent.click(container.querySelector('.pr-cart__pay'))
+      fireEvent.click(screen.getByText('Оплатить картой'))
+      await waitFor(() => expect(assign).toHaveBeenCalledTimes(1))
+      expect(assign.mock.calls[0][0]).toBe('https://justtostudy-english.kz/?screen=pricing&offer=ind-60-12')
+      expect(backend.orderCalls).toHaveLength(0)
+    } finally {
+      globalThis.fetch = realFetch
+    }
+  })
+
+  it('тариф из ссылки сайта сразу лежит в корзине', async () => {
+    rememberPendingOffer('group-12')
+    const { container } = await renderLoaded()
+    await waitFor(() => expect(container.querySelectorAll('.pr-line')).toHaveLength(1))
+    expect(container.querySelector('.pr-line').textContent).toContain('12 уроков · 1 курс')
+  })
+
+  // Заказ привязан к аккаунту: гость с картой идёт ко входу, а не в чат.
+  it('гость, выбравший карту, уходит ко входу', async () => {
+    const onNeedLogin = vi.fn()
+    const view = render(
+      <I18nProvider>
+        <PricingPage token={null} onBack={vi.fn()} onNeedLogin={onNeedLogin} />
+      </I18nProvider>,
+    )
+    await waitFor(() => expect(view.container.querySelector('.pr-cart__pay')).toBeTruthy())
+    await addTile(view.container, '12 уроков')
+    fireEvent.click(view.container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Оплатить картой'))
+
+    await waitFor(() => expect(onNeedLogin).toHaveBeenCalledTimes(1))
+    expect(backend.orderCalls).toHaveLength(0)
+    expect(window.open).not.toHaveBeenCalled()
+  })
+
+  // Выбравший менеджера не должен внезапно оказаться на странице оплаты.
+  it('«Связаться с менеджером» не создаёт заказ, даже когда оплата подключена', async () => {
+    backend.order = { paymentUrl: 'https://pay.example/1' }
+    const { container } = await renderLoaded()
+    await addTile(container, '12 уроков')
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Связаться с менеджером'))
+
+    await waitFor(() => expect(window.open).toHaveBeenCalledTimes(1))
+    expect(backend.orderCalls).toHaveLength(0)
   })
 
   // Эквайринг ещё не подключён — заказ создаётся без ссылки, и человека ведём
@@ -210,7 +280,7 @@ describe('Витрина тарифов', () => {
     const { container } = await renderLoaded()
     await addTile(container, '12 уроков')
     fireEvent.click(container.querySelector('.pr-cart__pay'))
-    fireEvent.click(screen.getByText('Связаться с менеджером'))
+    fireEvent.click(screen.getByText('Оплатить картой'))
 
     await waitFor(() => expect(window.open).toHaveBeenCalledTimes(1))
     expect(window.open.mock.calls[0][0].startsWith('https://wa.me/')).toBe(true)

@@ -60,6 +60,7 @@ import { readSituationsDone } from './practice/situations/situationsProgress.js'
 import { holdTours } from './lib/tourBus.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
 import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
+import { rememberPendingOffer } from './lib/pendingOffer.js'
 import { openLandingHandoff } from './landing/handoffClient.js'
 import { captureAttribution, safeStorage } from './lib/attribution.js'
 import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
@@ -128,6 +129,8 @@ const SpeakSpinPage = lazyScreen(() => import('./screens/SpeakSpinPage.jsx'))
 const NumbersPage = lazyScreen(() => import('./screens/NumbersPage.jsx'))
 const PrepositionsPage = lazyScreen(() => import('./screens/PrepositionsPage.jsx'))
 const PronunciationPage = lazyScreen(() => import('./screens/PronunciationPage.jsx'))
+const TensesPage = lazyScreen(() => import('./screens/TensesPage.jsx'))
+const PunctuationPage = lazyScreen(() => import('./screens/PunctuationPage.jsx'))
 const GrammarGamesPage = lazyScreen(() => import('./screens/GrammarGamesPage.jsx'))
 const SpeedReadingPage = lazyScreen(() => import('./screens/SpeedReadingPage.jsx'))
 const CartoonsPage = lazyScreen(() => import('./screens/CartoonsPage.jsx'))
@@ -231,7 +234,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана
   'my-teacher', 'teacher-wizard', 'teacher-pick',
@@ -475,6 +478,9 @@ export default function App() {
       const text = searchParams.get('text')
       if (text) setSpeedReadingTarget({ text })
     }
+    // ?screen=pricing&offer=<код> — «Купить» со страницы тарифов сайта: тариф
+    // ляжет в корзину витрины, в том числе после входа (lib/pendingOffer.js).
+    if (deepLink === 'pricing' || deepLink === 'minutes') rememberPendingOffer(searchParams.get('offer'))
     // ?screen=listen&set=A1 — сразу уровень (или направление) Just to Listen:
     // проверить набор по ссылке, не проходя меню.
     if (deepLink === 'listen') {
@@ -1895,6 +1901,8 @@ export default function App() {
     else if (key === 'numbers') setScreen('numbers')
     else if (key === 'prepositions') { setPrepositionsTarget(payload || null); setScreen('prepositions') }
     else if (key === 'pronunciation') { setPronunciationTarget(payload || null); setScreen('pronunciation') }
+    else if (key === 'tenses') setScreen('tenses')
+    else if (key === 'punctuation') setScreen('punctuation')
     else if (key === 'grammar-games') { setGrammarGamesTarget(payload || null); setScreen('grammar-games') }
     else if (key === 'speed-reading') { setSpeedReadingTarget(payload || null); setScreen('speed-reading') }
     else if (key === 'cartoons') { setCartoonsTarget(payload || null); setScreen('cartoons') }
@@ -2525,7 +2533,14 @@ export default function App() {
       // Витрина пакетов минут. «Назад» — туда, откуда пришли: разговор к этому
       // моменту уже закрыт лимитом, поэтому возвращаем на домашний экран тьютора.
       return (
-        <MinutesTopUpPage token={token} onBack={() => setScreen(tutorHome)} />
+        <MinutesTopUpPage
+          token={token}
+          onBack={() => setScreen(tutorHome)}
+          onNeedLogin={() => {
+            rememberPendingScreen('minutes')
+            setScreen('login-password')
+          }}
+        />
       )
     case 'pricing':
       // Витрина без сайдбара — как в макете: это шаг покупки, и уводить с него
@@ -2533,6 +2548,12 @@ export default function App() {
       return (
         <PricingPage
           token={token}
+          // Гость выбрал оплату картой: платить можно только из аккаунта —
+          // ведём ко входу и возвращаем на витрину (lib/pendingScreen.js).
+          onNeedLogin={() => {
+            rememberPendingScreen('pricing')
+            setScreen('login-password')
+          }}
           // Туда, откуда пришли за тарифом: стек переживает и перезагрузку,
           // которой оплата возвращает на ?screen=pricing.
           onBack={() => goBack(() => setScreen(isDemoAccount ? 'home' : 'kingdom'))}
@@ -2733,6 +2754,28 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={pronunciationTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'tenses':
+      return (
+        <TensesPage
+          {...sectionBack('grammarGames')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'punctuation':
+      return (
+        <PunctuationPage
+          {...sectionBack('grammarGames')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />

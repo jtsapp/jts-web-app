@@ -1,0 +1,238 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>ТЗ — Скорочтение (JTS AI Tutor) v1.2</title>
+<style>
+@page{size:A4;margin:18mm 16mm 18mm 18mm}
+body{font-family:"Times New Roman",Times,"Liberation Serif",serif;font-size:12pt;line-height:1.45;color:#111;max-width:900px;margin:24px auto;padding:0 16px}
+h1{font-size:20pt;margin:0 0 4px}h2{font-size:15pt;margin:22px 0 8px;border-bottom:1px solid #999;padding-bottom:3px;break-after:avoid}h3{font-size:12.5pt;margin:14px 0 6px;break-after:avoid}
+.sub{color:#444;margin:0 0 14px}table{border-collapse:collapse;width:100%;margin:6px 0 12px;font-size:10.5pt;break-inside:auto}tr{break-inside:avoid}
+th,td{border:1px solid #888;padding:4px 6px;text-align:left;vertical-align:top}th{background:#eee}code{font-family:"Courier New",monospace;font-size:9.5pt}
+.m{color:#555;font-size:9.5pt}.note{border-left:3px solid #6932BB;background:#f4f0fb;padding:6px 10px;margin:8px 0}
+figure{margin:10px 0;break-inside:avoid}figure img{width:100%;border:1px solid #ccc}figcaption{font-size:10pt;color:#444;margin-top:3px}
+.two{display:flex;gap:12px}.two figure{flex:1}li{margin:2px 0}
+</style></head><body>
+<h1>ТЗ: Скорочтение — тренажёр в разделе «Аудирование»</h1>
+<p class="sub">Кабинет студента JTS AI Tutor · версия 1.2 · 30.10.2026 · автор: Тилек Жаркенов</p>
+<div class="note">Версия 1.2 заменяет раздел «Скорочтение» из ТЗ v1.1 («Грамматика, игры и Скорочтение»). Остальные разделы v1.1 (Грамматика, игры, общие требования) не меняются.</div>
+
+<h2>1. Что меняется в версии 1.2</h2>
+<ul>
+<li>5 уровней (A1–C1) по 50 жанров — всего 250 текстов (вместо 8). Жанры разбиты на 5 групп по 10: Путешествия, Город, Медиа, Работа и учёба, Жизнь и приключения.</li>
+<li>У каждого сценария свой фоновый звук: 37 звуковых сцен с сигналом в начале (аэропорт — гонг «тан-тан» и гул терминала).</li>
+<li>Скорость: быстрые кнопки 0,5x · 0,7x · 1x · 1,5x · 2x · 2,5x · 3x плюс ползунок с шагом 0,1x.</li>
+<li>Образец озвучки всегда звучит в нормальном темпе 1x, независимо от выбранной скорости.</li>
+<li>Образец озвучивается качественными голосами (5 выбранных голосов, бодрая подача без крика).</li>
+<li>Запись студента сохраняется вместе с тихим фоном сцены.</li>
+</ul>
+
+<h2>2. Место в кабинете и сценарий работы</h2>
+<p>Путь: <b>Практика → Аудирование → Скорочтение</b>. Отдельного пункта в боковом меню нет.</p>
+<ol>
+<li>Студент выбирает уровень (A1, A2, B1, B2, C1), группу жанров (5 групп) и ситуацию из 10 карточек группы. При смене уровня сохраняется тот же жанр.</li>
+<li>Видит фон ситуации: может послушать его (7 секунд), выключить или изменить громкость.</li>
+<li>Выбирает скорость кнопкой или ползунком. Под ним — темп в словах в минуту и примерное время чтения.</li>
+<li>По желанию слушает образец озвучки (всегда 1x, с тем же фоном, текущее слово подсвечивается).</li>
+<li>Нажимает «Начать запись»: запускается фон, звучит сигнал сцены (на экране — значок сцены), затем отсчёт 3-2-1.</li>
+<li>Текст прокручивается снизу вверх с выбранной скоростью, распознанные слова подсвечиваются зелёным.</li>
+<li>По окончании текста (или по кнопке «Стоп») — экран результата: процент прочитанного, звёзды, реальный темп, запись, разбор слов.</li>
+</ol>
+<figure><img src="../Design/01-start-B1-desktop.png"><figcaption>Рис. 1. Стартовый экран: уровни, группы жанров, 10 ситуаций группы, фон, скорость, образец</figcaption></figure>
+<div class="two"><figure><img src="../Design/04-recording-scene-cue.png"><figcaption>Рис. 2. Сигнал сцены перед отсчётом</figcaption></figure><figure><img src="../Design/05-recording-teleprompter.png"><figcaption>Рис. 3. Запись: телесуфлёр и распознанные слова</figcaption></figure></div>
+<figure><img src="../Design/06-result.png"><figcaption>Рис. 4. Результат (пример демо-режима)</figcaption></figure>
+<div class="two"><figure style="max-width:42%"><img src="../Design/07-start-mobile-screen.png"><figcaption>Рис. 5. Телефон: стартовый экран (верх)</figcaption></figure><figure style="max-width:42%"><img src="../Design/08-recording-mobile.png"><figcaption>Рис. 6. Телефон: запись</figcaption></figure></div>
+
+<h2>3. Уровни и сценарии</h2>
+<p>250 текстов (5 уровней × 50 жанров), 30688 слов. Один и тот же жанр есть на каждом уровне, но тексты разные, сложность растёт от A1 к C1. Тексты — устные монологи ситуации (объявление, комментарий, речь гида, голосовое сообщение) с казахстанским контекстом, британская орфография. Полные тексты, названия на RU/KZ/EN, ключ фона и число слов — в файле <code>speed-reading-scenarios.json</code> (папка HTML).</p>
+<table><tr><th>Уровень</th><th>Грамматика и лексика</th><th>Объём</th></tr>
+<tr><td>A1</td><td>Present Simple, can, there is/are, повелительное наклонение, короткие фразы</td><td>≈ 55–80 слов</td></tr>
+<tr><td>A2</td><td>Past Simple, going to / will, сравнения, should / have to</td><td>≈ 80–105 слов</td></tr>
+<tr><td>B1</td><td>Present Perfect, 1–2 условные, пассив, придаточные, фразовые глаголы</td><td>≈ 105–130 слов</td></tr>
+<tr><td>B2</td><td>Пассив во всех временах, 3-я и смешанные условные, косвенная речь, модальные вероятности</td><td>≈ 125–155 слов</td></tr>
+<tr><td>C1</td><td>Инверсия, cleft, причастные обороты, хеджирование, идиомы</td><td>≈ 140–175 слов</td></tr></table>
+<p class="m">8 текстов из v1.1 сохранены (hello, weather, flight, hotel, tour, news, pitch, twister); они короче нормы своего уровня. Таблицы ниже — матрица «жанр × уровень», полные тексты — в JSON.</p>
+<div style="break-inside:avoid"><h3>✈️ Путешествия — 10 жанров</h3><table><tr><th>Жанр (RU / EN)</th><th>Фон</th><th>A1</th><th>A2</th><th>B1</th><th>B2</th><th>C1</th></tr>
+<tr><td>✈️ В аэропорту<br><span class=m>At the airport · <code>airport</code></span></td><td><code>airport</code></td><td>73 *</td><td>98</td><td>122 *</td><td>146</td><td>175 *</td></tr>
+<tr><td>🛫 На борту самолёта<br><span class=m>On board · <code>inflight</code></span></td><td><code>plane</code></td><td>80</td><td>98</td><td>117 *</td><td>151</td><td>167</td></tr>
+<tr><td>🚆 На вокзале<br><span class=m>Train station · <code>station</code></span></td><td><code>station</code></td><td>72</td><td>99 *</td><td>129</td><td>154 *</td><td>168</td></tr>
+<tr><td>🚇 В метро<br><span class=m>Metro · <code>metro</code></span></td><td><code>metro</code></td><td>75</td><td>102</td><td>122 *</td><td>147</td><td>171</td></tr>
+<tr><td>🚌 В автобусе<br><span class=m>On the bus · <code>bus</code></span></td><td><code>bus</code></td><td>74 *</td><td>102</td><td>126</td><td>146</td><td>172</td></tr>
+<tr><td>🚕 В такси<br><span class=m>In a taxi · <code>taxi</code></span></td><td><code>car</code></td><td>74</td><td>105</td><td>124</td><td>151</td><td>168</td></tr>
+<tr><td>🛳️ На корабле<br><span class=m>On a ship · <code>ship</code></span></td><td><code>ship</code></td><td>77</td><td>101</td><td>128</td><td>149 *</td><td>171</td></tr>
+<tr><td>🏨 В отеле<br><span class=m>At the hotel · <code>hotel</code></span></td><td><code>hotel</code></td><td>80</td><td>100</td><td>105 *</td><td>142</td><td>173</td></tr>
+<tr><td>🏔️ Экскурсия на природе<br><span class=m>Nature tour · <code>tourguide</code></span></td><td><code>mountain</code></td><td>70</td><td>102</td><td>127</td><td>106 *</td><td>163</td></tr>
+<tr><td>🏙️ Экскурсия по городу<br><span class=m>City tour · <code>citytour</code></span></td><td><code>street</code></td><td>71</td><td>96 *</td><td>130</td><td>153</td><td>169</td></tr>
+</table></div>
+<div style="break-inside:avoid"><h3>🏙️ Город — 10 жанров</h3><table><tr><th>Жанр (RU / EN)</th><th>Фон</th><th>A1</th><th>A2</th><th>B1</th><th>B2</th><th>C1</th></tr>
+<tr><td>🛒 В магазине<br><span class=m>In the shop · <code>shop</code></span></td><td><code>mall</code></td><td>74 *</td><td>93</td><td>127</td><td>153</td><td>171</td></tr>
+<tr><td>🛍️ Торговый центр<br><span class=m>Shopping centre · <code>mall</code></span></td><td><code>mall</code></td><td>74</td><td>98 *</td><td>126 *</td><td>154</td><td>168</td></tr>
+<tr><td>☕ В кафе<br><span class=m>At the café · <code>cafe</code></span></td><td><code>cafe</code></td><td>77 *</td><td>105</td><td>124</td><td>152</td><td>164</td></tr>
+<tr><td>🏥 В поликлинике<br><span class=m>At the clinic · <code>clinic</code></span></td><td><code>clinic</code></td><td>79</td><td>102</td><td>122 *</td><td>149</td><td>167</td></tr>
+<tr><td>📚 В библиотеке<br><span class=m>At the library · <code>library</code></span></td><td><code>library</code></td><td>75</td><td>95 *</td><td>122</td><td>154</td><td>167</td></tr>
+<tr><td>🏛️ В музее<br><span class=m>At the museum · <code>museum</code></span></td><td><code>museum</code></td><td>78</td><td>99 *</td><td>122</td><td>155</td><td>168 *</td></tr>
+<tr><td>🎬 В кинотеатре<br><span class=m>At the cinema · <code>cinema</code></span></td><td><code>cinema</code></td><td>77</td><td>88 *</td><td>128</td><td>149</td><td>166</td></tr>
+<tr><td>🎻 На концерте<br><span class=m>At the concert · <code>concert</code></span></td><td><code>concert</code></td><td>79</td><td>104</td><td>129</td><td>149</td><td>166</td></tr>
+<tr><td>🧺 На базаре<br><span class=m>At the bazaar · <code>bazaar</code></span></td><td><code>market</code></td><td>75</td><td>100</td><td>130</td><td>154</td><td>165</td></tr>
+<tr><td>🦒 В зоопарке<br><span class=m>At the zoo · <code>zoo</code></span></td><td><code>zoo</code></td><td>79 *</td><td>100</td><td>130</td><td>151</td><td>165</td></tr>
+</table></div>
+<div style="break-inside:avoid"><h3>📻 Медиа — 10 жанров</h3><table><tr><th>Жанр (RU / EN)</th><th>Фон</th><th>A1</th><th>A2</th><th>B1</th><th>B2</th><th>C1</th></tr>
+<tr><td>📰 Новости<br><span class=m>News · <code>news</code></span></td><td><code>radio</code></td><td>77</td><td>104</td><td>125</td><td>92 *</td><td>162</td></tr>
+<tr><td>⛅ Прогноз погоды<br><span class=m>Weather forecast · <code>weather</code></span></td><td><code>radio</code></td><td>72</td><td>82 *</td><td>128</td><td>155</td><td>166</td></tr>
+<tr><td>📻 Реклама на радио<br><span class=m>Radio advert · <code>radioad</code></span></td><td><code>radio</code></td><td>73</td><td>100</td><td>120 *</td><td>150</td><td>158</td></tr>
+<tr><td>🎧 Подкаст<br><span class=m>Podcast · <code>podcast</code></span></td><td><code>studio</code></td><td>76</td><td>104</td><td>128 *</td><td>146</td><td>175 *</td></tr>
+<tr><td>⚽ Спортивный комментарий<br><span class=m>Sports commentary · <code>sportscomm</code></span></td><td><code>stadium</code></td><td>77</td><td>101</td><td>126 *</td><td>147</td><td>165 *</td></tr>
+<tr><td>🏟️ Диктор стадиона<br><span class=m>Stadium announcer · <code>stadium</code></span></td><td><code>stadium</code></td><td>79</td><td>98 *</td><td>125</td><td>152 *</td><td>164</td></tr>
+<tr><td>🦅 Документальный фильм<br><span class=m>Documentary · <code>documentary</code></span></td><td><code>park</code></td><td>78</td><td>102</td><td>130</td><td>154 *</td><td>175 *</td></tr>
+<tr><td>🍳 Кулинарное шоу<br><span class=m>Cooking show · <code>cookshow</code></span></td><td><code>kitchen</code></td><td>78 *</td><td>98 *</td><td>129</td><td>153 *</td><td>165</td></tr>
+<tr><td>📸 Пресс-конференция<br><span class=m>Press conference · <code>presscon</code></span></td><td><code>press</code></td><td>78</td><td>104</td><td>130</td><td>154 *</td><td>161</td></tr>
+<tr><td>⛈️ Штормовое предупреждение<br><span class=m>Storm warning · <code>stormwarn</code></span></td><td><code>storm</code></td><td>78</td><td>105</td><td>126</td><td>155 *</td><td>164</td></tr>
+</table></div>
+<div style="break-inside:avoid"><h3>💼 Работа и учёба — 10 жанров</h3><table><tr><th>Жанр (RU / EN)</th><th>Фон</th><th>A1</th><th>A2</th><th>B1</th><th>B2</th><th>C1</th></tr>
+<tr><td>🏫 Объявление в школе<br><span class=m>School announcement · <code>schoolpa</code></span></td><td><code>school</code></td><td>76 *</td><td>105</td><td>124</td><td>154</td><td>161</td></tr>
+<tr><td>👩‍🏫 Начало урока<br><span class=m>Start of the lesson · <code>lesson</code></span></td><td><code>school</code></td><td>71</td><td>105</td><td>126</td><td>152</td><td>165</td></tr>
+<tr><td>🤝 Собеседование<br><span class=m>Job interview · <code>interview</code></span></td><td><code>office</code></td><td>77</td><td>105</td><td>123</td><td>155</td><td>164</td></tr>
+<tr><td>💼 Первый день на работе<br><span class=m>First day at work · <code>firstday</code></span></td><td><code>office</code></td><td>76</td><td>102</td><td>120 *</td><td>151</td><td>160</td></tr>
+<tr><td>📊 Презентация<br><span class=m>Presentation · <code>bizpres</code></span></td><td><code>office</code></td><td>78</td><td>103</td><td>123</td><td>154 *</td><td>170 *</td></tr>
+<tr><td>📞 Голосовое сообщение<br><span class=m>Voice message · <code>phone</code></span></td><td><code>phone</code></td><td>79</td><td>104 *</td><td>123</td><td>145</td><td>164</td></tr>
+<tr><td>🎤 Выступление на конференции<br><span class=m>Conference talk · <code>conference</code></span></td><td><code>hall</code></td><td>80</td><td>102</td><td>121</td><td>155 *</td><td>103 *</td></tr>
+<tr><td>🎓 Выпускная речь<br><span class=m>Graduation speech · <code>graduation</code></span></td><td><code>hall</code></td><td>74</td><td>102</td><td>122</td><td>149</td><td>170 *</td></tr>
+<tr><td>🗣️ Дебаты<br><span class=m>Debate · <code>debate</code></span></td><td><code>hall</code></td><td>72</td><td>102</td><td>123</td><td>153</td><td>175 *</td></tr>
+<tr><td>⚖️ Речь в суде<br><span class=m>In court · <code>court</code></span></td><td><code>court</code></td><td>76</td><td>103</td><td>126</td><td>144</td><td>174 *</td></tr>
+</table></div>
+<div style="break-inside:avoid"><h3>🌟 Жизнь и приключения — 10 жанров</h3><table><tr><th>Жанр (RU / EN)</th><th>Фон</th><th>A1</th><th>A2</th><th>B1</th><th>B2</th><th>C1</th></tr>
+<tr><td>👋 Знакомство<br><span class=m>Introduce yourself · <code>intro</code></span></td><td><code>school</code></td><td>80 *</td><td>102</td><td>123</td><td>151</td><td>167</td></tr>
+<tr><td>🎉 Праздник и тост<br><span class=m>Party toast · <code>party</code></span></td><td><code>party</code></td><td>77 *</td><td>100</td><td>122</td><td>143</td><td>160</td></tr>
+<tr><td>🏖️ Мои каникулы<br><span class=m>My holiday · <code>holiday</code></span></td><td><code>beach</code></td><td>75 *</td><td>97 *</td><td>126</td><td>143</td><td>165</td></tr>
+<tr><td>🏕️ Летний лагерь<br><span class=m>Summer camp · <code>camp</code></span></td><td><code>campfire</code></td><td>80</td><td>101 *</td><td>123</td><td>146</td><td>164</td></tr>
+<tr><td>🌳 Прогулка в парке<br><span class=m>In the park · <code>parkwalk</code></span></td><td><code>park</code></td><td>79 *</td><td>101</td><td>123</td><td>145</td><td>168</td></tr>
+<tr><td>🌧️ Дождливый день<br><span class=m>A rainy day · <code>rainyday</code></span></td><td><code>rain</code></td><td>78 *</td><td>105</td><td>125</td><td>147</td><td>167</td></tr>
+<tr><td>🏋️ Фитнес-тренировка<br><span class=m>Fitness class · <code>fitness</code></span></td><td><code>gym</code></td><td>76</td><td>101</td><td>125 *</td><td>144</td><td>163</td></tr>
+<tr><td>🥾 Поход в горы<br><span class=m>Mountain hike · <code>hike</code></span></td><td><code>mountain</code></td><td>77</td><td>103</td><td>124 *</td><td>148</td><td>167</td></tr>
+<tr><td>🚀 Космос<br><span class=m>Space mission · <code>space</code></span></td><td><code>space</code></td><td>77</td><td>104</td><td>122</td><td>152 *</td><td>171 *</td></tr>
+<tr><td>🌀 Скороговорки<br><span class=m>Tongue twisters · <code>twister</code></span></td><td><code>studio</code></td><td>78</td><td>102</td><td>123</td><td>150</td><td>94 *</td></tr>
+</table></div>
+<p class="m">В ячейках — число слов текста. * — текст из прежних версий со своим названием и, иногда, своим фоном (например, «Смена выхода на посадку» в жанре «В аэропорту», B1).</p>
+<p>Контент-менеджер должен иметь возможность добавлять, редактировать и отключать сценарии в админке: уровень, жанр, группа, иконка, названия RU/KZ/EN, текст, ключ фона, голос образца, файл образца.</p>
+
+<h2>4. Скорость</h2>
+<ul>
+<li>Быстрые кнопки: 0,5x · 0,7x · 1x · 1,5x · 2x · 2,5x · 3x. Ползунок: от 0,5x до 3x, шаг 0,1x. Кнопки и ползунок синхронизированы.</li>
+<li>1x = 150 слов в минуту (естественный темп носителя). Темп = 150 × скорость: 0,5x = 75, 2x = 300, 3x = 450 сл/мин.</li>
+<li>Время прокрутки = число слов ÷ темп × 60 секунд. Под ползунком показывается темп и примерное время.</li>
+<li>Скорость влияет только на прокрутку текста во время записи. На образец озвучки скорость не влияет.</li>
+<li>Максимум — 3x.</li>
+</ul>
+
+<h2>5. Образец озвучки</h2>
+<ul>
+<li><b>Всегда 1x.</b> Образец звучит в нормальном темпе носителя при любой выбранной скорости. Кнопка: «Послушать образец · 1x».</li>
+<li>Озвучка заранее сгенерирована для каждого текста (не голос браузера). Голос браузера — только запасной вариант, если файл не загрузился.</li>
+<li>Подача: бодрая, с живой интонацией, но без крика. Для Higgsfield Seed Audio: <code>speech_rate +10</code>, <code>pitch_rate +1</code>, <code>loudness_rate 0</code>, формат MP3.</li>
+<li>Во время образца звучит фон той же сцены (тише голоса), перед началом — сигнал сцены.</li>
+<li>Подсветка текущего слова и автопрокрутка за голосом. Для этого к каждому файлу нужны таймкоды слов: от TTS-провайдера, если он их отдаёт, или через выравнивание текста и аудио (forced alignment).</li>
+<li>Если меняют скорость во время образца, образец не прерывается.</li>
+</ul>
+<h3>Выбранные голоса</h3>
+<table><tr><th>Голос</th><th>voice_id (Higgsfield, preset)</th><th>Пол</th></tr><tr><td>Sienna</td><td><code>41023a48-71ab-478a-bea7-c7b5a78f6b36</code></td><td>женский</td></tr><tr><td>Sloane</td><td><code>b57b22a0-f287-405b-bc82-6f08f5e6bb1f</code></td><td>женский</td></tr><tr><td>— (имя уточнить)</td><td><code>1e7feef5-2436-55bd-8778-cb075ecd081e</code></td><td>уточнить по пробе</td></tr><tr><td>Mark</td><td><code>27c04473-84a9-4b60-a41f-c8e8458bd4f1</code></td><td>мужской</td></tr><tr><td>Dylan</td><td><code>b847bc29-f184-583a-8ad9-d1f1e16d1a60</code></td><td>мужской</td></tr></table>
+<p>Каждый сценарий озвучивается одним голосом, подходящим ситуации (например, бортпроводница — женский голос, футбольный комментарий — мужской). Голос сценария задаётся в админке. Пробы голосов в Higgsfield ещё не сделаны: генерация временно ограничена лимитом аккаунта.</p>
+<div class="note">Бесплатная альтернатива для платформы: открытая модель озвучки Kokoro (лицензия Apache 2.0, коммерческое использование разрешено), британские и американские голоса. Ставится на сервер JTS, озвучивает любые новые тексты без оплаты за генерацию.</div>
+
+<h2>6. Фоновые звуки</h2>
+<ul>
+<li>У каждого сценария — одна звуковая сцена (поле <code>sound</code>). Сцена = постоянная подложка (гул, толпа, ветер, волны) + случайные события (шаги, птицы, щелчки камер) + сигнал в начале.</li>
+<li>Сигнал в начале: аэропорт — двухтональный гонг «тан-тан»; самолёт — «динь-дон» табло ремней; вокзал — четыре ноты; стадион — свисток; суд — молоток; радио — заставка эфира; телефон — гудки и сигнал автоответчика.</li>
+<li>Фон звучит при записи и при прослушивании образца. Отсчёт 3-2-1 начинается после сигнала сцены.</li>
+<li>Управление: «Послушать фон» (7 секунд), Вкл/Выкл, громкость (по умолчанию 45%). Во время записи — кнопка выключения фона, без перерисовки телесуфлёра.</li>
+<li>В прототипе звуки синтезируются в браузере (Web Audio). <b>На платформе</b> — записанные звуки: бесшовная петля подложки 30–60 с и отдельный файл сигнала, OGG/MP3. Источники с правом коммерческого использования: Freesound (CC0), библиотеки звуков ElevenLabs и аналогичные.</li>
+<li>Громкость сцен выровнена: подложка заметно тише голоса, без пиков.</li>
+</ul>
+<table><tr><th>Ключ</th><th>Сцена: что звучит</th><th>Где используется</th></tr>
+<tr><td><code>airport</code></td><td>✈️ Аэропорт: гонг «тан-тан» и гул терминала</td><td>В аэропорту, В аэропорту, Смена выхода на посадку, В аэропорту, Последний вызов на посадку</td></tr>
+<tr><td><code>plane</code></td><td>🛫 Салон самолёта: гул двигателей и «динь»</td><td>На борту самолёта, На борту самолёта, Объявление в самолёте, На борту самолёта, На борту самолёта</td></tr>
+<tr><td><code>station</code></td><td>🚉 Вокзал: перезвон и стук колёс</td><td>На вокзале, На вокзале, На вокзале, Задержка поезда, На вокзале</td></tr>
+<tr><td><code>metro</code></td><td>🚇 Метро: сигнал дверей и гул поезда</td><td>В метро, В метро, В метро, В метро, В метро</td></tr>
+<tr><td><code>bus</code></td><td>🚌 Автобус: мотор и звонок остановки</td><td>В автобусе, В автобусе, В автобусе, В автобусе, В автобусе</td></tr>
+<tr><td><code>mall</code></td><td>🛍️ Торговый центр: сигнал и шум покупателей</td><td>Супермаркет, Торговый центр, В магазине, Торговый центр, В магазине, Бюро находок, В магазине, Торговый центр, В магазине, Торговый центр</td></tr>
+<tr><td><code>cafe</code></td><td>☕ Кафе: посуда и разговоры</td><td>В кафе, В кафе, В кафе, В кафе, В кафе</td></tr>
+<tr><td><code>school</code></td><td>🏫 Школа: перезвон и шум класса</td><td>Объявление в школе, Начало урока, Знакомство, Объявление в школе, Начало урока, Знакомство, Объявление в школе, Начало урока, Знакомство, Объявление в школе, Начало урока, Знакомство, Объявление в школе, Начало урока, Знакомство</td></tr>
+<tr><td><code>park</code></td><td>🌳 Парк: птицы и лёгкий ветер</td><td>Документальный фильм, В парке, Документальный фильм, Прогулка в парке, Документальный фильм, Прогулка в парке, Фильм о природе, Прогулка в парке, Прогулка в парке</td></tr>
+<tr><td><code>zoo</code></td><td>🦒 Зоопарк: птицы и посетители</td><td>В зоопарке, В зоопарке, В зоопарке, В зоопарке, В зоопарке</td></tr>
+<tr><td><code>beach</code></td><td>🏖️ Пляж: волны и чайки</td><td>На пляже, Мои каникулы, Мои каникулы, Мои каникулы, Мои каникулы</td></tr>
+<tr><td><code>rain</code></td><td>🌧️ Дождь за окном</td><td>Дождливый день, Дождливый день, Дождливый день, Дождливый день, Дождливый день</td></tr>
+<tr><td><code>storm</code></td><td>⛈️ Гроза: ливень и гром</td><td>Штормовое предупреждение, Штормовое предупреждение, Штормовое предупреждение, Штормовое предупреждение, Штормовое предупреждение</td></tr>
+<tr><td><code>radio</code></td><td>📻 Радиостудия: заставка эфира</td><td>Новости, Прогноз погоды, Реклама на радио, Новости, Прогноз погоды, Реклама на радио, Новости, Прогноз погоды, Реклама на радио, Новости, Прогноз погоды, Реклама на радио, Новости, Прогноз погоды, Реклама на радио, Подкаст о здоровье</td></tr>
+<tr><td><code>cinema</code></td><td>🎬 Кинозал: зрители рассаживаются</td><td>В кинотеатре, В кинотеатре, В кинотеатре, В кинотеатре, В кинотеатре</td></tr>
+<tr><td><code>campfire</code></td><td>🏕️ Костёр: треск огня и сверчки</td><td>Летний лагерь, Летний лагерь, Летний лагерь, Летний лагерь, Летний лагерь</td></tr>
+<tr><td><code>stadium</code></td><td>🏟️ Стадион: трибуны и свисток</td><td>Спортивный комментарий, Диктор стадиона, Спортивный комментарий, День спорта, Футбольный комментарий, Диктор стадиона, Спортивный комментарий, Перед матчем, Финал чемпионата, Диктор стадиона</td></tr>
+<tr><td><code>hall</code></td><td>🎤 Зал: аплодисменты и тишина</td><td>Выступление на конференции, Выпускная речь, Дебаты, Выступление на конференции, Выпускная речь, Дебаты, Выступление на конференции, Выпускная речь, Дебаты, Вдохновляющее выступление, Выпускная речь, Дебаты, Выступление на конференции, Выпускная речь, Открытие дебатов</td></tr>
+<tr><td><code>museum</code></td><td>🏛️ Музей: шаги и эхо залов</td><td>В музее, Экскурсия в музее, В музее, В музее, Аудиогид галереи</td></tr>
+<tr><td><code>library</code></td><td>📚 Библиотека: тихий зал и мягкий сигнал</td><td>В библиотеке, В библиотеке, В библиотеке, В библиотеке, В библиотеке</td></tr>
+<tr><td><code>kitchen</code></td><td>🍳 Кухня: шипение сковороды</td><td>Мой завтрак, Кулинарное шоу, Кулинарное шоу, Кулинарный конкурс, Кулинарное шоу</td></tr>
+<tr><td><code>office</code></td><td>💼 Офис: клавиатуры и телефон</td><td>Собеседование, Первый день на работе, Презентация, Собеседование, Первый день на работе, Презентация, Собеседование, Первый день на работе, Презентация, Собеседование, Первый день на работе, Бизнес-презентация, Собеседование, Первый день на работе, Питч для инвесторов</td></tr>
+<tr><td><code>clinic</code></td><td>🏥 Поликлиника: тихий холл и сигнал</td><td>В поликлинике, В поликлинике, В поликлинике, В поликлинике, В поликлинике</td></tr>
+<tr><td><code>ship</code></td><td>🛳️ Палуба: волны, чайки и гудок</td><td>На корабле, На корабле, На корабле, На круизном лайнере, На корабле</td></tr>
+<tr><td><code>mountain</code></td><td>🏔️ Горы: ветер и крик орла</td><td>Экскурсия на природе, Поход в горы, Экскурсия на природе, Поход в горы, Экскурсия на природе, Поход в горы, Экскурсовод, Поход в горы, Экскурсия на природе, Фильм об Арктике, Поход в горы</td></tr>
+<tr><td><code>phone</code></td><td>📞 Телефон: гудки и сигнал автоответчика</td><td>Голосовое сообщение, Голосовое сообщение, Голосовое сообщение, Голосовое сообщение, Голосовое сообщение</td></tr>
+<tr><td><code>gym</code></td><td>🏋️ Спортзал: ритм музыки</td><td>Фитнес-тренировка, Фитнес-тренировка, Фитнес-тренировка, Фитнес-тренировка, Фитнес-тренировка</td></tr>
+<tr><td><code>party</code></td><td>🎉 Праздник: гости, смех и хлопушка</td><td>День рождения, Праздник и тост, Праздник и тост, Праздник и тост, Праздник и тост</td></tr>
+<tr><td><code>space</code></td><td>🛰️ ЦУП: радиоэфир и сигналы</td><td>Космос, Космос, Космос, Центр управления полётами, Запуск ракеты</td></tr>
+<tr><td><code>court</code></td><td>⚖️ Зал суда: молоток и тишина</td><td>Речь в суде, Речь в суде, Речь в суде, Речь в суде, Речь в суде</td></tr>
+<tr><td><code>studio</code></td><td>🎙️ Студия: сигнал «в эфире»</td><td>Подкаст, Скороговорки, Подкаст, Скороговорки, Подкаст о путешествиях, Скороговорки, Подкаст, Скороговорки, Скороговорки</td></tr>
+<tr><td><code>street</code></td><td>🏙️ Улица: машины и сигналы</td><td>Экскурсия по городу, Экскурсия по городу, Экскурсия по городу, Экскурсия по городу, Экскурсия по городу</td></tr>
+<tr><td><code>hotel</code></td><td>🏨 Холл отеля: звонок на ресепшн</td><td>В отеле, В отеле, Ресепшн отеля, В отеле, В отеле</td></tr>
+<tr><td><code>car</code></td><td>🚕 Такси: мотор, дорога и поворотник</td><td>В такси, В такси, В такси, В такси, В такси</td></tr>
+<tr><td><code>concert</code></td><td>🎻 Концертный зал: настройка оркестра</td><td>На концерте, На концерте, На концерте, На концерте, На концерте</td></tr>
+<tr><td><code>market</code></td><td>🧺 Базар: продавцы, покупатели, весы</td><td>На базаре, На базаре, На базаре, На базаре, На базаре</td></tr>
+<tr><td><code>press</code></td><td>📸 Пресс-конференция: щелчки камер</td><td>Пресс-конференция, Пресс-конференция, Пресс-конференция, Пресс-конференция, Пресс-конференция</td></tr>
+</table>
+
+<h2>7. Запись и распознавание</h2>
+<ul>
+<li>Микрофон — только по нажатию «Начать запись». Включены эхоподавление, шумоподавление и автоусиление.</li>
+<li>Подсказка студенту: читать в наушниках, чтобы фон не мешал распознаванию.</li>
+<li>Запись = голос студента + фон сцены на уровне 45%, чтобы запись звучала как настоящее объявление. Распознавание работает по чистому голосу с микрофона.</li>
+<li>Формат WebM/Opus (Safari — MP4/AAC), до 3 минут, хранение на сервере (срок — уточнить, предложение: 90 дней).</li>
+<li>Распознавание: Web Speech API в Chrome; для остальных браузеров — серверное (например, Whisper) по загруженной записи.</li>
+<li>Сопоставление слов: с допуском (окно 5 слов, совпадение первых 4 букв для длинных слов). Числа в текстах — цифрами только для рейсов, гейтов и времени.</li>
+<li>Без микрофона — экран-инструкция и демо-режим.</li>
+<li>При уходе со страницы останавливаются запись, распознавание, фон, анимации, микрофон освобождается.</li>
+</ul>
+
+<h2>8. Результат, токены, преподаватель</h2>
+<ul>
+<li>Экран результата: ситуация и уровень, процент прочитанного, звёзды (85% и выше — 3, 60% — 2, 30% — 1), длительность, выбранная скорость, реальный темп, плеер записи, «Записать ещё раз», «Послушать образец · 1x», разбор слов (зелёные — распознаны, серые — пропущены), список попыток.</li>
+<li>+4 токена за первую попытку дня, в рамках дневного лимита практики (как в v1.1).</li>
+<li>Преподаватель и координатор видят попытки студента: сценарий, скорость, процент, запись.</li>
+</ul>
+
+<h2>9. Данные</h2>
+<p>Структура сценария в <code>speed-reading-scenarios.json</code>:</p>
+<p><code>{"id":"b1gate","level":"B1","genre":"airport","category":"travel","icon":"✈️","title":{"ru","kk","en"},"sound":"airport","words":122,"text":"…"}</code></p>
+<p>Для платформы добавить: <code>voice_id</code>, <code>model_audio_url</code>, <code>word_timings</code> (начало каждого слова в мс), <code>active</code>. Звуковая сцена: <code>key</code>, названия RU/KZ/EN, <code>bed_url</code> (петля), <code>cue_url</code> (сигнал), <code>cue_duration</code>, громкость.</p>
+
+<h2>10. Критерии приёмки</h2>
+<ol>
+<li>«Скорочтение» открывается из «Практика → Аудирование»; уровни A1–C1, на каждом 50 жанров в 5 группах; все 250 текстов совпадают с JSON; при смене уровня сохраняется жанр.</li>
+<li>Кнопки скорости и ползунок (0,5–3x, шаг 0,1) работают согласованно; темп и время пересчитываются; прокрутка соответствует 150 × скорость сл/мин.</li>
+<li>Образец всегда звучит в 1x при любой выбранной скорости, с подсветкой слов и фоном сцены.</li>
+<li>Образец — заранее сгенерированный файл выбранного голоса; голос браузера — только при ошибке загрузки.</li>
+<li>У каждого сценария звучит своя сцена; сигнал в начале звучит до отсчёта; фон можно послушать, выключить, менять громкость, в том числе во время записи.</li>
+<li>Запись содержит голос и тихий фон; скачивание работает; распознавание подсвечивает слова в реальном времени.</li>
+<li>Результат, звёзды, токены и дневной лимит — как в разделе 8; попытки видит преподаватель.</li>
+<li>Без микрофона — инструкция и демо; при уходе со страницы всё останавливается.</li>
+<li>Интерфейс на RU / KZ / EN; вёрстка без горизонтальной прокрутки на ширине 360 px.</li>
+</ol>
+
+<h2>11. Этапы работ</h2>
+<table><tr><th>Этап</th><th>Содержание</th><th>Результат</th></tr>
+<tr><td>1</td><td>Модель данных сценариев, жанров и сцен, загрузка 250 текстов, админка сценариев</td><td>сценарии отдаются API</td></tr>
+<tr><td>2</td><td>Стартовый экран: уровни, группы жанров, ситуации, скорость (кнопки + ползунок)</td><td>экран как на рис. 1</td></tr>
+<tr><td>3</td><td>Фоновые звуки: подбор и обработка 37 сцен, сигналы, плеер с громкостью</td><td>все сцены звучат</td></tr>
+<tr><td>4</td><td>Озвучка образцов 5 голосами, таймкоды слов, плеер 1x с подсветкой</td><td>250 образцов</td></tr>
+<tr><td>5</td><td>Запись с фоном, распознавание, телесуфлёр, результат, хранение аудио</td><td>тренажёр работает</td></tr>
+<tr><td>6</td><td>Токены, доступ преподавателя, тест на устройствах</td><td>приёмка по разделу 10</td></tr></table>
+
+<h2>12. Состав архива</h2>
+<ul>
+<li><b>TZ</b> — это ТЗ (PDF и HTML).</li>
+<li><b>Design</b> — скриншоты прототипа: компьютер и телефон.</li>
+<li><b>HTML</b> — прототип <code>jts-student-cabinet.html</code> (открывать в Chrome или Edge) и <code>speed-reading-scenarios.json</code> со всеми текстами и сценами.</li>
+</ul>
+</body></html>

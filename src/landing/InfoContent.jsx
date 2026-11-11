@@ -29,9 +29,12 @@ function offerNote(o, t) {
   return parts.join(' · ')
 }
 
-function Tariffs({ t, offers }) {
+// buyUrl(code) — витрина приложения с этим тарифом в корзине: там вход,
+// заказ и оплата картой (Freedom Pay). Без адреса приложения кнопок нет.
+function Tariffs({ t, offers, buyUrl }) {
   return (
     <>
+      {buyUrl && offers?.length > 0 && <p className="ld-info__buy-note">{t.buyNote}</p>}
       {offers?.length ? groupOffers(offers).map(([cat, list]) => {
         const meta = t.categories[cat] || t.categories.OTHER
         return (
@@ -48,6 +51,7 @@ function Tariffs({ t, offers }) {
                   <span className="ld-info__price">
                     {o.previousPrice > o.price && <s aria-label={t.priceFrom}>{formatPrice(o.previousPrice)} ₸</s>}
                     <b>{formatPrice(o.price)} ₸</b>
+                    {buyUrl && <a className="ld-info__buy" href={buyUrl(o.code)}>{t.buy}</a>}
                   </span>
                 </li>
               ))}
@@ -127,7 +131,7 @@ function Contacts({ t, lang }) {
   )
 }
 
-export default function InfoContent({ page, lang, offers, home }) {
+export default function InfoContent({ page, lang, offers, home, buyUrl }) {
   const info = pickInfo(lang)
   const t = info[page]
   return (
@@ -145,7 +149,7 @@ export default function InfoContent({ page, lang, offers, home }) {
 
       {(page === 'tariffs' || page === 'payment') && <PaymentLogos label={info.cards} className="ld-info__cards" />}
 
-      {page === 'tariffs' && <Tariffs t={t} offers={offers} />}
+      {page === 'tariffs' && <Tariffs t={t} offers={offers} buyUrl={buyUrl} />}
       {(page === 'payment' || page === 'refund') && <Sections sections={t.sections} />}
       {page === 'refund' && (
         <section className="ld-info__block">
