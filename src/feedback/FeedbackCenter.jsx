@@ -41,7 +41,7 @@ function errorText(error) {
   return error?.serverMessage || 'Не удалось выполнить запрос. Попробуйте ещё раз.'
 }
 
-export default function FeedbackCenter({ token, onBack, userName, userLevel, onNav, onProfile, initialCategory = null, initialDraft = '' }) {
+export default function FeedbackCenter({ token, onBack, userName, userLevel, onNav, onProfile, initialCategory = null, initialDraft = '', initialFeedbackId = null }) {
   const { lang } = useI18n()
   const tr = (source, params) => feedbackText(lang, source, params)
   const [targets, setTargets] = useState(EMPTY)
@@ -68,6 +68,10 @@ export default function FeedbackCenter({ token, onBack, userName, userLevel, onN
   const [notice, setNotice] = useState('')
   // Черновик Луны — один раз, при открытии раздела: смена входа (другой токен) начинает с чистой формы.
   const initial = useRef({ type: DRAFT_TYPE[initialCategory] || null, draft: String(initialDraft || '').slice(0, 2000) })
+  // Обращение, которое Birge создал из отзыва о платформе (спека Birge §3.6), — выбрать, как только список его принёс.
+  // Не через initial: в StrictMode (next dev) эффект входа исполняется дважды, и одноразовая цель стёрлась бы на втором
+  // прогоне, не дождавшись списка.
+  const wantedCase = useRef(initialFeedbackId ?? null)
   const [drafted, setDrafted] = useState(false)
   const mutation = useRef(false)
   const generation = useRef(0)
@@ -115,6 +119,12 @@ export default function FeedbackCenter({ token, onBack, userName, userLevel, onN
     // Requests belong to the signed-in session, not to each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
+
+  useEffect(() => {
+    if (wantedCase.current == null || !items.some(item => item.id === wantedCase.current)) return
+    setSelected(wantedCase.current)
+    wantedCase.current = null
+  }, [items])
 
   useEffect(() => {
     setMessages([]); setHistory([]); setReply(''); setReplyFiles([]); setThreadError(false)
