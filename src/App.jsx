@@ -2082,6 +2082,8 @@ export default function App() {
     // «Назад» (и его запасной переход) возвращает туда, где человек был, а не
     // к цели уведомления: иначе «назад» из урока снова открыл бы отчёт.
     setLessonsTarget(null)
+    // То же у Birge: ветка из уведомления → лента → Feedback → «назад» вернула бы ту старую ветку, а не ленту.
+    setBirgeTarget(null)
     const hit = popNav(navStack, screen)
     if (!hit) {
       skipPushRef.current = true

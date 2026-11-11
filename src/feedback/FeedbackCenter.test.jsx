@@ -159,6 +159,7 @@ describe('Student Feedback prototype', () => {
     api.getCabinetFeedback.mockResolvedValue([item(55)])
     render(<FeedbackCenter token="token" userName="Student Name" userLevel="A2" onNav={() => {}} onProfile={() => {}} initialFeedbackId={55} />)
     expect(await screen.findByText('Переписка · №55')).toBeTruthy()
-    expect(api.getCabinetFeedbackMessages).toHaveBeenCalledWith('token', 55)
+    // Переписку запрашивает пассивный эффект — под нагрузкой он срабатывает позже, чем появляется заголовок.
+    await waitFor(() => expect(api.getCabinetFeedbackMessages).toHaveBeenCalledWith('token', 55))
   })
 })

@@ -14,9 +14,12 @@
   .brg-top h1 {
     font-size: 22px;
   }
+  /* stretch обязателен: десктопный align-items: start в колонке флекса отдал бы ленте ширину по содержимому, и
+     неразрывный ряд тем (прокручивается сам) растягивал её шире экрана — кнопка «Опубликовать» уезжала за край. */
   .brg-grid {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 12px;
   }
   .brg-main {

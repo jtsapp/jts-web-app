@@ -108,6 +108,20 @@ describe('лента Birge', () => {
     expect(screen.queryByRole('button', { name: 'Показать ещё' })).toBeNull()
   })
 
+  it('смена темы посреди подгрузки не запирает «Показать ещё»', async () => {
+    listBirgePosts
+      .mockResolvedValueOnce({ items: [card()], nextCursor: 'c1' })
+      .mockReturnValueOnce(new Promise(() => {}))
+      .mockResolvedValueOnce({ items: [card({ id: 102, text: 'Про грамматику' })], nextCursor: 'c2' })
+    mount()
+    fireEvent.click(await screen.findByRole('button', { name: 'Показать ещё' }))
+    expect(screen.getByRole('button', { name: 'Загружаем…' }).disabled).toBe(true)
+    fireEvent.click(within(filters()).getByRole('button', { name: 'Грамматика' }))
+    expect(await screen.findByText('Про грамматику')).toBeTruthy()
+    const more = screen.getByRole('button', { name: 'Показать ещё' })
+    expect(more.disabled).toBe(false)
+  })
+
   it('свой новый пост — сверху ленты с бейджем', async () => {
     publishBirgePost.mockResolvedValue({
       decision: 'pending',

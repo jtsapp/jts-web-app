@@ -11,7 +11,8 @@ export default function PostCard({ post, comment = false, onOpen, onLike, onRepo
   const { t, lang } = useI18n()
   const badge = postBadge(post)
   const topic = comment ? null : topicKey(post.topic)
-  const media = Array.isArray(post.media) ? post.media : []
+  // url: null — файл уже удалён (фото отклонённого поста чистятся через 30 дней, §4): битую картинку не рисуем.
+  const media = Array.isArray(post.media) ? post.media.filter((m) => m?.url) : []
   const parts = Array.isArray(post.continuations) ? post.continuations : []
   const author = post.author || {}
 

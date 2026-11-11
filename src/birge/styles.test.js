@@ -19,7 +19,7 @@ describe('стили Birge', () => {
   it('у каждого класса .brg-* из разметки есть правило', () => {
     const used = [...new Set([...markup.matchAll(/\bbrg-[a-z0-9_-]*[a-z0-9]/g)].map((m) => m[0]))]
     expect(used.length).toBeGreaterThan(40)
-    expect(used.filter((cls) => !new RegExp(`\.${cls}(?![\w-])`).test(css))).toEqual([])
+    expect(used.filter((cls) => !new RegExp(String.raw`\.${cls}(?![\w-])`).test(css))).toEqual([])
   })
 
   it('файлы подключены: раздел — к разделам, телефон — к мобильному слою после base.css', () => {

@@ -99,7 +99,10 @@ export default function Composer({ kind = 'thread', token, authorName, parentId 
   const partRefs = useRef([])
   const focusPart = useRef(null)
   const seq = useRef(0)
+  // Сколько выбранных фото ещё пережимается: ref — для счёта мест внутри addPhotos, state — для кнопки и подсказки.
+  // Пока фото пережимается, его нет в черновике, и без учёта пост ушёл бы без него, а очистка формы стёрла бы его.
   const shrinking = useRef(0)
+  const [shrinkingCount, setShrinkingCount] = useState(0)
   const previews = useRef(new Set())
 
   // Превью фото — объектные URL; уходя с экрана, отпускаем их, иначе картинки висят в памяти вкладки.
@@ -157,11 +160,14 @@ export default function Composer({ kind = 'thread', token, authorName, parentId 
 
   async function addPhotos(files) {
     setPhotoError(null)
-    // Фото, которые ещё пережимаются, места не заняли, но займут — иначе два быстрых выбора дали бы пятое фото.
-    const room = photoSlots(draft) - shrinking.current
+    // Фото, которые ещё пережимаются, места в черновике не заняли, но займут. Резервируем сразу за все взятые файлы:
+    // пережатие идёт по одному, и второй быстрый выбор, увидев свободные места, дал бы пятое фото (сервер — 400).
+    const room = Math.max(0, photoSlots(draft) - shrinking.current)
     if (files.length > room) setPhotoError({ key: 'birge.photo.tooMany' })
-    for (const file of files.slice(0, Math.max(0, room))) {
-      shrinking.current += 1
+    const taken = files.slice(0, room)
+    shrinking.current += taken.length
+    setShrinkingCount(shrinking.current)
+    for (const file of taken) {
       let shrunk
       try {
         shrunk = await shrinkPhoto(file)
@@ -170,6 +176,7 @@ export default function Composer({ kind = 'thread', token, authorName, parentId 
         continue
       } finally {
         shrinking.current -= 1
+        setShrinkingCount(shrinking.current)
       }
       seq.current += 1
       const key = `p${seq.current}`
@@ -204,7 +211,7 @@ export default function Composer({ kind = 'thread', token, authorName, parentId 
   }
 
   async function publish() {
-    if (busy || !canPublish(draft, kind)) return
+    if (busy || shrinking.current > 0 || !canPublish(draft, kind)) return
     const sent = draft
     setPop(false)
     setBusy(true)
@@ -218,9 +225,9 @@ export default function Composer({ kind = 'thread', token, authorName, parentId 
       result = publishOutcome(await publishBirgePost(token, publishBody(sent, { kind, topic, parentId })))
     } catch (err) {
       result = failureOutcome(err)
-      // Ответа с решением нет — проверки не было, и шаги «проверено» врали бы.
-      setSteps(null)
     }
+    // Ответа с решением нет (сбой или неизвестный decision) — проверки не было, и шаги «проверено» врали бы.
+    if (result.failed) setSteps(null)
     setFinished(true)
     setOutcome(result)
     setBusy(false)
@@ -241,7 +248,8 @@ export default function Composer({ kind = 'thread', token, authorName, parentId 
   const states = steps ? stepStates(steps.length, tick, finished) : []
   const initial = initialOf(authorName)
   const placeholder = t(thread ? 'birge.compose.placeholder' : 'birge.compose.replyPlaceholder')
-  const noPhotoRoom = busy || photoSlots(draft) === 0
+  const photosPending = shrinkingCount > 0 || photosUploading(draft)
+  const noPhotoRoom = busy || photoSlots(draft) - shrinkingCount <= 0
 
   return (
     <section className={`brg-card brg-composer${thread ? '' : ' brg-composer--reply'}`}>
@@ -376,13 +384,13 @@ export default function Composer({ kind = 'thread', token, authorName, parentId 
       </div>
       <div className="brg-foot">
         <span className="brg-hint">
-          {tooShort(draft, kind)
-            ? t('birge.compose.tooShort')
-            : photosUploading(draft)
-              ? t('birge.compose.uploading')
+          {photosPending
+            ? t('birge.compose.uploading')
+            : tooShort(draft, kind)
+              ? t('birge.compose.tooShort')
               : t('birge.compose.hint')}
         </span>
-        <button type="button" className="brg-btn" disabled={busy || !canPublish(draft, kind)} onClick={publish}>
+        <button type="button" className="brg-btn" disabled={busy || shrinkingCount > 0 || !canPublish(draft, kind)} onClick={publish}>
           {t('birge.compose.publish')}
         </button>
       </div>

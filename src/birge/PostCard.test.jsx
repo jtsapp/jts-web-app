@@ -47,6 +47,11 @@ describe('карточка поста', () => {
     expect(document.querySelector('.brg-av').textContent).toBe('А')
   })
 
+  it('фото с url: null (файл уже удалён, §4) не рисуется битой картинкой', () => {
+    mount(card({ media: [{ id: 7, url: null, width: 1600, height: 1200 }] }))
+    expect(document.querySelector('.brg-media')).toBeNull()
+  })
+
   it('аватар из профиля — картинкой; без уровня — без плашки', () => {
     mount(card({ author: { id: 1, name: 'Дана С.', level: null, avatarUrl: 'https://x/ava.jpg' } }))
     expect(document.querySelector('img.brg-av').getAttribute('src')).toBe('https://x/ava.jpg')

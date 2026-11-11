@@ -161,6 +161,36 @@ describe('форма «Новая ветка»', () => {
     expect(await screen.findByText('Проверка фото: 18+, насилие, текст на картинке (1 шт.)')).toBeTruthy()
   })
 
+  it('пока фото пережимается — «Опубликовать» закрыта; места заняты сразу, пятое фото двумя выборами не взять', async () => {
+    const shrinks = []
+    shrinkPhoto.mockImplementation(() => new Promise((resolve) => shrinks.push(resolve)))
+    let n = 0
+    uploadBirgeMedia.mockImplementation(() => Promise.resolve({ id: ++n, width: 1600, height: 1200 }))
+    publishBirgePost.mockResolvedValue(reply())
+    mount()
+    fireEvent.change(box(), { target: { value: 'Делюсь табличкой глаголов' } })
+    const pick = (count) =>
+      fireEvent.change(screen.getByLabelText('Фото'), {
+        target: { files: Array.from({ length: count }, (_, i) => new File(['raw'], `IMG_${i}.png`, { type: 'image/png' })) },
+      })
+    pick(3)
+    await waitFor(() => expect(shrinkPhoto).toHaveBeenCalledTimes(1))
+    // Фото ещё нет в черновике, но пост без него уйти не должен.
+    expect(screen.getByRole('button', { name: 'Опубликовать' }).disabled).toBe(true)
+    expect(screen.getByText('Загружаем и проверяем фото…')).toBeTruthy()
+    pick(2)
+    expect(await screen.findByText('Можно приложить не больше 4 фото')).toBeTruthy()
+    for (let i = 0; i < 4; i += 1) {
+      await waitFor(() => expect(shrinks.length).toBeGreaterThan(i))
+      shrinks[i](jpeg())
+    }
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Опубликовать' }).disabled).toBe(false))
+    expect(shrinkPhoto).toHaveBeenCalledTimes(4)
+    publish()
+    await waitFor(() => expect(publishBirgePost).toHaveBeenCalled())
+    expect(publishBirgePost.mock.calls[0][1].mediaIds).toHaveLength(4)
+  })
+
   it('фото больше 10 МБ — подсказка, загрузки нет', async () => {
     shrinkPhoto.mockRejectedValue(Object.assign(new Error('too_big'), { code: 'too_big' }))
     mount()

@@ -64,7 +64,8 @@ export function publishOutcome(res) {
  * Текст в поле остаётся.
  */
 export function failureOutcome(err) {
-  const fail = { ...BASE, tone: 'bad', clear: false, titleKey: 'birge.res.notPublished' }
+  // failed — решения нет (сбой или неизвестный decision): форма снимает шаги проверки, «проверено» тут было бы враньём.
+  const fail = { ...BASE, tone: 'bad', clear: false, failed: true, titleKey: 'birge.res.notPublished' }
   if (err?.status === 429) return { ...fail, textKey: 'birge.res.rateLimit', vars: { n: retryMinutes(err) } }
   // 400 — отказ проверки запроса (§5.1, например «Напишите хотя бы пару слов»): у сервера точный текст, показываем его.
   if (err?.status === 400 && err.serverMessage) return { ...fail, textKey: null, message: err.serverMessage }

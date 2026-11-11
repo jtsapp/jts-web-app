@@ -69,6 +69,18 @@ describe('жалоба', () => {
     expect(remove).not.toHaveBeenCalled()
   })
 
+  it('двойное нажатие — одна жалоба, без «уже жаловались» поверх «спасибо»', async () => {
+    let done
+    reportBirgePost.mockReturnValue(new Promise((resolve) => (done = resolve)))
+    const { onToast } = mount(post)
+    fireEvent.click(screen.getByText('report'))
+    fireEvent.click(screen.getByText('report'))
+    done({ reports: 1, hidden: false })
+    await waitFor(() => expect(onToast).toHaveBeenCalledWith('Жалоба отправлена. Спасибо!'))
+    expect(reportBirgePost).toHaveBeenCalledTimes(1)
+    expect(onToast).toHaveBeenCalledTimes(1)
+  })
+
   it('жалоба скрыла пост — он уходит и у пожаловавшегося', async () => {
     reportBirgePost.mockResolvedValue({ reports: 3, hidden: true })
     const { remove, onToast } = mount(post)

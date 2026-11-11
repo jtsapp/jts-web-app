@@ -12,6 +12,7 @@ export function usePostActions({ token, update, remove, onToast }) {
   const { t } = useI18n()
   // Второй клик по тому же лайку, пока первый в пути, перевернул бы его обратно не дождавшись сервера.
   const pending = useRef(new Set())
+  const reporting = useRef(new Set())
 
   const like = useCallback(
     async (post) => {
@@ -34,6 +35,9 @@ export function usePostActions({ token, update, remove, onToast }) {
 
   const report = useCallback(
     async (post) => {
+      // Второе нажатие, пока первая жалоба в пути, получило бы 409 и тост «уже жаловались» поверх «Спасибо».
+      if (reporting.current.has(post.id)) return
+      reporting.current.add(post.id)
       try {
         const res = await reportBirgePost(token, post.id, null)
         update(post.id, { canReport: false })
@@ -47,6 +51,8 @@ export function usePostActions({ token, update, remove, onToast }) {
         } else {
           onToast?.(t('birge.report.failed'))
         }
+      } finally {
+        reporting.current.delete(post.id)
       }
     },
     [token, update, remove, onToast, t],

@@ -41,6 +41,9 @@ export default function Feed({ token, authorName, onOpen, onMissing, onToast, on
       setState('loading')
       setItems([])
       setCursor(null)
+      // Подгрузка старой темы, оборванная сменой поколения, свой finally уже не выполнит — без сброса «Показать ещё»
+      // и прокрутка остались бы заперты до ухода с экрана.
+      setLoadingMore(false)
       try {
         const page = await listBirgePosts(token, { topic: nextTopic })
         if (mine !== generation.current) return
