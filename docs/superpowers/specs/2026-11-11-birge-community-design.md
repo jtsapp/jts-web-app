@@ -53,13 +53,16 @@ Birge виден всем ученикам без правок матрицы.
    - повтор буквы 3+ раза → 2;
    - разрядка: три и больше одиночных символа через пробел или точку склеиваются («х у й», «б.л.я»).
 3. **Словарь мата** (RU / KZ / EN, редактирует менеджер). Запись ловит **начало слова**, в том числе после приставки
-   из встроенного списка (`на за по по до от об у вы раз рас из ис под пере про при съ с вз вс недо`). Запись с `*`
-   впереди (`*пизд`) ловит корень **в любом месте** слова. Так «хлеба», «корабля», «рубля» не срабатывают на `еба`/`бля`.
+   из встроенного списка (`на за по до от об о а у вы раз рас из ис под пере про при съ с вз вс недо ни не`). Запись
+   с `*` впереди (`*пизд`) ловит корень **в любом месте** слова — только для корней, у которых невинных слов нет.
+   Так «хлеба», «корабля», «рубля» не срабатывают на `еба`/`бля`, а «страхуй», «застрахуйте», «психуй» — на `хуй`.
    **Маскированные слова** — слово с символами `* # % @ $` между буквами. Каждый такой символ — ровно одна любая буква:
    `б*я` ищет «б?я», `б**ть` — «б??ть», `х@й` — «х?й». Корень словаря нашёлся — это мат. Не нашёлся — «похоже на
    замаскированный мат».
 4. **Правила**: ссылки (`http`, `www.`, домен с точкой и TLD), `t.me`, `@ник` (3+ символа), телефон (9+ цифр), КАПС
-   (больше 12 букв, из них заглавных больше 60 %), слишком короткий текст (меньше 6 символов, если нет фото).
+   (больше 12 букв, из них заглавных больше 60 %). Слишком короткую **ветку** (меньше 6 символов без фото) не
+   модерирует, а отклоняет проверка запроса (400 «Напишите хотя бы пару слов»), и веб не даёт её отправить.
+   Короткий **комментарий** («Да!», «+1») — норма и в очередь не идёт.
 5. **AI-классификатор** — Claude (`BIRGE_MODERATION_MODEL`, по умолчанию `claude-haiku-5-5`), structured-ответ
    `{category: ok | insult | harassment | toxicity | platform_complaint | soft_criticism | spam, confidence: 0..1,
    quotes: ["…"]}`. Текст ученика в промпте отгорожен тегами и считается данными. Цитата, которой нет в тексте,
@@ -86,7 +89,6 @@ Birge виден всем ученикам без правок матрицы.
 | `LINK_OR_CONTACT` | 52 | правила |
 | `SPAM` | 52 | классификатор |
 | `SOFT_CRITICISM` | 48 | словарь критики или классификатор |
-| `TOO_SHORT` | 40 | правила |
 | `CAPS` | 35 | правила |
 
 Цифры — значения по умолчанию в коде, а не настройки менеджера: менеджер двигает пороги, а не веса.
@@ -111,7 +113,9 @@ API отдаёт причины только кодами (`{code, score}`), п�
    - `tomorrow` — `status = tomorrow`, решение `queued_tomorrow`. В 00:00 по Алматы задача переводит отложенные в
      `pending` и засчитывает их в лимит нового дня. Что не влезло в лимит, ждёт следующего дня;
    - `hidden` — `status = hidden`, `hidden_reason = overflow`, решение `hidden_overflow`. Автор видит пост как
-     опубликованный, остальные не видят.
+     опубликованный, остальные не видят. Подмена не должна быть заметна: автору API отдаёт такой пост с
+     `status: 'published'` и `hiddenReason: null`, а лайк и ответ работают. Ответы в такой ветке видит тоже только
+     автор, пока ветка скрыта.
 
 **AI недоступен** (классификатор не ответил в бюджет, фото так и не проверено). Если решение уже принято шагами 1–2
 (мат, опасное фото, отзыв о платформе по словарю), оно остаётся. Иначе пост не публикуется, а уходит в очередь
@@ -140,6 +144,11 @@ API отдаёт причины только кодами (`{code, score}`), п�
   и попадает в очередь: `queue_source = reports`, пометка «Жалобы студентов».
 - **Лимит дня жалобы не тратят.**
 - Скрытый по жалобам пост автор видит с бейджем «Скрыто», остальные не видят.
+- Скрытый по жалобам пост **ждёт решения**, пока менеджер его не принял: `status = hidden`, `hidden_reason = reports`,
+  `moderated_by is null`. Такой пост стоит в очереди вместе с `pending`.
+  - «Одобрить» публикует его и обнуляет `reports_count`. Строки жалоб остаются, поэтому те же студенты повторно
+    пожаловаться не могут. Новые жалобы копятся заново: одобренное не скрывается сразу по 4-й жалобе.
+  - «Отклонить» переводит пост в `rejected`.
 
 ### 3.5 Настройки модерации
 
@@ -152,13 +161,13 @@ API отдаёт причины только кодами (`{code, score}`), п�
 | `daily_limit` | 3 | 1–10 |
 | `overflow_mode` | `reject` | `reject` / `tomorrow` / `hidden` |
 | `reports_to_hide` | 3 | 1–10 |
-| `dictionaries.profanity` | список прототипа + KZ-корни (`сигей`, `сигип`, `сикт`, `котак`, `амынды`) + `*хуй`, `*пизд`, `*fuck` | строки |
+| `dictionaries.profanity` | список прототипа + KZ-корни (`сигей`, `сигип`, `сикт`, `котак`, `амынды`) + `хуй`, `хуя`, `хуе`, `хую`, `хуи`, `*пизд`, `*fuck` | строки |
 | `dictionaries.complaint` | список прототипа | строки |
 | `dictionaries.criticism` | список прототипа | строки |
 
 Записи словаря хранятся в той же нормализации, что и текст: менеджер может написать «сігейін» или «хуё» — сервер
-нормализует при сохранении. Пустая запись и запись короче 3 букв (кроме записей с `*`) отклоняются: «ам» поймало бы
-полслова.
+нормализует при сохранении. Пустая запись и запись короче 3 букв отклоняются, `*` в счёт букв не входит: «ам» или
+«*ам» поймали бы полслова.
 
 ### 3.6 Обращение в Feedback
 
@@ -176,7 +185,8 @@ API отдаёт причины только кодами (`{code, score}`), п�
 На студента в скользящий час:
 - не больше **5 веток** и **30 комментариев**. Считаются опубликованные, на проверке, отложенные и скрытые — не
   отклонённые;
-- не больше **30 попыток публикации** любого исхода — иначе отказами можно бесконечно жечь вызовы классификатора.
+- не больше **30 попыток публикации** любого исхода — иначе отказами можно бесконечно жечь вызовы классификатора;
+- не больше **30 загрузок фото** — каждая загрузка тоже вызов Claude vision.
 
 Сверх — 429 `{error: 'RATE_LIMIT', retryAfterSec}`, веб показывает «Слишком часто — попробуйте через N мин».
 
@@ -192,17 +202,20 @@ API отдаёт причины только кодами (`{code, score}`), п�
     `queue_source` (`risk | reports | ai_unavailable`).
   - `risk_score` smallint; `reasons` jsonb; `hits` jsonb.
   - `likes_count`, `comments_count` (только опубликованные), `reports_count`.
-  - `reject_reason` varchar(200); `feedback_id`; `created_at`, `moderated_at`, `moderated_by` (null — решение AI:
-    по нему лента автора отличает отказ AI, которого не показывает, от отказа менеджера с бейджем).
+  - `reject_reason` varchar(30) (код) и `reject_note` varchar(200); `feedback_id`; `created_at`, `queued_at` (когда
+    пост встал в очередь — по нему очередь сортируется, свежие сверху), `moderated_at`, `moderated_by` (null — решение
+    AI: по нему лента автора отличает отказ AI, которого не показывает, от отказа менеджера с бейджем; повторное
+    скрытие жалобами снова его обнуляет, и пост возвращается в очередь).
   - Индексы: лента (`parent_id is null`, `status`, `created_at desc`), комментарии (`parent_id`, `created_at`),
-    антиспам (`author_id`, `created_at`), очередь (частичный по `status in ('pending','tomorrow')`).
+    антиспам (`author_id`, `created_at`), очередь (частичный по `status in ('pending','tomorrow','hidden')`).
 - **`birge_post_media`** — `id`, `owner_id`, `post_id` (null, пока не опубликовано), `object_key` (MinIO
-  `birge/media/<sha24>.<ext>`), `mime`, `width`, `height`, `bytes`, `moderation` jsonb (`state ok | flagged |
-  unchecked`, `category`, `confidence`, `text`, `checked_at`), `created_at`.
+  `birge/media/<sha24>.jpg` — сервер всегда перекодирует в JPEG ≤ 1600 px, прозрачность на белом фоне), `mime`,
+  `width`, `height`, `bytes`, `moderation` jsonb (`state ok | flagged | unchecked`, `category`, `confidence`, `text`,
+  `checked_at`), `purged_at` (файл удалён — API отдаёт `url: null`, категория остаётся), `created_at`.
 - **`birge_post_likes`** — (`post_id`, `user_id`) PK, `created_at`.
 - **`birge_post_reports`** — (`post_id`, `user_id`) PK, `reason` varchar(200), `created_at`.
 - **`birge_moderation_log`** — `id`, `post_id`, `actor_type` (`ai | manager`), `actor_id`, `decision`, `risk_score`,
-  `reasons` jsonb, `note`, `reverted_at`, `reverted_by`, `created_at`. Решения AI: `auto_published`, `auto_rejected`,
+  `reasons` jsonb, `reject_reason`, `note`, `reverted_at`, `reverted_by`, `created_at`. Решения AI: `auto_published`, `auto_rejected`,
   `auto_rejected_overflow`, `auto_feedback`, `queued`, `queued_tomorrow`, `hidden_overflow`, `queued_ai_unavailable`,
   `hidden_reports`. Решения менеджера: `approved`, `rejected`, `hidden`, `restored`.
 - **`birge_moderation_settings`** — §3.5, плюс `updated_by`, `updated_at`.
@@ -212,6 +225,11 @@ API отдаёт причины только кодами (`{code, score}`), п�
 
 **Медиа.** Имя файла — sha256 содержимого (24 hex), адрес не угадать. Чистка:
 - вложение, так и не прикреплённое к посту, — через 24 ч;
+- при автоотказе вложения **прикрепляются** к отклонённому посту — так отмена отказа из журнала опубликует пост с
+  фото. Текст и фото остаются в форме, и повтор публикации с теми же `mediaIds` проходит: вложение своего
+  автоотклонённого поста **переносится** в новый пост (`mediaIds` — свои, неприкреплённые или прикреплённые к своему
+  посту с решением AI `auto_rejected*`). Фото с `IMAGE_UNSAFE` удаляется, его id приходит в `removedMediaIds`
+  ответа, и веб убирает из формы именно его;
 - фото отклонённых постов — через 30 дней;
 - фото с `IMAGE_UNSAFE` — сразу после решения, у менеджера остаётся категория.
 
@@ -219,7 +237,8 @@ API отдаёт причины только кодами (`{code, score}`), п�
 
 ## 5. API
 
-Ответы и запросы — JSON, ошибки — как во всём бэкенде (`{message}` + статус).
+Ответы и запросы — JSON. Ошибки — как во всём бэкенде (`GlobalExceptionHandler`): `{messages: ["…"]}` + статус.
+Исключение — 429 (§3.7), у него своё тело из §5.3.
 
 ### 5.1 Ученик — `/mobile/birge`
 
@@ -228,8 +247,8 @@ API отдаёт причины только кодами (`{code, score}`), п�
 | GET | `/posts?topic=&cursor=` | Лента: опубликованные ветки плюс свои `pending/tomorrow/hidden(overflow, reports, manager)/rejected` (кроме автоматически отклонённых), новые сверху, по 20, курсор — `created_at,id` |
 | GET | `/posts/{id}` | Ветка и комментарии: опубликованные плюс свои непубличные. Нет доступа — 404 |
 | POST | `/media` | multipart `file`: JPEG / PNG / WEBP, до 10 МБ. Возвращает `{id, width, height}`. Проверка фото идёт здесь же |
-| POST | `/posts` | `{parentId?, topic?, text, continuations?, mediaIds?}` → `{decision, post?, risk, reasons[], hits[], escalated?: {today, limit}, feedbackId?}` |
-| POST / DELETE | `/posts/{id}/like` | Лайк / снять. Только опубликованные. Отвечает `{liked, likes}` |
+| POST | `/posts` | `{parentId?, topic?, text, continuations?, mediaIds?}` → `{decision, post?, risk, reasons[], hits[], removedMediaIds[], feedbackId?}` |
+| POST / DELETE | `/posts/{id}/like` | Лайк / снять. Только посты, которые запрашивающий видит опубликованными (включая свой скрытый по переполнению). Отвечает `{liked, likes}` |
 | POST | `/posts/{id}/report` | `{reason?}` → `{reports, hidden}`. Свой пост — 403, повтор — 409 |
 
 `decision`: `published | pending | tomorrow | hidden | rejected | feedback`.
@@ -241,11 +260,11 @@ API отдаёт причины только кодами (`{code, score}`), п�
 createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
 
 Проверки:
-- текст или фото обязательны;
+- текст или фото обязательны; ветка без фото — от 6 символов текста;
 - текст ≤ 500 символов, продолжений ≤ 4 по ≤ 500;
 - вложений ≤ 4, и все — свои, ещё не прикреплённые;
 - у ветки тема обязательна; у комментария тема и продолжения игнорируются;
-- комментарий только к опубликованной ветке (иначе 409);
+- комментарий только к ветке, которую автор комментария видит опубликованной (иначе 409);
 - писать может только `STUDENT` (иначе 403); антиспам — §3.7.
 
 ### 5.2 Менеджер — `/admin/birge` (`CONTENT_MANAGER`, `ADMIN`)
@@ -253,11 +272,11 @@ createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
 | Метод | Путь | Назначение |
 |---|---|---|
 | GET | `/summary` | За сегодня (Алматы): `{autoPublished, autoRejected, pending, tomorrow, escalated, limit}` |
-| GET | `/queue` | `pending` (свежие сверху) и отдельно `tomorrow`. Карточка: автор, уровень, время, тип (ветка / комментарий и к какой ветке), тема, риск, причины, `queueSource`, текст, продолжения, фото |
+| GET | `/queue` | `pending` — все ждущие решения, свежие сверху: `status = pending` плюс скрытые по жалобам без решения (§3.4). Отдельно — `tomorrow`. Карточка: автор, уровень, время, тип (ветка / комментарий и к какой ветке), тема, риск, причины, `queueSource`, текст, продолжения, фото |
 | POST | `/posts/{id}/decision` | `{action: approve \| reject \| hide \| restore, reason?}`. Причина отказа обязательна, из списка: оскорбление, нецензурная лексика, реклама или контакты, не по теме, другое (свободный текст) |
 | GET | `/log?from=&to=&decision=&author=&cursor=` | Журнал: время, автор, текст (начало), риск, решение, причина, отменено ли |
 | POST | `/log/{id}/revert` | Отмена решения AI: опубликованное → скрыть (`hidden`, `manager`), отклонённое / в Feedback / скрытое → опубликовать. Решения «в очередь» (`queued*`) не отменяются — по ним решают в очереди. Повторная отмена — 409 |
-| GET | `/posts?status=&cursor=` | Лента со статусами (все посты), для «Скрыть / Опубликовать» |
+| GET | `/posts?status=&cursor=` | Лента со статусами: все посты, включая комментарии (`kind`), для «Скрыть / Опубликовать». Ответ — `{items: [ManagerPost], nextCursor}` |
 | GET / PUT | `/settings` | §3.5. PUT проверяет границы и нормализует словари |
 
 Каждое решение менеджера:
@@ -268,6 +287,29 @@ createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
 
 Решение по отложенному (`tomorrow`) лимит не тратит: место в лимите занимает только перевод в `pending`.
 
+Какие действия допустимы при каком статусе (остальное — 409):
+
+| Действие | Допустимо при статусе |
+|---|---|
+| `approve`, `reject` | `pending`, `tomorrow`, `hidden` по жалобам без решения |
+| `hide` | `published` |
+| `restore` | `hidden` (любая причина), `rejected` |
+
+Отмена решения AI из журнала шлёт автору то же уведомление, что и решение менеджера: «Скрыть» — `BIRGE_POST_HIDDEN`,
+«Опубликовать» — `BIRGE_POST_APPROVED`. Исключение — отмена `hidden_overflow`: автор и так видел пост
+опубликованным, уведомление не шлётся. В журнале отмена пишется решением менеджера: отмена `auto_published` —
+`hidden`, остальных — `restored`.
+
+`summary` считает за сегодня (Алматы):
+- `autoPublished` — решения `auto_published`;
+- `autoRejected` — `auto_rejected` + `auto_rejected_overflow` + `auto_feedback`;
+- `pending` — сколько сейчас в списке `pending` очереди;
+- `tomorrow` — сколько отложено на завтра;
+- `escalated` — счётчик дня.
+
+`/admin/birge/**` открыт только ролям `CONTENT_MANAGER` и `ADMIN`. Если охрана бэкенда приравнивает `COORDINATOR`
+к админу, координатора надо явно отсечь.
+
 ### 5.3 Формы JSON (общие для бэкенда, веба и web-admin)
 
 Имена полей — camelCase, время — ISO-8601 с зоной, списки с курсором — `{items, nextCursor}` (`nextCursor: null` —
@@ -277,7 +319,8 @@ createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
 // Reason
 { "code": "PROFANITY", "score": 96 }
 // code: PROFANITY | IMAGE_UNSAFE | INSULT | HARASSMENT | PLATFORM_COMPLAINT | TOXICITY | MASKED_SUSPECT
-//     | LINK_OR_CONTACT | SPAM | SOFT_CRITICISM | TOO_SHORT | CAPS | AI_UNAVAILABLE | REPORTS
+//     | LINK_OR_CONTACT | SPAM | SOFT_CRITICISM | CAPS | AI_UNAVAILABLE | REPORTS
+// AI_UNAVAILABLE и REPORTS — метки со score 0, в формулу риска не входят. Курсор (nextCursor) — непрозрачная строка.
 
 // Author
 { "id": 42, "name": "Аружан К.", "level": "A2", "avatarUrl": null }
@@ -299,8 +342,9 @@ createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
   "risk": 96,
   "reasons": [Reason],
   "hits": ["х@й"],
-  "escalated": null,                  // { "today": 2, "limit": 3 } при pending
-  "feedbackId": null                  // id обращения при feedback
+  "removedMediaIds": [],              // вложения, удалённые проверкой (IMAGE_UNSAFE)
+  "feedbackId": null                  // id обращения при feedback; оно видно ученику в /cabinet/feedback/mine
+  // Ёмкость очереди (счётчик дня и лимит) ученику не отдаётся: это внутреннее дело модерации.
 }
 
 // GET /mobile/birge/posts/{id}
@@ -311,7 +355,8 @@ createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
   "id": 101, "parentId": null, "kind": "thread",          // thread | comment
   "threadPreview": null,                                    // у комментария — первые 80 символов ветки
   "author": Author, "topic": "QUESTION", "text": "…", "continuations": [],
-  "media": [{ "id": 7, "url": "…", "width": 1600, "height": 1200,
+  "hits": ["…"],                                            // как в PublishResponse
+  "media": [{ "id": 7, "url": "…", "width": 1600, "height": 1200,   // url: null — файл удалён (IMAGE_UNSAFE)
               "moderation": { "state": "ok", "category": "ok", "confidence": 0.98 } }],
   "status": "pending", "hiddenReason": null, "queueSource": "risk",
   "risk": 48, "reasons": [Reason], "reportsCount": 0,
@@ -325,7 +370,8 @@ createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
 // POST /admin/birge/posts/{id}/decision — тело
 { "action": "reject", "reason": "OFF_TOPIC", "note": null }
 // action: approve | reject | hide | restore; reason (только reject): INSULT | PROFANITY | ADS_CONTACTS | OFF_TOPIC | OTHER
-// note обязателен при OTHER (до 200 символов). Ответ — ManagerPost.
+// note обязателен при OTHER (до 200 символов). Для approve/hide/restore reason и note — null или отсутствуют.
+// Ответ — ManagerPost.
 
 // LogItem — GET /admin/birge/log → {items, nextCursor}
 {
@@ -334,7 +380,9 @@ createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
   "author": { "id": 42, "name": "Аружан К." },
   "textPreview": "Это развод, верните…",                     // до 80 символов
   "risk": 78, "decision": "auto_feedback", "reasons": [Reason], "note": null,
-  "revertible": true, "revertedAt": null, "revertedBy": null
+  "rejectReason": null,                                     // у ручного отказа: { "code": "OFF_TOPIC", "note": null }
+  "revertible": true,                                       // true только у решений AI, кроме queued*, ещё не отменённых
+  "revertedAt": null, "revertedBy": null                    // revertedBy: { "id": 5, "name": "…" } | null
 }
 // Фильтры: from, to — даты YYYY-MM-DD по Алматы; decision — код решения; author — подстрока имени.
 // POST /admin/birge/log/{id}/revert → LogItem (с revertedAt)
@@ -342,11 +390,11 @@ createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
 // GET /admin/birge/summary
 { "autoPublished": 14, "autoRejected": 3, "pending": 1, "tomorrow": 0, "escalated": 1, "limit": 3 }
 
-// GET/PUT /admin/birge/settings
+// GET/PUT /admin/birge/settings. PUT шлёт только правимые поля; присланные updatedAt / updatedBy сервер игнорирует.
 {
   "autoPublishBelow": 30, "autoRejectFrom": 70, "dailyLimit": 3,
   "overflowMode": "reject", "reportsToHide": 3,
-  "dictionaries": { "profanity": ["бля", "*хуй"], "complaint": ["развод"], "criticism": ["дорого"] },
+  "dictionaries": { "profanity": ["бля", "*пизд"], "complaint": ["развод"], "criticism": ["дорого"] },
   "updatedAt": "…", "updatedBy": { "id": 5, "name": "…" }
 }
 
@@ -438,7 +486,11 @@ createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
   - шкала трёх зон (авто-публикация / менеджеру / отказ) и два ползунка;
   - лимит 1–10 и поведение при переполнении;
   - порог жалоб;
-  - три словаря с подсказкой синтаксиса («слово — ловит начало слова; *корень — в любом месте»).
+  - три словаря, у каждого своя подсказка: у мата — «слово ловит начало слова, *корень — в любом месте»; у отзывов и
+    критики — «фраза ищется внутри текста».
+
+В web-admin адреса живут под `/system/birge/...`. Экраны — только на русском, как весь кабинет контент-менеджера;
+три языка (§9) — у ученика.
 - **Лента** `/birge/feed`: все посты со статусами (опубликовано / на проверке / на завтра / отклонено / скрыто),
   фильтр по статусу, «Скрыть» / «Опубликовать».
 
@@ -451,7 +503,7 @@ createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
 - **Без проверки не публикуется ничего**: любой сбой AI или Feedback ведёт в очередь (§3.3, §3.6).
 - **Журнал.** Каждое решение пишется в журнал, любое решение AI можно отменить.
 - **Время.** Сутки лимита и задача «на завтра» — `ZoneId.of("Asia/Almaty")` явно: JVM бэкенда живёт в UTC.
-- **Языки интерфейса** — ru (основной), kk, en.
+- **Языки интерфейса** — ru (основной), kk, en у ученика и в уведомлениях; кабинет менеджера — ru.
 - **Адаптивность.** Десктоп и телефон; на телефоне форма во всю ширину, как в мобильных соцсетях.
 
 ## 10. Тесты и приёмка
@@ -478,7 +530,9 @@ createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
 1. **Бэкенд** — модуль, миграция, ручки, модерация. PR в `develop` бэкенда, проверка на деве.
 2. **Веб** и **web-admin** — параллельно по контракту §5, каждый своим PR. Веб переживает отсутствие ручек (§7),
    поэтому порядок мержа не важен.
-3. **Прод**: бэкенд → web-admin → веб.
+3. **Прод**: бэкенд → web-admin → веб. На проде у ученика `birge` стоит в `STUDENT_HIDDEN_ON_PROD` (`src/config.js`),
+   рядом с `notifications`: колокольчика там сейчас нет, и уведомления §6 до ученика не дошли бы. Открывать раздел на
+   проде — решение владельца, вместе с уведомлениями.
 
 Модель классификатора и бюджет выбираются по первому замеру на деве: 50 текстов из прототипа и живых примеров,
 доля верных решений и p95 времени.
