@@ -235,6 +235,20 @@
   background: #fff;
   color: var(--svc-ink, #7b3fe4);
 }
+/* «new» на плитке — та же янтарная метка, что у пункта сайдбара (.sb__badge--new), в углу плитки, как счётчик */
+.svc-tile__new {
+  position: absolute;
+  top: -6px;
+  left: 40px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ffe7a8;
+  color: #7a5200;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 20px;
+}
 .svc-tile__badge {
   position: absolute;
   top: -6px;

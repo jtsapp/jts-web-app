@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { isStudentSectionHidden } from './config.js'
 
-const hidden = ['tokens', 'prizes', 'notifications', 'contracts', 'my-teacher', 'teacher-wizard', 'teacher-pick', 'group']
+const hidden = ['tokens', 'prizes', 'notifications', 'birge', 'contracts', 'my-teacher', 'teacher-wizard', 'teacher-pick', 'group']
 describe('временное скрытие кабинетов ученика на проде', () => {
   it.each(hidden)('%s закрыт на проде и доступен для проверки на dev', (screen) => {
     expect(isStudentSectionHidden(screen, 'ai-tutor.justtostudy.kz')).toBe(true)

@@ -6,7 +6,7 @@ import AssetImage from '../components/AssetImage.jsx'
 import { ChevronRightIcon, UserIcon } from '../components/icons.jsx'
 import { useMenuItems } from '../components/useMenuItems.js'
 import SectionAccessNotice from '../components/SectionAccessNotice.jsx'
-import { serviceItems } from '../lib/navSections.js'
+import { NEW_ITEMS, serviceItems } from '../lib/navSections.js'
 import { groupNum } from '../lib/groupNum.js'
 import { loadToken } from '../lib/session.js'
 import { getBalance, getDemoAccess } from '../api.js'
@@ -115,6 +115,8 @@ export default function ServicesPage({ userName, userLevel, levelUnknown = false
                   <span className="svc-tile__go" aria-hidden="true" />
                   {/* Ждут действия ученика (подбор учителя) — как бейдж пункта в сайдбаре */}
                   {badges[key] > 0 && <b className="svc-tile__badge">{badges[key]}</b>}
+                  {/* «new» — та же метка, что у пункта сайдбара: вне подписи, чтобы имя раздела оставалось именем */}
+                  {NEW_ITEMS.has(key) && <b className="svc-tile__new">new</b>}
                 </span>
                 <span className="svc-tile__name">{t(label)}</span>
               </button>
