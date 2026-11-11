@@ -223,6 +223,9 @@
   .cr-pop {
     bottom: calc(24px + var(--mtab-h, 0px));
   }
+  .brg-toast {
+    bottom: calc(16px + var(--mtab-h, 0px));
+  }
   .kd-levelpill {
     bottom: calc(19px + max(var(--mtab-h, 0px), env(safe-area-inset-bottom, 0px)));
   }
