@@ -90,7 +90,9 @@ Birge виден всем ученикам без правок матрицы.
 | `CAPS` | 35 | правила |
 
 Цифры — значения по умолчанию в коде, а не настройки менеджера: менеджер двигает пороги, а не веса.
-Ответ публикации отдаёт причины кодами и подписями плюс `hits` — найденные слова, которые веб подсвечивает.
+API отдаёт причины только кодами (`{code, score}`), подписи на трёх языках держат веб и web-admin. Плюс `hits` —
+найденные фрагменты **как их написал ученик** («х@й», а не нормализованное «хай»). Сравнение идёт по словам исходного
+текста, поэтому исходный фрагмент известен.
 
 ### 3.3 Решение
 
@@ -265,6 +267,98 @@ createdAt, likes, liked, comments, status, hiddenReason, mine, canReport}`.
 - пересчитывает `comments_count` ветки, если это комментарий.
 
 Решение по отложенному (`tomorrow`) лимит не тратит: место в лимите занимает только перевод в `pending`.
+
+### 5.3 Формы JSON (общие для бэкенда, веба и web-admin)
+
+Имена полей — camelCase, время — ISO-8601 с зоной, списки с курсором — `{items, nextCursor}` (`nextCursor: null` —
+конец).
+
+```jsonc
+// Reason
+{ "code": "PROFANITY", "score": 96 }
+// code: PROFANITY | IMAGE_UNSAFE | INSULT | HARASSMENT | PLATFORM_COMPLAINT | TOXICITY | MASKED_SUSPECT
+//     | LINK_OR_CONTACT | SPAM | SOFT_CRITICISM | TOO_SHORT | CAPS | AI_UNAVAILABLE | REPORTS
+
+// Author
+{ "id": 42, "name": "Аружан К.", "level": "A2", "avatarUrl": null }
+
+// PostCard — ученику
+{
+  "id": 101, "parentId": null, "author": Author, "topic": "GRAMMAR",
+  "text": "…", "continuations": ["…"],
+  "media": [{ "id": 7, "url": "https://…/birge/media/ab12….jpg", "width": 1600, "height": 1200 }],
+  "createdAt": "2026-11-11T09:40:00+05:00",
+  "likes": 12, "liked": false, "comments": 2,
+  "status": "published", "hiddenReason": null, "mine": false, "canReport": true
+}
+
+// POST /mobile/birge/posts → PublishResponse
+{
+  "decision": "rejected",            // published | pending | tomorrow | hidden | rejected | feedback
+  "post": null,                       // PostCard; null при rejected и feedback
+  "risk": 96,
+  "reasons": [Reason],
+  "hits": ["х@й"],
+  "escalated": null,                  // { "today": 2, "limit": 3 } при pending
+  "feedbackId": null                  // id обращения при feedback
+}
+
+// GET /mobile/birge/posts/{id}
+{ "thread": PostCard, "comments": [PostCard] }
+
+// ManagerPost — менеджеру
+{
+  "id": 101, "parentId": null, "kind": "thread",          // thread | comment
+  "threadPreview": null,                                    // у комментария — первые 80 символов ветки
+  "author": Author, "topic": "QUESTION", "text": "…", "continuations": [],
+  "media": [{ "id": 7, "url": "…", "width": 1600, "height": 1200,
+              "moderation": { "state": "ok", "category": "ok", "confidence": 0.98 } }],
+  "status": "pending", "hiddenReason": null, "queueSource": "risk",
+  "risk": 48, "reasons": [Reason], "reportsCount": 0,
+  "rejectReason": null,                                     // { "code": "OFF_TOPIC", "note": null }
+  "createdAt": "…", "moderatedAt": null
+}
+
+// GET /admin/birge/queue
+{ "pending": [ManagerPost], "tomorrow": [ManagerPost] }
+
+// POST /admin/birge/posts/{id}/decision — тело
+{ "action": "reject", "reason": "OFF_TOPIC", "note": null }
+// action: approve | reject | hide | restore; reason (только reject): INSULT | PROFANITY | ADS_CONTACTS | OFF_TOPIC | OTHER
+// note обязателен при OTHER (до 200 символов). Ответ — ManagerPost.
+
+// LogItem — GET /admin/birge/log → {items, nextCursor}
+{
+  "id": 9, "postId": 101, "createdAt": "…",
+  "actorType": "ai", "actor": null,                         // manager: { "id": 5, "name": "Контент-менеджер" }
+  "author": { "id": 42, "name": "Аружан К." },
+  "textPreview": "Это развод, верните…",                     // до 80 символов
+  "risk": 78, "decision": "auto_feedback", "reasons": [Reason], "note": null,
+  "revertible": true, "revertedAt": null, "revertedBy": null
+}
+// Фильтры: from, to — даты YYYY-MM-DD по Алматы; decision — код решения; author — подстрока имени.
+// POST /admin/birge/log/{id}/revert → LogItem (с revertedAt)
+
+// GET /admin/birge/summary
+{ "autoPublished": 14, "autoRejected": 3, "pending": 1, "tomorrow": 0, "escalated": 1, "limit": 3 }
+
+// GET/PUT /admin/birge/settings
+{
+  "autoPublishBelow": 30, "autoRejectFrom": 70, "dailyLimit": 3,
+  "overflowMode": "reject", "reportsToHide": 3,
+  "dictionaries": { "profanity": ["бля", "*хуй"], "complaint": ["развод"], "criticism": ["дорого"] },
+  "updatedAt": "…", "updatedBy": { "id": 5, "name": "…" }
+}
+
+// Прочее
+// POST /mobile/birge/media → { "id": 7, "width": 1600, "height": 1200 }
+// POST|DELETE /mobile/birge/posts/{id}/like → { "liked": true, "likes": 13 }
+// POST /mobile/birge/posts/{id}/report — тело { "reason": null } → { "reports": 3, "hidden": true }
+// 429 → { "error": "RATE_LIMIT", "retryAfterSec": 1200, "message": "…" }
+```
+
+Темы: `GRAMMAR | SPEAKING | VOCABULARY | MOTIVATION | QUESTION`. Решения журнала — коды из §4
+(`auto_published` … `restored`).
 
 ## 6. Уведомления
 
