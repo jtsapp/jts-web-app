@@ -35,6 +35,14 @@ describe('notificationTarget', () => {
     expect(notificationTarget('feedback-reports')).toEqual({ screen: 'lessons', payload: { tab: 'reports', reportId: null } })
   })
 
+  // Birge (спека 2026-11-11 §6): у всех уведомлений раздела ссылка `birge/<id ветки>`.
+  it('opens a Birge thread from its notification link', () => {
+    expect(notificationTarget('birge/123')).toEqual({ screen: 'birge', payload: { postId: 123 } })
+    expect(notificationTarget('/birge/5/')).toEqual({ screen: 'birge', payload: { postId: 5 } })
+    expect(notificationTarget('birge')).toEqual({ screen: 'birge', payload: null })
+    expect(notificationTarget('birge/abc').screen).toBeNull()
+  })
+
   it('returns a null screen for empty or unknown links', () => {
     expect(notificationTarget(null).screen).toBeNull()
     expect(notificationTarget('/system/unknown').screen).toBeNull()

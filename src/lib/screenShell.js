@@ -37,6 +37,7 @@ const NAV_OF = {
   notifications: 'notifications',
   contracts: 'contracts',
   group: 'group',
+  birge: 'birge',
   'my-teacher': 'my-teacher',
   'teacher-wizard': 'my-teacher',
 }

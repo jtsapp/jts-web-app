@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { menuItems as buildMenu, mobileTabs, serviceItems, tabFor, showsTabBar } from './navSections.js'
+import { menuItems as buildMenu, mobileTabs, serviceItems, tabFor, showsTabBar, NEW_ITEMS, NAV_ICONS } from './navSections.js'
 
 // Явный ответ «абонемента пока нет»: обычное меню во время онбординга.
 const menuItems = (options = {}) => buildMenu({ sections: { known: false, allowed: [] }, ...options })
@@ -9,7 +9,7 @@ const keys = (list) => list.map((i) => i.key)
 describe('меню ученика', () => {
   it('обычный ученик: Главная и разделы курса, без экзаменов и наград', () => {
     expect(keys(menuItems())).toEqual([
-      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'birge', 'feedback', 'notifications', 'contracts',
     ])
   })
 
@@ -28,12 +28,12 @@ describe('меню ученика', () => {
 
   it('экзамен появляется только при своей подписке', () => {
     expect(keys(menuItems({ exams: { ielts: true, sat: false } }))).toEqual([
-      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'ielts', 'vocab', 'learning', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'ielts', 'vocab', 'learning', 'birge', 'feedback', 'notifications', 'contracts',
     ])
   })
 
   it('награды — только там, где они включены', () => {
-    expect(keys(menuItems({ rewards: true })).slice(-5)).toEqual(['tokens', 'prizes', 'feedback', 'notifications', 'contracts'])
+    expect(keys(menuItems({ rewards: true })).slice(-6)).toEqual(['tokens', 'prizes', 'birge', 'feedback', 'notifications', 'contracts'])
   })
 
   it('закрытый по тарифу раздел в меню не показываем; до ответа сервера и при ошибке доступ ограничен', () => {
@@ -49,13 +49,23 @@ describe('меню ученика', () => {
     expect(keys(menuItems({ sections, exams: { sat: false } }))).not.toContain('sat')
   })
 
+  it('Birge — сразу перед Feedback, с меткой new и своим значком; у преподавателя его нет', () => {
+    const list = keys(menuItems())
+    expect(list.indexOf('birge')).toBe(list.indexOf('feedback') - 1)
+    const ielts = keys(menuItems({ ieltsAccount: true }))
+    expect(ielts.indexOf('birge')).toBe(ielts.indexOf('feedback') - 1)
+    expect(NEW_ITEMS.has('birge')).toBe(true)
+    expect(NAV_ICONS.birge).toBe('diversity_3')
+    expect(keys(menuItems({ teacher: true }))).not.toContain('birge')
+  })
+
   it('преподаватель: только Практика и Уроки', () => {
     expect(keys(menuItems({ teacher: true }))).toEqual(['practice', 'lessons'])
   })
 
   it('аккаунт IELTS — свой порядок', () => {
     expect(keys(menuItems({ ieltsAccount: true, exams: { ielts: true, sat: true } }))).toEqual([
-      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'ielts', 'sat', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'ielts', 'sat', 'birge', 'feedback', 'notifications', 'contracts',
     ])
   })
 
@@ -105,7 +115,7 @@ describe('нижняя панель телефона', () => {
 
   it('Сервисы — разделы, которые не стали вкладками, в порядке меню', () => {
     expect(keys(serviceItems(menuItems({ exams: { ielts: true, sat: true } })))).toEqual([
-      'group', 'homework', 'ielts', 'sat', 'vocab', 'learning', 'feedback', 'notifications', 'contracts',
+      'group', 'homework', 'ielts', 'sat', 'vocab', 'learning', 'birge', 'feedback', 'notifications', 'contracts',
     ])
     expect(serviceItems(menuItems({ teacher: true }))).toEqual([])
   })

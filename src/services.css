@@ -250,6 +250,19 @@
   line-height: 20px;
   text-align: center;
 }
+/* «new» у нового раздела — та же янтарная метка, что у пункта сайдбара (.sb__badge--new), на месте счётчика. */
+.svc-tile__new {
+  position: absolute;
+  top: -6px;
+  left: 40px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #ffe7a8;
+  color: #7a5200;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 20px;
+}
 .svc-tile__plate i {
   display: block;
   width: 32px;

@@ -46,7 +46,7 @@ describe('Sidebar — разделы по тарифу и формату', () =>
     expect(labels()).not.toContain('Выбрать группу')
   })
 
-  it('порядок: Практика сразу перед Speaking Buddy; «new» у Призов и Feedback', async () => {
+  it('порядок: Практика сразу перед Speaking Buddy; «new» у Призов, Birge и Feedback', async () => {
     getMySections.mockResolvedValue({ known: false, tariff: null, format: null, allowed: [] })
     render(
       <I18nProvider>
@@ -57,7 +57,7 @@ describe('Sidebar — разделы по тарифу и формату', () =>
     const all = labels()
     expect(all.indexOf('Speaking Buddy')).toBe(all.indexOf('Практика') + 1)
     const fresh = [...document.querySelectorAll('.sb__nav .sb__item')].filter((b) => b.querySelector('.sb__badge--new')).map((b) => b.dataset.nav)
-    expect(fresh).toEqual(['prizes', 'feedback'])
+    expect(fresh).toEqual(['prizes', 'birge', 'feedback'])
   })
 
   it('пока абонемента нет (онбординг), меню полное', async () => {

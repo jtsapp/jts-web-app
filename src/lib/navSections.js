@@ -38,6 +38,9 @@ const NAV_FULL = [
   { key: 'vocab', label: 'nav.vocab', ico: 'menu_book' },
   { key: 'tokens', label: 'nav.tokens', ico: 'insights' },
   { key: 'prizes', label: 'nav.prizes', ico: 'school' },
+  // «Birge» — лента студентов (спека 2026-11-11 §7): сразу перед Feedback, с меткой new. В тьютор-онли её нет (её нет
+  // в TUTOR_ONLY_SECTIONS), у преподавателя — тоже (нет в TEACHER_SECTIONS): писать в ленту может только ученик.
+  { key: 'birge', label: 'nav.birge', ico: 'diversity_3' },
   // «Feedback» — отзывы и жалобы ученика (ТЗ кабинетов, раздел 5); раньше экран открывался только из профиля.
   { key: 'feedback', label: 'nav.feedback', ico: 'forum' },
   // «Уведомления» видны всем ученикам независимо от тарифа и формата (ТЗ кабинетов, 14е).
@@ -51,6 +54,10 @@ const NAV = TUTOR_ONLY ? NAV_FULL.filter((i) => TUTOR_ONLY_SECTIONS.includes(i.k
 // Значок пункта по ключу — для списков разделов вне меню (тур «Главной»).
 export const NAV_ICONS = Object.fromEntries([HOME_ITEM, MY_TEACHER_ITEM, GROUP_ITEM, ...NAV_FULL].map((i) => [i.key, i.ico]))
 
+// Метка «new» у пункта — разделы, которые ученику стоит заметить. Одна на сайдбар и на плитки «Сервисов» телефона:
+// до 11.11.2026 набор жил в Sidebar.jsx, и на телефоне новый раздел ничем не выделялся.
+export const NEW_ITEMS = new Set(['prizes', 'feedback', 'birge'])
+
 // Разделы преподавателя. Остальное в списке — его собственное обучение, которого у него нет: Тьютор, IELTS и
 // Словарь ученические (design-spec §4.2).
 //
@@ -61,7 +68,7 @@ const TEACHER_SECTIONS = ['lessons', 'practice']
 
 // Аккаунт IELTS (дизайн «IELTS new», 08.10.2026): ровно эти разделы и в этом порядке, а внизу «Настройки». Игровых
 // счётчиков и плашки уровня в макете нет. Каждый экзамен ниже проверяется и по матрице, и по своему доступу.
-const IELTS_SECTIONS = ['practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'ielts', 'sat', 'tokens', 'prizes', 'feedback', 'notifications', 'contracts']
+const IELTS_SECTIONS = ['practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'ielts', 'sat', 'tokens', 'prizes', 'birge', 'feedback', 'notifications', 'contracts']
 
 // «Повторение» стоит после «Словаря» у всех учеников, включая IELTS/SAT (владелец, 03.11.2026; до того у экзаменов было первым).
 function learningAfterVocab(items) {

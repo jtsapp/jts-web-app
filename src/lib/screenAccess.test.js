@@ -18,6 +18,10 @@ describe('ученические экраны закрыты преподава�
     expect(isStudentOnlyScreen('homework')).toBe(true)
   })
 
+  it('Birge закрыт: у преподавателя раздела нет, бэкенд ответил бы ему 403', () => {
+    expect(isStudentOnlyScreen('birge')).toBe(true)
+  })
+
   it('тест уровня и IELTS — закрыты', () => {
     expect(isStudentOnlyScreen('test-intro')).toBe(true)
     expect(isStudentOnlyScreen('test')).toBe(true)

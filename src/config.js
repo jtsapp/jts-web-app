@@ -61,6 +61,9 @@ export const isRewardsScreen = (screen) => screen === 'tokens' || screen === 'pr
 const STUDENT_HIDDEN_ON_PROD = new Set([
   'tokens', 'prizes', 'notifications', 'contracts',
   'my-teacher', 'teacher-wizard', 'teacher-pick', 'group',
+  // Birge (спека 2026-11-11 §11): колокольчика на проде нет (он за notifications), и уведомления раздела до ученика
+  // не дошли бы. Открывать — решение владельца, вместе с уведомлениями.
+  'birge',
 ])
 export function isStudentSectionHidden(screen, hostname = typeof window === 'undefined' ? '' : window.location.hostname) {
   return isProdHost(hostname) && STUDENT_HIDDEN_ON_PROD.has(screen)
