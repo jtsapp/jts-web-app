@@ -83,3 +83,27 @@ describe('translateWord — кэш', () => {
     expect(localStorage.getItem('jts_word_tr_v2')).toBeNull()
   })
 })
+
+/* Обратный словарь (12.11.2026): «витрина» → английское слово. Без sl сервер
+   переводит с английского и возвращает русское слово как есть. */
+describe('translateWord — на английский', () => {
+  it('tl=en уходит с sl=auto, обычный перевод — без sl', async () => {
+    const { translateWord } = await load()
+    await translateWord('витрина', 'en')
+    await translateWord('ghost')
+    const first = new URL(fetchMock.mock.calls[0][0])
+    const second = new URL(fetchMock.mock.calls[1][0])
+    expect(first.searchParams.get('tl')).toBe('en')
+    expect(first.searchParams.get('sl')).toBe('auto')
+    expect(second.searchParams.get('sl')).toBeNull()
+  })
+
+  it('isNativeQuery: кириллица без латиницы', async () => {
+    const { isNativeQuery } = await load()
+    expect(isNativeQuery('витрина')).toBe(true)
+    expect(isNativeQuery('көше')).toBe(true)
+    expect(isNativeQuery('shop window')).toBe(false)
+    expect(isNativeQuery('window — окно')).toBe(false)
+    expect(isNativeQuery('')).toBe(false)
+  })
+})

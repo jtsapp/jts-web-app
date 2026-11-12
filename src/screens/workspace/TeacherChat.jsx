@@ -91,7 +91,9 @@ export default function TeacherChat({ messages, onSend, onEdit, onDelete, title,
         <span className="lw-chat__hint">{t('lesson.ws.chatHint')}</span>
       </div>
 
-      <div className="lw-chat__list" ref={listRef} role="log" aria-live="polite">
+      {/* data-copyable: сообщения чата можно выделить и скопировать — ссылку,
+          слово, фразу (просьба 12.11.2026); остальной урок копированию закрыт. */}
+      <div className="lw-chat__list" ref={listRef} role="log" aria-live="polite" data-copyable="">
         {list.length === 0 ? (
           <div className="lw-chat__empty">
             <span className="lw-chat__empty-icon" aria-hidden="true">💬</span>

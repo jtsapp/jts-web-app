@@ -37,8 +37,25 @@ function NoCopyGuard() {
         el.tagName === 'SELECT' ||
         el.isContentEditable)
 
+    // Чат живого урока — исключение и из запрета копирования (просьба 12.11.2026):
+    // в чате присылают ссылки, слова и фразы, которые ученику надо унести в
+    // словарь, тетрадь или переводчик. Помечается `data-copyable`. Копирование
+    // разрешаем, только если ВСЁ выделение лежит внутри одной такой области:
+    // иначе протянутое от чата в текст урока выделение уносило бы и урок.
+    const elementOf = (node) => (node && node.nodeType === 3 ? node.parentElement : node)
+    const copyableRoot = (node) => elementOf(node)?.closest?.('[data-copyable]') || null
+    const selectionCopyable = () => {
+      const sel = typeof window.getSelection === 'function' ? window.getSelection() : null
+      if (!sel || sel.isCollapsed || !sel.rangeCount) return false
+      const root = copyableRoot(sel.anchorNode)
+      return !!root && root === copyableRoot(sel.focusNode)
+    }
+
     const block = (e) => {
       if (inEditable(e.target)) return
+      if ((e.type === 'copy' || e.type === 'cut') && selectionCopyable()) return
+      // Правый клик (и долгое нажатие) в чате — меню «Копировать».
+      if (e.type === 'contextmenu' && copyableRoot(e.target)) return
       e.preventDefault()
     }
 
@@ -55,7 +72,7 @@ function NoCopyGuard() {
     const blockSelect = (e) => {
       const el = e.target && e.target.nodeType === 3 ? e.target.parentElement : e.target
       if (inEditable(el)) return
-      if (el?.closest?.('[data-selectable]')) return
+      if (el?.closest?.('[data-selectable], [data-copyable]')) return
       e.preventDefault()
     }
 
