@@ -6864,10 +6864,14 @@ body:has(.pct-host[data-game='1']) .asst__badge { display: none; }
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
+/* contain, а не cover: мемы почти всегда шире 9:16 (подпись сверху, видео
+   4:5 или 1:1), и cover срезал им бока — подпись читалась с середины слова.
+   Лучше полосы фона кадра сверху и снизу, чем обрезанный текст. Сторож —
+   screens/reelsFit.test.js. */
 .rl__video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
   cursor: pointer;
 }
