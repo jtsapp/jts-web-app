@@ -2970,7 +2970,9 @@ export default function App() {
       // проп не получают, и их сценарий не меняется ни на йоту.
       // key — урок: следование за классом, очередь снимков и буфер показа живут
       // в ref-ах экрана и не должны переживать смену занятия.
-      return <LiveLessonPage key={liveLessonId} lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => (boothAccount ? setScreen('booth') : goBack(() => setScreen('lessons')))} onLessonClosed={boothAccount ? handleBoothLessonClosed : undefined} />
+      // onOpenLesson — «Перейти» в идущий урок со страницы другого урока; аккаунт
+      // класса ведёт один сеанс, и уводить его в другое занятие некуда.
+      return <LiveLessonPage key={liveLessonId} lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => (boothAccount ? setScreen('booth') : goBack(() => setScreen('lessons')))} onLessonClosed={boothAccount ? handleBoothLessonClosed : undefined} onOpenLesson={boothAccount ? undefined : setLiveLessonId} />
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
     // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
     case 'ielts':

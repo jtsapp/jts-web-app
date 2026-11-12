@@ -33,6 +33,8 @@ import { createProgressSaver } from './workspace/progressSaver.js'
 import { catalogLessonIdFor, shouldResolveCatalogLesson } from './live/catalogLessonByUrl.js'
 import { stageSteps, stageStatusById } from './live/lessonStages.js'
 import { rememberedPlace, saveLivePosition } from './live/livePosition.js'
+import { useOtherLiveLesson } from './live/useOtherLiveLesson.js'
+import { isLessonLive, lessonTimeRange } from './schedule/lessonFormat.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
@@ -100,8 +102,8 @@ function parseAnswer(value) {
   }
 }
 
-export default function LiveLessonPage({ lessonId, userName, userLevel, token, onNav, onProfile, onBack, onLessonClosed }) {
-  const { t } = useI18n()
+export default function LiveLessonPage({ lessonId, userName, userLevel, token, onNav, onProfile, onBack, onLessonClosed, onOpenLesson }) {
+  const { t, lang } = useI18n()
   const [lesson, setLesson] = useState(null)
   const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [busy, setBusy] = useState(false)
@@ -1724,6 +1726,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const status = liveState && liveConnected
     ? (pausedUntilMs != null && pauseEndedAt === pausedUntilMs ? 'IN_PROGRESS' : liveState.status)
     : lesson?.status
+  // Идущий сейчас урок ученика, если на экране другой: F5 держит урок из адреса
+  // (?live=), и вкладка прошлого занятия иначе так и показывает прошлое
+  // занятие (прод 11.11.2026). Пока урок не загрузился, статус неизвестен —
+  // спрашивать расписание рано.
+  const otherLive = useOtherLiveLesson(
+    lessonId,
+    token,
+    !isStaff && Boolean(onOpenLesson) && state === 'ready' && !isLessonLive(status),
+  )
   // Урок открыт в любом состоянии, кроме отменённого: ученик заходит и делает
   // задания до того, как преподаватель нажал «Начать», на перерыве и после
   // «Завершить» (решение владельца 20.09.2026, spec-lesson-always-open).
@@ -1957,6 +1968,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                 строка «В классе» над уроком, и ряд плиток выбора ученика
                 показывали одно и то же двумя разными способами, а ученику не
                 показывали вовсе. */}
+            {otherLive && (
+              <SystemBanner
+                tone="attention"
+                text={t('live.otherLessonLive', { time: lessonTimeRange(otherLive, lang) })}
+                actionLabel={t('live.otherLessonGo')}
+                onAction={() => onOpenLesson(otherLive.lessonId)}
+              />
+            )}
+
             {!isStaff && status === 'SCHEDULED' && <p className="live__status-msg">{t('live.waiting')}</p>}
 
             {isStaff && (
