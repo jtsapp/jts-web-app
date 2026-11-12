@@ -278,7 +278,7 @@ test.describe('пройденный тест не просит пройти ег
     expect(state.attempts.at(-1).assessment.overallCEFR).toBe(null)
     expect(state.level).toBe('A2')
 
-    // отчёт — своей страницей (ТЗ v2.0, 5.7); пересдача — в Профиле, здесь её нет
+    // отчёт — своей страницей (ТЗ v2.0, 5.7); пересдача — кнопкой здесь же (обратная связь 11.11)
     await page.goto('/?screen=placement-results')
     const report = page.locator('.pl-report')
     await expect(report).toContainText('Начать с основ', { timeout: 20000 })
@@ -288,8 +288,11 @@ test.describe('пройденный тест не просит пройти ег
     await expect(report.locator('.pl-report__skill').first().locator('.pl-report__note')).toContainText(/\d+\D+\d+/)
     await expect(page.locator('.pl-report--missing')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Пройти тест уровня' })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Пройти тест заново' })).toHaveCount(0)
-    await expect(page.getByText('Пересдать тест можно в Профиле — «Тест на уровень».')).toBeVisible()
+    // Пересдача открывает тест с первого экрана, а не на прошлом итоге.
+    await page.getByRole('button', { name: 'Пройти тест заново' }).click()
+    await expect
+      .poll(() => page.frames().find((fr) => fr.url().includes('/placement/v16/'))?.evaluate(() => app?.screen).catch(() => null), { timeout: 20000 })
+      .toBe('welcome')
   })
 })
 

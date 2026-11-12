@@ -23,6 +23,23 @@ const PASS_PREFIXES = ['/_next/', '/landing/', '/assets/', '/legal/', '/fonts/',
 export const CHECKOUT_SCREENS = new Set(['pricing', 'minutes'])
 const PASS_FILES = new Set(['/favicon.ico', '/robots.txt', '/sitemap.xml'])
 
+// Короткая ссылка рекламы: justtostudy-english.kz/имя → лендинг с UTM-метками
+// этой ссылки (их заводит маркетинг в «Настройки CRM → Короткие ссылки»).
+// Правило имени — как на бэкенде (CrmShortLinkValidator.SLUG), а занятые
+// адреса сайта — как его RESERVED: держать в согласии.
+const SHORT_LINK = /^\/([a-z0-9][a-z0-9_-]{1,39})\/?$/i
+export const SHORT_LINK_RESERVED = new Set(['_next', 'api', 'assets', 'fonts', 'info', 'landing', 'legal',
+  'favicon.ico', 'robots.txt', 'sitemap.xml', 'complete-registration', 'report', 'trial', 'wake-lab',
+  'arcade', 'course', 'demo', 'exam', 'ielts', 'learning', 'placement', 'practice', 'sat', 'shadowing',
+  'tutor', 'vocab', 'pricing', 'minutes', 'login', 'admin', 'pay', 'payment', 'app'])
+
+/** Имя короткой ссылки из пути («/Dana/» → «dana») или null. */
+export function shortLinkSlug(pathname) {
+  const m = SHORT_LINK.exec(pathname)
+  const slug = m && m[1].toLowerCase()
+  return slug && !SHORT_LINK_RESERVED.has(slug) ? slug : null
+}
+
 // Локальная разработка видит /landing всегда — иначе страницу не посмотреть.
 const LOCAL = /^(localhost|127\.0\.0\.1|\[::1\]|::1)$/
 
@@ -80,6 +97,9 @@ export function routeLanding({ host, pathname, search = '', landingHosts, appUrl
     if (pathname === '/' && !screen) return { action: 'rewrite', to: '/landing' + search }
     if (CHECKOUT_SCREENS.has(screen)) return { action: 'next' }
     if (PASS_FILES.has(pathname) || PASS_PREFIXES.some((p) => pathname.startsWith(p))) return { action: 'next' }
+    // Короткая ссылка: ищет её серверный роут (ключ бэкенда в браузер не попадает).
+    const slug = shortLinkSlug(pathname)
+    if (slug) return { action: 'rewrite', to: `/api/landing/go/${slug}${search}` }
     // Экран приложения на домене лендинга — уводим в приложение: вход
     // хранится в localStorage домена, и зарегистрированный здесь ученик
     // оказался бы разлогинен в приложении. Адреса приложения нет — лучше

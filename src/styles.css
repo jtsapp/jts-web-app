@@ -7785,6 +7785,7 @@ body:has(.pct-host[data-game='1']) .asst__badge { display: none; }
 .sch-row__kind--solo { background: #efe6ff; color: #5b34d6; }
 .sch-row__teacher { font-weight: 700; font-size: 15px; color: var(--ink); overflow-wrap: anywhere; }
 .sch-row__time { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.sch-moved { font-size: 13px; font-weight: 600; color: #b45309; margin-top: 4px; }
 .sch-row__meta { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 8px; }
 .sch-row__format { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); }
 .sch-row__dot { width: 8px; height: 8px; border-radius: 50%; background: #34c759; flex: none; }

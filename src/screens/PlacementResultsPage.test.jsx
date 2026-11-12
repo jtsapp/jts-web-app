@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // «Результаты теста» своей страницей (ТЗ v2.0 «Луна-трекер», 5.5 и 5.7): полный отчёт теста уровня ушёл с «Главной»
-// сюда. Пересдачи нет — она в Профиле; кнопка теста — только тому, кто его не проходил.
+// сюда. Пересдача — кнопкой здесь же (обратная связь 11.11); кнопка теста — тому, кто его не проходил.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
@@ -28,12 +28,13 @@ import PlacementResultsPage from './PlacementResultsPage.jsx'
 function draw(props = {}) {
   const onNav = vi.fn()
   const onStartTest = vi.fn()
+  const onRetake = vi.fn()
   render(
     <I18nProvider>
-      <PlacementResultsPage token="T" userName="Сакен" userLevel="B1" onNav={onNav} onStartTest={onStartTest} {...props} />
+      <PlacementResultsPage token="T" userName="Сакен" userLevel="B1" onNav={onNav} onStartTest={onStartTest} onRetake={onRetake} {...props} />
     </I18nProvider>,
   )
-  return { onNav, onStartTest }
+  return { onNav, onStartTest, onRetake }
 }
 
 beforeEach(() => {
@@ -52,14 +53,17 @@ describe('PlacementResultsPage', () => {
     expect(onStartTest).toHaveBeenCalledTimes(1)
   })
 
-  it('тест пройден — отчёт и «что дальше», пересдача только в Профиле', async () => {
+  it('тест пройден — отчёт, «что дальше» и одна кнопка «Пройти тест заново»', async () => {
     latest.value = envelope
-    draw()
+    const { onRetake, onStartTest } = draw()
     await waitFor(() => expect(document.querySelector('.pl-report__level')).toBeTruthy())
     expect(document.querySelector('.pl-report--missing')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Пройти тест заново' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Скрыть' })).toBeNull()
-    expect(screen.getByText('Пересдать тест можно в Профиле — «Тест на уровень».')).toBeTruthy()
+    const retake = screen.getAllByRole('button', { name: 'Пройти тест заново' })
+    expect(retake).toHaveLength(1)
+    fireEvent.click(retake[0])
+    expect(onRetake).toHaveBeenCalledTimes(1)
+    expect(onStartTest).not.toHaveBeenCalled()
   })
 
   it('«На главную» ведёт на «Главную»', async () => {

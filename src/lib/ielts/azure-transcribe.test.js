@@ -46,6 +46,12 @@ vi.mock('microsoft-cognitiveservices-speech-sdk', () => {
     AudioInputStream: { createPushStream: () => ({ write() {}, close() {} }) },
     AudioConfig: { fromStreamInput: () => ({}) },
     SpeechRecognizer,
+    PhraseListGrammar: {
+      fromRecognizer: (r) => {
+        r.phrases = []
+        return { addPhrase: (p) => r.phrases.push(p) }
+      },
+    },
     PronunciationAssessmentConfig: class {
       applyTo() {}
     },
@@ -227,6 +233,47 @@ describe('transcribeWavFast', () => {
       vi.useRealTimers()
       warn.mockRestore()
     }
+  })
+
+  // Обратная связь 11.11: в караоке пропадали спетые слова — строки песни идут подсказкой.
+  it('строки песни уходят phrase list в definition', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ combinedPhrases: [{ text: 'I woke up' }] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(transcribeWavFast(wavOf(30), { phrases: ['I woke up', 'in the morning'] })).resolves.toBe('I woke up')
+    const definition = JSON.parse(fetchMock.mock.calls[0][1].body.get('definition'))
+    expect(definition).toEqual({ locales: ['en-US'], phraseList: { phrases: ['I woke up', 'in the morning'] } })
+  })
+
+  it('подсказку отклонили (400) — тот же запрос без неё, а не потоковый путь', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: 'InvalidArgument', message: 'phraseList' }), { status: 400 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ combinedPhrases: [{ text: 'sang it' }] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      await expect(transcribeWavFast(wavOf(30), { phrases: ['sang it'] })).resolves.toBe('sang it')
+    } finally {
+      warn.mockRestore()
+    }
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body.get('definition'))).toEqual({ locales: ['en-US'] })
+  })
+
+  it('без подсказки definition прежний', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ combinedPhrases: [] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    await transcribeWavFast(wavOf(10))
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body.get('definition'))).toEqual({ locales: ['en-US'] })
+  })
+
+  it('потоковый путь получает те же фразы', async () => {
+    recognizers.length = 0
+    const promise = transcribeWav(wavOf(5), { phrases: ['hello world'] })
+    await vi.waitFor(() => expect(recognizers.length).toBe(1))
+    expect(recognizers[0].phrases).toEqual(['hello world'])
+    recognizers[0].sessionStopped()
+    await promise
   })
 
   it('без ключа не ходит в сеть', async () => {

@@ -2,6 +2,7 @@ import { useI18n } from '../../i18n.jsx'
 import { lessonStateKey, lessonTimeRange, isLessonLive, canOpenLesson } from './lessonFormat.js'
 import MeetLink from './MeetLink.jsx'
 import NoShowDispute from './NoShowDispute.jsx'
+import MovedNote from './MovedNote.jsx'
 
 export default function LessonRow({ occ, card, onOpenLesson, dispute }) {
   const { t, lang } = useI18n()
@@ -26,6 +27,7 @@ export default function LessonRow({ occ, card, onOpenLesson, dispute }) {
         )}
         <div className="sch-row__teacher">{occ.teacherName || '—'}</div>
         <div className="sch-row__time">{lessonTimeRange(occ, lang || 'ru')}</div>
+        <MovedNote occ={occ} />
         <div className="sch-row__meta">
           <span className={`sch-row__format sch-row__format--${format}`}>
             <span className="sch-row__dot" aria-hidden="true" />

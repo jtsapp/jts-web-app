@@ -315,15 +315,26 @@ export function resetFastTranscriptionCache() {
 
 // Возвращает распознанный текст, либо null — «этим путём нельзя, иди в
 // потоковый». Пустая строка означает «сработало, но речи не нашлось».
-export async function transcribeWavFast(wav, { locale = 'en-US', timeoutMs = 120_000 } = {}) {
+// `phrases` — ожидаемые фразы (строки песни в караоке, sttHint.js): phrase list поднимает их вероятность.
+// Отказ запроса с подсказкой (400) повторяем без неё: распознать без подсказки лучше, чем уйти в потоковый путь.
+export async function transcribeWavFast(wav, { locale = 'en-US', timeoutMs = 120_000, phrases = null } = {}) {
   const key = process.env.AZURE_SPEECH_KEY
   const region = process.env.AZURE_SPEECH_REGION
   if (!key || !region) return null
   if (fastUnsupportedFor === region) return null
+  const withPhrases = Array.isArray(phrases) && phrases.length > 0
+  const first = await fastRequest(wav, { key, region, locale, timeoutMs, phraseList: withPhrases ? phrases : null })
+  if (first !== PHRASES_REJECTED) return first
+  console.warn('[azure-stt-fast] подсказка фраз отклонена — распознаём без неё')
+  return fastRequest(wav, { key, region, locale, timeoutMs, phraseList: null })
+}
 
+const PHRASES_REJECTED = Symbol('phrases-rejected')
+
+async function fastRequest(wav, { key, region, locale, timeoutMs, phraseList }) {
   const form = new FormData()
   form.append('audio', new Blob([wav], { type: 'audio/wav' }), 'audio.wav')
-  form.append('definition', JSON.stringify({ locales: [locale] }))
+  form.append('definition', JSON.stringify({ locales: [locale], ...(phraseList ? { phraseList: { phrases: phraseList } } : {}) }))
 
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), timeoutMs)
@@ -345,6 +356,8 @@ export async function transcribeWavFast(wav, { locale = 'en-US', timeoutMs = 120
       if (res.status === 404 || /not supported in this region/i.test(body)) {
         fastUnsupportedFor = region
         console.warn(`[azure-stt-fast] недоступна в регионе ${region}, уходим в потоковый путь`)
+      } else if (phraseList && res.status === 400) {
+        return PHRASES_REJECTED
       } else {
         console.error('[azure-stt-fast] HTTP', res.status, body.slice(0, 300))
       }
@@ -370,7 +383,7 @@ export async function transcribeWavFast(wav, { locale = 'en-US', timeoutMs = 120
 // unconfigured or nothing was recognized; the caller advances either way.
 // locale — язык речи: тест уровня и IELTS английские, а помощника по сайту
 // спрашивают по-русски и по-казахски (ru-RU / kk-KZ).
-export async function transcribeWav(wav, { locale = 'en-US' } = {}) {
+export async function transcribeWav(wav, { locale = 'en-US', phrases = null } = {}) {
   const key = process.env.AZURE_SPEECH_KEY
   const region = process.env.AZURE_SPEECH_REGION
   if (!key || !region) return ''
@@ -413,6 +426,11 @@ export async function transcribeWav(wav, { locale = 'en-US' } = {}) {
         speechConfig,
         sdk.AudioConfig.fromStreamInput(pushStream),
       )
+      // Ожидаемые фразы (строки песни) — тем же phrase list, что у Fast Transcription.
+      if (Array.isArray(phrases) && phrases.length) {
+        const list = sdk.PhraseListGrammar.fromRecognizer(recognizer)
+        for (const p of phrases) list.addPhrase(p)
+      }
 
       // Continuous, not recognizeOnce: a Part 1 answer can run past the ~15s
       // single-shot cap, and we want every utterance, not just the first.

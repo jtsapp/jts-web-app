@@ -13,6 +13,20 @@ function renderPanel(props) {
 }
 
 describe('DayPanel', () => {
+  // Обратная связь 11.11: при переносе ученик видит новое (или прежнее) время.
+  it('у перенесённого урока — «Перенесено с …», у исходного — «Перенесено на …»', () => {
+    const items = [
+      { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'SCHEDULED', format: 'ONLINE', movedFrom: '2026-08-02T18:00:00' },
+      { lessonId: 2, participantId: 12, scheduledAt: '2026-08-04T21:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE', movedTo: '2026-08-06T19:30:00' },
+      { lessonId: 3, participantId: 13, scheduledAt: '2026-08-04T22:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'SCHEDULED', format: 'ONLINE' },
+    ]
+    const { container } = renderPanel({ items })
+    const notes = [...container.querySelectorAll('[data-testid="lesson-moved"]')].map((n) => n.textContent)
+    expect(notes).toHaveLength(2)
+    expect(notes[0]).toMatch(/^Перенесено с .*18:00/)
+    expect(notes[1]).toMatch(/^Перенесено на .*19:30/)
+  })
+
   it('renders one lesson row per item', () => {
     const items = [
       { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE' },

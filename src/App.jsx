@@ -773,6 +773,8 @@ export default function App() {
   // Тест уровня (v16) открывается с «Главной», из профиля и плана. Куда вернуть человека по «назад» с теста (null —
   // на «Главную»). Пересдачи как отдельного режима больше нет: уровень тест пишет только в пустой аккаунт.
   const [testReturn, setTestReturn] = useState(null)
+  // Пересдача с «Результатов теста»: законченный прогон v16 убирается, тест начинается заново (freshAttempt.js).
+  const [placementFresh, setPlacementFresh] = useState(false)
   // Профиль General English (анкета «Главной», цель, формат — бэкенд /mobile/ge). null — ручки нет (старый бэкенд),
   // аккаунт IELTS (у него своя анкета) или гость: тогда «Главная» прежняя.
   const [geProfile, setGeProfile] = useState(null)
@@ -1402,8 +1404,9 @@ export default function App() {
 
   // Тест уровня v16 — откуда бы его ни открыли (закрытый блок «Главной», профиль, план, старые адреса test-intro и
   // test). returnTo — куда вернуть по «назад».
-  function openPlacement(returnTo = null) {
+  function openPlacement(returnTo = null, { fresh = false } = {}) {
     setTestReturn(returnTo)
+    setPlacementFresh(fresh)
     setScreen('placement')
   }
 
@@ -2463,6 +2466,7 @@ export default function App() {
           // Пространство прогона в localStorage — аккаунт из токена: profileId приходит из /api/profile позже и на
           // первом кадре ещё пуст, а прогон «guest» был бы общим у всех учеников устройства.
           profileId={userIdFromToken(token) ? `user-${userIdFromToken(token)}` : profileId}
+          fresh={placementFresh}
           backLabel={backLabel(testReturn || 'home')}
           onExit={() => {
             setTestReturn(null)
@@ -2527,6 +2531,7 @@ export default function App() {
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onStartTest={() => openPlacement('home')}
+          onRetake={() => openPlacement('placement-results', { fresh: true })}
         />
       )
     case 'minutes':

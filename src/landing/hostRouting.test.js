@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseHosts, requestHost, routeLanding, appLink, sameHostUrl, checkoutOrigin } from './hostRouting.js'
+import { parseHosts, requestHost, routeLanding, appLink, sameHostUrl, checkoutOrigin, shortLinkSlug } from './hostRouting.js'
 
 const hosts = parseHosts('\uFEFFjusttostudy-english.kz, WWW.justtostudy-english.kz ')
 const APP = 'https://ai-tutor.justtostudy.kz'
@@ -49,6 +49,21 @@ describe('домен лендинга', () => {
     expect(checkoutOrigin({ onLandingHost: false, landingHosts: hosts })).toBe('https://justtostudy-english.kz')
     expect(checkoutOrigin({ onLandingHost: true, landingHosts: hosts })).toBeNull()
     expect(checkoutOrigin({ onLandingHost: false, landingHosts: parseHosts('') })).toBeNull()
+  })
+  it('короткая ссылка /имя — в роут ссылок, метки адреса с собой', () => {
+    expect(on('justtostudy-english.kz', '/Dana')).toEqual({ action: 'rewrite', to: '/api/landing/go/dana' })
+    expect(on('justtostudy-english.kz', '/dana_01/', '?fbclid=1')).toEqual({ action: 'rewrite', to: '/api/landing/go/dana_01?fbclid=1' })
+    // И без адреса приложения: ссылка живёт на лендинге.
+    expect(on('justtostudy-english.kz', '/dana', '', { appUrl: '' })).toEqual({ action: 'rewrite', to: '/api/landing/go/dana' })
+  })
+  it('адреса самого сайта и вложенные пути — не короткие ссылки', () => {
+    expect(on('justtostudy-english.kz', '/trial')).toEqual({ action: 'redirect', to: APP + '/trial' })
+    expect(on('justtostudy-english.kz', '/info')).toEqual({ action: 'redirect', to: APP + '/info' })
+    for (const p of ['/', '/a', '/dana/x', '/дана', '/-dana', '/' + 'a'.repeat(41), '/favicon.ico', '/report'])
+      expect(shortLinkSlug(p)).toBeNull()
+  })
+  it('на домене приложения /имя — не короткая ссылка', () => {
+    expect(on('ai-tutor.justtostudy.kz', '/dana')).toEqual({ action: 'next' })
   })
   it('без адреса приложения — не уводим в никуда', () => {
     expect(on('justtostudy-english.kz', '/trial/abc', '', { appUrl: '' })).toEqual({ action: 'next' })

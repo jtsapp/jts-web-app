@@ -87,13 +87,10 @@ export function lessonsPackageLine(summary) {
   const remaining = num(summary?.remaining)
   if (conducted == null && remaining == null) return null
   if (!conducted && !remaining) return null
-  const extra = [num(summary.cancelled) && `отменено ${num(summary.cancelled)}`, num(summary.rescheduled) && `перенесено ${num(summary.rescheduled)}`]
-    .filter(Boolean)
-    .join(', ')
   const ending = remaining != null && remaining <= 1
     ? ` Пакет заканчивается: продлить или записаться — через менеджера в общем чате WhatsApp.`
     : ''
-  return `Уроки с преподавателем по пакету: проведено ${conducted ?? 0}, осталось ${remaining ?? 0}${extra ? ` (${extra})` : ''}.${ending}`
+  return `Уроки с преподавателем по пакету: проведено ${conducted ?? 0}, осталось ${remaining ?? 0}.${ending}`
 }
 
 /** Токены и ближайший приз (/cabinet/my-tokens) — только где токены включены (areRewardsEnabled). */

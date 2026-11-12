@@ -268,7 +268,9 @@ export const TRANSCRIBE_TIMEOUT_MS = 60000
  * `null` вернуть нельзя — «слова не оценивались» и «спел не те слова» дают
  * разные веса в итоговом балле (см. finalScore).
  */
-export async function transcribeTake(blob, { signal, timeoutMs = TRANSCRIBE_TIMEOUT_MS } = {}) {
+// `hint` — текст того, что пели (строки песни): распознавание пения без него теряет слова
+// (обратная связь 11.11, см. lib/sttHint.js).
+export async function transcribeTake(blob, { signal, timeoutMs = TRANSCRIBE_TIMEOUT_MS, hint = '' } = {}) {
   if (!blob || blob.size === 0 || signal?.aborted) return null
   // Свой контроллер: и таймаут, и отмена снаружи закрывают запрос, а ответ
   // возвращается сразу — не дожидаясь, как fetch отработает abort.
@@ -282,6 +284,7 @@ export async function transcribeTake(blob, { signal, timeoutMs = TRANSCRIBE_TIME
       const wav = await blobToWav16kMono(blob)
       const form = new FormData()
       form.append('audio', wav, 'take.wav')
+      if (hint) form.append('hint', hint)
       const res = await fetch('/api/transcribe', { method: 'POST', body: form, signal: ctrl.signal })
       if (!res.ok) return null
       const data = await res.json()

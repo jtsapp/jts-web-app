@@ -586,3 +586,8 @@ html[data-theme="dark"] .pfm-mem__del:hover {
   background: var(--dk-red-tint);
   color: var(--dk-red);
 }
+
+/* Подпись переноса урока в расписании (11.11). */
+html[data-theme="dark"] .sch-moved {
+  color: var(--dk-yellow);
+}
