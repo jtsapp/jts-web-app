@@ -26524,7 +26524,7 @@ html[data-theme="dark"] .brg :where(button) {
     border: 0;
     background: none
 }
-html[data-theme="dark"] .brg :is(button, select, textarea, summary):focus-visible {
+html[data-theme="dark"] .brg :is(button, summary):focus-visible {
     outline: 2px solid var(--dk-acc)
 }
 html[data-theme="dark"] .brg-top p {
@@ -26547,11 +26547,27 @@ html[data-theme="dark"] .brg-vline {
 html[data-theme="dark"] .brg-who__sep {
     color: var(--dk-text-2)
 }
-html[data-theme="dark"] .brg-who select {
-    border: 0;
-    background: none;
-    color: var(--dk-text-2);
+html[data-theme="dark"] .brg-tpick__btn {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-tpick__btn:hover, html[data-theme="dark"] .brg-tpick__btn.is-open {
+    background: var(--dk-page);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .brg-tpick__list {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    box-shadow: 0 12px 40px color-mix(in oklab, var(--dk-acc) 16%, transparent)
+}
+html[data-theme="dark"] .brg-tpick__opt {
+    color: var(--dk-text);
     outline: none
+}
+html[data-theme="dark"] .brg-tpick__opt.is-active {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .brg-tpick__opt.is-on {
+    color: var(--dk-acc-text)
 }
 html[data-theme="dark"] .brg-field textarea, html[data-theme="dark"] .brg-part textarea {
     border: 0;

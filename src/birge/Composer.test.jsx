@@ -39,7 +39,7 @@ describe('форма «Новая ветка»', () => {
   it('имя и тема рядом, по умолчанию — «Вопрос»', () => {
     mount()
     expect(screen.getByText('Айгерім')).toBeTruthy()
-    expect(screen.getByRole('combobox', { name: 'Тема' }).value).toBe('QUESTION')
+    expect(screen.getByRole('button', { name: 'Тема: Вопрос' })).toBeTruthy()
   })
 
   it('счётчик символов — с 450, до этого его нет', () => {
@@ -76,7 +76,8 @@ describe('форма «Новая ветка»', () => {
     publishBirgePost.mockResolvedValue(reply({ post }))
     const { onPublished } = mount()
     fireEvent.change(box(), { target: { value: '  Как запомнить артикли?  ' } })
-    fireEvent.change(screen.getByRole('combobox', { name: 'Тема' }), { target: { value: 'GRAMMAR' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Тема: Вопрос' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Грамматика' }))
     fireEvent.click(screen.getByRole('button', { name: 'Дополните ветку' }))
     fireEvent.change(screen.getByPlaceholderText('Продолжение…'), { target: { value: 'Особенно the и a' } })
     publish()
@@ -235,7 +236,7 @@ describe('форма ответа', () => {
   it('без темы и продолжений, в теле parentId; короткий ответ («Да!») — норма', async () => {
     publishBirgePost.mockResolvedValue(reply())
     mount({ kind: 'comment', parentId: 101 })
-    expect(screen.queryByRole('combobox')).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Тема/ })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Дополните ветку' })).toBeNull()
     fireEvent.change(screen.getByPlaceholderText('Ответить…'), { target: { value: 'Да!' } })
     expect(screen.queryByText('Напишите хотя бы пару слов')).toBeNull()

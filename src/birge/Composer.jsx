@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { publishBirgePost, uploadBirgeMedia } from './birgeApi.js'
-import { DEFAULT_TOPIC, TOPICS } from './labels.js'
+import { DEFAULT_TOPIC } from './labels.js'
 import {
   TEXT_MAX,
   canAddPart,
@@ -21,6 +21,7 @@ import { STEP_MS, checkSteps, stepStates } from './steps.js'
 import { failureOutcome, publishOutcome, retryMinutes } from './outcome.js'
 import { highlightParts } from './highlight.js'
 import EmojiPanel from './EmojiPanel.jsx'
+import TopicPicker from './TopicPicker.jsx'
 import { PhotoIcon, SmileIcon } from './icons.jsx'
 
 const PHOTO_ERROR = {
@@ -271,13 +272,7 @@ export default function Composer({ kind = 'thread', token, authorName, parentId 
                 <span className="brg-who__sep" aria-hidden="true">
                   ›
                 </span>
-                <select aria-label={t('birge.compose.topic')} value={topic} disabled={busy} onChange={(e) => setTopic(e.target.value)}>
-                  {TOPICS.map((key) => (
-                    <option key={key} value={key}>
-                      {t(`birge.topic.${key}`)}
-                    </option>
-                  ))}
-                </select>
+                <TopicPicker value={topic} disabled={busy} onChange={setTopic} />
               </>
             )}
           </div>
