@@ -58,7 +58,7 @@ describe('ветка', () => {
     expect(getBirgeThread).toHaveBeenCalledWith('T', 101)
     expect(document.querySelectorAll('.brg-post--cm')).toHaveLength(1)
     expect(screen.getByPlaceholderText('Ответить…')).toBeTruthy()
-    expect(screen.queryByRole('combobox')).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Тема/ })).toBeNull()
   })
 
   it('нет комментариев — приглашение ответить первым', async () => {
