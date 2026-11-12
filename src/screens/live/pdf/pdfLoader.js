@@ -12,6 +12,30 @@
 // — лишняя зависимость и лишний адрес, которому надо доверять.
 let libraryPromise = null
 
+/**
+ * Ресурсы, которые pdf.js догружает по ходу документа. Тоже свои, не с CDN — по той
+ * же причине, что и воркер: лежат в public/pdfjs (копия из pdfjs-dist,
+ * scripts/copy-pdfjs-assets.js; тест рядом сверяет её с установленной версией).
+ * - wasm — декодеры картинок: без него страницы с JPEG 2000 (так свёрстаны многие
+ *   учебники) выходят пустыми;
+ * - standard_fonts — стандартные шрифты PDF, которых нет в системе (Symbol,
+ *   ZapfDingbats, замена Helvetica и Times на телефоне): без них пропадает часть текста;
+ * - cmaps — кодировки CJK-шрифтов, iccs — профиль для картинок в CMYK.
+ *
+ * Адреса абсолютные: файлы качает воркер pdf.js, а относительный адрес он считал
+ * бы от своего файла в /_next/static, не от страницы.
+ */
+export function pdfjsResources(origin) {
+  const folder = (name) => new URL(`/pdfjs/${name}/`, origin).href
+  return {
+    wasmUrl: folder('wasm'),
+    standardFontDataUrl: folder('standard_fonts'),
+    cMapUrl: folder('cmaps'),
+    cMapPacked: true,
+    iccUrl: folder('iccs'),
+  }
+}
+
 function loadLibrary() {
   if (!libraryPromise) {
     libraryPromise = import('pdfjs-dist/legacy/build/pdf.mjs')
@@ -42,7 +66,7 @@ export function openPdf(url) {
   let destroyed = false
   const promise = loadLibrary().then((lib) => {
     if (destroyed) throw new Error('PDF loading cancelled')
-    task = lib.getDocument({ url, disableAutoFetch: true, isEvalSupported: false })
+    task = lib.getDocument({ url, disableAutoFetch: true, isEvalSupported: false, ...pdfjsResources(window.location.origin) })
     return task.promise
   })
   return {

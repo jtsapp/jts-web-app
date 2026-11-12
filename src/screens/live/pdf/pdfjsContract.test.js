@@ -6,11 +6,34 @@
 // Та же сборка legacy, что грузит pdfLoader.js; в Node воркер поднимается в
 // том же процессе (fake worker) по пути из node_modules.
 import { describe, it, expect, beforeAll } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { pathToFileURL } from 'node:url'
+import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { JPX_PLATE_RGB, PLATE_JP2, pdfWithJpxImage } from './__fixtures__/jpxPdf.js'
+import { pdfjsResources } from './pdfLoader.js'
 
 const require = createRequire(import.meta.url)
 let pdfjs
+
+const PUBLIC = fileURLToPath(new URL('../../../../public', import.meta.url))
+
+/**
+ * Ресурсы по тем же адресам, что pdfLoader.js даёт pdf.js в браузере, только
+ * папкой на диске: Next отдаёт /pdfjs/… из public/pdfjs/…. В Node pdf.js читает
+ * их файлами, а не fetch'ем.
+ */
+function resourcesFromPublic() {
+  const resources = pdfjsResources('https://app.test')
+  const onDisk = (url) => path.join(PUBLIC, new URL(url).pathname) + path.sep
+  return {
+    wasmUrl: onDisk(resources.wasmUrl),
+    standardFontDataUrl: onDisk(resources.standardFontDataUrl),
+    cMapUrl: onDisk(resources.cMapUrl),
+    cMapPacked: resources.cMapPacked,
+    iccUrl: onDisk(resources.iccUrl),
+  }
+}
 
 /** PDF 1.4 из одной страницы 300 × 200 pt с одной строкой текста. */
 function tinyPdf() {
@@ -52,6 +75,30 @@ describe('pdf.js — контракт просмотрщика', () => {
       expect(base.height).toBe(200)
       expect(page.getViewport({ scale: 2 }).width).toBe(600)
       expect(typeof page.render).toBe('function')
+    } finally {
+      await task.destroy()
+    }
+  })
+
+  it('картинка JPEG 2000 (JPXDecode) декодируется ресурсами приложения — без них страница учебника пустая', async () => {
+    const pdf = pdfWithJpxImage(new Uint8Array(readFileSync(path.resolve(PLATE_JP2))))
+    const task = pdfjs.getDocument({ data: pdf, isEvalSupported: false, ...resourcesFromPublic() })
+    const doc = await task.promise
+    try {
+      const page = await doc.getPage(1)
+      const ops = await page.getOperatorList()
+      const at = ops.fnArray.indexOf(pdfjs.OPS.paintImageXObject)
+      expect(at, 'на странице нет картинки').toBeGreaterThanOrEqual(0)
+      // Не смог декодировать — pdf.js отдаёт вместо картинки null и рисует страницу без неё.
+      const image = await new Promise((resolve) => page.objs.get(ops.argsArray[at][0], resolve))
+      expect(image, 'картинку pdf.js не декодировал').not.toBeNull()
+      expect(image.kind).toBe(pdfjs.ImageKind.RGBA_32BPP)
+      expect([image.width, image.height]).toEqual([32, 16])
+      // Пиксель середины плашки. JPEG 2000 сжимает с потерями, поэтому цвет — с допуском.
+      const offset = (8 * image.width + 16) * 4
+      const pixel = Array.from(image.data.slice(offset, offset + 4))
+      expect(pixel[3]).toBe(255)
+      JPX_PLATE_RGB.forEach((channel, i) => expect(Math.abs(pixel[i] - channel)).toBeLessThan(20))
     } finally {
       await task.destroy()
     }
