@@ -2391,6 +2391,8 @@ const dict = {
     'live.paused': 'The teacher is on a break. You can keep working',
     'live.finished': 'Lesson finished. The tasks stay available',
     'live.cancelled': 'The lesson was cancelled',
+    'live.otherLessonLive': 'This is not the current class. Your lesson {time} is on now',
+    'live.otherLessonGo': 'Go to it',
     'live.finishedDuration': '{minutes} minutes',
     'live.summaryTitle': 'Lesson summary',
     'live.summaryDone': '{done} of {total} steps done',

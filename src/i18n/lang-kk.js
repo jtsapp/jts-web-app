@@ -2391,6 +2391,8 @@ const dict = {
     'live.paused': 'Мұғалімде үзіліс. Сіз жұмысты жалғастыра аласыз',
     'live.finished': 'Сабақ аяқталды. Тапсырмалар қолжетімді болып қалады',
     'live.cancelled': 'Сабақ өткізілмейді',
+    'live.otherLessonLive': 'Бұл ағымдағы сабақ емес. Қазір сіздің {time} сабағыңыз жүріп жатыр',
+    'live.otherLessonGo': 'Өту',
     'live.finishedDuration': '{minutes} минут',
     'live.summaryTitle': 'Сабақ қорытындысы',
     'live.summaryDone': '{total} қадамның {done}-і орындалды',

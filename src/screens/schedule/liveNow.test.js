@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findLiveOccurrence, pickFeaturedOccurrence, LIVE_STALE_AFTER_MS } from './liveNow.js'
+import { findLiveOccurrence, pickFeaturedOccurrence, otherLiveOccurrence, LIVE_STALE_AFTER_MS } from './liveNow.js'
 
 const occ = (lessonId, lessonStatus, scheduledAt) => ({ lessonId, lessonStatus, scheduledAt, durationMinutes: 60 })
 
@@ -118,5 +118,33 @@ describe('pickFeaturedOccurrence', () => {
     expect(pickFeaturedOccurrence([occ(8, 'COMPLETED', '2026-08-09T09:00:00')], now)).toBeNull()
     expect(pickFeaturedOccurrence([], now)).toBeNull()
     expect(pickFeaturedOccurrence(null, now)).toBeNull()
+  })
+})
+
+// Прод 11.11.2026: у ученицы на планшете осталась вкладка урока 09.11
+// (?screen=live-lesson&live=52224). F5 открывает урок по id из адреса, и в 20:52,
+// когда урок 11.11 уже шёл, она дважды обновила страницу и дважды попала в старый.
+describe('otherLiveOccurrence', () => {
+  const now = new Date('2026-11-11T20:52:00')
+  const list = [
+    occ(52224, 'COMPLETED', '2026-11-09T20:00:00'),
+    occ(52237, 'IN_PROGRESS', '2026-11-11T20:00:00'),
+    occ(52250, 'SCHEDULED', '2026-11-13T20:00:00'),
+  ]
+
+  it('на странице прошлого урока отдаёт урок, который идёт сейчас', () => {
+    expect(otherLiveOccurrence(list, 52224, now)?.lessonId).toBe(52237)
+    // id из адреса приходит строкой
+    expect(otherLiveOccurrence(list, '52224', now)?.lessonId).toBe(52237)
+  })
+
+  it('на странице самого идущего урока молчит', () => {
+    expect(otherLiveOccurrence(list, 52237, now)).toBeNull()
+    expect(otherLiveOccurrence(list, '52237', now)).toBeNull()
+  })
+
+  it('молчит, когда ни один урок не идёт', () => {
+    expect(otherLiveOccurrence(list, 52224, new Date('2026-11-12T12:00:00'))).toBeNull()
+    expect(otherLiveOccurrence(null, 52224, now)).toBeNull()
   })
 })

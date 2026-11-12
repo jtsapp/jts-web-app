@@ -2437,6 +2437,8 @@ const dict = {
     'live.paused': 'Перерыв у преподавателя. Вы можете продолжать заниматься',
     'live.finished': 'Урок завершён. Задания остаются доступными',
     'live.cancelled': 'Занятие отменено',
+    'live.otherLessonLive': 'Это не текущее занятие. Сейчас идёт ваш урок {time}',
+    'live.otherLessonGo': 'Перейти',
     'live.finishedDuration': '{minutes} минут',
     'live.summaryTitle': 'Итог урока',
     'live.summaryDone': 'Выполнено {done} из {total} шагов',
