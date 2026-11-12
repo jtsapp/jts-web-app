@@ -85,6 +85,16 @@ describe('PICK_TUTORS — карточки экрана выбора', () => {
     }
   })
 
+  // Описание внизу карточки выбора. Без ключа карточка молча остаётся без
+  // текста — так Айзере жила с 03.10 до 12.11.2026.
+  it('у каждого тьютора есть описание во всех языках', async () => {
+    const { PICK_TUTORS } = await load(true)
+    const { DICT, LANGS } = await import('../i18n/dict.js')
+    for (const lang of LANGS) {
+      for (const t of PICK_TUTORS) expect(DICT[lang][`tutor.${t.key}.desc`], `${lang} ${t.key}`).toBeTruthy()
+    }
+  })
+
   // Чипы выбранной карточки рисуются по traitColors, подпись — из словаря по
   // номеру. Цвет без подписи вылез бы сырым ключом tutor.x.traitN.
   it('на каждый цвет черты есть подпись во всех языках', async () => {

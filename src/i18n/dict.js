@@ -42,11 +42,15 @@ export const DICT = {
     // Надпись на «Начать обучение», когда выделен тьютор, у которого ещё нет
     // голоса (comingSoon в tutors.js; сейчас таких нет — Айзере заговорила).
     'choose.soon': 'Скоро',
-    // Айзере — в проде с 03.10.2026. Черты — с макета.
-    // Описания и визитки голоса у неё нет — мобильная карусель их пропускает,
-    // а «Выбрать» ей нужна.
+    // Айзере — в проде с 03.10.2026. Черты — с макета. Описание (12.11.2026) —
+    // по её живой персоне (PERSONA_OVERRIDE["aizere"] в agent/agent.py, не
+    // пакет Speaking Buddy): мудрая старшая сестра, казахский и английский,
+    // русский понимает, но не говорит. Поменяли персону — поправьте и текст.
+    // Визитки голоса у неё нет — карточка кнопку «Послушать» не рисует.
     'tutor.aizere.trait1': 'Мудрая',
     'tutor.aizere.trait2': 'Заботливая',
+    'tutor.aizere.desc':
+      'Спокойная и мудрая, как старшая сестра. Не торопит: видит, откуда ошибка, объясняет её одной фразой и даёт попробовать снова. Объясняет по-казахски, по-русски не говорит.',
     'tutor.aizere.choose': 'Выбрать Айзере',
     'tutor.luna.trait1': 'Русскоязычная',
     'tutor.luna.trait2': 'Чуткая',
@@ -496,6 +500,8 @@ export const DICT = {
     'choose.soon': 'Жақында',
     'tutor.aizere.trait1': 'Дана',
     'tutor.aizere.trait2': 'Қамқор',
+    'tutor.aizere.desc':
+      'Байсалды әрі дана, қамқор әпкедей. Асықтырмайды: қатенің себебін көріп, бір сөйлеммен түсіндіреді де, қайта байқап көруді ұсынады. Қазақша түсіндіреді, орысша сөйлемейді.',
     'tutor.aizere.choose': 'Айзере таңдау',
     'tutor.luna.trait1': 'Орысша',
     'tutor.luna.trait2': 'Сезімтал',
@@ -910,6 +916,8 @@ export const DICT = {
     'choose.soon': 'Coming soon',
     'tutor.aizere.trait1': 'Wise',
     'tutor.aizere.trait2': 'Caring',
+    'tutor.aizere.desc':
+      "Calm and wise, like an older sister. She never rushes you: she sees where a mistake comes from, explains it in one sentence and lets you try again. Explains in Kazakh, doesn't speak Russian.",
     'tutor.aizere.choose': 'Choose Aizere',
     'tutor.luna.trait1': 'Russian-speaking',
     'tutor.luna.trait2': 'Sensitive',
