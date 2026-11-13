@@ -61,7 +61,7 @@ export default function PostCard({ post, comment = false, onOpen, onLike, onRepo
       <footer className="brg-pa">
         <button
           type="button"
-          className={post.liked ? 'is-liked' : ''}
+          className={post.liked ? 'brg-pa__btn is-liked' : 'brg-pa__btn'}
           aria-pressed={Boolean(post.liked)}
           aria-label={t('birge.card.like')}
           disabled={!onLike || !isLive(post)}
@@ -71,7 +71,7 @@ export default function PostCard({ post, comment = false, onOpen, onLike, onRepo
           <span>{post.likes ?? 0}</span>
         </button>
         {!comment && (
-          <button type="button" aria-label={t('birge.card.comments')} disabled={!onOpen} onClick={() => onOpen(post)}>
+          <button type="button" className="brg-pa__btn" aria-label={t('birge.card.comments')} disabled={!onOpen} onClick={() => onOpen(post)}>
             <CommentIcon />
             <span>{post.comments ?? 0}</span>
           </button>
