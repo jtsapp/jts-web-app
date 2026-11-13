@@ -52,7 +52,7 @@ describe('Сервисы', () => {
     const grid = container.querySelector('.svc-grid')
     await waitFor(() => expect(within(grid).getByText('Словарь')).toBeTruthy())
     expect([...grid.querySelectorAll('.svc-tile__name')].map((n) => n.textContent)).toEqual([
-      'Выбрать группу', 'Домашняя работа', 'Словарь', 'Повторение', 'Birge', 'Feedback', 'Уведомления', 'Договоры',
+      'Выбрать группу', 'Домашняя работа', 'Словарь', 'Повторение', 'Not Just English', 'Feedback', 'Уведомления', 'Договоры',
     ])
     fireEvent.click(within(grid).getByText('Словарь'))
     expect(onNav).toHaveBeenCalledWith('vocab')
@@ -62,7 +62,7 @@ describe('Сервисы', () => {
     const { container } = renderServices()
     await waitFor(() => expect(container.querySelector('.svc-tile--birge')).not.toBeNull())
     expect(container.querySelector('.svc-tile--birge .svc-tile__new').textContent).toBe('new')
-    expect(container.querySelector('.svc-tile--birge .svc-tile__name').textContent).toBe('Birge')
+    expect(container.querySelector('.svc-tile--birge .svc-tile__name').textContent).toBe('Not Just English')
     expect(container.querySelector('.svc-tile--feedback .svc-tile__new')).not.toBeNull()
     expect(container.querySelector('.svc-tile--vocab .svc-tile__new')).toBeNull()
   })

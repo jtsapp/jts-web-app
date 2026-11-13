@@ -7,7 +7,9 @@ import RulesCard from '../birge/RulesCard.jsx'
 import { writePostParam } from '../birge/postParam.js'
 
 /**
- * Just to Study Birge — лента веток студентов (спека docs/superpowers/specs/2026-11-11-birge-community-design.md §7).
+ * Not Just English (до v2 — Just to Study Birge) — лента веток студентов (спека
+ * docs/superpowers/specs/2026-11-11-birge-community-design.md §7). Имя сменила спека v2 (2026-11-13 §1); внутренние имена
+ * — birge в коде, ?screen=birge, пути API — те же: переименование кода риск без пользы для ученика.
  * Оболочка — кабинетная (LearningLayout): меню и общий колокольчик уведомлений, своего у раздела нет. Лента или ветка
  * переключаются внутри экрана; открытая ветка держится в ?post=, чтобы её пережил F5 и открыла ссылка.
  *

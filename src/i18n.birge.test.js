@@ -54,10 +54,14 @@ describe('словари Birge', () => {
     for (const id of EMOJI_CATEGORY_IDS) expect(ru[`birge.emoji.cat.${id}`], id).toBeTruthy()
   })
 
-  it('«Birge» и «Just to Study Birge» не переводятся', () => {
+  // Спека v2 (2026-11-13 §1): человек везде видит «Not Just English», и это имя не переводится. Старое «Birge» не должно
+  // всплыть ни в одном языке — ни в пункте меню, ни в шапке, ни в подзаголовке.
+  it('«Not Just English» не переводится, «Birge» человеку не показывается', () => {
     for (const lang of ['ru', 'en', 'kk']) {
-      expect(entries(lang)['nav.birge']).toBe('Birge')
-      expect(entries(lang)['birge.title']).toBe('Just to Study Birge')
+      expect(entries(lang)['nav.birge']).toBe('Not Just English')
+      expect(entries(lang)['birge.title']).toBe('Not Just English')
+      const shown = Object.entries(entries(lang)).filter(([, value]) => /Birge/.test(value))
+      expect(shown, lang).toEqual([])
     }
   })
 

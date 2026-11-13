@@ -46,7 +46,7 @@ describe('Sidebar — разделы по тарифу и формату', () =>
     expect(labels()).not.toContain('Выбрать группу')
   })
 
-  it('порядок: Практика сразу перед Speaking Buddy; «new» у Призов, Birge и Feedback', async () => {
+  it('порядок: Практика сразу перед Speaking Buddy; «new» у Призов, Not Just English и Feedback', async () => {
     getMySections.mockResolvedValue({ known: false, tariff: null, format: null, allowed: [] })
     render(
       <I18nProvider>
