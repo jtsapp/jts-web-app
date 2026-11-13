@@ -1841,7 +1841,7 @@ const dict = {
     'rewards.kind.access': 'Доступ к курсу / разделу',
     'rewards.kind.other': 'Другое',
     'nav.feedback': 'Feedback',
-    'nav.birge': 'Birge',
+    'nav.birge': 'Not Just English',
     'section.closed.title': 'Этот раздел не входит в ваш тариф',
     'section.closed.text': 'Обратитесь к менеджеру — он подскажет, как подключить раздел.',
     'section.closed.home': 'На главную',
@@ -8170,9 +8170,11 @@ const dict = {
     'shadowing.dev.needVideo': 'Запусти видео на секунду — нужна его длина.',
     'shadowing.dev.fitOff': 'Расхождение слишком велико — проверь, то ли это видео.',
     'shadowing.dev.fitDone': 'Растянуто ×{k} — теперь подправь тайминги по фразам.',
-    // --- Just to Study Birge — лента студентов (спека 2026-11-11 §7). «Birge» и «Just to Study Birge» не переводятся.
-    'birge.title': 'Just to Study Birge',
-    'birge.subtitle': 'Учимся вместе — сообщество студентов JTS',
+    // --- Not Just English (бывший Birge) — лента студентов (спека 2026-11-11 §7), с v2 — и преподавателей (спека
+    // 2026-11-13 §1, §4). Имя «Not Just English» не переводится ни на один язык; ключи остались birge.* — внутренние имена
+    // раздела v2 не меняет.
+    'birge.title': 'Not Just English',
+    'birge.subtitle': 'Сообщество студентов Just to Study',
     'birge.soon.title': 'Раздел скоро откроется',
     'birge.soon.text': 'Мы готовим сообщество студентов JTS. Загляните чуть позже.',
     'birge.loading': 'Загружаем…',
