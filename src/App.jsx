@@ -209,6 +209,7 @@ const ProfilePage = lazyScreen(() => import('./screens/ProfilePage.jsx'))
 const ServicesPage = lazyScreen(() => import('./screens/ServicesPage.jsx'))
 const AccountDeletedPage = lazyScreen(() => import('./screens/AccountDeletedPage.jsx'))
 const FeedbackCenter = lazyScreen(() => import('./feedback/FeedbackCenter.jsx'))
+const BirgePage = lazyScreen(() => import('./screens/BirgePage.jsx'))
 const LessonWorkspacePage = lazyScreen(() => import('./screens/LessonWorkspacePage.jsx'))
 const SelfStudyLessonPage = lazyScreen(() => import('./screens/lessons/SelfStudyLessonPage.jsx'))
 const CourseCatalogPage = lazyScreen(() => import('./screens/CourseCatalogPage.jsx'))
@@ -240,6 +241,8 @@ const PERSISTABLE_SCREENS = new Set([
   'my-teacher', 'teacher-wizard', 'teacher-pick',
   // Запись в группу и уведомления (ТЗ кабинетов, 14): состояние живёт на сервере
   'group', 'notifications', 'contracts',
+  // Birge: открытую ветку экран держит в ?post= сам (birge/postParam.js), F5 возвращает в неё
+  'birge',
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
@@ -506,6 +509,11 @@ export default function App() {
     if (deepLink === 'arcade') {
       const game = searchParams.get('game')
       if (game) setArcadeTarget({ game })
+    }
+    // ?screen=birge&post=<id> — сразу ветка Birge: так её держит адрес (F5) и так её открывает ссылка.
+    if (deepLink === 'birge') {
+      const post = Number(searchParams.get('post'))
+      if (Number.isInteger(post) && post > 0) setBirgeTarget({ postId: post, at: Date.now() })
     }
     // ?screen=practice&level=a2&unit=3 — конкретный юнит «Практики». Ссылку
     // строит админка: преподаватель выдал юнит на дом и должен уметь открыть
@@ -887,8 +895,12 @@ export default function App() {
   // Урок, который тропа откроет сама по загрузке (Луна: «открой урок 5», lib/assistant/items/):
   // { code, at } — at различает две одинаковые просьбы подряд.
   const [courseLessonTarget, setCourseLessonTarget] = useState(null)
-  // Обращение, с которым Луна открывает Feedback: { category, draft } (lib/assistant/actions.js).
+  // С чем открыть Feedback: черновик Луны { category, draft } (lib/assistant/actions.js) или обращение, которое
+  // Birge создал из отзыва о платформе, — { feedbackId } (спека Birge §3.6).
   const [feedbackDraft, setFeedbackDraft] = useState(null)
+  // Ветка Birge, которую открыть: { postId, at } — at различает два перехода к одной цели (уведомление, пока экран
+  // уже открыт); postId: null — пункт меню, лента.
+  const [birgeTarget, setBirgeTarget] = useState(null)
   // Просмотр всего контента без гейтинга (?unlock=1, только dev) — см. эффект
   // диплинков ниже.
   const [devUnlock, setDevUnlock] = useState(false)
@@ -1866,10 +1878,20 @@ export default function App() {
     else if (key === 'minutes') setScreen('minutes')
     // Профиль из меню открывается своей кнопкой; сюда приходит от Луны (destinations.js).
     else if (key === 'profile') setScreen('profile')
-    // Луна открывает Feedback с категорией и черновиком (ТЗ v2.0); переход из меню черновик сбрасывает.
+    // Луна открывает Feedback с категорией и черновиком (ТЗ v2.0), Birge — сразу в созданное обращение (feedbackId);
+    // переход из меню цель сбрасывает.
     else if (key === 'feedback') {
-      setFeedbackDraft(payload?.category ? { category: payload.category, draft: String(payload.draft || '') } : null)
+      setFeedbackDraft(
+        payload?.category
+          ? { category: payload.category, draft: String(payload.draft || '') }
+          : payload?.feedbackId != null ? { feedbackId: payload.feedbackId } : null,
+      )
       setScreen('feedback')
+    }
+    // Birge: из уведомления — сразу в ветку, из меню — в ленту. Цель с меткой времени: экран уже открыт — он её увидит.
+    else if (key === 'birge') {
+      setBirgeTarget({ postId: payload?.postId ? Number(payload.postId) : null, at: Date.now() })
+      setScreen('birge')
     }
     else if (key === 'tokens' || key === 'prizes') setScreen(key)
     else if (key === 'learning' || key === 'learn') setScreen('kingdom')
@@ -2060,6 +2082,8 @@ export default function App() {
     // «Назад» (и его запасной переход) возвращает туда, где человек был, а не
     // к цели уведомления: иначе «назад» из урока снова открыл бы отчёт.
     setLessonsTarget(null)
+    // То же у Birge: ветка из уведомления → лента → Feedback → «назад» вернула бы ту старую ветку, а не ленту.
+    setBirgeTarget(null)
     const hit = popNav(navStack, screen)
     if (!hit) {
       skipPushRef.current = true
@@ -2636,7 +2660,9 @@ export default function App() {
     case 'teacher-pick':
       return <TeacherPickPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} />
     case 'feedback':
-      return <FeedbackCenter initialCategory={feedbackDraft?.category} initialDraft={feedbackDraft?.draft} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} token={token} onBack={() => goBack(() => setScreen('profile'))} />
+      return <FeedbackCenter initialCategory={feedbackDraft?.category} initialDraft={feedbackDraft?.draft} initialFeedbackId={feedbackDraft?.feedbackId} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} token={token} onBack={() => goBack(() => setScreen('profile'))} />
+    case 'birge':
+      return <BirgePage target={birgeTarget} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'practice':
       return (
         <PracticePage
@@ -2944,7 +2970,9 @@ export default function App() {
       // проп не получают, и их сценарий не меняется ни на йоту.
       // key — урок: следование за классом, очередь снимков и буфер показа живут
       // в ref-ах экрана и не должны переживать смену занятия.
-      return <LiveLessonPage key={liveLessonId} lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => (boothAccount ? setScreen('booth') : goBack(() => setScreen('lessons')))} onLessonClosed={boothAccount ? handleBoothLessonClosed : undefined} />
+      // onOpenLesson — «Перейти» в идущий урок со страницы другого урока; аккаунт
+      // класса ведёт один сеанс, и уводить его в другое занятие некуда.
+      return <LiveLessonPage key={liveLessonId} lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => (boothAccount ? setScreen('booth') : goBack(() => setScreen('lessons')))} onLessonClosed={boothAccount ? handleBoothLessonClosed : undefined} onOpenLesson={boothAccount ? undefined : setLiveLessonId} />
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
     // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
     case 'ielts':

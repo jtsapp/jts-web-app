@@ -98,6 +98,24 @@ select,
   -ms-user-select: text;
   user-select: text;
 }
+/* Чат живого урока: текст сообщений можно выделить И скопировать (NoCopyGuard
+   пропускает copy/contextmenu внутри `data-copyable`). Меню «Копировать» на
+   телефоне — долгим нажатием, поэтому callout здесь возвращаем. */
+[data-copyable],
+[data-copyable] * {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+[data-copyable] button,
+[data-copyable] [role='button'] {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
 /* Кнопки внутри урока — не текст: варианты ответа выбирают нажатием, и
    протаскивание по ним должно выбирать ответ, а не подсвечивать подпись. */
 [data-selectable] button,

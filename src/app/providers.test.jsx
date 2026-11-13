@@ -84,3 +84,54 @@ describe('NoCopyGuard — выделение и копирование', () => {
     expect(fire(input, 'copy').defaultPrevented).toBe(false)
   })
 })
+
+/* Чат живого урока (просьба 12.11.2026): ссылку, слово или фразу из чата ученик
+   должен скопировать. Область помечена `data-copyable`; копирование разрешено,
+   только если всё выделение внутри неё — урок рядом по-прежнему закрыт. */
+describe('NoCopyGuard — чат урока (data-copyable)', () => {
+  function select(node) {
+    const range = document.createRange()
+    range.selectNodeContents(node)
+    const sel = window.getSelection()
+    sel.removeAllRanges()
+    sel.addRange(range)
+  }
+  afterEach(() => window.getSelection().removeAllRanges())
+
+  it('в чате выделять, копировать и открывать меню можно', () => {
+    const container = mount('<div data-copyable=""><span id="msg">https://meet.google.com/abc</span></div>')
+    const msg = container.querySelector('#msg')
+    select(msg.firstChild)
+
+    expect(fire(msg.firstChild, 'selectstart').defaultPrevented).toBe(false)
+    expect(fire(msg, 'copy').defaultPrevented).toBe(false)
+    expect(fire(msg, 'contextmenu').defaultPrevented).toBe(false)
+  })
+
+  it('выделение, протянутое из чата в текст урока, не копируется', () => {
+    const container = mount(
+      '<div data-selectable=""><p id="lesson">Answer them all</p></div>'
+      + '<div data-copyable=""><span id="msg">привет</span></div>',
+    )
+    const range = document.createRange()
+    range.setStart(container.querySelector('#lesson').firstChild, 0)
+    range.setEnd(container.querySelector('#msg').firstChild, 3)
+    const sel = window.getSelection()
+    sel.removeAllRanges()
+    sel.addRange(range)
+
+    expect(fire(container.querySelector('#msg'), 'copy').defaultPrevented).toBe(true)
+  })
+
+  it('текст урока копированию по-прежнему закрыт, даже рядом с чатом', () => {
+    const container = mount(
+      '<div data-selectable=""><p id="lesson">Answer them all</p></div>'
+      + '<div data-copyable=""><span id="msg">привет</span></div>',
+    )
+    const lesson = container.querySelector('#lesson')
+    select(lesson.firstChild)
+
+    expect(fire(lesson, 'copy').defaultPrevented).toBe(true)
+    expect(fire(lesson, 'contextmenu').defaultPrevented).toBe(true)
+  })
+})

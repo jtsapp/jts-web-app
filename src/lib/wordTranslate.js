@@ -178,6 +178,17 @@ async function guestToken() {
   return tok
 }
 
+/**
+ * Запрос набран по-русски или по-казахски — ищут английское слово.
+ *
+ * Обратный словарь (просьба 12.11.2026): «витрина» в словаре урока должна давать
+ * английское слово, а не саму «витрину». Латиница рядом — значит ищут английское.
+ */
+export function isNativeQuery(raw) {
+  const t = String(raw || '')
+  return /[А-Яа-яЁёӘәҒғҚқҢңӨөҰұҮүҺһІі]/.test(t) && !/[A-Za-z]/.test(t)
+}
+
 export async function translateWord(word, tl = 'ru') {
   const key = `${tl}:${word}`
   const cache = trCache()
@@ -188,7 +199,10 @@ export async function translateWord(word, tl = 'ru') {
   // (getPracticeToken, тот же у Книг и Комиксов), а перевод ничего не пишет,
   // так что общий демо-аккаунт здесь безопасен (ревью 08.10.2026).
   const token = loadToken() || (await guestToken())
-  const url = `${API_BASE}/translate?tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(word)}`
+  // На английский — с русского или казахского: язык исходника определит сам
+  // переводчик (sl=auto). Без sl сервер переводит с английского, как всегда.
+  const sl = tl === 'en' ? '&sl=auto' : ''
+  const url = `${API_BASE}/translate?tl=${encodeURIComponent(tl)}${sl}&q=${encodeURIComponent(word)}`
   const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
   if (!res.ok) throw new Error(`translate ${res.status}`)
   const data = await res.json()

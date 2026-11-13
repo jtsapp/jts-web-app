@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { searchDictionary, getSavedWords, saveWord } from '../../api.js'
-import { translateWord } from '../../lib/wordTranslate.js'
+import { isNativeQuery, translateWord } from '../../lib/wordTranslate.js'
 import { initVoices, speak } from '../../practice/vocab/audio.js'
 import { useI18n } from '../../i18n.jsx'
 
@@ -127,11 +127,18 @@ export default function LessonDictionary({ token, defaultOpen = false, incoming 
     const translateIfEmpty = (rows) => {
       const word = query.trim()
       if (rows.length || !word) return
-      translateWord(word, lang === 'kk' ? 'kk' : 'ru')
+      // Набрано по-русски/по-казахски — ищут английское слово (обратный словарь).
+      const reverse = isNativeQuery(word)
+      translateWord(word, reverse ? 'en' : (lang === 'kk' ? 'kk' : 'ru'))
         .then((t) => {
           if (seqRef.current !== seq) return
           const tr = String(t?.tr || '').trim()
-          if (tr) setFallback({ word, translation: tr, alternates: t.alternates || [] })
+          // Слово вернулось как есть — перевода нет, карточка «витрина — витрина» не нужна.
+          if (!tr || tr.toLowerCase() === word.toLowerCase()) return
+          // Карточка и «Мои слова» — всегда «английское — перевод», в какую сторону ни искали.
+          setFallback(reverse
+            ? { word: tr, translation: word, alternates: t.alternates || [], reverse: true }
+            : { word, translation: tr, alternates: t.alternates || [] })
         })
         .catch(() => { /* переводчик недоступен — останется «ничего не найдено» */ })
     }
@@ -178,7 +185,9 @@ export default function LessonDictionary({ token, defaultOpen = false, incoming 
     saveWord(token, {
       word: fallback.word,
       translation: fallback.translation,
-      alternates: fallback.alternates.length ? fallback.alternates.join(', ') : undefined,
+      // У обратного поиска варианты — английские синонимы, а не переводы:
+      // в поле «другие переводы» им не место.
+      alternates: !fallback.reverse && fallback.alternates.length ? fallback.alternates.join(', ') : undefined,
       language: lang === 'kk' ? 'kk' : 'ru',
       source: 'Словарь урока',
     })

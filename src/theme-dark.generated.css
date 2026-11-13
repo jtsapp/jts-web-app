@@ -25769,6 +25769,10 @@ html[data-theme="dark"] .svc-tile__go::before {
 html[data-theme="dark"] .svc-tile__name {
     color: var(--dk-text)
 }
+html[data-theme="dark"] .svc-tile__new {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
 /*  placement.css  */
 html[data-theme="dark"] .pl-page {
     background: var(--dk-page)
@@ -26508,6 +26512,238 @@ html[data-theme="dark"] .gp-format__opt:hover {
 }
 html[data-theme="dark"] .gp-format__opt span {
     color: var(--mt-fg-2)
+}
+/*  birge.css  */
+html[data-theme="dark"] .brg {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .brg :where(button, textarea, select, input) {
+    color: inherit
+}
+html[data-theme="dark"] .brg :where(button) {
+    border: 0;
+    background: none
+}
+html[data-theme="dark"] .brg :is(button, summary):focus-visible {
+    outline: 2px solid var(--dk-acc)
+}
+html[data-theme="dark"] .brg-top p {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-card {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .brg-soon p {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-av {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .brg-vline {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .brg-who__sep {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-tpick__btn {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-tpick__btn:hover, html[data-theme="dark"] .brg-tpick__btn.is-open {
+    background: var(--dk-page);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .brg-tpick__list {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    box-shadow: 0 12px 40px color-mix(in oklab, var(--dk-acc) 16%, transparent)
+}
+html[data-theme="dark"] .brg-tpick__opt {
+    color: var(--dk-text);
+    outline: none
+}
+html[data-theme="dark"] .brg-tpick__opt.is-active {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .brg-tpick__opt.is-on {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .brg-field textarea, html[data-theme="dark"] .brg-part textarea {
+    border: 0;
+    background: none;
+    outline: none
+}
+html[data-theme="dark"] .brg-cnt {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-cnt.is-over {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .brg-x {
+    background: rgba(23, 19, 38, 0.65);
+    color: #fff
+}
+html[data-theme="dark"] .brg-x--soft {
+    background: var(--dk-chip);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-tool {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-tool:hover, html[data-theme="dark"] .brg-tool.is-on {
+    background: var(--dk-page);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .brg-pop {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    box-shadow: 0 12px 40px color-mix(in oklab, var(--dk-acc) 16%, transparent)
+}
+html[data-theme="dark"] .brg-ecats {
+    border-bottom: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .brg-ecats button.is-on {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .brg-etitle {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-emo button:hover {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .brg-error {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .brg-part {
+    border-left: 2px solid var(--dk-line)
+}
+html[data-theme="dark"] .brg-addpart {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .brg-foot {
+    border-top: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .brg-hint {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-btn {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .brg-btn--ghost {
+    border: 1px solid var(--dk-acc-line);
+    background: var(--dk-card);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .brg-link {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .brg-pipe {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .brg-step {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-step__d {
+    border: 2px solid var(--dk-acc-line)
+}
+html[data-theme="dark"] .brg-step--run .brg-step__d {
+    border-color: var(--dk-acc);
+    border-top-color: transparent
+}
+html[data-theme="dark"] .brg-step--done {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .brg-step--done .brg-step__d {
+    border-color: var(--dk-green);
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .brg-res--ok {
+    background: var(--dk-green-tint)
+}
+html[data-theme="dark"] .brg-res--warn {
+    background: var(--dk-yellow-tint)
+}
+html[data-theme="dark"] .brg-res--bad {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .brg-res__copy {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .brg-res mark {
+    background: var(--dk-red-tint);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .brg-filters {
+    border-bottom: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .brg-chip {
+    background: var(--dk-page);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .brg-chip.is-on {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .brg-empty {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-post {
+    border-bottom: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .brg-post:last-child {
+    border-bottom: 0
+}
+html[data-theme="dark"] .brg-post--cm {
+    border-top: 1px dashed var(--dk-line);
+    border-bottom: 0
+}
+html[data-theme="dark"] .brg-ph__who small {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-lvl {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .brg-badge--pend {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .brg-badge--rej {
+    background: var(--dk-page);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .brg-badge--hid {
+    background: var(--dk-chip);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-topic {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-more {
+    border-left: 2px solid var(--dk-line)
+}
+html[data-theme="dark"] .brg-pa button {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-pa button:not(:disabled):hover {
+    background: var(--dk-page);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .brg-pa button.is-liked {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .brg-back {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .brg-rules__list li {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .brg-toast {
+    background: var(--dk-ink-bg);
+    color: #fff
 }
 /*  assistant.css  */
 html[data-theme="dark"] .asst {
@@ -35878,6 +36114,13 @@ html[data-theme="dark"] .rg-done__avatar {
     }
     html[data-theme="dark"] .hm-hw__empty {
         color: var(--dk-muted)
+    }
+}
+/*  mobile/birge.css  */
+@media (max-width: 560px) {
+    html[data-theme="dark"] .brg-main > .brg-card {
+        border-right: 0;
+        border-left: 0
     }
 }
 /*  mobile/nav.css  */

@@ -11,6 +11,10 @@ export function notificationTarget(deepLink) {
   if (/^\/?group-choice\/?$/.test(trimmed)) return { screen: 'group', payload: null }
   if (/^\/?notifications\/?$/.test(trimmed)) return { screen: 'notifications', payload: null }
   if (/^\/?contracts\/?$/.test(trimmed)) return { screen: 'contracts', payload: null }
+  // Birge (спека 2026-11-11 §6): у всех уведомлений раздела ссылка `birge/<id ветки>`. Выше общих веток по словам — как
+  // у отчётов ниже: случайное слово в адресе не должно увести ученика в расписание.
+  const birge = trimmed.match(/^\/?birge(?:\/(\d+))?\/?$/)
+  if (birge) return { screen: 'birge', payload: birge[1] ? { postId: Number(birge[1]) } : null }
   if (/^\/?feedback\/?$/.test(trimmed)) return { screen: 'feedback', payload: null }
   // Отчёт о прогрессе (уведомление FEEDBACK_REPORT, спека 2026-10-20 §3.5) —
   // во вкладку «Отчёты» «Уроков», сразу в сам отчёт. Стоит выше общих веток:

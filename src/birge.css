@@ -1,0 +1,706 @@
+/* ======================================================================
+   Just to Study Birge — лента веток студентов.
+   Спека: docs/superpowers/specs/2026-11-11-birge-community-design.md §7;
+   вёрстка — из прототипа 2026-11-11-birge-prototype.html, классы .brg-*.
+   Цвета — литералами, как в остальных файлах разделов: тёмную тему
+   пересчитывает scripts/gen-dark-theme.js. Своего font-family у раздела
+   нет — он на шрифте кабинета, kk-font.css не трогаем.
+   ====================================================================== */
+
+.brg {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 32px 60px;
+  color: #171326;
+  font-size: 14px;
+  line-height: 1.45;
+}
+/* Сброс — через :where(), без веса: классы ниже (.brg-btn, .brg-chip…) перебивают его по порядку, а не специфичностью. */
+.brg :where(button, textarea, select, input) {
+  font: inherit;
+  color: inherit;
+}
+.brg :where(button) {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.brg :where(button:disabled) {
+  cursor: default;
+  opacity: 0.5;
+}
+/* Поля ввода в кольцо не входят: у текстового поля :focus-visible горит при любом фокусе, и поле без рамок получало
+   фиолетовый прямоугольник на каждом нажатии (жалоба владельца 12.11.2026). Где пишешь, и так видно по курсору. */
+.brg :is(button, summary):focus-visible {
+  outline: 2px solid #9047ff;
+  outline-offset: 2px;
+}
+
+/* Шапка. Справа поверх неё — группа «язык и колокольчик» кабинета (.learn__bell, абсолютом в styles.css): место
+   под неё оставлено, иначе длинный заголовок ушёл бы под кнопки. */
+.brg-top {
+  margin-bottom: 20px;
+  padding-right: 200px;
+}
+.brg-top h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+.brg-top p {
+  margin: 2px 0 0;
+  color: #5a5a66;
+  font-size: 12px;
+}
+
+.brg-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  align-items: start;
+}
+.brg-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.brg-card {
+  padding: 18px;
+  border: 1px solid #ece8f5;
+  border-radius: 20px;
+  background: #fff;
+}
+.brg-soon h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+.brg-soon p {
+  margin: 0;
+  color: #5a5a66;
+}
+
+/* ---------- форма «Новая ветка» / ответ ---------- */
+.brg-cw {
+  display: flex;
+  gap: 12px;
+}
+.brg-cl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.brg-av {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #9047ff;
+  color: #fff;
+  font-weight: 700;
+  object-fit: cover;
+}
+.brg-av--sm {
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
+}
+.brg-av--xs {
+  width: 20px;
+  height: 20px;
+  font-size: 9px;
+  opacity: 0.5;
+}
+.brg-vline {
+  flex: 1;
+  width: 2px;
+  min-height: 20px;
+  border-radius: 2px;
+  background: #ece8f5;
+}
+.brg-cr {
+  flex: 1;
+  min-width: 0;
+}
+.brg-who {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+.brg-who__sep {
+  color: #5a5a66;
+}
+/* Тема — своё меню (TopicPicker), а не <select>: системный список на Windows — коробка с серой рамкой. */
+.brg-tpick {
+  position: relative;
+}
+.brg-tpick__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: -3px 0;
+  padding: 3px 8px;
+  border-radius: 8px;
+  color: #5a5a66;
+  font-weight: 500;
+}
+.brg-tpick__btn:hover,
+.brg-tpick__btn.is-open {
+  background: #f6f1ff;
+  color: #9047ff;
+}
+.brg-tpick__chev {
+  transition: transform 0.15s;
+}
+.brg-tpick__btn.is-open .brg-tpick__chev {
+  transform: rotate(180deg);
+}
+.brg-tpick__list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 7;
+  min-width: 176px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid #ece8f5;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 40px rgba(60, 30, 120, 0.16);
+}
+.brg-tpick__opt {
+  padding: 9px 12px;
+  border-radius: 10px;
+  color: #171326;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+}
+.brg-tpick__opt.is-active {
+  background: #f6f1ff;
+}
+.brg-tpick__opt.is-on {
+  color: #9047ff;
+  font-weight: 700;
+}
+.brg-field {
+  position: relative;
+}
+.brg-field textarea,
+.brg-part textarea {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  font-size: 15px;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+}
+.brg-composer--reply .brg-field textarea {
+  font-size: 14px;
+}
+.brg-part textarea {
+  flex: 1;
+  min-height: 32px;
+}
+.brg-cnt {
+  display: block;
+  color: #5a5a66;
+  font-size: 12px;
+  text-align: right;
+}
+.brg-cnt.is-over {
+  color: #e5484d;
+  font-weight: 700;
+}
+.brg-mrow {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+  overflow-x: auto;
+}
+.brg-mitem {
+  position: relative;
+  flex: none;
+}
+.brg-mitem img {
+  display: block;
+  width: 150px;
+  height: 150px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+/* Фото ещё грузится и проверяется (§3.1) — приглушено, пока сервер не ответил. */
+.brg-mitem.is-loading img {
+  opacity: 0.45;
+}
+.brg-x {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(23, 19, 38, 0.65);
+  color: #fff;
+  font-size: 13px;
+  line-height: 22px;
+  text-align: center;
+}
+.brg-mitem .brg-x {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+.brg-x--soft {
+  flex: none;
+  background: #ece8f5;
+  color: #5a5a66;
+}
+.brg-tools {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  margin: 4px 0 6px;
+}
+.brg-tool {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: #5a5a66;
+  cursor: pointer;
+}
+.brg-tool:hover,
+.brg-tool.is-on {
+  background: #f6f1ff;
+  color: #9047ff;
+}
+.brg-tool.is-off {
+  opacity: 0.4;
+  cursor: default;
+}
+.brg-pop {
+  position: absolute;
+  top: 42px;
+  left: 0;
+  z-index: 6;
+  width: 380px;
+  max-width: 86vw;
+  padding: 10px;
+  border: 1px solid #ece8f5;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 40px rgba(60, 30, 120, 0.16);
+}
+.brg-ecats {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #ece8f5;
+}
+.brg-ecats button {
+  flex: 1;
+  height: 34px;
+  border-radius: 9px;
+  font-size: 18px;
+  opacity: 0.55;
+}
+.brg-ecats button.is-on {
+  background: #f6f1ff;
+  opacity: 1;
+}
+.brg-etitle {
+  margin: 2px 4px 4px;
+  color: #5a5a66;
+  font-size: 12px;
+  font-weight: 700;
+}
+.brg-emo {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  max-height: 250px;
+  overflow-y: auto;
+}
+.brg-emo button {
+  height: 36px;
+  border-radius: 8px;
+  font-size: 23px;
+}
+.brg-emo button:hover {
+  background: #f6f1ff;
+}
+.brg-error {
+  margin: 4px 0;
+  color: #e5484d;
+  font-size: 12px;
+}
+.brg-part {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 4px 0;
+  padding-left: 10px;
+  border-left: 2px solid #ece8f5;
+}
+.brg-part .brg-cnt {
+  align-self: flex-end;
+}
+.brg-addpart {
+  display: block;
+  width: 100%;
+  padding: 4px 0;
+  color: #b5b0c4;
+  font-size: 14px;
+  text-align: left;
+}
+.brg-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #ece8f5;
+}
+.brg-hint {
+  flex: 1;
+  color: #5a5a66;
+  font-size: 12px;
+}
+.brg-btn {
+  padding: 10px 18px;
+  border-radius: 14px;
+  background: #9047ff;
+  color: #fff;
+  font-weight: 700;
+}
+.brg-btn--ghost {
+  border: 1px solid #efe7ff;
+  background: #fff;
+  color: #9047ff;
+}
+.brg-link {
+  color: #9047ff;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* Шаги проверки (прототип .pipe/.step): тикают, пока ждём ответа сервера. */
+.brg-pipe {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f6f1ff;
+}
+.brg-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  color: #5a5a66;
+  font-size: 13px;
+}
+.brg-step__d {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #cfc3ee;
+  border-radius: 50%;
+}
+.brg-step--run .brg-step__d {
+  border-color: #9047ff;
+  border-top-color: transparent;
+  animation: brg-spin 0.7s linear infinite;
+}
+.brg-step--done {
+  color: #171326;
+}
+.brg-step--done .brg-step__d {
+  border-color: #18a957;
+  background: #18a957;
+}
+@keyframes brg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brg-step--run .brg-step__d {
+    animation: none;
+  }
+}
+.brg-res {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.brg-res--ok {
+  background: #e6f7ee;
+}
+.brg-res--warn {
+  background: #fff4e2;
+}
+.brg-res--bad {
+  background: #fdecec;
+}
+.brg-res b {
+  display: block;
+  margin-bottom: 2px;
+}
+.brg-res p {
+  margin: 4px 0 0;
+}
+.brg-res__copy {
+  padding: 8px;
+  border-radius: 10px;
+  background: #fff;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.brg-res mark {
+  padding: 0 2px;
+  border-radius: 4px;
+  background: #ffd6d8;
+  color: #e5484d;
+}
+
+/* ---------- лента ---------- */
+.brg-feed {
+  padding: 0;
+}
+.brg-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #ece8f5;
+}
+.brg-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f6f1ff;
+  color: #9047ff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.brg-chip.is-on {
+  background: #9047ff;
+  color: #fff;
+}
+.brg-empty {
+  margin: 0;
+  padding: 30px;
+  color: #5a5a66;
+  text-align: center;
+}
+.brg-morerow {
+  display: flex;
+  justify-content: center;
+  padding: 14px;
+}
+
+/* ---------- карточка ---------- */
+.brg-post {
+  padding: 16px 18px;
+  border-bottom: 1px solid #ece8f5;
+}
+.brg-post:last-child {
+  border-bottom: 0;
+}
+.brg-post--cm {
+  padding-left: 58px;
+  border-top: 1px dashed #ece8f5;
+  border-bottom: 0;
+}
+.brg-ph {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brg-ph__who {
+  min-width: 0;
+}
+.brg-ph__who b {
+  font-size: 14px;
+}
+.brg-ph__who small {
+  display: block;
+  color: #5a5a66;
+}
+.brg-lvl {
+  margin-left: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #efe7ff;
+  color: #9047ff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.brg-ph__tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-left: auto;
+}
+.brg-badge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.brg-badge--pend {
+  background: #fff4e2;
+  color: #e8890c;
+}
+.brg-badge--rej {
+  background: #fdecec;
+  color: #e5484d;
+}
+.brg-badge--hid {
+  background: #eeeeee;
+  color: #666666;
+}
+.brg-topic {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f2f1f6;
+  color: #5a5a66;
+  font-size: 11px;
+  font-weight: 700;
+}
+.brg-pt {
+  margin: 10px 0 10px 40px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.brg-pt-gap {
+  height: 8px;
+}
+.brg-media {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+  max-width: 520px;
+  margin: 0 0 10px 40px;
+}
+.brg-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  object-fit: cover;
+}
+.brg-more {
+  margin: 0 0 10px 40px;
+  padding-left: 12px;
+  border-left: 2px solid #ece8f5;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.brg-pa {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 34px;
+}
+.brg-pa button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  color: #5a5a66;
+  font-size: 13px;
+  font-weight: 600;
+}
+.brg-pa button:not(:disabled):hover {
+  background: #f6f1ff;
+  color: #9047ff;
+}
+.brg-pa button.is-liked {
+  color: #e5484d;
+}
+.brg-pa .brg-pa__report {
+  margin-left: auto;
+}
+
+/* ---------- ветка, правила, тост ---------- */
+.brg-back {
+  align-self: flex-start;
+  color: #9047ff;
+  font-weight: 600;
+}
+.brg-thread {
+  padding: 0;
+}
+.brg-closed {
+  margin: 0;
+  padding: 0 4px;
+}
+.brg-rules-col {
+  min-width: 0;
+}
+.brg-rules h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+.brg-rules__list {
+  margin: 0;
+  padding-left: 18px;
+}
+.brg-rules__list li {
+  margin: 6px 0;
+  color: #5a5a66;
+  line-height: 1.4;
+}
+/* Свёрнутые правила — только телефон (mobile/birge.css). */
+.brg-rules-m {
+  display: none;
+}
+.brg-rules-m summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+.brg-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  z-index: 60;
+  max-width: 90vw;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: #171326;
+  color: #fff;
+  transform: translateX(-50%);
+}
+
+/* С сайдбаром в 280 на ноутбуке колонке правил в 300 уже тесно — она уходит под ленту. */
+@media (max-width: 1100px) {
+  .brg-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Планшет (561–760): своя шапка с бургером, угловой группы кабинета нет — место справа не держим. */
+@media (max-width: 760px) {
+  .brg {
+    padding: 16px;
+  }
+  .brg-top {
+    padding-right: 0;
+  }
+}

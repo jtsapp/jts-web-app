@@ -36,6 +36,15 @@ export function findLiveOccurrence(occurrences, now = new Date()) {
   return live.slice().sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)))[0]
 }
 
+// Идущий сейчас урок ученика, если открыт другой. id урока живёт в адресе
+// (?live=), и F5 открывает тот же урок, а не текущий: на проде 11.11.2026
+// ученица обновляла вкладку урока 09.11, оставшуюся на планшете, и всякий раз
+// попадала в него, хотя урок 11.11 уже шёл. lessonId из адреса — строка.
+export function otherLiveOccurrence(occurrences, lessonId, now = new Date()) {
+  const live = findLiveOccurrence(occurrences, now)
+  return live && String(live.lessonId) !== String(lessonId) ? live : null
+}
+
 // Урок для карточки над календарём: идущий сейчас, а если такого нет —
 // ближайший, который ещё не кончился по часам. Просроченные (время вышло, а
 // преподаватель урок так и не открыл) сюда не попадают: предлагать «войти» в

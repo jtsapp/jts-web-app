@@ -155,4 +155,11 @@ describe('Student Feedback prototype', () => {
     await waitFor(() => expect(screen.queryByText('Загружаем…')).toBeNull())
     expect(screen.queryByRole('form')).toBeNull()
   })
+  it('opens the case Birge created when started with its id', async () => {
+    api.getCabinetFeedback.mockResolvedValue([item(55)])
+    render(<FeedbackCenter token="token" userName="Student Name" userLevel="A2" onNav={() => {}} onProfile={() => {}} initialFeedbackId={55} />)
+    expect(await screen.findByText('Переписка · №55')).toBeTruthy()
+    // Переписку запрашивает пассивный эффект — под нагрузкой он срабатывает позже, чем появляется заголовок.
+    await waitFor(() => expect(api.getCabinetFeedbackMessages).toHaveBeenCalledWith('token', 55))
+  })
 })
