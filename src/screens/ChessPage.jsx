@@ -15,7 +15,7 @@ import { createBotOpponent } from '../practice/chess/opponent.js'
 import { createChessSession } from '../practice/chess/session.js'
 import { FULL_STRENGTH } from '../practice/chess/strength.js'
 import { readChess, currentOf, saveCurrent, recordGame } from '../practice/chess/chessProgress.js'
-import { playChessCue, wakeChessSound, sleepChessSound, isChessSoundOn, setChessSoundOn } from '../practice/chess/sound.js'
+import { playChessCue, wakeChessSound, preloadChessSound, sleepChessSound, isChessSoundOn, setChessSoundOn } from '../practice/chess/sound.js'
 import { chessT, CHESS_LANGS } from './chess/strings.js'
 import { PieceSprite } from './chess/pieces.jsx'
 import Board from './chess/Board.jsx'
@@ -124,7 +124,15 @@ function ChessGame({ userName }) {
     }
   }, [engineRun, runtime, session])
 
-  useEffect(() => () => { session.destroy(); sleepChessSound() }, [session])
+  // Записи звуков грузятся с входом в раздел: к первому ходу они уже разобраны.
+  useEffect(() => {
+    preloadChessSound()
+    return () => { session.destroy(); sleepChessSound() }
+  }, [session])
+
+  // Едет по доске только новый ход. После возврата хода «последним» становится прежний — ему ехать заново незачем.
+  const [plies, setPlies] = useState({ count: 0, grew: false })
+  if (plies.count !== snap.moves.length) setPlies({ count: snap.moves.length, grew: snap.moves.length > plies.count })
 
   // Часы на экране и флаг — раз в 100 мс, только пока идёт партия с часами.
   const ticking = snap.status === 'playing' && !!snap.clock
@@ -142,6 +150,7 @@ function ChessGame({ userName }) {
     writePrefs({ color, botRating, time })
     const side = color === 'random' ? (Math.random() < 0.5 ? 'w' : 'b') : color
     session.start({ color: side, botRating, time })
+    playChessCue('start')
     setFlipped(false)
     setDialog(null)
     setTab('play')
@@ -157,7 +166,6 @@ function ChessGame({ userName }) {
   const names = (side) => side === snap.playerColor
     ? { name: userName?.trim() || t('you'), sub: String(progress.rating) }
     : { name: t('bot'), sub: snap.thinking ? t('thinking') : String(snap.botRating ?? '') }
-  const lastByBot = snap.moves.length > 0 && snap.moves[snap.moves.length - 1].color !== snap.playerColor
   const showResult = snap.status === 'over' && resultSeen !== snap.fen && !dialog
   // Бросить партию после второго своего хода без возвратов и подсказок — проиграть её (см. session.start).
   const rated = snap.rated && snap.moves.filter((m) => m.color === snap.playerColor).length >= 2
@@ -194,12 +202,13 @@ function ChessGame({ userName }) {
       {tab === 'play' && snap.board && (
         <div className="ch-game">
           <div className="ch-stage">
+            <PlayerBar {...names(top)} side={top} snap={snap} />
             <Board fen={snap.fen} board={snap.board} orientation={orientation} playerColor={snap.playerColor}
               interactive={snap.status === 'playing'} movesFrom={session.movesFrom} onMove={move}
-              lastMove={snap.lastMove} check={snap.check} hint={snap.hint} animateLast={lastByBot} t={t} />
+              lastMove={snap.lastMove} check={snap.check} hint={snap.hint} animateLast={plies.grew} t={t} />
+            <PlayerBar {...names(orientation)} side={orientation} snap={snap} />
           </div>
           <aside className="ch-side">
-            <PlayerBar {...names(top)} side={top} snap={snap} />
             {!snap.rated && snap.status === 'playing' && <p className="ch-unrated" data-unrated>{t('unrated')}</p>}
             {snap.engineError && (
               <p className="ch-alert" role="alert">{t('engineStopped')} <button type="button" className="ch-link" data-act="retry" onClick={() => setEngineRun((n) => n + 1)}>{t('retry')}</button></p>
@@ -207,7 +216,6 @@ function ChessGame({ userName }) {
             <MoveList moves={snap.moves} />
             <Actions t={t} snap={snap} onUndo={() => session.undo()} onHint={() => session.hint()} onFlip={() => setFlipped((f) => !f)}
               onResign={() => setDialog('resign')} onNew={askNew} />
-            <PlayerBar {...names(orientation)} side={orientation} snap={snap} />
           </aside>
         </div>
       )}

@@ -107,3 +107,32 @@ describe('доска', () => {
     expect(onMove).toHaveBeenCalledWith('e2', 'e4', undefined)
   })
 })
+
+describe('мышь', () => {
+  it('повторное нажатие на выбранную фигуру снимает выбор', () => {
+    const { sq, tap, container } = setup(createGame())
+    const root = container.querySelector('.ch-board')
+    tap('e2')
+    fireEvent.pointerUp(root, { pointerId: 1, clientX: 0, clientY: 0 })
+    expect(sq('e2').className).toContain('ch-sq--picked')
+    tap('e2')
+    fireEvent.pointerUp(root, { pointerId: 1, clientX: 0, clientY: 0 })
+    expect(sq('e2').className).not.toContain('ch-sq--picked')
+    expect(container.querySelectorAll('[data-move]')).toHaveLength(0)
+  })
+  it('правая кнопка отменяет выбор и не делает хода', () => {
+    const { sq, tap, onMove, container } = setup(createGame())
+    tap('e2')
+    // В jsdom нет PointerEvent с кнопкой — событие того же имени собираем из MouseEvent.
+    fireEvent(sq('e4'), new MouseEvent('pointerdown', { bubbles: true, button: 2 }))
+    expect(container.querySelectorAll('[data-move]')).toHaveLength(0)
+    expect(onMove).not.toHaveBeenCalled()
+  })
+  it('рука — только на своих фигурах, палец — на клетках хода', () => {
+    const { sq, tap } = setup(createGame())
+    expect(sq('e2').className).toContain('ch-sq--mine')
+    expect(sq('e7').className).not.toContain('ch-sq--mine')
+    tap('e2')
+    expect(sq('e4').className).toContain('ch-sq--target')
+  })
+})

@@ -146,3 +146,26 @@ test('пункт меню «Шахматы» открывает раздел', a
   await expect(root(page)).toBeVisible({ timeout: 30000 })
   await expect(page.locator('.ch-dialog[data-dialog="new"]')).toBeVisible()
 })
+
+test('ход перетаскиванием: фигура под указателем, клетка в рамке, полосы игроков у доски', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'мышь — на компьютере')
+  await fakeEngine(page, ['e7e5'])
+  await open(page)
+  await startGame(page)
+  // Полосы игроков стоят над доской и под ней, а не в боковой панели.
+  await expect(page.locator('.ch-stage .ch-player')).toHaveCount(2)
+  const from = await sq(page, 'e2').boundingBox()
+  const to = await sq(page, 'e4').boundingBox()
+  await page.mouse.move(from.x + 10, from.y + 10)
+  await page.mouse.down()
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 6 })
+  await expect(page.locator('.ch-board')).toHaveClass(/ch-board--dragging/)
+  await expect(sq(page, 'e4')).toHaveClass(/ch-sq--over/)
+  // Взяли за угол клетки — фигура всё равно встала центром под указатель.
+  const piece = await page.locator('.ch-piece--drag').boundingBox()
+  expect(Math.abs(piece.x + piece.width / 2 - (to.x + to.width / 2))).toBeLessThan(3)
+  await page.mouse.up()
+  await expect(sq(page, 'e4')).toHaveAttribute('data-piece', 'wp')
+  await expect(sq(page, 'e5')).toHaveAttribute('data-piece', 'bp')
+  if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT + '/game2.png' })
+})
