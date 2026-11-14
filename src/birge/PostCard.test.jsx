@@ -99,4 +99,11 @@ describe('карточка поста', () => {
     expect(document.querySelector('.brg-topic')).toBeNull()
     expect(screen.getByRole('button', { name: 'Пожаловаться' })).toBeTruthy()
   })
+
+  it('учитель в студенческой ленте — «Преподаватель» вместо уровня (спека v2 §4)', () => {
+    mount(card({ author: { id: 9, name: 'Айгерим С.', level: null, role: 'TEACHER', avatarUrl: null } }))
+    expect(screen.getByText('Айгерим С.')).toBeTruthy()
+    expect(screen.getByText('Преподаватель').className).toBe('brg-lvl')
+    expect(screen.getByRole('button', { name: 'Пожаловаться' })).toBeTruthy()
+  })
 })
