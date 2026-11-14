@@ -44,6 +44,7 @@ export const PRACTICE_AREA_BY_MODULE = {
   pronunciation: 'pronunciation',
   tenses: 'tenses',
   punctuation: 'punctuation',
+  partsofspeech: 'partsofspeech',
 }
 
 /** Миграция, с которой кабинет считает решённые задания по суткам (skill_day). */

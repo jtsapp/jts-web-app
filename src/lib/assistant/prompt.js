@@ -53,6 +53,7 @@ export const SCREEN_NAMES = {
   'grammar-games': 'Практика → Грамматика · игры (темы, правило и игры)',
   tenses: 'Практика → Грамматика → Tenses World (12 времён: видеоурок, правила, Formula Lab, практика)',
   punctuation: 'Практика → Грамматика → Punctuation World (уроки пунктуации и игра-приключение)',
+  partsofspeech: 'Практика → Грамматика → Parts of Speech World (части речи: уроки с упражнениями и квесты)',
   workbook: 'Практика → Воркбуки',
   words: 'Практика → Слова в картинках',
   verbs: 'Практика → Глаголы',
