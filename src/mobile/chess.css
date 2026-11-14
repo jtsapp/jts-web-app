@@ -1,0 +1,29 @@
+/* Шахматы на телефоне: соперник → доска во всю ширину → ученик → кнопки → ходы лентой. */
+@media (max-width: 560px) {
+  .ch { gap: 10px; padding: 12px 0 96px; }
+  .ch-head { padding: 0 16px; gap: 8px; }
+  .ch-head__title { font-size: 22px; }
+  .ch-head__tools { margin-left: 0; width: 100%; justify-content: space-between; }
+  .ch-game { display: flex; flex-direction: column; gap: 8px; }
+  .ch-stage { width: 100%; order: 2; }
+  .ch-board { border-radius: 0; }
+  /* Панель «растворяется»: её дети встают вокруг доски в порядке макета. */
+  .ch-side { display: contents; }
+  .ch-side > .ch-player { padding: 0 16px; }
+  .ch-side > .ch-player:first-of-type { order: 1; }
+  .ch-side > .ch-player:last-of-type { order: 3; }
+  .ch-side > .ch-unrated, .ch-side > .ch-alert { order: 4; margin: 0 16px; }
+  .ch-side > .ch-actions { order: 5; padding: 0 16px; grid-template-columns: repeat(4, 1fr); }
+  .ch-side > .ch-actions .ch-btn { padding: 10px 4px; font-size: 12px; }
+  .ch-side > .ch-moves { order: 6; flex: none; min-height: 0; max-height: none; margin: 0 16px; display: flex; overflow-x: auto; overflow-y: hidden; }
+  .ch-moves li { display: flex; flex: none; gap: 2px; padding: 6px 8px; }
+  .ch-moves li:nth-child(even) { background: transparent; }
+  .ch-side > .ch-btn, .ch-side > .ch-steps { order: 5; margin: 0 16px; }
+  .ch-clock { font-size: 18px; padding: 5px 10px; }
+  .ch-coord { font-size: 9px; }
+  .ch-dialog { align-items: end; padding: 0; }
+  .ch-dialog__card { width: 100%; border-radius: 24px 24px 0 0; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); }
+  .ch-games { padding: 0 16px; }
+  .ch-games__row { grid-template-columns: 1fr 1fr; gap: 4px 12px; padding: 12px 14px; }
+  .ch-empty { padding: 0 16px; }
+}

@@ -57,6 +57,12 @@ export const NUMBERS_KEY = 'jts_numbers_done'
 // Язык перевода объяснений «Чисел» (en | kk | ru) — настройка устройства, не
 // синкается, но чистится вместе с прогрессом.
 export const NUMBERS_LANG_KEY = 'jts_numbers_lang'
+// Шахматы: { rating, games, current, history } — рейтинг ученика, недоигранная партия (JSON-строкой) и
+// последние 50 сыгранных. Replace со сведением merge (chessProgress.js).
+export const CHESS_KEY = 'jts_chess_v1'
+// Настройки шахмат на устройстве (язык раздела, звук, последний выбор цвета и времени) — не синкаются,
+// но чистятся вместе с прогрессом.
+export const CHESS_PREFS_KEY = 'jts_chess_prefs'
 // Лучшие результаты Just to Listen: { best: { <ключ прогона>: { ok, n, coins } } },
 // ключ — как в прототипе без префикса режима: A1-L3-0 (часть урока), A1-L4-R
 // (урок-повторение), A1-U2 (повторить юнит), A1-T (тест), business-T. Replace со
@@ -132,6 +138,7 @@ export const WORDS_PROGRESS_EVENT = 'words-progress'
 export const VERBS_PROGRESS_EVENT = 'verbs-progress'
 export const LISTENCHOOSE_PROGRESS_EVENT = 'listenchoose-progress'
 export const NUMBERS_PROGRESS_EVENT = 'numbers-progress'
+export const CHESS_PROGRESS_EVENT = 'chess-progress'
 export const LISTEN_PROGRESS_EVENT = 'listen-progress'
 export const PREPOSITIONS_PROGRESS_EVENT = 'prepositions-progress'
 export const CARTOONS_PROGRESS_EVENT = 'cartoons-progress'
