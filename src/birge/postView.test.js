@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { authorInitial, canReport, isLive, postBadge, postTime } from './postView.js'
+import { authorInitial, authorTag, canReport, isLive, postBadge, postTime } from './postView.js'
 
 const post = (over = {}) => ({ id: 1, status: 'published', hiddenReason: null, mine: true, canReport: false, ...over })
 
@@ -62,5 +62,14 @@ describe('время у карточки (как в прототипе)', () => 
   it('нет даты — пусто', () => {
     expect(postTime(null)).toBe('')
     expect(postTime('не дата')).toBe('')
+  })
+})
+
+describe('плашка у имени автора (спека v2 §4)', () => {
+  it('учитель — ключ «Преподаватель», ученик — уровень, без уровня — ничего', () => {
+    expect(authorTag({ role: 'TEACHER', level: null })).toEqual({ key: 'birge.teacher.badge' })
+    expect(authorTag({ role: 'STUDENT', level: 'B1' })).toEqual({ text: 'B1' })
+    expect(authorTag({ level: 'A2' })).toEqual({ text: 'A2' })
+    expect(authorTag({ role: 'STUDENT', level: null })).toBeNull()
   })
 })

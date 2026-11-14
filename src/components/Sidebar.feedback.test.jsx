@@ -18,8 +18,8 @@ it('keeps student Feedback available in tutor-only mode', async () => {
   await waitFor(() => expect(onNav).toHaveBeenCalledWith('feedback'))
 })
 
-it('в тьютор-онли пункта Birge нет', async () => {
+it('в тьютор-онли пункта Not Just English нет', async () => {
   render(<I18nProvider><Sidebar token="fixture" userName="Student" onNav={vi.fn()} /></I18nProvider>)
   await waitFor(() => expect(screen.getByRole('button', { name: /^Feedback/ })).toBeTruthy())
-  expect(screen.queryByRole('button', { name: /^Birge/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: /^Not Just English/ })).toBeNull()
 })
