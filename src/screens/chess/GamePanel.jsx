@@ -36,9 +36,15 @@ export function PlayerBar({ name, sub, side, snap }) {
 }
 
 export function MoveList({ moves, current = null, onPick = null }) {
-  const end = useRef(null)
+  const list = useRef(null)
   // В живой партии список сам доезжает до последнего хода; в разборе (onPick) — стоит, где листают.
-  useEffect(() => { if (!onPick) end.current?.scrollIntoView?.({ block: 'nearest' }) }, [moves.length, onPick])
+  // Крутим сам список, а не scrollIntoView: тот двигает и предков, и на телефоне уводил всю страницу вбок.
+  useEffect(() => {
+    const el = list.current
+    if (!el || onPick) return
+    el.scrollTop = el.scrollHeight
+    el.scrollLeft = el.scrollWidth
+  }, [moves.length, onPick])
   const rows = []
   for (let i = 0; i < moves.length; i += 2) rows.push([moves[i], moves[i + 1]])
   const cell = (m, ply) => {
@@ -49,11 +55,10 @@ export function MoveList({ moves, current = null, onPick = null }) {
       : <span className={cls} data-ply={ply}>{m.san}</span>
   }
   return (
-    <ol className="ch-moves">
+    <ol className="ch-moves" ref={list}>
       {rows.map(([w, b], i) => (
         <li key={i}><span className="ch-moves__no">{i + 1}.</span>{cell(w, i * 2 + 1)}{cell(b, i * 2 + 2)}</li>
       ))}
-      <li ref={end} aria-hidden="true" />
     </ol>
   )
 }

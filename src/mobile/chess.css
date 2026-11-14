@@ -5,7 +5,9 @@
   .ch-player__taken { padding-left: 6px; }
   .ch-head__title { font-size: 22px; }
   .ch-head__tools { margin-left: 0; width: 100%; justify-content: space-between; }
-  .ch-game { display: flex; flex-direction: column; gap: 8px; }
+  /* stretch: с десктопным align-items: start лента ходов брала ширину по содержимому и после десятка ходов
+     раздвигала страницу шире экрана. */
+  .ch-game { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
   .ch-stage { width: 100%; order: 2; }
   .ch-board { border-radius: 0; }
   /* Панель «растворяется»: её дети встают вокруг доски в порядке макета. */
@@ -16,7 +18,7 @@
   .ch-side > .ch-unrated, .ch-side > .ch-alert { order: 4; margin: 0 16px; }
   .ch-side > .ch-actions { order: 5; padding: 0 16px; grid-template-columns: repeat(4, 1fr); }
   .ch-side > .ch-actions .ch-btn { padding: 10px 4px; font-size: 12px; }
-  .ch-side > .ch-moves { order: 6; flex: none; min-height: 0; max-height: none; margin: 0 16px; display: flex; overflow-x: auto; overflow-y: hidden; }
+  .ch-side > .ch-moves { order: 6; flex: none; min-width: 0; min-height: 0; max-height: none; margin: 0 16px; display: flex; overflow-x: auto; overflow-y: hidden; }
   .ch-moves li { display: flex; flex: none; gap: 2px; padding: 6px 8px; }
   .ch-moves li:nth-child(even) { background: transparent; }
   .ch-side > .ch-btn, .ch-side > .ch-steps { order: 5; margin: 0 16px; }
