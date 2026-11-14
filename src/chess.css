@@ -19,9 +19,8 @@
 .ch-coord--rank { top: 3px; left: 4px; }
 .ch-coord--file { right: 4px; bottom: 3px; }
 
-.ch-piece { position: absolute; inset: 4%; width: 92%; height: 92%; pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35)); }
-.ch-piece--w { --ch-fill: #f9f9f9; --ch-line: #3a3a3a; --ch-shine: rgba(0, 0, 0, 0.08); }
-.ch-piece--b { --ch-fill: #565352; --ch-line: #1f1e1d; --ch-shine: rgba(255, 255, 255, 0.16); }
+/* Цвета фигур — в самой разметке набора Cburnett (белая заливка с чёрным контуром и наоборот). */
+.ch-piece { position: absolute; inset: 4%; width: 92%; height: 92%; pointer-events: none; }
 .ch-piece--drag { z-index: 5; cursor: grabbing; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.4)); }
 .ch-piece--arrived { animation: ch-arrive 150ms ease-out; }
 @keyframes ch-arrive { from { transform: translate(calc(var(--ch-dx) * 108.7%), calc(var(--ch-dy) * 108.7%)); } to { transform: none; } }
