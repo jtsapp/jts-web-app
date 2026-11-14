@@ -1,6 +1,9 @@
+// @vitest-environment jsdom
 // src/screens/chess/HistoryView.test.jsx
-import { describe, it, expect, vi } from 'vitest'
-import { render, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+
+afterEach(cleanup)
+import { render, fireEvent, cleanup } from '@testing-library/react'
 import HistoryView from './HistoryView.jsx'
 import { chessT } from './strings.js'
 

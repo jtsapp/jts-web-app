@@ -35,6 +35,9 @@ import { mergeReadingState } from './readingState.js'
 // лучший результат и «уже было» у боссов. Replace; клиент сводит с серверным
 // (numbersProgress.js merge), чтобы пройденное не терялось. Area 'numbers'
 // бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
+// 'chess' — стейт-объект шахмат {rating, games, current, history}: рейтинг ученика, недоигранная партия и
+// последние сыгранные. Replace; клиент сводит с серверным (chessProgress.js merge). Area 'chess' бэкенду
+// неизвестна — в домашнюю работу раздел не отчитывается.
 // 'listen' — стейт-объект Just to Listen {best: {<ключ прогона>: {ok, n, coins}}}.
 // Replace; клиент сводит с серверным (listenProgress.js merge), чтобы лучший
 // результат не терялся. Area 'listen' бэкенду неизвестна — в домашнюю работу
@@ -76,6 +79,7 @@ export const PRACTICE_MODULES = [
   'verbs',
   'listenchoose',
   'numbers',
+  'chess',
   'listen',
   'prepositions',
   'cartoons',

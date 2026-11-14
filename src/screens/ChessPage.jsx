@@ -6,7 +6,7 @@
 // Экран — оболочка над машиной партии (practice/chess/session.js): та живёт вне React, экран на неё подписан.
 // Движок — отдельная программа в Web Worker (GPL, файлы в public/chess/engine), поднимается при входе
 // в раздел и гасится при уходе: 1,8 МБ wasm и поток незачем держать на остальных экранах.
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ownerOf } from '../practice/progressStore.js'
 import { CHESS_PREFS_KEY, CHESS_PROGRESS_EVENT } from '../practice/practiceKeys.js'
@@ -48,6 +48,32 @@ function makeEngine(onCrash) {
   }
 }
 
+// Машина партии и движок — одна пара на жизнь экрана, вне React. Машина берёт движок из ящика в момент хода,
+// а не при создании: «Retry» ставит в ящик новый движок, партия остаётся той же.
+function createRuntime() {
+  const box = { engine: null, fake: false }
+  const session = createChessSession({
+    // В подмене бот отвечает сразу и без случайных ходов: тест задаёт его ходы сам.
+    makeOpponent: (rating) => createBotOpponent({ engine: box.engine, rating, ...(box.fake ? { rng: () => 1, minDelay: 0 } : {}) }),
+    analyse: (fen) => box.engine.search(fen, FULL_STRENGTH).then((r) => r.move),
+    save: saveCurrent,
+    finish: recordGame,
+    getRating: () => readChess().rating,
+    onCue: playChessCue,
+  })
+  return {
+    session,
+    /** Поднять движок; onState('ready' | 'failed'). Возвращает функцию, которая его гасит. */
+    startEngine(onState) {
+      const { engine, fake } = makeEngine(() => onState('failed'))
+      box.engine = engine
+      box.fake = fake
+      engine.ready.then(() => onState('ready'), () => {})
+      return () => engine.destroy()
+    },
+  }
+}
+
 function useChessProgress() {
   const [state, setState] = useState(() => readChess())
   useEffect(() => {
@@ -67,50 +93,36 @@ function ChessGame({ userName }) {
   const [flipped, setFlipped] = useState(false)
   const [resultSeen, setResultSeen] = useState(null) // id партии, чьё окно итога закрыли
   const [review, setReview] = useState(null) // запись истории, открытая в разборе
-  const [engineState, setEngineState] = useState('loading') // 'loading' | 'ready' | 'failed'
+  // Состояние движка привязано к номеру запуска: после «Retry» прошлое «failed» само читается как «loading».
+  const [engineInfo, setEngineInfo] = useState({ run: 0, state: 'loading' })
   const [engineRun, setEngineRun] = useState(0)
+  const engineState = engineInfo.run === engineRun ? engineInfo.state : 'loading' // 'loading' | 'ready' | 'failed'
   const progress = useChessProgress()
 
-  const engineRef = useRef(null)
-  const fakeRef = useRef(false)
-  const sessionRef = useRef(null)
-  if (!sessionRef.current) {
-    sessionRef.current = createChessSession({
-      // В подмене бот отвечает сразу и без случайных ходов: тест задаёт его ходы сам.
-      makeOpponent: (rating) => createBotOpponent({
-        engine: engineRef.current, rating,
-        ...(fakeRef.current ? { rng: () => 1, minDelay: 0 } : {}),
-      }),
-      analyse: (fen) => engineRef.current.search(fen, FULL_STRENGTH).then((r) => r.move),
-      save: saveCurrent,
-      finish: recordGame,
-      getRating: () => readChess().rating,
-      onCue: playChessCue,
-    })
-  }
-  const session = sessionRef.current
+  const [runtime] = useState(createRuntime)
+  const { session } = runtime
   const snap = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot)
 
   // Движок: поднять при входе, погасить при уходе; «Retry» пересоздаёт его (engineRun).
   useEffect(() => {
     let alive = true
-    const { engine, fake } = makeEngine(() => { if (alive) { setEngineState('failed'); session.engineFailed() } })
-    engineRef.current = engine
-    fakeRef.current = fake
-    setEngineState('loading')
-    engine.ready.then(() => { if (alive) setEngineState('ready') }, () => {})
+    const stop = runtime.startEngine((state) => {
+      if (!alive) return
+      setEngineInfo({ run: engineRun, state })
+      if (state === 'failed') session.engineFailed()
+    })
     if (engineRun === 0) {
       // Недоигранная партия возвращается сама; ждать движок не нужно — его поиск встанет в очередь за ready.
       const saved = currentOf(readChess())
-      if (!saved || !session.resume(saved)) setDialog('new')
+      if (saved) session.resume(saved)
     } else {
       session.retry()
     }
     return () => {
       alive = false
-      engine.destroy()
+      stop()
     }
-  }, [engineRun, session])
+  }, [engineRun, runtime, session])
 
   useEffect(() => () => { session.destroy(); sleepChessSound() }, [session])
 
@@ -150,6 +162,8 @@ function ChessGame({ userName }) {
   // Бросить партию после второго своего хода без возвратов и подсказок — проиграть её (см. session.start).
   const rated = snap.rated && snap.moves.filter((m) => m.color === snap.playerColor).length >= 2
   const prefs = readPrefs()
+  // Партии нет ни в машине, ни в сохранённом (первый заход, нечитаемая запись) — сразу диалог новой партии.
+  const showNew = dialog === 'new' || (snap.status === 'idle' && !currentOf(progress) && !dialog)
 
   return (
     <div className="ch" data-status={snap.status} data-turn={snap.turn || ''} data-engine={engineState} lang={lang}>
@@ -198,7 +212,7 @@ function ChessGame({ userName }) {
         </div>
       )}
 
-      {dialog === 'new' && (
+      {showNew && (
         <NewGameDialog t={t} rating={progress.rating} defaults={prefs} engine={engineState} onPlay={play}
           onRetry={() => setEngineRun((n) => n + 1)} onClose={snap.board ? () => setDialog(null) : null} />
       )}
@@ -220,7 +234,7 @@ function ChessGame({ userName }) {
         <ResultDialog t={t} snap={snap}
           onRematch={() => play({ color: snap.playerColor === 'w' ? 'b' : 'w', botRating: snap.botRating, time: snap.time })}
           onNew={() => setDialog('new')}
-          onReview={() => setResultSeen(snap.fen)} />
+          onReview={() => { setResultSeen(snap.fen); setReview(readChess().history[0] || null); setTab('games') }} />
       )}
     </div>
   )

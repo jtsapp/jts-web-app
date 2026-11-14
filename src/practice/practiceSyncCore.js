@@ -19,6 +19,7 @@ import {
   VERBS_KEY,
   LISTENCHOOSE_KEY,
   NUMBERS_KEY,
+  CHESS_KEY,
   LISTEN_KEY,
   PREPOSITIONS_KEY,
   CARTOONS_KEY,
@@ -38,6 +39,7 @@ import {
   VERBS_PROGRESS_EVENT,
   LISTENCHOOSE_PROGRESS_EVENT,
   NUMBERS_PROGRESS_EVENT,
+  CHESS_PROGRESS_EVENT,
   LISTEN_PROGRESS_EVENT,
   PREPOSITIONS_PROGRESS_EVENT,
   CARTOONS_PROGRESS_EVENT,
@@ -127,6 +129,10 @@ export function applyHydratedState(serverState, { setItem, dispatch, getItem = (
   if (serverState.numbers && typeof serverState.numbers === 'object') {
     setItem(NUMBERS_KEY, JSON.stringify(serverState.numbers))
     dispatch(NUMBERS_PROGRESS_EVENT)
+  }
+  if (serverState.chess && typeof serverState.chess === 'object') {
+    setItem(CHESS_KEY, JSON.stringify(serverState.chess))
+    dispatch(CHESS_PROGRESS_EVENT)
   }
   if (serverState.listen && typeof serverState.listen === 'object') {
     setItem(LISTEN_KEY, JSON.stringify(serverState.listen))

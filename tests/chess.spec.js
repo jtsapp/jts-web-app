@@ -1,9 +1,14 @@
 // tests/chess.spec.js
 import { test, expect } from '@playwright/test'
+import { loginAsStudent } from './helpers/login.js'
+import { openSection } from './helpers/nav.js'
 
-// Шахматы (?screen=chess). Тесты гостевые: прогресс гостя живёт в черновике хранилища на устройстве.
+// Шахматы (?screen=chess). Гостю кабинет закрыт (lib/guestLogin.js), поэтому входим учеником; бэкенд подменён
+// пустыми ответами, прогресс раздела живёт в черновике хранилища на устройстве.
 // Движок подменён функцией «позиция → ход» (window.__jtsFakeChessEngine): ходы бота задаёт сценарий теста,
 // партия проходит за секунды. Настоящий Stockfish проверяет последний тест — один ход.
+
+test.beforeEach(async ({ page }) => { await loginAsStudent(page) })
 
 const sq = (page, name) => page.locator(`.ch-board [data-square="${name}"]`)
 const root = (page) => page.locator('.ch')
@@ -133,4 +138,11 @@ test('настоящий Stockfish поднимается и отвечает х
   await sq(page, 'e2').click()
   await sq(page, 'e4').click()
   await expect(page.locator('.ch-moves [data-ply]')).toHaveCount(2, { timeout: 20000 })
+})
+
+test('пункт меню «Шахматы» открывает раздел', async ({ page }) => {
+  await page.goto('/?screen=home')
+  await openSection(page, 'Шахматы')
+  await expect(root(page)).toBeVisible({ timeout: 30000 })
+  await expect(page.locator('.ch-dialog[data-dialog="new"]')).toBeVisible()
 })

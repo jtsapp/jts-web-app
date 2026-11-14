@@ -1,6 +1,9 @@
+// @vitest-environment jsdom
 // src/screens/chess/Board.test.jsx
-import { describe, it, expect, vi } from 'vitest'
-import { render, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+
+afterEach(cleanup)
+import { render, fireEvent, cleanup } from '@testing-library/react'
 import Board, { squaresFor } from './Board.jsx'
 import { PieceSprite } from './pieces.jsx'
 import { chessT, CHESS_LANGS, CHESS_DICTS } from './strings.js'
