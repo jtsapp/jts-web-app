@@ -122,6 +122,12 @@ export const DESTINATIONS = [
     name: { ru: 'Punctuation World (пунктуация)', kk: 'Punctuation World', en: 'Punctuation World' },
     about: 'пунктуация английского A0–C2 (вкладка «Грамматика»): 20 страниц-уроков на пяти островах — знак, его работа, когда и как ставить, — и после каждой игра-приключение Декстера в семь стадий',
   },
+  // Parts of Speech World тоже с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'partsofspeech', nav: 'partsofspeech', screen: 'partsofspeech',
+    name: { ru: 'Parts of Speech World (части речи)', kk: 'Parts of Speech World', en: 'Parts of Speech World' },
+    about: 'части речи английского A0–C2 (вкладка «Грамматика», группа «Тренажёры»): карта мира из девяти островов, 16 уроков с объяснением и упражнениями — существительные, местоимения, детерминативы, глаголы, прилагательные, наречия, предлоги, союзы, — и 14 квестов-расследований «Quests»',
+  },
   {
     id: 'reading', nav: 'reading', screen: 'reading',
     name: { ru: 'Чтение: тексты', kk: 'Оқылым: мәтіндер', en: 'Reading texts' },

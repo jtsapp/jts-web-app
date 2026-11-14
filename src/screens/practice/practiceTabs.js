@@ -23,8 +23,9 @@ export const SKILLS = [
     key: 'grammarGames',
     sub: 'practice.skillSub.grammarGames',
     groups: [
-      // Tenses World и Punctuation World (10.11.2026) — тренажёры рядом с темами, сначала времена.
-      { title: 'practice.group.trainers', cards: ['topics', 'tenses', 'punctuation'] },
+      // Tenses World и Punctuation World (10.11.2026) — тренажёры рядом с темами, сначала времена; Parts of Speech
+      // World (14.11.2026) — следом.
+      { title: 'practice.group.trainers', cards: ['topics', 'tenses', 'punctuation', 'partsofspeech'] },
       {
         title: 'practice.group.games',
         sub: 'practice.group.gamesSub',

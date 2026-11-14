@@ -6,6 +6,9 @@
     "arcade": [
       "arcade"
     ],
+    "birge": [
+      "birge"
+    ],
     "booth": [
       "исключение: аккаунт класса (вход в урок с общего компьютера), не ученический кабинет"
     ],
@@ -146,6 +149,9 @@
     ],
     "otp": [
       "registration"
+    ],
+    "partsofspeech": [
+      "partsofspeech"
     ],
     "phone": [
       "registration"
@@ -438,6 +444,11 @@
       "screen": "prizes"
     },
     {
+      "key": "birge",
+      "label": "Birge",
+      "screen": "birge"
+    },
+    {
       "key": "feedback",
       "label": "Feedback",
       "screen": "feedback"
@@ -587,6 +598,10 @@
           "title": "Punctuation World"
         },
         {
+          "id": "partsofspeech",
+          "title": "Parts of Speech World"
+        },
+        {
           "id": "listening",
           "title": "Тренируй Listening в мини-игре"
         },
@@ -693,6 +708,10 @@
     {
       "id": "punctuation",
       "screen": "punctuation"
+    },
+    {
+      "id": "partsofspeech",
+      "screen": "partsofspeech"
     },
     {
       "id": "reading",
@@ -821,7 +840,7 @@
     },
     "placement": {
       "title": "Тест уровня",
-      "hash": "12qst29"
+      "hash": "1fyzq7x"
     },
     "level": {
       "title": "Уровень английского и звания",
@@ -829,7 +848,7 @@
     },
     "home": {
       "title": "Главная",
-      "hash": "1xuha7h"
+      "hash": "ww37o1"
     },
     "course-map": {
       "title": "Повторение: карта курса",
@@ -935,6 +954,10 @@
       "title": "Практика: Tenses World",
       "hash": "1g3mjwo"
     },
+    "partsofspeech": {
+      "title": "Практика: Parts of Speech World",
+      "hash": "cbkx6c"
+    },
     "punctuation": {
       "title": "Практика: Punctuation World",
       "hash": "dg4gf3"
@@ -1002,6 +1025,10 @@
     "feedback": {
       "title": "Feedback — отзывы и жалобы",
       "hash": "10j2dfh"
+    },
+    "birge": {
+      "title": "Birge — сообщество студентов",
+      "hash": "p9r3du"
     },
     "contacts": {
       "title": "Официальные контакты",

@@ -87,6 +87,8 @@ const ENGINES = {
   tenses: (css) => expect(css).toContain(`.tws[lang="kk"] { --font-head: 'Inter'`),
   // Интерфейс английский, гарнитура — сайта через --punct-font; казахский перевод с lang="kk" — на Inter.
   punctuation: (css) => expect(css).toContain(`.punct [lang="kk"]{font-family:'Inter'`),
+  // Интерфейс английский, гарнитуры — сайта через --pos-font; казахский перевод с lang="kk" — на Inter.
+  partsofspeech: (css) => expect(css).toContain(`.posw [lang="kk"]{font-family:'Inter'`),
   // Интерфейс раздела — на языке приложения, гарнитура — сайта через --cw-font (в kk экран отдаёт Inter).
   cartoons: (css) => expect(css).toContain('--ct-font-text: var(--cw-font, inherit);'),
   // Интерфейс — на языке приложения, гарнитура — сайта через --gg-font (в kk экран отдаёт Inter).

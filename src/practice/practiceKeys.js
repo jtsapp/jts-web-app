@@ -115,6 +115,20 @@ export const PUNCTUATION_PREFS_KEY = 'jts_punctuation_prefs'
 // устройство (как недорешённые сетки Word Hunt): стадию, начатую на телефоне, на ноутбук не везём — сведение
 // воскрешало бы приключение, уже пройденное на другом устройстве. Чистится вместе с прогрессом.
 export const PUNCTUATION_RUN_KEY = 'jts_punctuation_run'
+// Прогресс Parts of Speech World: { acts: { <упражнение>: { score, total } }, cases: { <дело>: { done: [стадии],
+// first: { <стадия>: [верно с первой попытки, заданий] }, complete } }, clues: { <дело>: [подсказки сцены] },
+// seen: { <движок стадии>: 1 } } — четыре ключа прототипа (pos:progress, pos:g:prog, pos:g:clues, pos:g:seen) одним
+// объектом. Replace со сведением merge (partsofspeech/progress.js): решённое упражнение и стадия не «разрешаются»,
+// счёт — лучший с любого устройства.
+export const PARTSOFSPEECH_KEY = 'jts_partsofspeech_v1'
+// Язык перевода под английским текстом (en | kk | ru) — настройка устройства, не синкается, но чистится вместе с
+// прогрессом, как язык Tenses World.
+export const PARTSOFSPEECH_LANG_KEY = 'jts_partsofspeech_lang'
+// Вид { sound, labels } (звук игры, подписи частей речи над словами) — настройка устройства; чистится при выходе.
+export const PARTSOFSPEECH_PREFS_KEY = 'jts_partsofspeech_prefs'
+// Черновики заданий «Write your own» { <упражнение>: текст } — только устройство (как черновики Cartoon World):
+// это текст ученика, на общей машине он не должен достаться следующему аккаунту — чистится вместе с прогрессом.
+export const PARTSOFSPEECH_DRAFTS_KEY = 'jts_partsofspeech_drafts'
 // «Грамматика · игры»: звук ответов вкл/выкл ('0' — выключен) — настройка устройства, как громкость; не синкается и
 // при выходе не чистится. Звёзды раздела живут на бэкенде (/mobile/grammar-games/progress), ключа в хранилище нет.
 export const GRAMMAR_GAMES_SOUND_KEY = 'jts_grammar_games_sound'
@@ -146,6 +160,7 @@ export const WORDHUNT_PROGRESS_EVENT = 'wordhunt-progress'
 export const PRONUNCIATION_PROGRESS_EVENT = 'pronunciation-progress'
 export const TENSES_PROGRESS_EVENT = 'tenses-progress'
 export const PUNCTUATION_PROGRESS_EVENT = 'punctuation-progress'
+export const PARTSOFSPEECH_PROGRESS_EVENT = 'partsofspeech-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }

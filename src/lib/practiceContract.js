@@ -62,6 +62,11 @@ import { mergeReadingState } from './readingState.js'
 // Replace; клиент сводит с серверным (punctuation/progress.js merge): прочитанное остаётся прочитанным, звёзды —
 // лучшие. Недоигранное приключение сюда не идёт — только устройство. Area 'punctuation' бэкенду неизвестна — в
 // домашнюю работу раздел не отчитывается.
+// 'partsofspeech' — стейт-объект Parts of Speech World {acts, cases, clues, seen} (результаты упражнений юнитов,
+// решённые стадии дел игры, найденные подсказки сцен, показанные «How to play»). Replace; клиент сводит с серверным
+// (partsofspeech/progress.js merge): решённое остаётся решённым, счёт — лучший. Черновики письма, звук и подписи слов
+// сюда не идут — только устройство. Area 'partsofspeech' бэкенду неизвестна — в домашнюю работу раздел не
+// отчитывается.
 // 'vocabLearned' / 'vocabMisses' — «изучено» и «хуже запомненные» «Словаря»
 // ({scopes} и {words}, см. practiceKeys.js). Replace: снятая отметка и снятая
 // ошибка не должны воскресать от объединения.
@@ -87,6 +92,7 @@ export const PRACTICE_MODULES = [
   'pronunciation',
   'tenses',
   'punctuation',
+  'partsofspeech',
   'vocabLearned',
   'vocabMisses',
 ]

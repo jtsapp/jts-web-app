@@ -11,9 +11,10 @@
 //
 // Рисует настоящий браузер: текст и тени иначе не повторить. Итог — 480×296 с альфой, как у экспортов макета.
 //
-// Материалов Prepositions World, Pronunciation World, Tenses World, Punctuation World и Cartoon World в репозитории нет
-// (раздел живёт на бэкенде), поэтому выбранные картинки лежат в data/practice-cards/: prep-*, pron-* и punct-* — из
-// прототипов методиста (у Punctuation World строка банка — из фикстуры тестов, это настоящие данные), tenses-* —
+// Материалов Prepositions World, Pronunciation World, Tenses World, Punctuation World, Parts of Speech World и Cartoon
+// World в репозитории нет (раздел живёт на бэкенде), поэтому выбранные картинки лежат в data/practice-cards/: prep-*,
+// pron-*, punct-* и pos-* — из прототипов методиста (у Punctuation World строка банка, у Parts of Speech World задание
+// упражнения — из фикстуры тестов, это настоящие данные; pos-* режет scripts/partsofspeech/extract-card-images.js), tenses-* —
 // постеры видеоуроков прототипа (обрезаны до номера, названия и мини-карты времён), cartoon-* — превью видео каталога
 // с i.ytimg.com, saw/tree — рисунки из src/screens/arcade/ArcadeScene.jsx.
 //
@@ -163,6 +164,20 @@ function punctuation() {
   return fan(gap, photo(data('punct-world.webp'), dex), photo(data('punct-harbour.webp')))
 }
 
+// Части речи — задание первого упражнения («какой это класс слова?»), мир с четырьмя маскотами и остров глаголов.
+function partsofspeech() {
+  const { UNITS } = json('src/practice/partsofspeech/__fixtures__/bundle.json')
+  const act = must(UNITS[0].acts.find((a) => a.type === 'classify'), 'partsofspeech: упражнение classify')
+  const item = must(act.items.find((it) => it.s === 'They [[work]] in the city centre.'), 'partsofspeech: задание')
+  const word = must((item.s.match(/\[\[(.+?)\]\]/) || [])[1], 'partsofspeech: выделенное слово')
+  const wrong = must(act.options.find((o) => o !== item.a), 'partsofspeech: неверный класс')
+  // видна только левая половина задней карточки — слово и два класса на выбор
+  const ask = `<div class="f tx ch"><i class="lbl">Which class?</i><b>${word}</b><span class="opts"><b class="on">${item.a}</b><b>${wrong}</b></span></div>`
+  // маскоты стоят в правой части баннера — кадр сдвинут к ним
+  const world = `<div class="f"><img class="ph" style="object-position:92% 50%" src="${data('pos-hero.webp')}" alt=""></div>`
+  return fan(ask, world, photo(data('pos-foundry.webp')))
+}
+
 // ---------- Текстовые разделы: настоящие строки своих данных ----------
 
 function reading() {
@@ -290,6 +305,7 @@ const COVERS = {
   topics: ['grammar', topics],
   tenses: ['grammar', tenses],
   punctuation: ['grammar', punctuation],
+  partsofspeech: ['grammar', partsofspeech],
   speedReading: ['grammar', speedReading],
   listening: ['grammar', listening],
   words: ['grammar', words],

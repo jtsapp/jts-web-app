@@ -40,6 +40,7 @@ const AREA_NAMES = {
   pronunciation: 'Pronunciation World',
   tenses: 'Tenses World',
   punctuation: 'Punctuation World',
+  partsofspeech: 'Parts of Speech World',
 }
 
 // Куда звала Луна (destinations.js) → разделы Практики, заход в которые и есть
@@ -60,6 +61,7 @@ const TARGET_AREAS = {
   pronunciation: ['pronunciation'],
   tenses: ['tenses'],
   punctuation: ['punctuation'],
+  partsofspeech: ['partsofspeech'],
   reading: ['reading'],
   wordhunt: ['wordhunt'],
   writing: ['writing'],

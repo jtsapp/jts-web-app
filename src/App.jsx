@@ -131,6 +131,7 @@ const PrepositionsPage = lazyScreen(() => import('./screens/PrepositionsPage.jsx
 const PronunciationPage = lazyScreen(() => import('./screens/PronunciationPage.jsx'))
 const TensesPage = lazyScreen(() => import('./screens/TensesPage.jsx'))
 const PunctuationPage = lazyScreen(() => import('./screens/PunctuationPage.jsx'))
+const PartsOfSpeechPage = lazyScreen(() => import('./screens/PartsOfSpeechPage.jsx'))
 const GrammarGamesPage = lazyScreen(() => import('./screens/GrammarGamesPage.jsx'))
 const SpeedReadingPage = lazyScreen(() => import('./screens/SpeedReadingPage.jsx'))
 const CartoonsPage = lazyScreen(() => import('./screens/CartoonsPage.jsx'))
@@ -236,7 +237,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана
   'my-teacher', 'teacher-wizard', 'teacher-pick',
@@ -1932,6 +1933,7 @@ export default function App() {
     else if (key === 'pronunciation') { setPronunciationTarget(payload || null); setScreen('pronunciation') }
     else if (key === 'tenses') setScreen('tenses')
     else if (key === 'punctuation') setScreen('punctuation')
+    else if (key === 'partsofspeech') setScreen('partsofspeech')
     else if (key === 'grammar-games') { setGrammarGamesTarget(payload || null); setScreen('grammar-games') }
     else if (key === 'speed-reading') { setSpeedReadingTarget(payload || null); setScreen('speed-reading') }
     else if (key === 'cartoons') { setCartoonsTarget(payload || null); setScreen('cartoons') }
@@ -2809,6 +2811,17 @@ export default function App() {
     case 'punctuation':
       return (
         <PunctuationPage
+          {...sectionBack('grammarGames')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'partsofspeech':
+      return (
+        <PartsOfSpeechPage
           {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
