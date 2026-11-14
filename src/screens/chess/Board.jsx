@@ -136,7 +136,7 @@ export default function Board({ fen, board, orientation, playerColor, interactiv
       {arrow && (
         <svg className="ch-arrow" viewBox="0 0 8 8" aria-hidden="true">
           <defs>
-            <marker id="ch-arrow-head" markerWidth="4" markerHeight="4" refX="2.2" refY="2" orient="auto">
+            <marker id="ch-arrow-head" viewBox="0 0 4 4" markerWidth="2.6" markerHeight="2.6" refX="2.4" refY="2" orient="auto">
               <path d="M0 0L4 2L0 4z" />
             </marker>
           </defs>
