@@ -35,6 +35,9 @@ import { mergeReadingState } from './readingState.js'
 // лучший результат и «уже было» у боссов. Replace; клиент сводит с серверным
 // (numbersProgress.js merge), чтобы пройденное не терялось. Area 'numbers'
 // бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
+// 'chess' — стейт-объект шахмат {rating, games, current, history}: рейтинг ученика, недоигранная партия и
+// последние сыгранные. Replace; клиент сводит с серверным (chessProgress.js merge). Area 'chess' бэкенду
+// неизвестна — в домашнюю работу раздел не отчитывается.
 // 'listen' — стейт-объект Just to Listen {best: {<ключ прогона>: {ok, n, coins}}}.
 // Replace; клиент сводит с серверным (listenProgress.js merge), чтобы лучший
 // результат не терялся. Area 'listen' бэкенду неизвестна — в домашнюю работу
@@ -59,6 +62,11 @@ import { mergeReadingState } from './readingState.js'
 // Replace; клиент сводит с серверным (punctuation/progress.js merge): прочитанное остаётся прочитанным, звёзды —
 // лучшие. Недоигранное приключение сюда не идёт — только устройство. Area 'punctuation' бэкенду неизвестна — в
 // домашнюю работу раздел не отчитывается.
+// 'partsofspeech' — стейт-объект Parts of Speech World {acts, cases, clues, seen} (результаты упражнений юнитов,
+// решённые стадии дел игры, найденные подсказки сцен, показанные «How to play»). Replace; клиент сводит с серверным
+// (partsofspeech/progress.js merge): решённое остаётся решённым, счёт — лучший. Черновики письма, звук и подписи слов
+// сюда не идут — только устройство. Area 'partsofspeech' бэкенду неизвестна — в домашнюю работу раздел не
+// отчитывается.
 // 'vocabLearned' / 'vocabMisses' — «изучено» и «хуже запомненные» «Словаря»
 // ({scopes} и {words}, см. practiceKeys.js). Replace: снятая отметка и снятая
 // ошибка не должны воскресать от объединения.
@@ -76,6 +84,7 @@ export const PRACTICE_MODULES = [
   'verbs',
   'listenchoose',
   'numbers',
+  'chess',
   'listen',
   'prepositions',
   'cartoons',
@@ -83,6 +92,7 @@ export const PRACTICE_MODULES = [
   'pronunciation',
   'tenses',
   'punctuation',
+  'partsofspeech',
   'vocabLearned',
   'vocabMisses',
 ]

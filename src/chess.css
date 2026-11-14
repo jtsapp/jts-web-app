@@ -1,0 +1,147 @@
+/* Шахматы (?screen=chess). Префикс ch-. Доска и фигуры — свои, в характере chess.com: зелёная с кремовым. */
+.ch { --ch-light: #ebecd0; --ch-dark: #739552; --ch-last: rgba(255, 255, 51, 0.5); --ch-mark: rgba(0, 0, 0, 0.14); }
+
+.ch-sprite { position: absolute; }
+
+.ch-board {
+  position: relative; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+  width: 100%; aspect-ratio: 1; border-radius: 6px; overflow: hidden; user-select: none; touch-action: none;
+}
+.ch-sq { position: relative; display: block; padding: 0; border: 0; border-radius: 0; cursor: default; font: inherit; }
+.ch-sq--light { background: var(--ch-light); color: var(--ch-dark); }
+.ch-sq--dark { background: var(--ch-dark); color: var(--ch-light); }
+.ch-sq--last::before, .ch-sq--picked::before { content: ''; position: absolute; inset: 0; background: var(--ch-last); }
+.ch-sq--check::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle, rgba(255, 0, 0, 0.9) 0%, rgba(231, 0, 0, 0.6) 35%, rgba(169, 0, 0, 0) 80%); }
+.ch-sq:focus-visible { outline: 3px solid #1f6feb; outline-offset: -3px; z-index: 2; }
+.ch-sq[data-piece^='w'], .ch-sq[data-piece^='b'] { cursor: grab; }
+
+.ch-coord { position: absolute; font-size: clamp(9px, 1.5cqw, 13px); font-weight: 700; line-height: 1; pointer-events: none; }
+.ch-coord--rank { top: 3px; left: 4px; }
+.ch-coord--file { right: 4px; bottom: 3px; }
+
+/* Цвета фигур — в самой разметке набора Cburnett (белая заливка с чёрным контуром и наоборот). */
+.ch-piece { position: absolute; inset: 4%; width: 92%; height: 92%; pointer-events: none; }
+.ch-piece--drag { z-index: 5; cursor: grabbing; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.4)); }
+.ch-piece--arrived { animation: ch-arrive 150ms ease-out; }
+@keyframes ch-arrive { from { transform: translate(calc(var(--ch-dx) * 108.7%), calc(var(--ch-dy) * 108.7%)); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ch-piece--arrived { animation: none; } }
+
+/* Возможные ходы: точка на пустой клетке, кольцо на клетке со взятием. */
+.ch-mark { position: absolute; pointer-events: none; z-index: 3; }
+.ch-mark--dot { inset: 35%; border-radius: 50%; background: var(--ch-mark); }
+.ch-mark--ring { inset: 0; border-radius: 50%; border: 0.55em solid var(--ch-mark); font-size: clamp(8px, 1.6cqw, 14px); }
+
+.ch-arrow { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4; }
+.ch-arrow line { stroke: rgba(21, 120, 27, 0.75); stroke-width: 0.17; stroke-linecap: round; }
+.ch-arrow path { fill: rgba(21, 120, 27, 0.75); }
+
+.ch-promo__veil { position: absolute; inset: 0; z-index: 6; border: 0; background: rgba(0, 0, 0, 0.25); }
+.ch-promo { position: absolute; z-index: 7; width: 12.5%; display: flex; flex-direction: column; background: #fff; border-radius: 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); overflow: hidden; }
+.ch-promo--top { top: 0; }
+.ch-promo--bottom { bottom: 0; flex-direction: column-reverse; }
+.ch-promo button { position: relative; aspect-ratio: 1; border: 0; background: transparent; cursor: pointer; }
+.ch-promo button:hover, .ch-promo button:focus-visible { background: #f0c36d; }
+
+.ch { display: flex; flex-direction: column; gap: 16px; padding: 24px 32px 32px; min-height: 100%; color: #1d1b20; }
+/* Справа сверху у кабинета своя группа «язык, колокольчик» (.learn__bell) поверх экрана — шапка раздела под неё не заходит. */
+.ch-head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-right: 190px; }
+.ch-head__title { margin: 0; font-size: 28px; font-weight: 800; }
+.ch-head__tools { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.ch-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: #f1edf9; }
+.ch-tabs__item { padding: 8px 16px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-weight: 700; color: #5b5670; cursor: pointer; }
+.ch-tabs__item.is-on { background: #fff; color: #6a35ff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.ch-tool { padding: 8px 12px; border: 1px solid #e3def0; border-radius: 10px; background: #fff; font: inherit; font-size: 13px; font-weight: 600; color: #5b5670; cursor: pointer; }
+.ch-tool[aria-pressed='true'] { color: #6a35ff; border-color: #cbb8ff; }
+
+.ch-game { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+/* Доска — квадрат по меньшей из сторон: ширине колонки и высоте окна без шапки. */
+.ch-stage { container-type: inline-size; width: min(100%, 720px, calc(100vh - 170px)); justify-self: center; }
+.ch-side { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 1px solid #e9e5f3; border-radius: 20px; background: #fff; max-height: min(720px, calc(100vh - 170px)); }
+
+.ch-player { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.ch-player__who { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.ch-player__who b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-player__who span { font-size: 12px; color: #7a758c; }
+.ch-player__taken { display: flex; align-items: center; flex-wrap: wrap; flex: 1; min-width: 0; }
+.ch-taken { position: static; width: 18px; height: 18px; margin-left: -5px; filter: none; }
+.ch-player__lead { margin-left: 4px; font-size: 12px; font-weight: 700; color: #7a758c; }
+.ch-clock { margin-left: auto; padding: 6px 12px; border-radius: 10px; background: #f1edf9; font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 800; color: #7a758c; }
+.ch-clock.is-on { background: #1d1b20; color: #fff; }
+.ch-clock.is-low { background: #ffe1de; color: #c8281b; }
+.ch-clock.is-on.is-low { background: #c8281b; color: #fff; }
+
+.ch-moves { flex: 1; min-height: 120px; margin: 0; padding: 0; list-style: none; overflow-y: auto; border-radius: 12px; background: #faf8fe; font-variant-numeric: tabular-nums; }
+.ch-moves li { display: grid; grid-template-columns: 40px 1fr 1fr; align-items: center; padding: 2px 8px; font-size: 14px; }
+.ch-moves li:nth-child(even) { background: #f3effb; }
+.ch-moves__no { color: #9a95ab; }
+.ch-moves__san { justify-self: start; padding: 3px 6px; border: 0; border-radius: 6px; background: transparent; font: inherit; font-weight: 700; color: inherit; }
+button.ch-moves__san { cursor: pointer; }
+.ch-moves__san.is-on { background: #6a35ff; color: #fff; }
+
+.ch-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ch-actions .ch-btn--main { grid-column: 1 / -1; }
+.ch-btn { padding: 10px 14px; border: 1px solid #e3def0; border-radius: 12px; background: #fff; font: inherit; font-size: 14px; font-weight: 700; color: #1d1b20; cursor: pointer; }
+.ch-btn:disabled { opacity: 0.45; cursor: default; }
+.ch-btn--main { border-color: #6a35ff; background: #6a35ff; color: #fff; }
+.ch-btn--ghost { border-color: transparent; background: transparent; color: #5b5670; }
+.ch-link { padding: 0; border: 0; background: none; font: inherit; font-weight: 700; color: #6a35ff; text-decoration: underline; cursor: pointer; }
+.ch-unrated { margin: 0; padding: 8px 10px; border-radius: 10px; background: #fff4dc; font-size: 12px; color: #8a5a00; }
+.ch-alert { margin: 0; padding: 10px 12px; border-radius: 10px; background: #ffe1de; font-size: 13px; color: #8f1d14; }
+
+.ch-dialog { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(20, 16, 34, 0.5); }
+.ch-dialog__card { width: min(420px, 100%); max-height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 24px; border-radius: 24px; background: #fff; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+.ch-dialog__title { margin: 0; font-size: 22px; font-weight: 800; }
+.ch-dialog__note, .ch-dialog__text { margin: 0; font-size: 14px; color: #5b5670; }
+.ch-dialog__text { font-size: 16px; color: #1d1b20; }
+.ch-dialog__error { margin: 0; font-size: 13px; color: #c8281b; }
+.ch-dialog__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.ch-dialog__actions--stack { flex-direction: column; }
+.ch-field__label { margin-top: 8px; font-size: 13px; font-weight: 700; color: #5b5670; }
+.ch-seg { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: #f1edf9; }
+.ch-seg__item { flex: 1; padding: 8px 10px; border: 0; border-radius: 9px; background: transparent; font: inherit; font-size: 14px; font-weight: 700; color: #5b5670; cursor: pointer; }
+.ch-seg__item.is-on { background: #fff; color: #6a35ff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.ch-seg--small .ch-seg__item { padding: 5px 9px; font-size: 12px; }
+.ch-level { display: flex; align-items: baseline; gap: 8px; }
+.ch-level b { font-size: 26px; font-weight: 800; }
+.ch-level span { font-size: 14px; color: #5b5670; }
+.ch-range { width: 100%; accent-color: #6a35ff; }
+.ch-result__rating { margin: 4px 0 0; font-size: 18px; font-weight: 800; }
+.ch-result__rating[data-unrated] { font-size: 13px; font-weight: 600; color: #8a5a00; }
+
+/* Планшет: панель уходит под доску. */
+@media (max-width: 1100px) {
+  .ch-game { grid-template-columns: 1fr; }
+  .ch-stage { width: min(100%, 640px); }
+  .ch-side { max-height: none; }
+  .ch-moves { max-height: 180px; }
+}
+
+/* Тёмная тема: доска и фигуры — игровое поле, остаются как есть; оболочка — токенами брендбука. */
+html[data-theme='dark'] .ch { color: var(--dk-text); }
+html[data-theme='dark'] .ch-side, html[data-theme='dark'] .ch-dialog__card, html[data-theme='dark'] .ch-btn, html[data-theme='dark'] .ch-tool { background: var(--dk-card); border-color: var(--dk-line); color: var(--dk-text); }
+html[data-theme='dark'] .ch-tabs, html[data-theme='dark'] .ch-seg, html[data-theme='dark'] .ch-moves, html[data-theme='dark'] .ch-clock { background: var(--dk-chip); color: var(--dk-text-2); }
+html[data-theme='dark'] .ch-moves li:nth-child(even) { background: var(--dk-raised); }
+html[data-theme='dark'] .ch-tabs__item, html[data-theme='dark'] .ch-seg__item, html[data-theme='dark'] .ch-player__who span, html[data-theme='dark'] .ch-dialog__note, html[data-theme='dark'] .ch-field__label, html[data-theme='dark'] .ch-level span, html[data-theme='dark'] .ch-btn--ghost { color: var(--dk-text-2); }
+html[data-theme='dark'] .ch-tabs__item.is-on, html[data-theme='dark'] .ch-seg__item.is-on { background: var(--dk-raised); color: var(--dk-acc-text); box-shadow: none; }
+html[data-theme='dark'] .ch-btn--main, html[data-theme='dark'] .ch-moves__san.is-on { background: var(--dk-acc); border-color: var(--dk-acc); color: var(--dk-on-acc); }
+html[data-theme='dark'] .ch-clock.is-on { background: var(--dk-text); color: var(--dk-page); }
+html[data-theme='dark'] .ch-clock.is-low, html[data-theme='dark'] .ch-alert { background: color-mix(in srgb, var(--dk-red) var(--dk-soft), var(--dk-card)); color: var(--dk-red); }
+html[data-theme='dark'] .ch-unrated { background: var(--dk-yellow-tint); color: var(--dk-yellow); }
+html[data-theme='dark'] .ch-dialog__text { color: var(--dk-text); }
+html[data-theme='dark'] .ch-link { color: var(--dk-acc-text); }
+html[data-theme='dark'] .ch-promo { background: var(--dk-raised); }
+
+.ch-empty { margin: 40px 0; text-align: center; font-size: 16px; color: #7a758c; }
+.ch-games { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.ch-games__row { width: 100%; display: grid; grid-template-columns: 110px 1.2fr 1.4fr 1fr 1fr 100px; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid #e9e5f3; border-radius: 16px; background: #fff; font: inherit; font-size: 14px; text-align: left; color: #5b5670; cursor: pointer; }
+.ch-games__row b { font-size: 15px; color: #1d1b20; }
+.ch-games__row--won b { color: #1c8a3a; }
+.ch-games__row--lost b { color: #c8281b; }
+.ch-games__row:hover { border-color: #cbb8ff; }
+.ch-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ch-review:focus { outline: none; }
+html[data-theme='dark'] .ch-games__row { background: var(--dk-card); border-color: var(--dk-line); color: var(--dk-text-2); }
+html[data-theme='dark'] .ch-games__row b { color: var(--dk-text); }
+html[data-theme='dark'] .ch-games__row--won b { color: var(--dk-green); }
+html[data-theme='dark'] .ch-games__row--lost b { color: var(--dk-red); }
+html[data-theme='dark'] .ch-empty { color: var(--dk-muted); }

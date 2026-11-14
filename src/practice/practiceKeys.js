@@ -57,6 +57,12 @@ export const NUMBERS_KEY = 'jts_numbers_done'
 // Язык перевода объяснений «Чисел» (en | kk | ru) — настройка устройства, не
 // синкается, но чистится вместе с прогрессом.
 export const NUMBERS_LANG_KEY = 'jts_numbers_lang'
+// Шахматы: { rating, games, current, history } — рейтинг ученика, недоигранная партия (JSON-строкой) и
+// последние 50 сыгранных. Replace со сведением merge (chessProgress.js).
+export const CHESS_KEY = 'jts_chess_v1'
+// Настройки шахмат на устройстве (язык раздела, звук, последний выбор цвета и времени) — не синкаются,
+// но чистятся вместе с прогрессом.
+export const CHESS_PREFS_KEY = 'jts_chess_prefs'
 // Лучшие результаты Just to Listen: { best: { <ключ прогона>: { ok, n, coins } } },
 // ключ — как в прототипе без префикса режима: A1-L3-0 (часть урока), A1-L4-R
 // (урок-повторение), A1-U2 (повторить юнит), A1-T (тест), business-T. Replace со
@@ -109,6 +115,20 @@ export const PUNCTUATION_PREFS_KEY = 'jts_punctuation_prefs'
 // устройство (как недорешённые сетки Word Hunt): стадию, начатую на телефоне, на ноутбук не везём — сведение
 // воскрешало бы приключение, уже пройденное на другом устройстве. Чистится вместе с прогрессом.
 export const PUNCTUATION_RUN_KEY = 'jts_punctuation_run'
+// Прогресс Parts of Speech World: { acts: { <упражнение>: { score, total } }, cases: { <дело>: { done: [стадии],
+// first: { <стадия>: [верно с первой попытки, заданий] }, complete } }, clues: { <дело>: [подсказки сцены] },
+// seen: { <движок стадии>: 1 } } — четыре ключа прототипа (pos:progress, pos:g:prog, pos:g:clues, pos:g:seen) одним
+// объектом. Replace со сведением merge (partsofspeech/progress.js): решённое упражнение и стадия не «разрешаются»,
+// счёт — лучший с любого устройства.
+export const PARTSOFSPEECH_KEY = 'jts_partsofspeech_v1'
+// Язык перевода под английским текстом (en | kk | ru) — настройка устройства, не синкается, но чистится вместе с
+// прогрессом, как язык Tenses World.
+export const PARTSOFSPEECH_LANG_KEY = 'jts_partsofspeech_lang'
+// Вид { sound, labels } (звук игры, подписи частей речи над словами) — настройка устройства; чистится при выходе.
+export const PARTSOFSPEECH_PREFS_KEY = 'jts_partsofspeech_prefs'
+// Черновики заданий «Write your own» { <упражнение>: текст } — только устройство (как черновики Cartoon World):
+// это текст ученика, на общей машине он не должен достаться следующему аккаунту — чистится вместе с прогрессом.
+export const PARTSOFSPEECH_DRAFTS_KEY = 'jts_partsofspeech_drafts'
 // «Грамматика · игры»: звук ответов вкл/выкл ('0' — выключен) — настройка устройства, как громкость; не синкается и
 // при выходе не чистится. Звёзды раздела живут на бэкенде (/mobile/grammar-games/progress), ключа в хранилище нет.
 export const GRAMMAR_GAMES_SOUND_KEY = 'jts_grammar_games_sound'
@@ -132,6 +152,7 @@ export const WORDS_PROGRESS_EVENT = 'words-progress'
 export const VERBS_PROGRESS_EVENT = 'verbs-progress'
 export const LISTENCHOOSE_PROGRESS_EVENT = 'listenchoose-progress'
 export const NUMBERS_PROGRESS_EVENT = 'numbers-progress'
+export const CHESS_PROGRESS_EVENT = 'chess-progress'
 export const LISTEN_PROGRESS_EVENT = 'listen-progress'
 export const PREPOSITIONS_PROGRESS_EVENT = 'prepositions-progress'
 export const CARTOONS_PROGRESS_EVENT = 'cartoons-progress'
@@ -139,6 +160,7 @@ export const WORDHUNT_PROGRESS_EVENT = 'wordhunt-progress'
 export const PRONUNCIATION_PROGRESS_EVENT = 'pronunciation-progress'
 export const TENSES_PROGRESS_EVENT = 'tenses-progress'
 export const PUNCTUATION_PROGRESS_EVENT = 'punctuation-progress'
+export const PARTSOFSPEECH_PROGRESS_EVENT = 'partsofspeech-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }

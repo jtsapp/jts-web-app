@@ -15,6 +15,7 @@ const LIGHT = {
   'speed-reading': () => import('../../src/practice/speed-reading/styles.js'),
   wordhunt: () => import('../../src/practice/wordhunt/styles.js'),
   'grammar-games': () => import('../../src/practice/grammar-games/styles.js'),
+  partsofspeech: () => import('../../src/practice/partsofspeech/styles.js'),
 }
 
 // Тёмный слой разделов в тени (10.11.2026): генерируется из светлых стилей раздела тем же правилом брендбука, что и

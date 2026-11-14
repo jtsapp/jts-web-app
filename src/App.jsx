@@ -131,6 +131,7 @@ const PrepositionsPage = lazyScreen(() => import('./screens/PrepositionsPage.jsx
 const PronunciationPage = lazyScreen(() => import('./screens/PronunciationPage.jsx'))
 const TensesPage = lazyScreen(() => import('./screens/TensesPage.jsx'))
 const PunctuationPage = lazyScreen(() => import('./screens/PunctuationPage.jsx'))
+const PartsOfSpeechPage = lazyScreen(() => import('./screens/PartsOfSpeechPage.jsx'))
 const GrammarGamesPage = lazyScreen(() => import('./screens/GrammarGamesPage.jsx'))
 const SpeedReadingPage = lazyScreen(() => import('./screens/SpeedReadingPage.jsx'))
 const CartoonsPage = lazyScreen(() => import('./screens/CartoonsPage.jsx'))
@@ -210,6 +211,7 @@ const ServicesPage = lazyScreen(() => import('./screens/ServicesPage.jsx'))
 const AccountDeletedPage = lazyScreen(() => import('./screens/AccountDeletedPage.jsx'))
 const FeedbackCenter = lazyScreen(() => import('./feedback/FeedbackCenter.jsx'))
 const BirgePage = lazyScreen(() => import('./screens/BirgePage.jsx'))
+const ChessPage = lazyScreen(() => import('./screens/ChessPage.jsx'))
 const LessonWorkspacePage = lazyScreen(() => import('./screens/LessonWorkspacePage.jsx'))
 const SelfStudyLessonPage = lazyScreen(() => import('./screens/lessons/SelfStudyLessonPage.jsx'))
 const CourseCatalogPage = lazyScreen(() => import('./screens/CourseCatalogPage.jsx'))
@@ -235,7 +237,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана
   'my-teacher', 'teacher-wizard', 'teacher-pick',
@@ -243,6 +245,8 @@ const PERSISTABLE_SCREENS = new Set([
   'group', 'notifications', 'contracts',
   // Birge: открытую ветку экран держит в ?post= сам (birge/postParam.js), F5 возвращает в неё
   'birge',
+  // Шахматы: недоигранная партия живёт в прогрессе раздела, адресу хватает экрана
+  'chess',
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
@@ -1889,6 +1893,7 @@ export default function App() {
       setScreen('feedback')
     }
     // Birge: из уведомления — сразу в ветку, из меню — в ленту. Цель с меткой времени: экран уже открыт — он её увидит.
+    else if (key === 'chess') setScreen('chess')
     else if (key === 'birge') {
       setBirgeTarget({ postId: payload?.postId ? Number(payload.postId) : null, at: Date.now() })
       setScreen('birge')
@@ -1928,6 +1933,7 @@ export default function App() {
     else if (key === 'pronunciation') { setPronunciationTarget(payload || null); setScreen('pronunciation') }
     else if (key === 'tenses') setScreen('tenses')
     else if (key === 'punctuation') setScreen('punctuation')
+    else if (key === 'partsofspeech') setScreen('partsofspeech')
     else if (key === 'grammar-games') { setGrammarGamesTarget(payload || null); setScreen('grammar-games') }
     else if (key === 'speed-reading') { setSpeedReadingTarget(payload || null); setScreen('speed-reading') }
     else if (key === 'cartoons') { setCartoonsTarget(payload || null); setScreen('cartoons') }
@@ -2661,6 +2667,8 @@ export default function App() {
       return <TeacherPickPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} />
     case 'feedback':
       return <FeedbackCenter initialCategory={feedbackDraft?.category} initialDraft={feedbackDraft?.draft} initialFeedbackId={feedbackDraft?.feedbackId} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} token={token} onBack={() => goBack(() => setScreen('profile'))} />
+    case 'chess':
+      return <ChessPage userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'birge':
       return <BirgePage target={birgeTarget} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'practice':
@@ -2803,6 +2811,17 @@ export default function App() {
     case 'punctuation':
       return (
         <PunctuationPage
+          {...sectionBack('grammarGames')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'partsofspeech':
+      return (
+        <PartsOfSpeechPage
           {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
