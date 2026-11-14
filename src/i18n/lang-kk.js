@@ -8110,6 +8110,7 @@ const dict = {
     'shadowing.dev.fitDone': 'Созылды ×{k} — енді сөйлемдер бойынша таймингті нақтыла.',
     'birge.title': 'Not Just English',
     'birge.subtitle': 'Just to Study студенттерінің қауымдастығы',
+    'birge.teacher.badge': 'Мұғалім',
     'birge.soon.title': 'Бөлім жақында ашылады',
     'birge.soon.text': 'JTS студенттерінің қауымдастығын дайындап жатырмыз. Сәл кейінірек кіріңіз.',
     'birge.loading': 'Жүктеліп жатыр…',

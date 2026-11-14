@@ -20,6 +20,16 @@ export const isLive = (post) => post?.status === 'published'
 /** Жалоба — не на свой пост и только пока сервер её разрешает (canReport: уже жаловался — false). */
 export const canReport = (post) => Boolean(post && !post.mine && post.canReport)
 
+/**
+ * Плашка у имени автора. Учитель пишет и в студенческую ленту (спека v2 §2, решение владельца 14.11), а уровня у него нет
+ * (level = null) — вместо него «Преподаватель». Бейджа «Методист» нет: такой роли в бэкенде нет (§1). У студента —
+ * уровень, если он известен.
+ */
+export function authorTag(author) {
+  if (author?.role === 'TEACHER') return { key: 'birge.teacher.badge' }
+  return author?.level ? { text: author.level } : null
+}
+
 export function authorInitial(author) {
   const name = (author?.name || '').trim()
   return name ? Array.from(name)[0].toUpperCase() : '?'

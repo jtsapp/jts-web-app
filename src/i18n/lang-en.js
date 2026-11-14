@@ -8110,6 +8110,7 @@ const dict = {
     'shadowing.dev.fitDone': 'Stretched x{k} - now fine-tune timings per phrase.',
     'birge.title': 'Not Just English',
     'birge.subtitle': 'The Just to Study student community',
+    'birge.teacher.badge': 'Teacher',
     'birge.soon.title': 'This section opens soon',
     'birge.soon.text': 'We are getting the JTS student community ready. Check back a little later.',
     'birge.loading': 'Loading…',
