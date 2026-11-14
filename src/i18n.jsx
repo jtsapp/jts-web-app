@@ -1842,6 +1842,7 @@ const dict = {
     'rewards.kind.other': 'Другое',
     'nav.feedback': 'Feedback',
     'nav.birge': 'Birge',
+    'nav.chess': 'Шахматы',
     'section.closed.title': 'Этот раздел не входит в ваш тариф',
     'section.closed.text': 'Обратитесь к менеджеру — он подскажет, как подключить раздел.',
     'section.closed.home': 'На главную',
