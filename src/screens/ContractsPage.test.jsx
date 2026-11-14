@@ -92,12 +92,12 @@ describe('Договоры ученика', () => {
     await waitFor(()=>expect(api.preparePaperContract).toHaveBeenCalledWith('TOK',2,expect.objectContaining({iin:'040101500123',agreed:true})));
     expect(await screen.findByRole('button',{name:'← Назад'})).toBeTruthy();expect(api.requestContractCode).not.toHaveBeenCalled();
   });
-  it('requires a scan and confirmation before submission and shows the pending review',async()=>{
+  it('requires a scan and confirmation before submission and shows the scan accepted at once',async()=>{
     api.getPaperContract.mockResolvedValue({prepared:true,contract:tariff({number:'JTS-2026-1'}),prefill:{fullName:'Айдана Серикова',iin:'040101500123',phone:'77011234567'},tariffVariants:[],scan:null});
-    api.submitContractScan.mockResolvedValue({id:8,version:1,fileName:'signed.pdf',status:'REVIEW',signedOn:'2026-10-27'});draw();fireEvent.click(await within('contract-INDIVIDUAL_STANDARD','Открыть договор'));
-    const input=await screen.findByLabelText('Загрузить подписанный скан'),submit=screen.getByRole('button',{name:'Отправить скан на проверку'});expect(submit.disabled).toBe(true);
+    api.submitContractScan.mockResolvedValue({id:8,version:1,fileName:'signed.pdf',status:'APPROVED',signedOn:'2026-10-27',reviewer:'Принят автоматически'});draw();fireEvent.click(await within('contract-INDIVIDUAL_STANDARD','Открыть договор'));
+    const input=await screen.findByLabelText('Загрузить подписанный скан'),submit=screen.getByRole('button',{name:'Загрузить скан'});expect(submit.disabled).toBe(true);
     const file=new File(['pdf'],'signed.pdf',{type:'application/pdf'});fireEvent.change(input,{target:{files:[file]}});expect(submit.disabled).toBe(true);fireEvent.click(screen.getByLabelText(/Загружены все страницы/));fireEvent.click(submit);
-    await waitFor(()=>expect(api.submitContractScan).toHaveBeenCalledWith('TOK',2,[file],expect.any(String),true));expect((await screen.findByTestId('scan-status')).textContent).toContain('Скан на проверке');expect(api.signContract).not.toHaveBeenCalled();
+    await waitFor(()=>expect(api.submitContractScan).toHaveBeenCalledWith('TOK',2,[file],expect.any(String),true));expect((await screen.findByTestId('scan-status')).textContent).toContain('Скан принят');expect(screen.queryByText('Скан на проверке')).toBeNull();expect(api.signContract).not.toHaveBeenCalled();
   });
   it('collects several page photos in order and lets a wrong one be removed',async()=>{
     api.getPaperContract.mockResolvedValue({prepared:true,contract:tariff({number:'JTS-2026-1'}),prefill:null,tariffVariants:[],scan:null});
@@ -105,7 +105,7 @@ describe('Договоры ученика', () => {
     const input=await screen.findByLabelText('Загрузить подписанный скан'),photo=name=>new File(['jpg'],name,{type:'image/jpeg'});
     fireEvent.change(input,{target:{files:[photo('1.jpg'),photo('oops.jpg')]}});fireEvent.change(input,{target:{files:[photo('2.jpg')]}});
     const list=await screen.findByTestId('scan-files');expect(list.querySelectorAll('li').length).toBe(3);fireEvent.click(list.querySelectorAll('li')[1].querySelector('button'));
-    fireEvent.click(screen.getByLabelText(/Загружены все страницы/));fireEvent.click(screen.getByRole('button',{name:'Отправить скан на проверку'}));
+    fireEvent.click(screen.getByLabelText(/Загружены все страницы/));fireEvent.click(screen.getByRole('button',{name:'Загрузить скан'}));
     await waitFor(()=>expect(api.submitContractScan).toHaveBeenCalled());expect(api.submitContractScan.mock.calls[0][2].map(f=>f.name)).toEqual(['1.jpg','2.jpg']);
   });
   it('shows a returned scan reason and allows a corrected upload',async()=>{
