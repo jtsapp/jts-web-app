@@ -5,7 +5,7 @@
 
 .ch-board {
   position: relative; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
-  width: 100%; aspect-ratio: 1; border-radius: 6px; overflow: hidden; user-select: none; touch-action: none;
+  width: 100%; aspect-ratio: 1; --ch-r: 6px; user-select: none; touch-action: none;
 }
 .ch-sq { position: relative; display: block; padding: 0; border: 0; border-radius: 0; cursor: default; font: inherit; }
 .ch-sq--light { background: var(--ch-light); color: var(--ch-dark); }
@@ -13,7 +13,18 @@
 .ch-sq--last::before, .ch-sq--picked::before { content: ''; position: absolute; inset: 0; background: var(--ch-last); }
 .ch-sq--check::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle, rgba(255, 0, 0, 0.9) 0%, rgba(231, 0, 0, 0.6) 35%, rgba(169, 0, 0, 0) 80%); }
 .ch-sq:focus-visible { outline: 3px solid #1f6feb; outline-offset: -3px; z-index: 2; }
-.ch-sq[data-piece^='w'], .ch-sq[data-piece^='b'] { cursor: grab; }
+/* Доска не режет содержимое (взятая фигура выезжает за край), поэтому скругление — на угловых клетках. */
+.ch-sq:nth-child(1) { border-top-left-radius: var(--ch-r); }
+.ch-sq:nth-child(8) { border-top-right-radius: var(--ch-r); }
+.ch-sq:nth-child(57) { border-bottom-left-radius: var(--ch-r); }
+.ch-sq:nth-child(64) { border-bottom-right-radius: var(--ch-r); }
+.ch-sq::before { border-radius: inherit; }
+/* Рука — только на своих фигурах, палец — на клетке, куда можно пойти; пока тащат — «сжатая» рука везде. */
+.ch-sq--mine { cursor: grab; }
+.ch-sq--target { cursor: pointer; }
+.ch-board--dragging .ch-sq { cursor: grabbing; }
+/* Клетка под взятой фигурой: белая рамка, как на chess.com. */
+.ch-sq--over::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 0.3em rgba(255, 255, 255, 0.75); font-size: clamp(8px, 1.6cqw, 14px); pointer-events: none; }
 
 .ch-coord { position: absolute; font-size: clamp(9px, 1.5cqw, 13px); font-weight: 700; line-height: 1; pointer-events: none; }
 .ch-coord--rank { top: 3px; left: 4px; }
@@ -21,7 +32,7 @@
 
 /* Цвета фигур — в самой разметке набора Cburnett (белая заливка с чёрным контуром и наоборот). */
 .ch-piece { position: absolute; inset: 4%; width: 92%; height: 92%; pointer-events: none; }
-.ch-piece--drag { z-index: 5; cursor: grabbing; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.4)); }
+.ch-piece--drag { z-index: 5; will-change: transform; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.4)); }
 .ch-piece--arrived { animation: ch-arrive 150ms ease-out; }
 @keyframes ch-arrive { from { transform: translate(calc(var(--ch-dx) * 108.7%), calc(var(--ch-dy) * 108.7%)); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ch-piece--arrived { animation: none; } }
@@ -53,33 +64,56 @@
 .ch-tool { padding: 8px 12px; border: 1px solid #e3def0; border-radius: 10px; background: #fff; font: inherit; font-size: 13px; font-weight: 600; color: #5b5670; cursor: pointer; }
 .ch-tool[aria-pressed='true'] { color: #6a35ff; border-color: #cbb8ff; }
 
-.ch-game { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
-/* Доска — квадрат по меньшей из сторон: ширине колонки и высоте окна без шапки. */
-.ch-stage { container-type: inline-size; width: min(100%, 720px, calc(100vh - 170px)); justify-self: center; }
-.ch-side { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 1px solid #e9e5f3; border-radius: 20px; background: #fff; max-height: min(720px, calc(100vh - 170px)); }
 
-.ch-player { display: flex; align-items: center; gap: 10px; min-height: 44px; }
-.ch-player__who { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
-.ch-player__who b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ch-player__who span { font-size: 12px; color: #7a758c; }
-.ch-player__taken { display: flex; align-items: center; flex-wrap: wrap; flex: 1; min-width: 0; }
-.ch-taken { position: static; width: 18px; height: 18px; margin-left: -5px; filter: none; }
-.ch-player__lead { margin-left: 4px; font-size: 12px; font-weight: 700; color: #7a758c; }
-.ch-clock { margin-left: auto; padding: 6px 12px; border-radius: 10px; background: #f1edf9; font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 800; color: #7a758c; }
-.ch-clock.is-on { background: #1d1b20; color: #fff; }
-.ch-clock.is-low { background: #ffe1de; color: #c8281b; }
-.ch-clock.is-on.is-low { background: #c8281b; color: #fff; }
 
-.ch-moves { flex: 1; min-height: 120px; margin: 0; padding: 0; list-style: none; overflow-y: auto; border-radius: 12px; background: #faf8fe; font-variant-numeric: tabular-nums; }
-.ch-moves li { display: grid; grid-template-columns: 40px 1fr 1fr; align-items: center; padding: 2px 8px; font-size: 14px; }
-.ch-moves li:nth-child(even) { background: #f3effb; }
-.ch-moves__no { color: #9a95ab; }
-.ch-moves__san { justify-self: start; padding: 3px 6px; border: 0; border-radius: 6px; background: transparent; font: inherit; font-weight: 700; color: inherit; }
+
+/* Стол партии: тёмный, как игровая зона chess.com, и в светлой, и в тёмной теме — на белой странице доска
+   терялась (правка 15.11.2026). Полосы игроков — над доской и под ней, справа — ходы и кнопки. */
+.ch-game { --ch-size: max(320px, min(720px, calc(100vh - 262px))); display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: stretch; padding: 16px 20px; border-radius: 24px; background: #302e2b; color: #fff; }
+.ch-stage { container-type: inline-size; display: flex; flex-direction: column; gap: 8px; width: min(100%, var(--ch-size)); justify-self: center; }
+.ch-side { display: flex; flex-direction: column; gap: 12px; min-height: 0; max-height: calc(var(--ch-size) + 112px); padding: 14px; border-radius: 16px; background: #262522; }
+
+.ch-player { display: flex; align-items: center; gap: 10px; height: 48px; }
+.ch-player__ava { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 8px; }
+.ch-player__ava--w { background: #4b4947; }
+.ch-player__ava--b { background: #dedcd8; }
+.ch-player__king { position: static; inset: auto; width: 32px; height: 32px; }
+.ch-player__who { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.ch-player__name { display: flex; align-items: baseline; gap: 8px; line-height: 1.2; }
+.ch-player__name b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-player__name span { flex: none; font-size: 13px; color: #a7a6a2; }
+.ch-player__taken { display: flex; align-items: center; height: 18px; padding-left: 5px; }
+/* Чёрные фигуры на тёмном столе не видны без светлой каймы. */
+.ch-taken { position: static; inset: auto; width: 18px; height: 18px; margin-left: -5px; filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.7)); }
+.ch-player__lead { margin-left: 4px; font-size: 12px; font-weight: 700; color: #a7a6a2; }
+.ch-clock { flex: none; min-width: 96px; padding: 6px 12px; border-radius: 8px; background: #3d3b38; text-align: right; font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 800; color: #8b8987; }
+.ch-clock.is-on { background: #fff; color: #262522; }
+.ch-clock.is-low { background: #7a2a23; color: #ffb4ab; }
+.ch-clock.is-on.is-low { background: #d93a2d; color: #fff; }
+
+.ch-moves { flex: 1; min-height: 120px; margin: 0; padding: 0; list-style: none; overflow-y: auto; border-radius: 10px; background: #211f1d; font-variant-numeric: tabular-nums; }
+.ch-moves li { display: grid; grid-template-columns: 44px 1fr 1fr; align-items: center; padding: 3px 10px; font-size: 14px; color: #dcdbd8; }
+.ch-moves li:nth-child(even) { background: #2a2826; }
+.ch-moves__no { color: #8b8987; }
+.ch-moves__san { justify-self: start; padding: 3px 7px; border: 0; border-radius: 5px; background: transparent; font: inherit; font-weight: 700; color: inherit; }
 button.ch-moves__san { cursor: pointer; }
-.ch-moves__san.is-on { background: #6a35ff; color: #fff; }
+.ch-moves__san.is-on { background: #52504d; color: #fff; }
 
-.ch-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.ch-actions .ch-btn--main { grid-column: 1 / -1; }
+.ch-actions { display: flex; flex-direction: column; gap: 10px; }
+.ch-actions__row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ch-act { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding: 8px 2px; border: 0; border-radius: 10px; background: #3d3b38; font: inherit; font-size: 12px; font-weight: 700; color: #dcdbd8; cursor: pointer; }
+.ch-act span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-act:hover:not(:disabled) { background: #4b4947; color: #fff; }
+.ch-act:disabled { opacity: 0.4; cursor: default; }
+.ch-act__ico { width: 22px; height: 22px; }
+/* Три класса в селекторе — чтобы стол не перекрашивала тёмная тема оболочки (у неё .ch-btn с двумя). */
+.ch .ch-game .ch-btn { border-color: transparent; background: #3d3b38; color: #fff; }
+.ch .ch-game .ch-btn--play { padding: 14px; border-radius: 12px; background: #81b64c; box-shadow: 0 4px 0 #5d9948; font-size: 17px; font-weight: 800; }
+.ch .ch-game .ch-btn--play:hover { background: #93c85a; }
+.ch .ch-game .ch-unrated { background: #4a3d1c; color: #f2d48a; }
+.ch .ch-game .ch-alert { background: #5a2620; color: #ffc9c2; }
+.ch .ch-game .ch-link { color: #b9a2ff; }
+
 .ch-btn { padding: 10px 14px; border: 1px solid #e3def0; border-radius: 12px; background: #fff; font: inherit; font-size: 14px; font-weight: 700; color: #1d1b20; cursor: pointer; }
 .ch-btn:disabled { opacity: 0.45; cursor: default; }
 .ch-btn--main { border-color: #6a35ff; background: #6a35ff; color: #fff; }
@@ -110,22 +144,19 @@ button.ch-moves__san { cursor: pointer; }
 
 /* Планшет: панель уходит под доску. */
 @media (max-width: 1100px) {
-  .ch-game { grid-template-columns: 1fr; }
-  .ch-stage { width: min(100%, 640px); }
+  .ch-game { --ch-size: 640px; grid-template-columns: 1fr; }
   .ch-side { max-height: none; }
   .ch-moves { max-height: 180px; }
 }
 
-/* Тёмная тема: доска и фигуры — игровое поле, остаются как есть; оболочка — токенами брендбука. */
+/* Тёмная тема: доска, фигуры и стол партии — игровое поле, остаются как есть; оболочка — токенами брендбука. */
 html[data-theme='dark'] .ch { color: var(--dk-text); }
-html[data-theme='dark'] .ch-side, html[data-theme='dark'] .ch-dialog__card, html[data-theme='dark'] .ch-btn, html[data-theme='dark'] .ch-tool { background: var(--dk-card); border-color: var(--dk-line); color: var(--dk-text); }
-html[data-theme='dark'] .ch-tabs, html[data-theme='dark'] .ch-seg, html[data-theme='dark'] .ch-moves, html[data-theme='dark'] .ch-clock { background: var(--dk-chip); color: var(--dk-text-2); }
-html[data-theme='dark'] .ch-moves li:nth-child(even) { background: var(--dk-raised); }
-html[data-theme='dark'] .ch-tabs__item, html[data-theme='dark'] .ch-seg__item, html[data-theme='dark'] .ch-player__who span, html[data-theme='dark'] .ch-dialog__note, html[data-theme='dark'] .ch-field__label, html[data-theme='dark'] .ch-level span, html[data-theme='dark'] .ch-btn--ghost { color: var(--dk-text-2); }
+html[data-theme='dark'] .ch-dialog__card, html[data-theme='dark'] .ch-btn, html[data-theme='dark'] .ch-tool { background: var(--dk-card); border-color: var(--dk-line); color: var(--dk-text); }
+html[data-theme='dark'] .ch-tabs, html[data-theme='dark'] .ch-seg { background: var(--dk-chip); color: var(--dk-text-2); }
+html[data-theme='dark'] .ch-tabs__item, html[data-theme='dark'] .ch-seg__item, html[data-theme='dark'] .ch-dialog__note, html[data-theme='dark'] .ch-field__label, html[data-theme='dark'] .ch-level span, html[data-theme='dark'] .ch-btn--ghost { color: var(--dk-text-2); }
 html[data-theme='dark'] .ch-tabs__item.is-on, html[data-theme='dark'] .ch-seg__item.is-on { background: var(--dk-raised); color: var(--dk-acc-text); box-shadow: none; }
-html[data-theme='dark'] .ch-btn--main, html[data-theme='dark'] .ch-moves__san.is-on { background: var(--dk-acc); border-color: var(--dk-acc); color: var(--dk-on-acc); }
-html[data-theme='dark'] .ch-clock.is-on { background: var(--dk-text); color: var(--dk-page); }
-html[data-theme='dark'] .ch-clock.is-low, html[data-theme='dark'] .ch-alert { background: color-mix(in srgb, var(--dk-red) var(--dk-soft), var(--dk-card)); color: var(--dk-red); }
+html[data-theme='dark'] .ch-btn--main { background: var(--dk-acc); border-color: var(--dk-acc); color: var(--dk-on-acc); }
+html[data-theme='dark'] .ch-alert { background: color-mix(in srgb, var(--dk-red) var(--dk-soft), var(--dk-card)); color: var(--dk-red); }
 html[data-theme='dark'] .ch-unrated { background: var(--dk-yellow-tint); color: var(--dk-yellow); }
 html[data-theme='dark'] .ch-dialog__text { color: var(--dk-text); }
 html[data-theme='dark'] .ch-link { color: var(--dk-acc-text); }

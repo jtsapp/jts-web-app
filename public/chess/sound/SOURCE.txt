@@ -1,0 +1,8 @@
+Chess sounds: the "sfx" sound set of Lichess (lila), by Enigmahack (https://github.com/Enigmahack).
+License: GNU Affero General Public License v3 or later (AGPL-3.0-or-later) — see LICENSE.txt in this folder.
+
+Source: https://github.com/lichess-org/lila/tree/master/public/sound/sfx
+Taken at lila commit f4d2e47b97d2d8b5432941bf781ce82d9137a208, files unmodified, renamed to lower case:
+Move.mp3, Capture.mp3, Check.mp3, Victory.mp3, Defeat.mp3, Draw.mp3, LowTime.mp3, GenericNotify.mp3.
+
+The files are served as they are and are not part of the application bundle.

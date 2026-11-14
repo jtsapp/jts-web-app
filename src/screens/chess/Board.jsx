@@ -3,15 +3,19 @@
 
 // Доска. Правил не знает: позицию, допустимые ходы выбранной фигуры и колбэк хода получает пропсами —
 // поэтому та же доска показывает и живую партию, и разбор сыгранной (interactive = false).
-// Ход — перетаскиванием или двумя тапами; возможные ходы — точка на пустой клетке и кольцо на клетке
+// Ход — перетаскиванием или двумя нажатиями; возможные ходы — точка на пустой клетке и кольцо на клетке
 // со взятием (приём Lichess, код свой).
-import { useRef, useState } from 'react'
+//
+// Мышь (правка 15.11.2026, «управление слегка неудобное»): взятая фигура встаёт центром под указатель,
+// клетка под ней подсвечена рамкой, повторное нажатие на выбранную фигуру снимает выбор, правая кнопка
+// и Esc отменяют и выбор, и перетаскивание, свой ход нажатиями едет по доске так же, как ход соперника.
+import { useState } from 'react'
 import { Piece } from './pieces.jsx'
 
 const FILES = 'abcdefgh'
 const PROMOTIONS = ['q', 'r', 'b', 'n']
 // Сдвиг указателя, с которого нажатие считается перетаскиванием, а не тапом.
-const DRAG_START = 6
+const DRAG_START = 4
 
 export function squaresFor(orientation) {
   const files = orientation === 'w' ? [...FILES] : [...FILES].reverse()
@@ -22,21 +26,24 @@ export function squaresFor(orientation) {
 const pieceAt = (board, square) => board[8 - Number(square[1])][FILES.indexOf(square[0])]
 
 export default function Board({ fen, board, orientation, playerColor, interactive, movesFrom, onMove, lastMove, check, hint, animateLast, t }) {
-  const rootRef = useRef(null)
   // Выбор привязан к позиции: сходил бот или вернули ход — старый выбор недействителен сам, без эффекта.
   const [picked, setPicked] = useState(null) // { fen, square }
   const [promo, setPromo] = useState(null) // { fen, from, to }
-  const [drag, setDrag] = useState(null) // { from, startX, startY, x, y, moved }
+  // rect — рамка доски на момент нажатия; cx, cy — центр клетки, с которой взяли фигуру.
+  const [drag, setDrag] = useState(null) // { from, rect, cx, cy, startX, startY, x, y, moved, wasPicked }
+  // Ход, сделанный броском: фигура уже под указателем, ехать ей с прежней клетки незачем.
+  const [dropped, setDropped] = useState(null) // { from, to }
   const squares = squaresFor(orientation)
   const selected = picked && picked.fen === fen ? picked.square : null
   const asking = promo && promo.fen === fen ? promo : null
   const targets = selected ? movesFrom(selected) : []
   const colors = { w: t('white').toLowerCase(), b: t('black').toLowerCase() }
 
-  const tryMove = (from, to) => {
+  const tryMove = (from, to, byDrop) => {
     const move = movesFrom(from).find((m) => m.to === to)
     setPicked(null)
     if (!move) return false
+    setDropped(byDrop ? { from, to } : null)
     if (move.promotion) setPromo({ fen, from, to })
     else onMove(from, to, undefined)
     return true
@@ -44,19 +51,31 @@ export default function Board({ fen, board, orientation, playerColor, interactiv
 
   const press = (square) => {
     if (!interactive || asking) return false
-    if (selected && selected !== square && targets.some((m) => m.to === square)) { tryMove(selected, square); return false }
+    if (selected && selected !== square && targets.some((m) => m.to === square)) { tryMove(selected, square, false); return false }
     const piece = pieceAt(board, square)
     if (piece && piece.color === playerColor) { setPicked({ fen, square }); return true }
     setPicked(null)
     return false
   }
 
+  const cancel = () => {
+    setDrag(null)
+    setPicked(null)
+  }
+
   const onPointerDown = (square) => (e) => {
-    if (e.button > 0) return
+    // Правая кнопка — отмена (как в Lichess), а не ход.
+    if (e.button > 0) { cancel(); return }
+    const wasPicked = selected === square
     if (!press(square)) return
+    const root = e.currentTarget.parentElement
     // Захват на доске: дальше движение и отпускание приходят ей, где бы ни был указатель.
-    try { rootRef.current?.setPointerCapture(e.pointerId) } catch { /* указатель уже отпущен */ }
-    setDrag({ from: square, startX: e.clientX, startY: e.clientY, x: e.clientX, y: e.clientY, moved: false })
+    try { root.setPointerCapture(e.pointerId) } catch { /* указатель уже отпущен */ }
+    const cell = e.currentTarget.getBoundingClientRect()
+    setDrag({
+      from: square, rect: root.getBoundingClientRect(), cx: cell.left + cell.width / 2, cy: cell.top + cell.height / 2,
+      startX: e.clientX, startY: e.clientY, x: e.clientX, y: e.clientY, moved: false, wasPicked,
+    })
   }
 
   const onPointerMove = (e) => {
@@ -65,24 +84,28 @@ export default function Board({ fen, board, orientation, playerColor, interactiv
     setDrag({ ...drag, x: e.clientX, y: e.clientY, moved })
   }
 
-  const squareAt = (x, y) => {
-    const rect = rootRef.current.getBoundingClientRect()
-    const col = Math.floor(((x - rect.left) / rect.width) * 8)
-    const row = Math.floor(((y - rect.top) / rect.height) * 8)
+  const squareAt = (d) => {
+    const col = Math.floor(((d.x - d.rect.left) / d.rect.width) * 8)
+    const row = Math.floor(((d.y - d.rect.top) / d.rect.height) * 8)
     return col >= 0 && col < 8 && row >= 0 && row < 8 ? squares[row * 8 + col] : null
   }
 
   const onPointerUp = (e) => {
     if (!drag) return
-    const { from, moved } = drag
+    const d = { ...drag, x: e.clientX, y: e.clientY }
     setDrag(null)
-    if (!moved) return
-    const to = squareAt(e.clientX, e.clientY)
+    if (!d.moved) {
+      // Нажали на уже выбранную фигуру и не потащили — выбор снимается.
+      if (d.wasPicked) setPicked(null)
+      return
+    }
+    const to = squareAt(d)
     // Бросили мимо допустимой клетки — фигура возвращается и остаётся выбранной.
-    if (to && to !== from && !tryMove(from, to)) setPicked({ fen, square: from })
+    if (to && to !== d.from && !tryMove(d.from, to, true)) setPicked({ fen, square: d.from })
   }
 
   const onKeyDown = (square) => (e) => {
+    if (e.key === 'Escape') { cancel(); return }
     if (e.key !== 'Enter' && e.key !== ' ') return
     e.preventDefault()
     press(square)
@@ -99,25 +122,32 @@ export default function Board({ fen, board, orientation, playerColor, interactiv
   }
   const arrow = hint ? { a: center(hint.from), b: center(hint.to) } : null
   const promoIndex = asking ? squares.indexOf(asking.to) : -1
+  const dragging = drag && drag.moved ? drag : null
+  const over = dragging ? squareAt(dragging) : null
+  const byDrop = dropped && lastMove && dropped.from === lastMove.from && dropped.to === lastMove.to
 
   return (
-    <div ref={rootRef} className="ch-board" role="group" aria-label={t('board')} data-fen={fen} data-orientation={orientation}
-      data-assistant-noclick onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={() => setDrag(null)}>
+    <div className={`ch-board ${dragging ? 'ch-board--dragging' : ''}`} role="group" aria-label={t('board')} data-fen={fen} data-orientation={orientation}
+      data-assistant-noclick onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={() => setDrag(null)}
+      onContextMenu={(e) => e.preventDefault()}>
       {squares.map((square, i) => {
         const piece = pieceAt(board, square)
         const file = FILES.indexOf(square[0])
         const dark = (file + Number(square[1])) % 2 === 1
         const target = targets.find((m) => m.to === square)
-        const dragging = drag && drag.moved && drag.from === square
-        const arrived = animateLast && lastMove && lastMove.to === square
+        const held = dragging && dragging.from === square
+        const arrived = animateLast && !byDrop && lastMove && lastMove.to === square
         const cls = ['ch-sq', dark ? 'ch-sq--dark' : 'ch-sq--light']
         if (lastMove && (lastMove.from === square || lastMove.to === square)) cls.push('ch-sq--last')
         if (selected === square) cls.push('ch-sq--picked')
         if (check === square) cls.push('ch-sq--check')
-        // Приехавшая фигура соперника: смещение в клетках от клетки, откуда она шла.
+        if (over === square) cls.push('ch-sq--over')
+        if (interactive && piece && piece.color === playerColor) cls.push('ch-sq--mine')
+        if (target) cls.push('ch-sq--target')
+        // Приехавшая фигура: смещение в клетках от клетки, откуда она шла.
         const from = arrived ? squares.indexOf(lastMove.from) : -1
-        const style = dragging
-          ? { transform: `translate(${drag.x - drag.startX}px, ${drag.y - drag.startY}px)` }
+        const style = held
+          ? { transform: `translate(${dragging.x - dragging.cx}px, ${dragging.y - dragging.cy}px) scale(1.12)` }
           : arrived ? { '--ch-dx': (from % 8) - (i % 8), '--ch-dy': Math.floor(from / 8) - Math.floor(i / 8) } : undefined
         return (
           <button key={square} type="button" className={cls.join(' ')} data-square={square} data-piece={piece ? piece.color + piece.type : ''}
@@ -127,7 +157,7 @@ export default function Board({ fen, board, orientation, playerColor, interactiv
             {i >= 56 && <span className="ch-coord ch-coord--file" aria-hidden="true">{square[0]}</span>}
             {piece && (
               <Piece key={arrived ? `${square}-${fen}` : square} type={piece.type} color={piece.color} style={style}
-                className={dragging ? 'ch-piece--drag' : arrived ? 'ch-piece--arrived' : ''} />
+                className={held ? 'ch-piece--drag' : arrived ? 'ch-piece--arrived' : ''} />
             )}
             {target && <span className={`ch-mark ch-mark--${target.capture ? 'ring' : 'dot'}`} data-move={target.capture ? 'ring' : 'dot'} />}
           </button>
