@@ -1812,6 +1812,7 @@ const dict = {
     'rewards.kind.other': 'Other',
     'nav.feedback': 'Feedback',
     'nav.birge': 'Birge',
+    'nav.chess': 'Chess',
     'section.closed.title': 'This section is not part of your plan',
     'section.closed.text': 'Contact your manager — they will tell you how to add this section.',
     'section.closed.home': 'Back to home',

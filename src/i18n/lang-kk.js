@@ -1812,6 +1812,7 @@ const dict = {
     'rewards.kind.other': 'Басқа',
     'nav.feedback': 'Feedback',
     'nav.birge': 'Birge',
+    'nav.chess': 'Шахмат',
     'section.closed.title': 'Бұл бөлім сіздің тарифіңізге кірмейді',
     'section.closed.text': 'Менеджерге хабарласыңыз — ол бөлімді қалай қосуға болатынын айтады.',
     'section.closed.home': 'Басты бетке',

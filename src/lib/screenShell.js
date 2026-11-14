@@ -38,6 +38,7 @@ const NAV_OF = {
   contracts: 'contracts',
   group: 'group',
   birge: 'birge',
+  chess: 'chess',
   'my-teacher': 'my-teacher',
   'teacher-wizard': 'my-teacher',
 }
