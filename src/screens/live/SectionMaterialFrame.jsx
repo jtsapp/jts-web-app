@@ -608,14 +608,17 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
           делегирует разрешение родителя внутрь, и ученику не нужно нажимать
           ничего. fullscreen — так же, для встроенных в урок активностей вроде
           Wordwall: их кнопка «на весь экран» работает, только если право выдано
-          по всей цепочке рамок сверху вниз. */}
+          по всей цепочке рамок сверху вниз. microphone — так же, для блока «Раздел
+          Практики»: в уроке стоит рамка раздела кабинета (говорение, произношение,
+          шэдоуинг), и без права по всей цепочке браузер микрофон ей не даст. Простой
+          рамке выше (чужая ссылка, видео, PDF) микрофон не выдаётся. */}
       <iframe
         ref={iframeRef}
         key={documentKey}
         src={src}
         title={material.title}
         className="lw-material-iframe"
-        allow="autoplay; fullscreen"
+        allow="autoplay; fullscreen; microphone"
         onLoad={handleLoad}
       />
       {loader}

@@ -3,6 +3,7 @@
 // экрана, встал бы в каскад позже прежнего и не действовал бы до первого захода на этот экран, а все эти классы раньше были
 // на странице всегда. Стартовый CSS от этого не вырос.
 import './components/LessonFeedbackPrompt.css'
+import './components/embed.css'
 import './components/section-access-notice.css'
 import './components/tokenBlocks.css'
 import './screens/rewards.css'
@@ -47,7 +48,7 @@ import { learnerFormat } from './lib/assistant/format.js'
 import StudentSectionGate from './components/StudentSectionGate.jsx'
 import { useStudentExams } from './lib/useStudentExams.js'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile, saveGeProfile } from './api.js'
-import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, reportUnauthorized, endSessionOnServer, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
+import { saveToken, clearToken, loadToken, adoptEmbedToken, restoreSession, setSessionHooks, reportUnauthorized, endSessionOnServer, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
 import { screenNeedsLogin } from './lib/guestLogin.js'
@@ -65,6 +66,12 @@ import { openLandingHandoff } from './landing/handoffClient.js'
 import { captureAttribution, safeStorage } from './lib/attribution.js'
 import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
 import { practiceUnitTarget } from './lib/studentDeepLink.js'
+import { embedTarget } from './lib/embedTarget.js'
+import { embedNav } from './lib/embedNav.js'
+import { requestEmbedToken } from './lib/embedAuth.js'
+import { EmbedContext } from './lib/embedMode.js'
+import { API_BASE } from './lib/apiBase.js'
+import EmbedNotice from './components/EmbedNotice.jsx'
 import { pushNav, popNav, readNavStack, writeNavStack, placeOf, setResume, resumeOf, isReturnable, backLabelKey } from './lib/navStack.js'
 import { restoreScroll } from './lib/scrollRestore.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
@@ -357,11 +364,17 @@ export default function App() {
   // у вернувшегося пользователя мелькнёт экран входа. Стартовое значение true
   // одинаково на сервере и клиенте, так что гидратация не ломается.
   const [restoring, setRestoring] = useState(true)
+  // Кабинет открыт рамкой в уроке (`?embed=practice&card=…`, блок «Раздел Практики» конструктора): один раздел без
+  // оболочки, входа и уходов в другие разделы. Адрес встраивания не меняется за жизнь вкладки, поэтому читается раз.
+  const [embedded] = useState(() => typeof window !== 'undefined' && Boolean(embedTarget(window.location.search)))
+  // Куда вести после восстановления сессии; ведёт handleNav (эффект ниже), когда у него уже есть токен.
+  const [embedStart, setEmbedStart] = useState(null)
 
   useEffect(() => {
     let cancelled = false
     const searchParams = new URLSearchParams(window.location.search)
     const deepLink = searchParams.get('screen')
+    const embed = embedTarget(searchParams)
     // Пришёл с лендинга после заявки: в адресе код с именем и номером
     // (src/landing/handoff.js). Из адреса убираем сразу — ему незачем
     // оставаться в истории, закладках и на скриншотах.
@@ -560,10 +573,16 @@ export default function App() {
 
     // Без токена в localStorage restoreSession() не ходит в сеть и отдаёт null
     // синхронно — аноним не видит заметной паузы.
-    const hadToken = Boolean(loadToken())
+    // В рамке урока сессию даёт страница урока: её токен важнее того, что лежит в хранилище (там мог остаться другой
+    // человек). Токен живёт в памяти вкладки и в хранилище не пишется (session.js, adoptEmbedToken). Страница токена не
+    // дала (кабинет открыли по адресу рамки сам по себе) — остаётся сессия из хранилища, если она есть.
+    const handed = embed
+      ? requestEmbedToken({ apiOrigin: new URL(API_BASE).origin }).then((tok) => { if (tok) adoptEmbedToken(tok) })
+      : Promise.resolve()
+    const hadToken = !embed && Boolean(loadToken())
     // Чанк первого экрана просим сразу, параллельно с запросами сессии: иначе он пошёл бы только после них, отдельным шагом.
     const firstChunk = hadToken ? preloadScreen(deepLink || homeScreenFor({ token: loadToken() })) : undefined
-    restoreSession()
+    handed.then(() => restoreSession())
       .then(async (session) => {
         // Токен был, а сессии нет — restoreSession уже стёр мёртвый токен
         // (401 и рефреш не прошёл). Чистим хвосты прежнего ученика так же, как
@@ -626,8 +645,14 @@ export default function App() {
           setProfileId(profile.deviceId || null)
           if (profile.profession) setProfession(profile.profession)
         }
+        // Рамка урока: раздел карточки — или сообщение, если страница урока входа не дала. Ни регистрации, ни
+        // домашнего экрана, ни гейтов ученика в рамке нет.
+        if (embed) {
+          if (session) setEmbedStart(embedNav(embed))
+          setScreen(session ? 'embed' : 'embed-signin')
+        }
         // Ссылка из админки важнее сессии: студент должен задать пароль.
-        if (inviteToken) setScreen('complete-registration')
+        else if (inviteToken) setScreen('complete-registration')
         // Ученик без номера (Google-вход его не даёт) дальше не идёт, пока не укажет: восстановленная
         // сессия не должна обходить гейт, который он прошёл бы при входе.
         else if (session && session.role === 'STUDENT' && !session.phone && !session.boothAccount) {
@@ -1740,7 +1765,8 @@ export default function App() {
   // не на дефолтном экране роли (жалоба: во время живого урока F5 выбрасывал
   // на главную).
   useEffect(() => {
-    if (restoring) return
+    // В рамке урока адрес не трогаем: по нему же рамка откроет раздел после перезагрузки.
+    if (restoring || embedded) return
     // Само решение — чистой функцией в lib/screenUrlParams.js: там оно
     // проверяется тестами, а здесь остаётся только запись.
     const url = new URL(window.location.href)
@@ -1763,7 +1789,7 @@ export default function App() {
       }
     }
     if (changed || satLeft) window.history.replaceState(null, '', url)
-  }, [screen, restoring, liveLessonId, liveWorkspaceId, workspaceCardId, workspaceSource])
+  }, [embedded, screen, restoring, liveLessonId, liveWorkspaceId, workspaceCardId, workspaceSource])
 
   // «Известный урок» экрана класса — одно выражение на оба источника, а не два
   // разных по месту использования. boothLessonId — обычный случай (сеанс
@@ -1819,9 +1845,9 @@ export default function App() {
   // даёт BoothEntryPage смонтироваться и позвонить /enter даже на один кадр,
   // а этот эффект следом приводит screen в согласие с тем, что нарисовано.
   useEffect(() => {
-    if (restoring || !screenNeedsLogin(screen, token)) return
+    if (restoring || embedded || !screenNeedsLogin(screen, token)) return
     setScreen('welcome')
-  }, [restoring, screen, token, setScreen])
+  }, [embedded, restoring, screen, token, setScreen])
 
   useEffect(() => {
     if (boothAccount && !BOOTH_SCREENS.has(screen)) setScreen('booth')
@@ -1836,18 +1862,18 @@ export default function App() {
   // функцией, что решает домашний экран после входа, — не отдельным условием
   // здесь. Аккаунт класса разбирает страж выше: у него свой, более узкий набор.
   useEffect(() => {
-    if (boothAccount || !isTeacher(token)) return
+    if (embedded || boothAccount || !isTeacher(token)) return
     if (isStudentOnlyScreen(screen)) {
       setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))
     }
-  }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded, setScreen])
+  }, [embedded, boothAccount, screen, token, needsLevelTest, tutorOnboarded, setScreen])
 
   useEffect(() => {
-    if (restoring) return
+    if (restoring || embedded) return
     if ((!rewardsEnabled && isRewardsScreen(screen)) || (!isTeacher(token) && isStudentSectionHidden(screen))) {
       setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))
     }
-  }, [restoring, screen, token, boothAccount, needsLevelTest, tutorOnboarded, setScreen, rewardsEnabled])
+  }, [embedded, restoring, screen, token, boothAccount, needsLevelTest, tutorOnboarded, setScreen, rewardsEnabled])
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
@@ -2024,6 +2050,22 @@ export default function App() {
   useEffect(() => {
     handleNavRef.current = handleNav
   })
+  // Рамка урока: ведём в раздел карточки, когда сессия уже в состоянии (handleNav читает токен). Навигация раздел не
+  // открыла (он скрыт настройкой) — сообщение вместо вечной заглушки.
+  // Признак рамки — классом на корне: по нему стили прячут у экранов разделов свои «назад в Практику» (кнопка у каждого
+  // своя, уходить в рамке некуда).
+  useEffect(() => {
+    if (!embedded) return undefined
+    document.documentElement.classList.add('jts-embed')
+    return () => document.documentElement.classList.remove('jts-embed')
+  }, [embedded])
+  const embedStarted = useRef(false)
+  useEffect(() => {
+    if (restoring || !embedStart || !token || embedStarted.current) return
+    embedStarted.current = true
+    handleNavRef.current?.(embedStart.screen, embedStart.payload)
+    if (screenRef.current === 'embed') setScreen('embed-unavailable')
+  }, [restoring, embedStart, token, setScreen])
   useEffect(
     () =>
       onAssistantNavigate((target, payload) => {
@@ -2120,6 +2162,8 @@ export default function App() {
   // мини-игра Listening, «Слова в картинках», «Числа», Word Hunt и «Аркада» — во вкладке «Грамматика»;
   // «Скорочтение» с 10.11.2026 — во вкладке «Чтение».
   function sectionBack(skill) {
+    // В рамке урока уходить некуда: у экрана карточки нет «назад» в кабинет.
+    if (embedded) return {}
     return {
       onBack: () => goBack(() => handleNav('practice', skill ? { skill } : undefined)),
       backLabel: backLabel('practice'),
@@ -2202,7 +2246,8 @@ export default function App() {
   // key=screen: CSS-анимация .scr-in по-прежнему проигрывается заново на
   // каждый переход (fade + лёгкий подъём; отключается при
   // prefers-reduced-motion).
-  const view = boothAccount
+  // В рамке урока экран один — раздел карточки: ни класса, ни домашнего экрана роли, ни гейтов ученика.
+  const view = embedded ? screen : boothAccount
     ? (BOOTH_SCREENS.has(screen) ? screen : 'booth')
     // Ученический экран преподавателю не даём смонтировать даже на один кадр:
     // эффект-страж выше приведёт screen в согласие следующим тиком, но экран
@@ -2211,14 +2256,15 @@ export default function App() {
     : ((screen === 'booth' || (!rewardsEnabled && isRewardsScreen(screen)) || (!isTeacher(token) && isStudentSectionHidden(screen)) || (isTeacher(token) && isStudentOnlyScreen(screen)))
         ? homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded })
         : screen)
-  const page = <StudentSectionGate required={!!token && !boothAccount && !isTeacher(token)}
+  const page = <StudentSectionGate required={!embedded && !!token && !boothAccount && !isTeacher(token)}
     access={sectionAccess} exams={examTabs} render={() => renderScreen(view)}
     onRetry={() => refreshStudentSections(token)} active={view} userLevel={userLevel} userName={name}
     token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
   return (
     <LegalDocumentsGate key={userIdFromToken(token) || 'guest'} token={token}
-      required={!!token && !boothAccount && !isTeacher(token) && isLegalDocumentsScreen(view)}
+      required={!embedded && !!token && !boothAccount && !isTeacher(token) && isLegalDocumentsScreen(view)}
       onLogout={handleLogout}>
+    <EmbedContext.Provider value={embedded}>
     <MobileTabContext.Provider value={setMobileTab}>
       {page && (
         <div key={`${view}#${screenNonce}`} className="scr-in">
@@ -2231,11 +2277,13 @@ export default function App() {
           панель на каждом переходе пропадала): одна на приложение, как в мобильном приложении. Вкладку сообщает
           оболочка экрана (mobileTab.js); без оболочки панель прячет CSS (src/mobile/nav.css). Аккаунту класса
           разделы не положены. */}
-      {mobileTab !== null && token && !boothAccount && showsTabBar(view) && (
+      {!embedded && mobileTab !== null && token && !boothAccount && showsTabBar(view) && (
         <MobileTabBar active={mobileTab} token={token} onNav={handleNav} />
       )}
       {/* Поздравление живёт вне обёртки с key: иначе смена экрана
           перемонтировала бы его и окно моргало бы анимацией входа. */}
+      {/* В рамке урока ниже ничего нет: ни окон покупки и подбора учителя, ни помощника, ни присутствия на платформе. */}
+      {!embedded && <>
       <OptionalPart>
         {celebrate && <PurchaseSuccessModal onClose={() => setCelebrate(false)} />}
         {trialOffer && token && (
@@ -2273,7 +2321,9 @@ export default function App() {
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && (
         <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen proactive level={needsLevelTest ? null : userLevel} newcomer={needsLevelTest && accountCreatedAt != null && !isExistingStudent(accountCreatedAt)} format={learnerFormat({ demo: isDemoAccount, sections: sectionAccess?.status === 'ready' ? sectionAccess : null })} />
       )}</OptionalPart>
+      </>}
     </MobileTabContext.Provider>
+    </EmbedContext.Provider>
     </LegalDocumentsGate>
   )
 
@@ -2678,8 +2728,8 @@ export default function App() {
           userName={name}
           token={token}
           openTarget={practiceTarget}
-          tourKey={practiceTourKey}
-          onLeave={popNav(navStack, screen) ? () => goBack() : undefined}
+          tourKey={embedded ? null : practiceTourKey}
+          onLeave={!embedded && popNav(navStack, screen) ? () => goBack() : undefined}
           leaveLabel={backLabel('home')}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
@@ -3619,6 +3669,13 @@ export default function App() {
       }
       return workspacePage
     }
+    // Рамка урока: заглушка, пока навигация ведёт в раздел карточки, и сообщения, когда раздел показать нельзя.
+    case 'embed':
+      return <div className="screen scr-load"><div className="spinner" aria-label="Загрузка" /></div>
+    case 'embed-signin':
+      return <EmbedNotice kind="signin" />
+    case 'embed-unavailable':
+      return <EmbedNotice kind="unavailable" />
     default:
       // Неизвестный экран (опечатка в диплинке ?screen=, старая закладка, экран, которого больше нет) раньше давал
       // пустую страницу без единой кнопки. Уводим на «Главную», а без входа — на приветствие.
