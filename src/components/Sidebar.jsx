@@ -8,7 +8,6 @@ import ThemeToggle from './ThemeToggle.jsx'
 import { loadToken } from '../lib/session.js'
 import { groupNum } from '../lib/groupNum.js'
 import { useMenuItems } from './useMenuItems.js'
-import { NEW_ITEMS } from '../lib/navSections.js'
 import SectionAccessNotice from './SectionAccessNotice.jsx'
 import { ChevronRightIcon, CloseIcon, UserIcon, SettingsIcon } from './icons.jsx'
 
@@ -129,7 +128,6 @@ export default function Sidebar({
             >
               <i className="sb__ico" style={{ '--sb-ico': `url(/assets/home-v2/ico/${ico}.svg)` }} aria-hidden="true" />
               <span>{t(label)}</span>
-              {NEW_ITEMS.has(key) && <b className="sb__badge sb__badge--new">new</b>}
               {badges[key] > 0 && <b className="sb__badge">{badges[key]}</b>}
             </button>
           ))}
