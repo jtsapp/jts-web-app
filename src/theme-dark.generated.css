@@ -25029,6 +25029,13 @@ html[data-theme="dark"] .pr-sent b {
 html[data-theme="dark"] .pr-sent span {
     color: var(--dk-green)
 }
+html[data-theme="dark"] .pr-refused {
+    background: var(--dk-orange-tint, rgba(245, 158, 11, 0.14))
+}
+html[data-theme="dark"] .pr-refused b,
+html[data-theme="dark"] .pr-refused a {
+    color: var(--dk-orange, #f5b25c)
+}
 html[data-theme="dark"] .pr-load__text {
     color: var(--dk-muted)
 }
