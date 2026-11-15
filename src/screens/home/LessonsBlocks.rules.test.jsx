@@ -9,7 +9,8 @@ import { RulesButton, TeacherLessonsCard } from './LessonsBlocks.jsx'
 vi.mock('./useHomeData.js', () => ({ useLessonTopic: () => null }))
 
 describe('Правила обучения на «Главной»', () => {
-  it('кнопка открывает «Уроки» на вкладке «Правила»', () => {
+  it('кнопка открывает «Уроки» на вкладке «Правила» — с начала, а не на прокрутке «Главной»', () => {
+    window.scrollTo = vi.fn()
     const onNav = vi.fn()
     render(
       <I18nProvider>
@@ -19,6 +20,7 @@ describe('Правила обучения на «Главной»', () => {
     expect(screen.getByText('Перенос, отмена, заморозка')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /Правила обучения/ }))
     expect(onNav).toHaveBeenCalledWith('lessons', { tab: 'rules' })
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 0)
   })
 
   it('стоит в «Уроках с преподавателем»', () => {

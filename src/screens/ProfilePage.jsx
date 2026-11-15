@@ -16,6 +16,7 @@ import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrent
 import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
 import { useStudentTokens } from '../practice/practiceTokens.js'
+import { openRules } from './lessons/rules/openRules.js'
 import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from '../lib/profileAvatar.js'
 import { shrinkImage } from '../lib/shrinkImage.js'
 import { legalDocumentUrl } from '../lib/legalDocuments.js'
@@ -425,7 +426,7 @@ export default function ProfilePage({
   const showLevelTest = !!onLevelTest && !(ieltsAccount && levelUnknown)
   const studyRows = [
     ...(showLevelTest ? levelRows : []),
-    ...(isTeacher(token) ? [] : [{ key: 'rules', icon: <PfDocIcon />, title: t('profile.rules'), onClick: () => onNav?.('lessons', { tab: 'rules' }) }]),
+    ...(isTeacher(token) ? [] : [{ key: 'rules', icon: <PfDocIcon />, title: t('profile.rules'), onClick: () => openRules(onNav) }]),
   ]
 
   // «Аккаунт»: профиль, язык, вид и настройки (подсказки Луны, звук уведомлений).
@@ -530,7 +531,7 @@ export default function ProfilePage({
           onLevelTest={onLevelTest}
           progress={{ value, remaining }}
           // «Правила школы» (ТЗ 5.8) — ученику; ведут во вкладку «Правила» «Уроков», как на компьютере.
-          onRules={isTeacher(token) ? null : () => onNav?.('lessons', { tab: 'rules' })}
+          onRules={isTeacher(token) ? null : () => openRules(onNav)}
           ieltsRows={ieltsRows}
           blocks={blocks}
           // Без истории (диплинк, F5) «назад» ведёт во вкладку «Сервисы»: профиль открывается оттуда.

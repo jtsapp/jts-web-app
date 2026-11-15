@@ -4,6 +4,7 @@ import { dayMonth, weekdayLong, weekdayShort } from '../../lib/localDate.js'
 import { plural } from '../../lib/plural.js'
 import { SUPPORT_WHATSAPP_URL } from '../../lib/support.js'
 import { canOpenLesson, dayLabelKey, isLessonLive, lessonTimeRange, parseLessonDate } from '../schedule/lessonFormat.js'
+import { openRules } from '../lessons/rules/openRules.js'
 import { nextCourseTest, nextLesson, teacherHomework, weekDays } from './homeBlocks.js'
 import { useLessonTopic } from './useHomeData.js'
 
@@ -153,7 +154,7 @@ function TeacherHomework({ items, state, onRetry, onNav }) {
 export function RulesButton({ onNav }) {
   const { t } = useI18n()
   return (
-    <button type="button" className="hm-tl__rules" data-testid="home-rules" onClick={() => onNav?.('lessons', { tab: 'rules' })}>
+    <button type="button" className="hm-tl__rules" data-testid="home-rules" onClick={() => openRules(onNav)}>
       <Plate ico="assignment" />
       <span className="hm-blk__rowText">
         <b className="hm-blk__rowTitle">{t('home.tl.rules')}</b>

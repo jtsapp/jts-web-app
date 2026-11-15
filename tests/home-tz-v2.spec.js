@@ -245,9 +245,13 @@ test('телефон — прежние карточки по макету пр�
 test('«Правила обучения» с «Главной» открывают вкладку «Правила» в «Уроках» (ТЗ 5.4)', async ({ page }) => {
   await setup(page, { format: 'teacher' })
   await page.goto('/?screen=home')
-  await page.getByTestId('home-rules').click({ timeout: 20000 })
+  await page.getByTestId('home-rules').waitFor({ timeout: 20000 })
+  // переход прокрутку не сбрасывает — правила должны открыться с начала, а не на высоте «Главной»
+  await page.evaluate(() => window.scrollTo(0, 500))
+  await page.getByTestId('home-rules').click()
   await expect(page.getByRole('heading', { name: 'Правила обучения' })).toBeVisible({ timeout: 20000 })
   await expect(page.locator('.ls-tab--active')).toHaveText('Правила')
+  expect(await page.evaluate(() => window.scrollY)).toBeLessThan(50)
 })
 
 test('Self Study и демо — кнопки правил на «Главной» нет', async ({ page }) => {

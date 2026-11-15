@@ -41,6 +41,8 @@ const tile = (key) => document.querySelector(`.pf-stat[data-stat="${key}"]`)
 beforeEach(() => {
   vi.clearAllMocks()
   phone.value = false
+  // правила открываются с начала документа (openRules поднимает окно); у jsdom scrollTo нет
+  window.scrollTo = vi.fn()
 })
 
 describe('Профиль — группы и правила (ТЗ 5.8)', () => {
