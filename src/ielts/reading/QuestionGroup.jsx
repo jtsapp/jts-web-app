@@ -237,13 +237,15 @@ export default function QuestionGroup({ group, entries, doc, run, mode, onAnswer
           )
         }
 
+        // В старых черновиках Listening букву Matching можно было ввести строчной или с пробелами.
+        const selected = group.type === 'matching' && typeof value === 'string' ? value.trim().toUpperCase() : value
         const head =
           mech === 'select' ? (
             <div className="ih-q__row">
               <span className="ih-q__num">{numLabel(e.numbers)}</span>
               <span className="ih-q__prompt ih-q__prompt--strong">{hl(`q:${e.id}`, it.prompt)}</span>
-              <span className={`ih-select ${value ? 'is-set' : ''}`}>
-                <select value={value || ''} disabled={locked} onChange={(ev) => set(ev.target.value)} aria-label={`${t('ieltsReading.answer')} ${numLabel(e.numbers)}`}>
+              <span className={`ih-select ${selectKeys.includes(selected) ? 'is-set' : ''}`}>
+                <select value={selected || ''} disabled={locked} onChange={(ev) => set(ev.target.value)} aria-label={`${t('ieltsReading.answer')} ${numLabel(e.numbers)}`}>
                   <option value="">{t('ieltsReading.choose')}</option>
                   {selectKeys.map((k) => <option key={k} value={k}>{k}</option>)}
                 </select>
