@@ -15,7 +15,7 @@ import GeGoalBanner from './home/GeGoalBanner.jsx'
 import GeStartHero, { GeFinishHero, StartHereCard } from './home/GeStartHero.jsx'
 import { usePlacementReport } from './home/PlacementReport.jsx'
 import GeTodayCard from './home/GeTodayCard.jsx'
-import { NearCard, TeacherLessonsCard } from './home/LessonsBlocks.jsx'
+import { NearCard, RulesButton, TeacherLessonsCard } from './home/LessonsBlocks.jsx'
 import { courseStep, dayProgress, homeFormat, teacherPlanToday } from './home/homeBlocks.js'
 import { useCourseProgress, useLessonsSummary } from './home/useHomeData.js'
 import TourSections from './home/TourSections.jsx'
@@ -673,6 +673,13 @@ export default function HomePage({
             ) : (
               <>
                 <ScheduleCard t={t} lang={lang} occurrences={occurrences} onOpenLesson={onOpenLesson} onNav={onNav} />
+                {/* «Правила обучения» (ТЗ 5.4) телефону — своей карточкой под расписанием: «Уроков с преподавателем» у
+                    него нет. Только формату с преподавателем: перенос и заморозка Self Study ни к чему. */}
+                {format === 'teacher' && (
+                  <section className="hm-card hm-rules-m">
+                    <RulesButton onNav={onNav} />
+                  </section>
+                )}
                 <HomeworkCard t={t} lang={lang} items={homework} state={token ? homeworkState : 'ready'} onRetry={retryHomework} onNav={onNav} />
               </>
             )}

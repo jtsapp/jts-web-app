@@ -142,6 +142,8 @@ for (const format of ['teacher', 'self', 'demo']) {
       await expect(block.locator('.hm-blk__row')).toHaveCount(3)
       await expect(block.locator('.hm-blk__st').first()).toHaveText('Просрочено')
       await expect(block.getByRole('button', { name: 'Открыть' })).toHaveCount(2)
+      // «📄 Правила обучения» (ТЗ 5.4, задача 190) — строкой в блоке; куда ведёт — отдельный тест ниже
+      await expect(block.getByTestId('home-rules')).toContainText('Перенос, отмена, заморозка')
       // значок меню — просроченные и заданные
       await expect(page.locator('.sb [data-nav="homework"] .sb__badge')).toHaveText('2')
     } else {
@@ -231,4 +233,31 @@ test('телефон — прежние карточки по макету пр�
   await expect(page.locator('.hm-hw')).toBeVisible()
   await expect(page.locator('.hm-tl')).toHaveCount(0)
   await expect(page.locator('.hm-skills__results')).toBeHidden()
+  // «Правила обучения» (ТЗ 5.4) — своей карточкой между расписанием и домашкой
+  const rules = page.locator('.hm-rules-m')
+  await expect(rules).toBeVisible()
+  const y = async (sel) => (await boxOf(page.locator(sel))).y
+  expect(await y('.hm-rules-m')).toBeGreaterThan(await y('.hm-sched'))
+  expect(await y('.hm-rules-m')).toBeLessThan(await y('.hm-hw'))
+  await shot(page, 'home-teacher-390-ru')
+})
+
+test('«Правила обучения» с «Главной» открывают вкладку «Правила» в «Уроках» (ТЗ 5.4)', async ({ page }) => {
+  await setup(page, { format: 'teacher' })
+  await page.goto('/?screen=home')
+  await page.getByTestId('home-rules').waitFor({ timeout: 20000 })
+  // переход прокрутку не сбрасывает — правила должны открыться с начала, а не на высоте «Главной»
+  await page.evaluate(() => window.scrollTo(0, 500))
+  await page.getByTestId('home-rules').click()
+  await expect(page.getByRole('heading', { name: 'Правила обучения' })).toBeVisible({ timeout: 20000 })
+  await expect(page.locator('.ls-tab--active')).toHaveText('Правила')
+  expect(await page.evaluate(() => window.scrollY)).toBeLessThan(50)
+})
+
+test('Self Study и демо — кнопки правил на «Главной» нет', async ({ page }) => {
+  await setup(page, { format: 'self' })
+  await page.goto('/?screen=home')
+  // баннер цели телефон прячет — ждём «Свободную практику», она есть везде
+  await expect(page.locator('.hm-prac')).toBeVisible({ timeout: 20000 })
+  await expect(page.getByTestId('home-rules')).toHaveCount(0)
 })

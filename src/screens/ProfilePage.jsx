@@ -3,7 +3,6 @@ import { isStudentSectionHidden } from '../config.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { UserIcon } from '../components/icons.jsx'
-import SkillRatings from '../components/SkillRatings.jsx'
 import { CheckCircleIcon, RadioOffIcon } from '../ielts/icons.jsx'
 import { useI18n, LANGS } from '../i18n.jsx'
 import {
@@ -16,8 +15,8 @@ import {
 import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser, getIeltsMe, getIeltsProfile, getSatMeCached, getSatProfile, saveSatProfile } from '../api.js'
 import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
-import { loadLevelSkillStatsRemote, readLocalLevelSkillStats } from '../practice/skillStats.js'
-import { skillLevel } from '../practice/skillStatsCore.js'
+import { useStudentTokens } from '../practice/practiceTokens.js'
+import { openRules } from './lessons/rules/openRules.js'
 import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from '../lib/profileAvatar.js'
 import { shrinkImage } from '../lib/shrinkImage.js'
 import { legalDocumentUrl } from '../lib/legalDocuments.js'
@@ -133,7 +132,10 @@ export default function ProfilePage({
   const [lessons, setLessons] = useState(0)
   const [levelProg, setLevelProg] = useState(null)
   const [toast, setToast] = useState('')
-  const [skillStats, setSkillStats] = useState(null)
+  // Баланс токенов — четвёртая плитка шапки (ТЗ v2.0, 5.8). Хук общий с блоком токенов «Главной» (один запрос на
+  // вкладку); учителю и там, где раздел токенов скрыт (прод), он отдаёт null — плитки тогда нет.
+  const tokens = useStudentTokens(token)
+  const tokenBalance = tokens?.period ? Number(tokens.period.balance) || 0 : null
   // IELTS: { me, overall } — блок «IELTS» профиля. Раньше его не было вовсе, и ученица IELTS видела в профиле только
   // «Тест на уровень · Не пройден» (жалоба 27.10.2026: «нет раздела, пишет, что нужно снова сдать тест»).
   const [ielts, setIelts] = useState(null)
@@ -242,20 +244,8 @@ export default function ProfilePage({
     }
   }, [token, userLevel])
 
-  // Рейтинг навыков — по заданиям текущего уровня, как «Сильные и слабые стороны» на «Главной» (ТЗ v2.0, 5.5):
-  // сперва локальный мираж (мгновенно, работает и для гостя), затем сервер (источник истины).
-  const skillCode = skillLevel(userLevel)
-  useEffect(() => {
-    setSkillStats(skillCode ? readLocalLevelSkillStats(skillCode) : {})
-    if (!token || !skillCode) return
-    let alive = true
-    loadLevelSkillStatsRemote(token, skillCode).then((s) => {
-      if (alive && s) setSkillStats(s)
-    })
-    return () => {
-      alive = false
-    }
-  }, [token, skillCode])
+  // Блока «Навыки» в Профиле больше нет (ТЗ v2.0, 5.5 и 5.8; задача 190): навыки — только на «Главной», в «Сильных и
+  // слабых сторонах». Две копии одного расчёта уже расходились (чтение 32 % на «Главной» и 73 % здесь).
 
   function showToast(msg) {
     setToast(msg)
@@ -428,12 +418,25 @@ export default function ProfilePage({
       ]
     : []
 
-  const personalization = [
+  // Пункты Профиля сгруппированы по ТЗ v2.0, 5.8 (задача 190): Учёба · Аккаунт · Помощь · Документы. Новых действий
+  // нет — те же строки, что были, только по местам; добавились «Правила школы».
+  //
+  // «Учёба»: тест на уровень и правила школы. ТЗ просит PDF правил на языке интерфейса, но файла у школы нет — правила
+  // живут вкладкой «Правила» в «Уроках» (ru/kk/en), туда же ведёт кнопка на «Главной». Вкладка есть только у ученика.
+  const showLevelTest = !!onLevelTest && !(ieltsAccount && levelUnknown)
+  const studyRows = [
+    ...(showLevelTest ? levelRows : []),
+    ...(isTeacher(token) ? [] : [{ key: 'rules', icon: <PfDocIcon />, title: t('profile.rules'), onClick: () => openRules(onNav) }]),
+  ]
+
+  // «Аккаунт»: профиль, язык, вид и настройки (подсказки Луны, звук уведомлений).
+  const account = [
     { key: 'edit', icon: <PfEditIcon />, title: t('profile.editProfile'), onClick: openEdit },
     { key: 'lang', icon: <PfGlobeIcon />, title: t('profile.language'), trailing: langLabel, onClick: () => setLangOpen(true) },
     { key: 'custom', icon: <PfGiftIcon />, title: t('profile.customization'), onClick: () => setCustomOpen(true) },
     // Луна — только у ученика: у преподавателя её окна нет (assistantAllowedOn).
     ...(isTeacher(token) ? [] : [{ key: 'luna', icon: <PfLunaIcon />, title: t('profile.luna'), trailing: t(`profile.luna.${lunaLevel}`), onClick: () => setLunaOpen(true) }]),
+    ...(!isTeacher(token) && isStudentSectionHidden('notifications') ? [] : [{ key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: openNotif }]),
   ]
 
   // «Служба поддержки» — страница «Контакты и реквизиты» (почта, телефон, WhatsApp школы). Раньше здесь было
@@ -442,13 +445,24 @@ export default function ProfilePage({
   const openSupport = () => window.open(`/info/contacts${lang === 'kk' ? '?lang=kz' : ''}`, '_blank', 'noopener')
   const openDoc = (kind) => window.open(legalDocumentUrl(kind, lang), '_blank')
 
-  const settings = [
-    ...(!isTeacher(token) && isStudentSectionHidden('notifications') ? [] : [{ key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: openNotif }]),
-    ...(!isTeacher(token) && isStudentSectionHidden('feedback') ? [] : [{ key: 'feedback', icon: <PfSupportIcon />, title: 'Обратная связь', onClick: () => onNav?.('feedback') }]),
-    { key: 'share', icon: <PfShareIcon />, title: t('profile.shareApp'), onClick: shareApp },
+  // «Помощь»: обратная связь, служба поддержки, поделиться. Документы — блок «Документы платформы» ниже
+  // (LegalDocumentsPanel: оферта, конфиденциальность, безопасность платежей); прежние строки «Политика
+  // конфиденциальности» и «Условия использования» открывали те же PDF и дублировали его.
+  const help = [
+    ...(!isTeacher(token) && isStudentSectionHidden('feedback') ? [] : [{ key: 'feedback', icon: <PfFeedbackIcon />, title: t('profile.feedback'), onClick: () => onNav?.('feedback') }]),
     { key: 'support', icon: <PfSupportIcon />, title: t('profile.support'), onClick: openSupport },
-    { key: 'privacy', icon: <PfShieldIcon />, title: t('profile.privacy'), onClick: () => openDoc('privacy') },
-    { key: 'terms', icon: <PfDocIcon />, title: t('profile.terms'), onClick: () => openDoc('offer') },
+    { key: 'share', icon: <PfShareIcon />, title: t('profile.shareApp'), onClick: shareApp },
+  ]
+
+  // Плитки шапки (ТЗ 5.8): уровень, дней подряд, уроков пройдено, токенов. Уровня нет у учителя и у ученика IELTS без
+  // теста General English; токенов — у учителя и там, где раздел скрыт.
+  const statTiles = [
+    ...(isTeacher(token) || (ieltsAccount && levelUnknown)
+      ? []
+      : [{ key: 'level', icon: <span className="pf-stat__glyph"><PfLevelIcon /></span>, value: levelUnknown ? '—' : (userLevel || '').toUpperCase(), label: t('profile.statLevel') }]),
+    { key: 'streak', icon: <img className="pf-stat__ic" src="/assets/world/streak.svg" alt="" />, value: streak, label: t('profile.statStreak') },
+    { key: 'lessons', icon: <span className="pf-stat__glyph"><PfCapIcon /></span>, value: lessons, label: t('profile.statLessons') },
+    ...(tokenBalance == null ? [] : [{ key: 'tokens', icon: <img className="pf-stat__ic" src="/assets/world/coin.png" alt="" />, value: new Intl.NumberFormat().format(tokenBalance), label: t('profile.statTokens') }]),
   ]
 
   // Окна «Кастомизация» и «Уведомления» — одно содержимое на обе раскладки: на компьютере окном, на телефоне шторкой.
@@ -516,7 +530,8 @@ export default function ProfilePage({
           showLevel={!(ieltsAccount && levelUnknown)}
           onLevelTest={onLevelTest}
           progress={{ value, remaining }}
-          skillStats={skillStats}
+          // «Правила школы» (ТЗ 5.8) — ученику; ведут во вкладку «Правила» «Уроков», как на компьютере.
+          onRules={isTeacher(token) ? null : () => openRules(onNav)}
           ieltsRows={ieltsRows}
           blocks={blocks}
           // Без истории (диплинк, F5) «назад» ведёт во вкладку «Сервисы»: профиль открывается оттуда.
@@ -616,25 +631,20 @@ export default function ProfilePage({
               </div>
             </div>
 
-            <div className="pf-stats">
-              <div className="pf-stat">
-                <img className="pf-stat__ic" src="/assets/world/streak.svg" alt="" />
-                <b>{streak}</b>
-                <span>{t('profile.statStreak')}</span>
-              </div>
-              <div className="pf-stat">
-                <span className="pf-stat__glyph"><PfCapIcon /></span>
-                <b>{lessons}</b>
-                <span>{t('profile.statLessons')}</span>
-              </div>
+            <div className="pf-stats" style={{ '--pf-stats': statTiles.length }}>
+              {statTiles.map((tile) => (
+                <div key={tile.key} className="pf-stat" data-stat={tile.key}>
+                  {tile.icon}
+                  <b>{tile.value}</b>
+                  <span>{tile.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
         {/* Подбор учителя (ТЗ 08 §2.10): «Мой учитель», «Мои интересы», «Настройки обучения» — сразу после плиток */}
         {blocks}
-
-        <SkillRatings stats={skillStats} loading={skillStats === null} level={skillCode} />
 
         {ieltsRows.length > 0 && (
           <>
@@ -647,21 +657,21 @@ export default function ProfilePage({
           </>
         )}
 
-        {onLevelTest && !(ieltsAccount && levelUnknown) && (
+        {studyRows.length > 0 && (
           <>
-            <div className="pf-label">{t('profile.sectionLevel')}</div>
-            <div className="pf-card">
-              {levelRows.map((it, i) => (
-                <SettingRow key={it.key} item={it} chip last={i === levelRows.length - 1} />
+            <div className="pf-label">{t('profile.sectionStudy')}</div>
+            <div className="pf-card" data-section="study">
+              {studyRows.map((it, i) => (
+                <SettingRow key={it.key} item={it} chip last={i === studyRows.length - 1} />
               ))}
             </div>
           </>
         )}
 
-        <div className="pf-label">{t('profile.sectionPersonalization')}</div>
-        <div className="pf-card">
-          {personalization.map((it, i) => (
-            <SettingRow key={it.key} item={it} chip last={i === personalization.length - 1} />
+        <div className="pf-label">{t('profile.sectionAccount')}</div>
+        <div className="pf-card" data-section="account">
+          {account.map((it, i) => (
+            <SettingRow key={it.key} item={it} chip last={i === account.length - 1} />
           ))}
         </div>
 
@@ -692,16 +702,15 @@ export default function ProfilePage({
           </>
         )}
 
-        {/* В кадре 4352:13735 значки «Настроек» лежат в таких же сиреневых
-            плитках, что и в «Персонализации» — плитка есть у каждой строки
-            списка, а не только у верхнего блока. */}
-        <div className="pf-label">{t('profile.sectionSettings')}</div>
-        <div className="pf-card">
-          {settings.map((it, i) => (
-            <SettingRow key={it.key} item={it} chip last={i === settings.length - 1} />
+        {/* В кадре 4352:13735 значки лежат в сиреневых плитках у каждой строки списка, а не только у верхнего блока. */}
+        <div className="pf-label">{t('profile.sectionHelp')}</div>
+        <div className="pf-card" data-section="help">
+          {help.map((it, i) => (
+            <SettingRow key={it.key} item={it} chip last={i === help.length - 1} />
           ))}
         </div>
 
+        {/* «Документы» (ТЗ 5.8) — блок «Документы платформы»: оферта, конфиденциальность, безопасность платежей. */}
         <LegalDocumentsPanel className="legal-profile" />
         <button className="pf-logout" onClick={onLogout}>
           <PfLogoutIcon />
@@ -979,14 +988,24 @@ function PfSupportIcon() {
     </svg>
   )
 }
-function PfShieldIcon() {
+// Два облачка реплик — «Обратная связь» (одно облачко уже у «Подсказок Луны»).
+function PfFeedbackIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
-      <path d="M12 3 5 6v5c0 4.5 3 8 7 9 4-1 7-4.5 7-9V6z" />
-      <path d="m9 12 2 2 4-4" />
+      <path d="M4 5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H9l-3 2.5V13H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+      <path d="M16 9h4a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1v2.5L16 17h-4a1 1 0 0 1-1-1v-1" />
     </svg>
   )
 }
+// Столбики — плитка «уровень» шапки.
+function PfLevelIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" {...S}>
+      <path d="M5 19v-5M10 19V10M15 19V7M20 19V4" />
+    </svg>
+  )
+}
+// Лист с текстом — «Правила школы».
 function PfDocIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" {...S}>

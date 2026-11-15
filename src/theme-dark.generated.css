@@ -25577,6 +25577,19 @@ html[data-theme="dark"] .hm-tl__none {
 html[data-theme="dark"] .hm-tl__pack {
     color: var(--hm-sec, #5a5a66)
 }
+html[data-theme="dark"] .hm-tl__rules {
+    border: 1px solid var(--hm-line, #e8e8ee);
+    background: transparent
+}
+html[data-theme="dark"] .hm-tl__rules:hover {
+    background: var(--hm-tile, #f8f8f8)
+}
+html[data-theme="dark"] .hm-tl__rules:focus-visible {
+    outline: 2px solid var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-tl__rulesChev {
+    background: var(--hm-mut, #8e8e99)
+}
 html[data-theme="dark"] .hm-tl__h3 {
     color: var(--hm-ink, #181818)
 }

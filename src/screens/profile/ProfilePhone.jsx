@@ -4,7 +4,6 @@ import AssetImage from '../../components/AssetImage.jsx'
 import { UserIcon } from '../../components/icons.jsx'
 import { useI18n, LANGS } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
-import { SKILLS, levelShare, shareBars } from '../../practice/skillStatsCore.js'
 import DeleteAccount from './DeleteAccount.jsx'
 import LunaMemory from './LunaMemory.jsx'
 import { MaskIcon } from './MaskIcon.jsx'
@@ -21,15 +20,6 @@ import { MaskIcon } from './MaskIcon.jsx'
  * «Обратная связь» не перенесены: первого в приложении нет, вторая — плитка «Сервисов».
  */
 
-const SKILL_ICO = {
-  listening: ['headphones', 'violet'],
-  speaking: ['mic', 'green'],
-  reading: ['auto_stories', 'pink'],
-  writing: ['edit_note', 'yellow'],
-  grammar: ['text_fields', 'blue'],
-  vocab: ['menu_book', 'orange'],
-}
-const SEGMENTS = 10
 // Порядок языков — как в кадре «Язык» (7293:11420), а не как в общем списке LANGS.
 const LANG_ORDER = ['ru', 'kk', 'en']
 
@@ -230,8 +220,14 @@ export default function ProfilePhone(p) {
             ))}
           </Card>
         )}
+        {/* «Правила школы» (ТЗ v2.0, 5.8; задача 190) — сразу под уровнем, как в «Учёбе» компьютера. Карточки «Навыки»
+            здесь больше нет: навыки — только на «Главной» (ТЗ 5.5). */}
+        {p.onRules && (
+          <Card>
+            <Row ico="menu_book" tone="orange" title={t('profile.rules')} sub={t('home.tl.rulesSub')} onClick={p.onRules} />
+          </Card>
+        )}
         {p.blocks}
-        <SkillsCard stats={p.skillStats} t={t} />
       </Screen>
     )
   }
@@ -426,37 +422,6 @@ function LevelCard({ p, t, lang }) {
       </div>
       {p.onLevelTest && <Row ico="school" tone="violet" title={t('profile.levelTest')} sub={p.level} onClick={p.onLevelTest} />}
     </section>
-  )
-}
-
-function SkillsCard({ stats, t }) {
-  return (
-    <Card title={t('profile.skills.title')}>
-      {SKILLS.map((skill) => {
-        const stat = stats?.[skill]
-        const done = stat?.done || 0
-        const firstTry = stat?.firstTry || 0
-        const empty = done === 0
-        // Формула — как на «Главной» и в Профиле компьютера (levelShare, задания текущего уровня).
-        const pct = levelShare({ done, firstTry })
-        const filled = shareBars(pct)
-        const [ico, tone] = SKILL_ICO[skill]
-        return (
-          <div key={skill} className={`pfm-skill ${empty ? '' : 'is-on'}`} data-skill={skill}>
-            <Plate ico={ico} tone={tone} />
-            <span className="pfm-skill__t">
-              <b>{t('profile.skills.' + skill)}</b>
-              <span>{empty ? t('profile.skills.empty') : pct == null ? t('profile.skills.few', { done }) : t('profile.skills.meta', { done, pct })}</span>
-              <span className="pfm-skill__segs" aria-hidden="true">
-                {Array.from({ length: SEGMENTS }, (_, i) => (
-                  <i key={i} className={pct != null && i < filled ? 'is-on' : ''} />
-                ))}
-              </span>
-            </span>
-          </div>
-        )
-      })}
-    </Card>
   )
 }
 
