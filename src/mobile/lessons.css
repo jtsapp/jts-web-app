@@ -78,6 +78,17 @@
     padding: 8px 6px;
     font-size: 13px;
   }
+  /* С «Правилами» (15.11.2026) у ученика с Self Study вкладок четыре — в одну
+     строку сегмента они влезали только обрезанными («Самостоятель…», «Отчё…»).
+     Две строки по две: прокрутка вбок спрятала бы вкладку за краем. */
+  .ls > .ls__tabs:has(.ls-tab:nth-child(4)) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .ls > .ls__tabs:has(.ls-tab:nth-child(4)) .ls-tab {
+    padding: 8px 10px;
+    font-size: 15px;
+  }
   .ls__body--wide {
     padding: 12px 16px 24px;
   }

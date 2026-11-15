@@ -24200,6 +24200,94 @@ html[data-theme="dark"] .hm-report {
     background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc));
     color: var(--dk-on-acc)
 }
+/*  lessonRules.css  */
+html[data-theme="dark"] .lr {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .lr__hero {
+    background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc));
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .lr__tag {
+    background: rgba(255, 255, 255, .2)
+}
+html[data-theme="dark"] .lr-stat {
+    background: var(--dk-card);
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .lr-stat__num {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .lr-stat__label {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .lr__toc {
+    background: var(--dk-card);
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .lr__toc-title {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .lr__toc-list {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .lr__toc-link {
+    border: 0;
+    background: none;
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .lr-card {
+    background: var(--dk-card);
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .lr-card__n {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .lr-card__p--aside {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .lr-note {
+    border-left: 4px solid
+}
+html[data-theme="dark"] .lr-note--ok {
+    background: var(--dk-green-tint);
+    border-left-color: var(--dk-green)
+}
+html[data-theme="dark"] .lr-note--warn {
+    background: var(--dk-yellow-tint);
+    border-left-color: var(--dk-yellow)
+}
+html[data-theme="dark"] .lr-note--bad {
+    background: var(--dk-page);
+    border-left-color: var(--dk-red)
+}
+html[data-theme="dark"] .lr-table th, html[data-theme="dark"] .lr-table td {
+    border-bottom: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .lr-table th {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .lr-pill--ok {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .lr-pill--warn {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .lr-pill--bad {
+    background: var(--dk-page);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .lr__closing {
+    background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc));
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .lr__foot {
+    color: var(--dk-text-2)
+}
 /*  demo.css  */
 html[data-theme="dark"] .dm-banner {
     background: var(--dk-ink-bg);

@@ -2088,6 +2088,7 @@ const dict = {
     'lessons.tabClubs': 'Speaking clubs',
     'lessons.tabSelf': 'Self-study',
     'lessons.tabReports': 'Reports',
+    'lessons.tabRules': 'Rules',
     'reports.title': 'Progress report',
     'reports.loading': 'Loading…',
     'reports.emptyTitle': 'No reports yet',

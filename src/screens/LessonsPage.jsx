@@ -6,6 +6,7 @@ import LessonSchedule from './schedule/LessonSchedule.jsx'
 import SelfStudy from './lessons/SelfStudy.jsx'
 import TeacherHomeworkBoard from './homework/TeacherHomeworkBoard.jsx'
 import ReportsTab from '../feedback/ReportsTab.jsx'
+import RulesTab from './lessons/rules/RulesTab.jsx'
 import MatchingLinkCard from '../matching/MatchingLinkCard.jsx'
 import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot, useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { isTeacher } from '../lib/jwt.js'
@@ -30,6 +31,9 @@ const TEACHER_TAB = { key: 'homework', label: 'lessons.tabHomework' }
 // Отчёты о прогрессе — ученические: их пишет преподаватель про своего ученика,
 // и у самого преподавателя этой вкладки нет.
 const STUDENT_TAB = { key: 'reports', label: 'lessons.tabReports' }
+// Правила обучения школы (перенос, отмена, заморозка) — тоже ученические: это
+// условия его абонемента, а преподавателю они не новость.
+const RULES_TAB = { key: 'rules', label: 'lessons.tabRules' }
 
 /**
  * `initialTab` — с какой вкладки открыть экран.
@@ -60,9 +64,10 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
   const showSelf = selfStudy === 'yes'
   const tabs = teacher
     ? [...TABS, TEACHER_TAB]
-    : [...TABS.filter((item) => item.key !== 'self' || showSelf), STUDENT_TAB]
+    : [...TABS.filter((item) => item.key !== 'self' || showSelf), STUDENT_TAB, RULES_TAB]
   const [tab, setTab] = useState(() => {
     if (initialTab === 'reports' && !teacher) return 'reports'
+    if (initialTab === 'rules' && !teacher) return 'rules'
     if (initialTab === 'homework' && teacher) return 'homework'
     if (initialTab === 'self' && teacher) return 'self'
     return 'online'
@@ -93,6 +98,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
     }
     if (initialTab === 'homework' && teacher) setTab('homework')
     else if (initialTab === 'reports' && !teacher) setTab('reports')
+    else if (initialTab === 'rules' && !teacher) setTab('rules')
   }, [selfStudy, showSelf, teacher, initialTab])
 
   useEffect(() => {
@@ -200,6 +206,12 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
         {tab === 'reports' && !teacher && (
           <div className="ls__body ls__body--wide">
             <ReportsTab token={token} initialReportId={pendingReportId} />
+          </div>
+        )}
+
+        {tab === 'rules' && !teacher && (
+          <div className="ls__body ls__body--wide">
+            <RulesTab />
           </div>
         )}
 
