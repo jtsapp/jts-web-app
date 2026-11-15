@@ -3978,6 +3978,35 @@ button.hm-level__goal:focus-visible {
   line-height: 18px;
   color: var(--hm-sec, #5a5a66);
 }
+/* «📄 Правила обучения» (ТЗ 5.4): строка-кнопка в рамке — плашка · название и подпись · шеврон */
+.hm-tl__rules {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--hm-line, #e8e8ee);
+  border-radius: 14px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.hm-tl__rules:hover {
+  background: var(--hm-tile, #f8f8f8);
+}
+.hm-tl__rules:focus-visible {
+  outline: 2px solid var(--hm-ac, #9047ff);
+  outline-offset: 2px;
+}
+.hm-tl__rulesChev {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  background: var(--hm-mut, #8e8e99);
+  -webkit-mask: url(/assets/home-v2/ico/chevron_right.svg) center / contain no-repeat;
+  mask: url(/assets/home-v2/ico/chevron_right.svg) center / contain no-repeat;
+}
 .hm-tl__hw {
   display: flex;
   flex-direction: column;

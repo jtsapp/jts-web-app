@@ -62,6 +62,10 @@
   .hm-sched {
     order: 5;
   }
+  /* «Правила обучения» (ТЗ 5.4) — сразу под расписанием: тот же order, порядок решает разметка. */
+  .hm-rules-m {
+    order: 5;
+  }
   .hm-hw {
     order: 6;
   }
@@ -89,6 +93,15 @@
     border-radius: 24px;
     background: #fff;
     box-shadow: none;
+  }
+  /* Строка правил уже в карточке — своя рамка ей не нужна. */
+  .hm-rules-m {
+    padding: 12px 16px;
+  }
+  .hm-rules-m .hm-tl__rules {
+    padding: 0;
+    border: 0;
+    background: none;
   }
   .hm-card__title {
     margin: 0 0 12px;
