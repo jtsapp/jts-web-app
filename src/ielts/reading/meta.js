@@ -72,6 +72,7 @@ export const MECHANIC = {
   ynng: 'judgement',
   multiple_choice_single: 'choice',
   multiple_choice_multi: 'multi',
+  matching: 'select',
   matching_headings: 'select',
   matching_information: 'select',
   matching_features: 'select',
