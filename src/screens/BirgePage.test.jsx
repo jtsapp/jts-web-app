@@ -65,8 +65,8 @@ afterEach(cleanup)
 describe('экран Birge', () => {
   it('шапка раздела, пункт меню, правила', async () => {
     const { container } = render(page())
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Just to Study Birge')
-    expect(screen.getByText('Учимся вместе — сообщество студентов JTS')).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Not Just English')
+    expect(screen.getByText('Сообщество студентов Just to Study')).toBeTruthy()
     expect(container.firstChild.dataset.active).toBe('birge')
     expect(await screen.findByText('Present Perfect vs Past Simple?')).toBeTruthy()
     expect(screen.getAllByText('Правила сообщества').length).toBe(2)

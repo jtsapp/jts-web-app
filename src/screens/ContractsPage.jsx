@@ -10,7 +10,7 @@ import SignDialog from '../contracts/SignDialog.jsx'
 import ContractPdfPreview from '../contracts/ContractPdfPreview.jsx'
 import { useBusy, useToast } from '../matching/ui.jsx'
 
-// Оферта принимается галочкой; договор распечатывают, подписывают от руки и загружают скан на проверку.
+// Оферта принимается галочкой; договор распечатывают, подписывают от руки и загружают скан — он принимается сразу.
 export default function ContractsPage({ token, userName, userLevel, onNav, onProfile }) {
   const { t, lang } = useContractT()
   const state = useContracts(token)

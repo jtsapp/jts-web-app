@@ -158,7 +158,7 @@ test('?screen=birge&post=101 открывает ветку; «← Все вет�
   await expect.poll(() => new URL(page.url()).searchParams.has('post')).toBe(false)
 })
 
-test('пункт меню «Birge» с меткой new открывает ленту', async ({ page }) => {
+test('пункт меню «Not Just English» с меткой new открывает ленту', async ({ page }) => {
   await loginAsStudent(page)
   await mockBirge(page)
   await page.goto('/?screen=home')
@@ -166,6 +166,7 @@ test('пункт меню «Birge» с меткой new открывает ле�
   if ((page.viewportSize()?.width ?? 1440) > 560) {
     await expect(page.locator('.sb__item[data-nav="birge"] .sb__badge--new')).toHaveText('new')
   }
-  await openSection(page, 'Birge')
-  await expect(page.getByRole('heading', { level: 1, name: 'Just to Study Birge' })).toBeVisible()
+  await openSection(page, 'Not Just English')
+  await expect(page.getByRole('heading', { level: 1, name: 'Not Just English' })).toBeVisible()
+  await expect(page.getByText('Сообщество студентов Just to Study')).toBeVisible()
 })

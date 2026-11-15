@@ -1,0 +1,5 @@
+Stockfish.js 19.0.1 (Stockfish 19, lite single-threaded WASM build)
+License: GNU General Public License v3.0 — see COPYING.txt in this folder.
+Source code: https://github.com/nmrugg/stockfish.js/tree/v19.0.1
+Upstream engine: https://github.com/official-stockfish/Stockfish
+These files are served unmodified and run as a separate program in a Web Worker.

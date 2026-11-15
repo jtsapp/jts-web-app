@@ -172,7 +172,7 @@ const en = {
 
 Object.assign(ru,{
   "paper.title": "Бумажный договор",
-  "paper.steps": "Заполните данные, скачайте договор и подпишите его от руки. Загрузите скан всех страниц — ответственный сотрудник проверит его.",
+  "paper.steps": "Заполните данные, скачайте договор и подпишите его от руки. Загрузите скан всех страниц — он будет принят сразу.",
   "paper.prepare": "Подготовить и скачать PDF",
   "paper.upload": "Загрузить подписанный скан",
   "paper.files": "Сфотографируйте каждую страницу и выберите все фото по порядку — они соберутся в один документ. Или загрузите один PDF. JPG, PNG или PDF, до 15 МБ каждый файл.",
@@ -184,7 +184,7 @@ Object.assign(ru,{
   "paper.fileError": "Загрузите PDF, JPG или PNG размером до 15 МБ",
   "paper.signedOn": "Дата подписи на бумаге",
   "paper.confirm": "Загружены все страницы договора с собственноручными подписями",
-  "paper.submit": "Отправить скан на проверку",
+  "paper.submit": "Загрузить скан",
   "paper.readScan": "Открыть скан",
   "paper.version": "Версия",
   "paper.back": "Назад",
@@ -196,11 +196,11 @@ Object.assign(ru,{
   "status.SCAN_REJECTED": "Скан возвращён",
   "status.SIGNED": "Договор принят",
   "row.sign": "Открыть договор",
-  "lead": "Заполните данные, скачайте договор и подпишите его от руки. Затем загрузите скан для проверки сотрудником школы."
+  "lead": "Заполните данные, скачайте договор и подпишите его от руки. Затем загрузите скан — он будет принят сразу."
 });
 Object.assign(kk,{
   "paper.title": "Қағаз шарт",
-  "paper.steps": "Деректерді толтырып, шартты жүктеп алып, қолмен қол қойыңыз. Барлық беттің сканын жүктеңіз — жауапты қызметкер тексереді.",
+  "paper.steps": "Деректерді толтырып, шартты жүктеп алып, қолмен қол қойыңыз. Барлық беттің сканын жүктеңіз — ол бірден қабылданады.",
   "paper.prepare": "PDF дайындау және жүктеп алу",
   "paper.upload": "Қол қойылған сканды жүктеу",
   "paper.files": "Әр бетті суретке түсіріп, барлық суретті ретімен таңдаңыз — олар бір құжатқа жиналады. Немесе бір PDF жүктеңіз. JPG, PNG немесе PDF, әр файл 15 МБ-қа дейін.",
@@ -212,7 +212,7 @@ Object.assign(kk,{
   "paper.fileError": "15 МБ-қа дейінгі PDF, JPG немесе PNG жүктеңіз",
   "paper.signedOn": "Қағазға қол қойылған күн",
   "paper.confirm": "Шарттың қолмен қол қойылған барлық беті жүктелді",
-  "paper.submit": "Сканды тексеруге жіберу",
+  "paper.submit": "Сканды жүктеу",
   "paper.readScan": "Сканды ашу",
   "paper.version": "Нұсқа",
   "paper.back": "Артқа",
@@ -224,11 +224,11 @@ Object.assign(kk,{
   "status.SCAN_REJECTED": "Скан қайтарылды",
   "status.SIGNED": "Шарт қабылданды",
   "row.sign": "Шартты ашу",
-  "lead": "Деректерді толтырып, шартты жүктеп алып, қолмен қол қойыңыз. Содан кейін мектеп қызметкеріне тексеруге скан жүктеңіз."
+  "lead": "Деректерді толтырып, шартты жүктеп алып, қолмен қол қойыңыз. Содан кейін сканды жүктеңіз — ол бірден қабылданады."
 });
 Object.assign(en,{
   "paper.title": "Paper contract",
-  "paper.steps": "Fill in your details, download the contract and sign it by hand. Upload a scan of every page for staff review.",
+  "paper.steps": "Fill in your details, download the contract and sign it by hand. Upload a scan of every page — it is accepted at once.",
   "paper.prepare": "Prepare and download PDF",
   "paper.upload": "Upload signed scan",
   "paper.files": "Take a photo of each page and select all photos in order — they will be combined into one document. Or upload a single PDF. JPG, PNG or PDF, up to 15 MB per file.",
@@ -240,19 +240,19 @@ Object.assign(en,{
   "paper.fileError": "Upload PDF, JPG or PNG, up to 15 MB",
   "paper.signedOn": "Date signed on paper",
   "paper.confirm": "All contract pages with handwritten signatures are included",
-  "paper.submit": "Submit scan for review",
+  "paper.submit": "Upload scan",
   "paper.readScan": "Open scan",
   "paper.version": "Version",
   "paper.back": "Back",
   "paper.error": "Could not prepare the contract",
   "scan.REVIEW": "Scan under review",
-  "scan.APPROVED": "Scan approved",
+  "scan.APPROVED": "Scan accepted",
   "scan.REJECTED": "Scan returned",
   "status.SCAN_REVIEW": "Scan under review",
   "status.SCAN_REJECTED": "Scan returned",
   "status.SIGNED": "Contract accepted",
   "row.sign": "Open contract",
-  "lead": "Fill in your details, download the contract and sign it by hand. Then upload the scan for staff review."
+  "lead": "Fill in your details, download the contract and sign it by hand. Then upload the scan — it is accepted at once."
 });
 
 const PAPER_ERRORS={

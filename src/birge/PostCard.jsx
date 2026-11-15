@@ -1,6 +1,6 @@
 import { useI18n } from '../i18n.jsx'
 import { topicKey } from './labels.js'
-import { authorInitial, canReport, isLive, postBadge, postTime } from './postView.js'
+import { authorInitial, authorTag, canReport, isLive, postBadge, postTime } from './postView.js'
 import { CommentIcon, FlagIcon, HeartIcon } from './icons.jsx'
 
 /**
@@ -15,6 +15,7 @@ export default function PostCard({ post, comment = false, onOpen, onLike, onRepo
   const media = Array.isArray(post.media) ? post.media.filter((m) => m?.url) : []
   const parts = Array.isArray(post.continuations) ? post.continuations : []
   const author = post.author || {}
+  const tag = authorTag(author)
 
   return (
     <article className={`brg-post${comment ? ' brg-post--cm' : ''}`} data-post-id={post.id}>
@@ -28,7 +29,7 @@ export default function PostCard({ post, comment = false, onOpen, onLike, onRepo
         )}
         <div className="brg-ph__who">
           <b>{author.name || '—'}</b>
-          {author.level && <span className="brg-lvl">{author.level}</span>}
+          {tag && <span className="brg-lvl">{tag.key ? t(tag.key) : tag.text}</span>}
           <small>{postTime(post.createdAt, { lang, yesterday: t('birge.card.yesterday') })}</small>
         </div>
         {(badge || topic) && (

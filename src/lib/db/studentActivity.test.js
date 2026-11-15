@@ -475,7 +475,9 @@ describe('PRACTICE_AREA_BY_MODULE', () => {
   // ответ просто короче. Поэтому новый модуль хранилища практики обязан получить
   // раздел здесь (или явное решение его не показывать — правкой этого теста).
   it('знает каждый модуль хранилища практики и ни одного лишнего', () => {
-    const unmapped = PRACTICE_MODULES.filter((m) => !Object.hasOwn(PRACTICE_AREA_BY_MODULE, m))
+    // Шахматы — игра раздела «Шахматы», а не задание «Практики»: в карточке ученика у преподавателя их нет намеренно.
+    const NOT_PRACTICE = ['chess']
+    const unmapped = PRACTICE_MODULES.filter((m) => !NOT_PRACTICE.includes(m) && !Object.hasOwn(PRACTICE_AREA_BY_MODULE, m))
     const stray = Object.keys(PRACTICE_AREA_BY_MODULE).filter((m) => !PRACTICE_MODULES.includes(m))
     expect(unmapped).toEqual([])
     expect(stray).toEqual([])

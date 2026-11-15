@@ -2452,6 +2452,13 @@ export function getPunctuation(token, onFresh) {
   return cachedAuthGet('/mobile/punctuation', token, onFresh)
 }
 
+// Parts of Speech World: 16 юнитов и 14 дел игры одним бандлом (~716 КБ, форма прототипа, картинки — ссылки MinIO;
+// спека 2026-11-14-parts-of-speech-world-design.md). Тот же путь, что у Punctuation World: ответ больше порога
+// localStorage, cachedAuthGet держит его только в памяти вкладки. 404 — раздел ещё не залит через админку.
+export function getPartsOfSpeech(token, onFresh) {
+  return cachedAuthGet('/mobile/parts-of-speech', token, onFresh)
+}
+
 // «Грамматика · игры»: список тем (шапки и набор игр), тема целиком, общий словарь кликабельных слов, звёзды
 // ученика и сдача игры (контракт — backend docs/practice/GRAMMAR_GAMES.md). Без cachedAuthGet: его копия в
 // localStorage вытесняла бы прогресс других разделов (словарь ~120 КБ), а звёзды должны быть свежими. Темы и

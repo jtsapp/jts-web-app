@@ -19,6 +19,7 @@ import {
   VERBS_KEY,
   LISTENCHOOSE_KEY,
   NUMBERS_KEY,
+  CHESS_KEY,
   LISTEN_KEY,
   PREPOSITIONS_KEY,
   CARTOONS_KEY,
@@ -26,6 +27,7 @@ import {
   PRONUNCIATION_KEY,
   TENSES_KEY,
   PUNCTUATION_KEY,
+  PARTSOFSPEECH_KEY,
   GRAMMAR_PROGRESS_EVENT,
   LISTENING_PROGRESS_EVENT,
   SHADOWING_PROGRESS_EVENT,
@@ -38,6 +40,7 @@ import {
   VERBS_PROGRESS_EVENT,
   LISTENCHOOSE_PROGRESS_EVENT,
   NUMBERS_PROGRESS_EVENT,
+  CHESS_PROGRESS_EVENT,
   LISTEN_PROGRESS_EVENT,
   PREPOSITIONS_PROGRESS_EVENT,
   CARTOONS_PROGRESS_EVENT,
@@ -45,12 +48,13 @@ import {
   PRONUNCIATION_PROGRESS_EVENT,
   TENSES_PROGRESS_EVENT,
   PUNCTUATION_PROGRESS_EVENT,
+  PARTSOFSPEECH_PROGRESS_EVENT,
 } from './practiceKeys.js'
 
 // Модули-объекты: их стейт уходит на сервер как есть (replace), а не как
 // множество done-id. Дублирует смысл DONE_MODULES из practiceContract.js «с
 // другой стороны» — при добавлении модуля сверяй оба списка.
-const OBJECT_MODULES = ['vocab', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'numbers', 'listen', 'prepositions', 'cartoons', 'wordhunt', 'pronunciation', 'tenses', 'punctuation', 'vocabLearned', 'vocabMisses']
+const OBJECT_MODULES = ['vocab', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'numbers', 'listen', 'prepositions', 'cartoons', 'wordhunt', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'vocabLearned', 'vocabMisses']
 
 // raw: для vocab/writing — объект стейта; для grammar/listening — Set или массив id.
 export function serializeForPush(module, raw) {
@@ -128,6 +132,10 @@ export function applyHydratedState(serverState, { setItem, dispatch, getItem = (
     setItem(NUMBERS_KEY, JSON.stringify(serverState.numbers))
     dispatch(NUMBERS_PROGRESS_EVENT)
   }
+  if (serverState.chess && typeof serverState.chess === 'object') {
+    setItem(CHESS_KEY, JSON.stringify(serverState.chess))
+    dispatch(CHESS_PROGRESS_EVENT)
+  }
   if (serverState.listen && typeof serverState.listen === 'object') {
     setItem(LISTEN_KEY, JSON.stringify(serverState.listen))
     dispatch(LISTEN_PROGRESS_EVENT)
@@ -155,5 +163,9 @@ export function applyHydratedState(serverState, { setItem, dispatch, getItem = (
   if (serverState.punctuation && typeof serverState.punctuation === 'object') {
     setItem(PUNCTUATION_KEY, JSON.stringify(serverState.punctuation))
     dispatch(PUNCTUATION_PROGRESS_EVENT)
+  }
+  if (serverState.partsofspeech && typeof serverState.partsofspeech === 'object') {
+    setItem(PARTSOFSPEECH_KEY, JSON.stringify(serverState.partsofspeech))
+    dispatch(PARTSOFSPEECH_PROGRESS_EVENT)
   }
 }

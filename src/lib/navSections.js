@@ -36,6 +36,9 @@ const NAV_FULL = [
   { key: 'ielts', label: 'nav.ielts', ico: 'school' },
   { key: 'sat', label: 'nav.sat', ico: 'quiz' },
   { key: 'vocab', label: 'nav.vocab', ico: 'menu_book' },
+  // Шахматы — партия против Stockfish (спека 2026-11-14). Свой пункт, а не карточка Практики: дальше в разделе
+  // появятся тренер, учебные материалы и онлайн-партии.
+  { key: 'chess', label: 'nav.chess', ico: 'chess' },
   { key: 'tokens', label: 'nav.tokens', ico: 'insights' },
   { key: 'prizes', label: 'nav.prizes', ico: 'school' },
   // «Birge» — лента студентов (спека 2026-11-11 §7): сразу перед Feedback, с меткой new. В тьютор-онли её нет (её нет
@@ -56,7 +59,7 @@ export const NAV_ICONS = Object.fromEntries([HOME_ITEM, MY_TEACHER_ITEM, GROUP_I
 
 // Метка «new» у пункта — разделы, которые ученику стоит заметить. Одна на сайдбар и на плитки «Сервисов» телефона:
 // до 11.11.2026 набор жил в Sidebar.jsx, и на телефоне новый раздел ничем не выделялся.
-export const NEW_ITEMS = new Set(['prizes', 'feedback', 'birge'])
+export const NEW_ITEMS = new Set(['prizes', 'feedback', 'birge', 'chess'])
 
 // Разделы преподавателя. Остальное в списке — его собственное обучение, которого у него нет: Тьютор, IELTS и
 // Словарь ученические (design-spec §4.2).
@@ -68,7 +71,7 @@ const TEACHER_SECTIONS = ['lessons', 'practice']
 
 // Аккаунт IELTS (дизайн «IELTS new», 08.10.2026): ровно эти разделы и в этом порядке, а внизу «Настройки». Игровых
 // счётчиков и плашки уровня в макете нет. Каждый экзамен ниже проверяется и по матрице, и по своему доступу.
-const IELTS_SECTIONS = ['practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'ielts', 'sat', 'tokens', 'prizes', 'birge', 'feedback', 'notifications', 'contracts']
+const IELTS_SECTIONS = ['practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'chess', 'ielts', 'sat', 'tokens', 'prizes', 'birge', 'feedback', 'notifications', 'contracts']
 
 // «Повторение» стоит после «Словаря» у всех учеников, включая IELTS/SAT (владелец, 03.11.2026; до того у экзаменов было первым).
 function learningAfterVocab(items) {
@@ -151,7 +154,7 @@ export function serviceItems(items) {
 const INNER_SCREENS = new Set([
   // разделы Практики — у каждого «← В Практику» или своя полоса с крестиком
   'reading', 'writing', 'workbook', 'listening', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen',
-  'prepositions', 'pronunciation', 'tenses', 'punctuation', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'situations', 'shadowing',
+  'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'situations', 'shadowing',
   // план по дням и маршрут General English, каталог курса — экраны со своей «назад»
   'ge-plan', 'ge-route', 'course-catalog',
   // мастер подбора учителя: «← Назад» в шапке шага и своя закреплённая снизу панель (.mt-bar) — наша легла бы на неё

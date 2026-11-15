@@ -9,7 +9,7 @@ const keys = (list) => list.map((i) => i.key)
 describe('меню ученика', () => {
   it('обычный ученик: Главная и разделы курса, без экзаменов и наград', () => {
     expect(keys(menuItems())).toEqual([
-      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'birge', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'chess', 'birge', 'feedback', 'notifications', 'contracts',
     ])
   })
 
@@ -28,7 +28,7 @@ describe('меню ученика', () => {
 
   it('экзамен появляется только при своей подписке', () => {
     expect(keys(menuItems({ exams: { ielts: true, sat: false } }))).toEqual([
-      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'ielts', 'vocab', 'learning', 'birge', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'ielts', 'vocab', 'learning', 'chess', 'birge', 'feedback', 'notifications', 'contracts',
     ])
   })
 
@@ -65,7 +65,7 @@ describe('меню ученика', () => {
 
   it('аккаунт IELTS — свой порядок', () => {
     expect(keys(menuItems({ ieltsAccount: true, exams: { ielts: true, sat: true } }))).toEqual([
-      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'ielts', 'sat', 'birge', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'chess', 'ielts', 'sat', 'birge', 'feedback', 'notifications', 'contracts',
     ])
   })
 
@@ -115,7 +115,7 @@ describe('нижняя панель телефона', () => {
 
   it('Сервисы — разделы, которые не стали вкладками, в порядке меню', () => {
     expect(keys(serviceItems(menuItems({ exams: { ielts: true, sat: true } })))).toEqual([
-      'group', 'homework', 'ielts', 'sat', 'vocab', 'learning', 'birge', 'feedback', 'notifications', 'contracts',
+      'group', 'homework', 'ielts', 'sat', 'vocab', 'learning', 'chess', 'birge', 'feedback', 'notifications', 'contracts',
     ])
     expect(serviceItems(menuItems({ teacher: true }))).toEqual([])
   })
@@ -139,7 +139,7 @@ describe('где видна нижняя панель', () => {
   })
 
   it('внутри разделов, как в приложении, — нет: там своя «назад»', () => {
-    for (const s of ['reading', 'workbook', 'writing', 'situations', 'wordhunt', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'numbers', 'ge-plan', 'course-catalog', 'teacher-wizard', 'profile']) {
+    for (const s of ['reading', 'workbook', 'writing', 'situations', 'wordhunt', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'numbers', 'ge-plan', 'course-catalog', 'teacher-wizard', 'profile']) {
       expect(showsTabBar(s)).toBe(false)
     }
   })
