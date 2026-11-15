@@ -2088,6 +2088,7 @@ const dict = {
     'lessons.tabClubs': 'Спикинг-клабтар',
     'lessons.tabSelf': 'Өз бетімше',
     'lessons.tabReports': 'Есептер',
+    'lessons.tabRules': 'Ережелер',
     'reports.title': 'Прогресс есебі',
     'reports.loading': 'Жүктелуде…',
     'reports.emptyTitle': 'Әзірге есеп жоқ',

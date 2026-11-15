@@ -1,0 +1,286 @@
+/* Вкладка «Правила» в «Уроках» (src/screens/lessons/rules/RulesTab.jsx) — правила
+   обучения школы. Раскладка — из документа школы «Правила обучения — Just to Study»
+   (шапка, четыре цифры, оглавление, карточки разделов, сводная таблица, итог), цвета —
+   сайта: синий документа заменён фиолетовым бренда. Шрифт не задаём — наследуется от
+   приложения (Manrope, в kk — Inter). Тёмная тема — блок генератора
+   (theme-dark.generated.css), телефон — в конце файла: своего кадра в Figma у вкладки нет. */
+
+.lr {
+  max-width: 880px;
+  margin: 0 auto;
+  color: #17161f;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ── Шапка ── */
+.lr__hero {
+  background: linear-gradient(135deg, #9047ff, #b07bff);
+  color: #fff;
+  border-radius: 20px;
+  padding: 32px;
+  margin-bottom: 20px;
+}
+.lr__tag {
+  display: inline-block;
+  background: rgba(255, 255, 255, .2);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.lr__title {
+  margin: 0 0 8px;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+.lr__lead {
+  margin: 0;
+  max-width: 620px;
+  opacity: .92;
+}
+
+/* ── Четыре главные цифры ── */
+.lr__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.lr-stat {
+  background: #fff;
+  border: 1px solid #ececf2;
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+.lr-stat__num {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #9047ff;
+}
+.lr-stat__label {
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #6b6a7b;
+}
+
+/* ── Оглавление ── */
+.lr__toc {
+  background: #fff;
+  border: 1px solid #ececf2;
+  border-radius: 20px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.lr__toc-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #6b6a7b;
+}
+.lr__toc-list {
+  margin: 0;
+  padding-left: 22px;
+  columns: 2;
+  column-gap: 32px;
+  color: #9047ff;
+}
+/* Отступ — внутренний: внешний у первого пункта колонки уезжает, и колонки
+   начинались на разной высоте. */
+.lr__toc-list li {
+  margin: 0;
+  padding: 3px 0;
+  break-inside: avoid;
+}
+.lr__toc-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: #9047ff;
+  text-align: left;
+  cursor: pointer;
+}
+.lr__toc-link:hover,
+.lr__toc-link:focus-visible {
+  text-decoration: underline;
+}
+
+/* ── Раздел ── */
+.lr-card {
+  background: #fff;
+  border: 1px solid #ececf2;
+  border-radius: 20px;
+  padding: 26px 28px;
+  margin-bottom: 16px;
+  scroll-margin-top: 16px;
+}
+.lr-card__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 800;
+}
+.lr-card__n {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #f2ecff;
+  color: #9047ff;
+  font-size: 16px;
+  font-weight: 800;
+}
+.lr-card__list {
+  margin: 0;
+  padding-left: 20px;
+}
+.lr-card__list li {
+  margin: 8px 0;
+}
+.lr-card__p {
+  margin: 8px 0;
+}
+.lr-card__p--aside {
+  font-style: italic;
+  color: #6b6a7b;
+}
+.lr b {
+  font-weight: 700;
+}
+
+/* ── Плашки: хорошо / внимание / плохо ── */
+.lr-note {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border-left: 4px solid;
+  font-size: 15px;
+}
+.lr-note--ok { background: #e7f8ee; border-left-color: #1f9d63; }
+.lr-note--warn { background: #fff4e0; border-left-color: #e08a00; }
+.lr-note--bad { background: #fdecea; border-left-color: #e0453c; }
+
+/* ── Сводная таблица ── */
+.lr-table-wrap {
+  overflow-x: auto;
+}
+.lr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.lr-table th,
+.lr-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #ececf2;
+  text-align: left;
+  vertical-align: top;
+}
+.lr-table th {
+  background: #f8f8fb;
+  color: #6b6a7b;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.lr-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.lr-pill--ok { background: #e7f8ee; color: #1a8a55; }
+.lr-pill--warn { background: #fff4e0; color: #b56f00; }
+.lr-pill--bad { background: #fdecea; color: #c9372f; }
+
+/* ── Итог ── */
+.lr__closing {
+  background: linear-gradient(135deg, #9047ff, #b07bff);
+  color: #fff;
+  border-radius: 20px;
+  padding: 30px 32px;
+  margin-top: 24px;
+}
+.lr__closing-title {
+  margin: 0 0 12px;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+.lr__closing p {
+  margin: 10px 0;
+  opacity: .95;
+}
+.lr__closing-list {
+  margin: 14px 0;
+  padding: 0;
+  list-style: none;
+}
+.lr__closing-list li {
+  position: relative;
+  margin: 8px 0;
+  padding-left: 28px;
+}
+.lr__closing-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 800;
+}
+.lr__closing .lr__sign {
+  margin-top: 18px;
+  font-weight: 700;
+  opacity: 1;
+}
+.lr__foot {
+  margin: 24px 0 0;
+  text-align: center;
+  font-size: 14px;
+  color: #6b6a7b;
+}
+
+/* ── Телефон: кадров «Web Адаптивка» у вкладки нет — сжимаем отступы документа. ── */
+@media (max-width: 560px) {
+  .lr { font-size: 15px; }
+  .lr__hero,
+  .lr__closing { padding: 22px 18px; border-radius: 16px; }
+  .lr__title { font-size: 25px; }
+  .lr__stats { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .lr-stat { padding: 12px 14px; }
+  .lr-stat__num { font-size: 21px; }
+  .lr-stat__label { font-size: 13px; }
+  .lr__toc { padding: 16px 18px; border-radius: 16px; }
+  .lr__toc-list { columns: 1; }
+  .lr-card { padding: 20px 18px; border-radius: 16px; }
+  .lr-card__title { font-size: 18px; }
+  .lr-table { font-size: 14px; }
+  .lr-table th,
+  .lr-table td { padding: 10px 8px; }
+  /* Длинный результат («Сохраняется, срок продлевается») в узкой колонке не
+     помещается одной строкой и выталкивал таблицу в горизонтальную прокрутку. */
+  .lr-pill { white-space: normal; }
+  .lr__closing-title { font-size: 21px; }
+}
+
+@media print {
+  .lr__hero,
+  .lr__closing { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .lr-card { break-inside: avoid; }
+}

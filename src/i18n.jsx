@@ -2119,6 +2119,7 @@ const dict = {
     'lessons.tabClubs': 'Спикинг-клабы',
     'lessons.tabSelf': 'Самостоятельно',
     'lessons.tabReports': 'Отчёты',
+    'lessons.tabRules': 'Правила',
     'reports.title': 'Отчёт о прогрессе',
     'reports.loading': 'Загружаем…',
     'reports.emptyTitle': 'Отчётов пока нет',

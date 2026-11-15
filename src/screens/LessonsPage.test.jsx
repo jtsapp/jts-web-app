@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
@@ -100,11 +100,11 @@ describe('LessonsPage tabs', () => {
     getSelfStudyAccess.mockResolvedValue(false)
   })
 
-  it('ученик без тарифа Self Study видит онлайн-уроки и отчёты', async () => {
+  it('ученик без тарифа Self Study видит онлайн-уроки, отчёты и правила', async () => {
     const { container } = renderPage(tokenWithRole('STUDENT'))
     await waitFor(() => expect(getSelfStudyAccess).toHaveBeenCalled())
     await waitFor(() =>
-      expect([...container.querySelectorAll('.ls-tab')].map((b) => b.textContent)).toEqual(['Онлайн-уроки', 'Отчёты']),
+      expect([...container.querySelectorAll('.ls-tab')].map((b) => b.textContent)).toEqual(['Онлайн-уроки', 'Отчёты', 'Правила']),
     )
   })
 
@@ -115,17 +115,19 @@ describe('LessonsPage tabs', () => {
     const { container } = renderPage(tokenWithRole('STUDENT'))
     await waitFor(() =>
       expect([...container.querySelectorAll('.ls-tab')].map((b) => b.textContent))
-        .toEqual(['Онлайн-уроки', 'Самостоятельно', 'Отчёты']),
+        .toEqual(['Онлайн-уроки', 'Самостоятельно', 'Отчёты', 'Правила']),
     )
   })
 
   // Проверка домашних работ — инструмент преподавателя, ученику её показывать
   // нельзя: бэкенд всё равно отдаст ему только свои работы. И наоборот, отчётов
-  // о прогрессе у преподавателя нет — вкладок ровно три, без «Отчётов».
+  // о прогрессе и правил обучения у преподавателя нет — вкладок ровно три, без
+  // «Отчётов» и «Правил».
   it('преподаватель дополнительно видит вкладку проверки домашних работ', async () => {
     const { container } = renderPage(tokenWithRole('TEACHER'))
     await waitFor(() => expect(container.querySelectorAll('.ls-tab')).toHaveLength(3))
     expect(screen.getByRole('button', { name: 'Домашние задания' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Правила' })).toBeNull()
   })
 
   it('вкладка открывает список работ учеников', async () => {
@@ -203,5 +205,47 @@ describe('вкладка «Отчёты»', () => {
     renderPage(tokenWithRole('STUDENT'), { initialTab: 'reports' })
     fireEvent.click(await screen.findByText('Повторить'))
     expect(await screen.findByText('Отчётов пока нет')).toBeTruthy()
+  })
+})
+
+// Правила обучения школы — ученическая вкладка: перенос, отмена, заморозка.
+describe('вкладка «Правила»', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getSelfStudyAccess.mockResolvedValue(false)
+  })
+
+  it('по нажатию показывает правила целиком', async () => {
+    const { container } = renderPage(tokenWithRole('STUDENT'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Правила' }))
+    expect(await screen.findByRole('heading', { name: 'Правила обучения' })).toBeTruthy()
+    expect(container.querySelectorAll('[data-rules-section]')).toHaveLength(11)
+    expect(container.querySelectorAll('.lr-table tbody tr')).toHaveLength(13)
+  })
+
+  it('initialTab «rules» (ссылка ?screen=lessons&tab=rules) открывает её сразу', async () => {
+    const { container } = renderPage(tokenWithRole('STUDENT'), { initialTab: 'rules' })
+    await waitFor(() => expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Правила'))
+    expect(screen.getByRole('heading', { name: 'Правила обучения' })).toBeTruthy()
+  })
+
+  it('преподавателю ссылка на правила их не открывает', async () => {
+    const { container } = renderPage(tokenWithRole('TEACHER'), { initialTab: 'rules' })
+    await waitFor(() => expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Онлайн-уроки'))
+    expect(container.querySelector('.lr')).toBeNull()
+  })
+
+  it('оглавление прокручивает к разделу, не трогая адрес', async () => {
+    // В jsdom scrollIntoView нет — подставляем и возвращаем как было.
+    const scroll = vi.fn()
+    const original = window.HTMLElement.prototype.scrollIntoView
+    window.HTMLElement.prototype.scrollIntoView = scroll
+    onTestFinished(() => { window.HTMLElement.prototype.scrollIntoView = original })
+    const before = window.location.href
+    const { container } = renderPage(tokenWithRole('STUDENT'), { initialTab: 'rules' })
+    fireEvent.click(await screen.findByRole('button', { name: 'Заморозка обучения' }))
+    expect(scroll).toHaveBeenCalledTimes(1)
+    expect(scroll.mock.contexts[0]).toBe(container.querySelector('[data-rules-section="freeze"]'))
+    expect(window.location.href).toBe(before)
   })
 })
