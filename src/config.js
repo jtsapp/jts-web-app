@@ -59,8 +59,8 @@ export const isRewardsScreen = (screen) => screen === 'tokens' || screen === 'pr
 // Временно скрыты у ученика на проде до проверки кабинетов всеми тремя сторонами.
 // Общий список нужен меню, прямым ссылкам и блокам на других экранах.
 const STUDENT_HIDDEN_ON_PROD = new Set([
-  'tokens', 'prizes', 'notifications', 'contracts',
-  'my-teacher', 'teacher-wizard', 'teacher-pick', 'group',
+  'tokens', 'prizes', 'notifications', 'contracts', 'group',
+  // «Мой учитель» с мастером подбора и шагом «Выберите своего учителя» на проде открыты (владелец, 15.11.2026).
   // Birge (спека 2026-11-11 §11): колокольчика на проде нет (он за notifications), и уведомления раздела до ученика
   // не дошли бы. Открывать — решение владельца, вместе с уведомлениями.
   'birge',

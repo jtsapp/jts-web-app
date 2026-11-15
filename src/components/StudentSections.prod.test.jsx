@@ -19,10 +19,11 @@ it('убирает разделы на компьютере и в Сервиса
   for (const list of [items, serviceItems(items)]) {
     expect(list.map(i => i.key)).not.toEqual(expect.arrayContaining(['tokens']))
     expect(list.some(i => i.key === 'feedback')).toBe(true)
-    for (const key of ['tokens', 'prizes', 'notifications', 'birge', 'contracts', 'my-teacher']) {
+    for (const key of ['tokens', 'prizes', 'notifications', 'birge', 'contracts', 'chess']) {
       expect(list.some(i => i.key === key)).toBe(false)
     }
   }
+  expect(items.some(i => i.key === 'my-teacher')).toBe(true)
   expect(items.some(i => i.key === 'lessons')).toBe(true)
 })
 it('не показывает плашки, колокольчик и не запрашивает данные скрытых разделов', () => {
