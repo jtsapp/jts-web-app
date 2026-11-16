@@ -39,10 +39,14 @@ export function rememberPendingScreen(screen) {
  *          версией приложения, где экран назывался иначе.
  */
 export function consumePendingScreen() {
+  const screen = peekPendingScreen()
+  clearPendingScreen()
+  return screen
+}
+
+export function peekPendingScreen() {
   try {
-    const screen = window.sessionStorage.getItem(KEY)
-    window.sessionStorage.removeItem(KEY)
-    return screen || null
+    return window.sessionStorage.getItem(KEY) || null
   } catch {
     return null
   }

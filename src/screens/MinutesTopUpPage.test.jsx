@@ -146,12 +146,12 @@ describe('Докупить минуты', () => {
     expect(backend.leadCalls[0].source).toBe('MINUTES')
   })
 
-  it('ссылки на оплату нет — остаётся путь к менеджеру', async () => {
+  it('без ссылки Freedom Pay предлагает повторить оплату', async () => {
     const { container } = await renderLoaded()
     fireEvent.click(container.querySelector('.tu-order__pay'))
     fireEvent.click(screen.getByText('Оплатить картой'))
-    await waitFor(() => expect(window.open).toHaveBeenCalledTimes(1))
-    expect(window.open.mock.calls[0][0].startsWith('https://wa.me/')).toBe(true)
+    await screen.findByText('Не удалось открыть страницу Freedom Pay. Попробуйте оплатить ещё раз.')
+    expect(window.open).not.toHaveBeenCalled()
   })
 
   it('«Связаться со мной» оставляет заявку без ухода из приложения', async () => {
