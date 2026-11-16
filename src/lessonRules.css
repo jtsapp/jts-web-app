@@ -1,9 +1,9 @@
 /* Вкладка «Правила» в «Уроках» (src/screens/lessons/rules/RulesTab.jsx) — правила
-   обучения школы. Раскладка — из документа школы «Правила обучения — Just to Study»
-   (шапка, четыре цифры, оглавление, карточки разделов, сводная таблица, итог), цвета —
-   сайта: синий документа заменён фиолетовым бренда. Шрифт не задаём — наследуется от
-   приложения (Manrope, в kk — Inter). Тёмная тема — блок генератора
-   (theme-dark.generated.css), телефон — в конце файла: своего кадра в Figma у вкладки нет. */
+   обучения школы. Раскладка — из прототипа школы (задача 83, 16.11.2026: шапка, четыре
+   цифры, оглавление, карточки разделов с фактами, тарифами и двумя колонками, сводная
+   таблица, итог), цвета — сайта. Шрифт не задаём — наследуется от приложения (Manrope,
+   в kk — Inter). Тёмная тема — блок генератора (theme-dark.generated.css), телефон — в
+   конце файла: своего кадра в Figma у вкладки нет. */
 
 .lr {
   max-width: 880px;
@@ -153,12 +153,131 @@
 .lr-card__p {
   margin: 8px 0;
 }
-.lr-card__p--aside {
-  font-style: italic;
-  color: #6b6a7b;
+.lr-card__sub {
+  margin: 18px 0 8px;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 800;
+}
+.lr-card__title + .lr-card__sub {
+  margin-top: 0;
 }
 .lr b {
   font-weight: 700;
+}
+.lr a {
+  color: #9047ff;
+  font-weight: 700;
+}
+
+/* ── Карточки-факты: назначение преподавателя, бонусы, возврат ── */
+.lr-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 4px 0;
+}
+.lr-fact {
+  border: 1px solid #ececf2;
+  border-radius: 16px;
+  padding: 16px 18px;
+  min-width: 0;
+}
+.lr-fact__k {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #6b6a7b;
+}
+.lr-fact__v {
+  margin: 4px 0 2px;
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #9047ff;
+}
+.lr-fact .lr-card__sub {
+  margin: 4px 0;
+}
+.lr-fact__d {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ── Лимит переносов по тарифу ── */
+.lr-tariffs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 4px 0 6px;
+}
+.lr-tariff {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid #ececf2;
+  border-radius: 16px;
+  padding: 14px 16px;
+  min-width: 0;
+}
+.lr-tariff__k {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #6b6a7b;
+}
+/* Две строки под список тарифов — значения карточек стоят на одной высоте. */
+.lr-tariff__plans {
+  min-height: 2.9em;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #6b6a7b;
+}
+.lr-tariff__v {
+  margin-top: 4px;
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #9047ff;
+}
+.lr-tariff__d {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #6b6a7b;
+}
+.lr-tariff--none .lr-tariff__v {
+  color: #c9372f;
+}
+
+/* ── Две колонки: индивидуальный / групповой, урок / абонемент ── */
+.lr-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.lr-split__col {
+  border: 1px solid #ececf2;
+  border-radius: 16px;
+  padding: 16px 18px;
+  min-width: 0;
+}
+.lr-split__h {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #9047ff;
+}
+.lr-split .lr-card__list {
+  font-size: 15px;
+}
+
+@media (max-width: 760px) {
+  .lr-tariffs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ── Плашки: хорошо / внимание / плохо ── */
@@ -270,6 +389,12 @@
   .lr__toc-list { columns: 1; }
   .lr-card { padding: 20px 18px; border-radius: 16px; }
   .lr-card__title { font-size: 18px; }
+  /* Факты и колонки — в столбик (в прототипе с 520 px; берём границу мобильного слоя). */
+  .lr-facts,
+  .lr-split { grid-template-columns: 1fr; }
+  .lr-tariffs { gap: 8px; }
+  .lr-tariff { padding: 12px 14px; }
+  .lr-tariff__v { font-size: 21px; }
   .lr-table { font-size: 14px; }
   .lr-table th,
   .lr-table td { padding: 10px 8px; }
