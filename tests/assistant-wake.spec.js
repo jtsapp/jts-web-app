@@ -33,6 +33,19 @@ test('«Луна, где домашка?» одним духом — без ок
   await expect(page.getByRole('button', { name: 'Закончить вопрос' })).toBeHidden()
 })
 
+// Позывной на распознавании браузера (задача 202, п.2): команда одним духом приходит готовым текстом — второго
+// распознавания на сервере нет, вопрос сразу в чат.
+test('«Луна, где домашка?» текстом браузера — без второго распознавания, ответ открывает окно', async ({ page }) => {
+  const calls = await setup(page)
+  await enableWake(page)
+
+  await page.evaluate(() => window.__jtsWake('Луна, где домашка?', { full: true }))
+  await expect(page.getByRole('dialog', { name: 'Луна' })).toBeVisible({ timeout: 10_000 })
+  expect(calls.stt).toBe(0)
+  expect(calls.chat[0].messages.at(-1)).toEqual({ role: 'user', content: 'где домашка?' })
+  await expect(page.locator('.asst__msg--bot').last()).toContainText('Домашняя работа')
+})
+
 test('раздел взял микрофон — «ухо» молчит, отпустил — снова слушает', async ({ page }) => {
   await setup(page)
   await enableWake(page)

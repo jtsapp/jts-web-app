@@ -11,20 +11,20 @@
 // оно не должно тут же открыться снова. Условия проверяются каждые полсекунды:
 // половина из них — не состояние React (арбитр, звук, видимость, часы).
 //
-// Любая ошибка «уха» (нет разрешения, модель не скачалась) выключает позывной:
-// повтор — включить снова, в жесте, где и разрешение спросят, и контекст разбудят,
-// а не тихий цикл попыток каждые полсекунды.
+// Любая ошибка «уха» (нет разрешения, браузер не распознаёт речь) выключает позывной:
+// повтор — включить снова, в жесте, где и разрешение спросят, а не тихий цикл попыток
+// каждые полсекунды.
 //
-// AudioContext «уха» и звук Луны браузер будит только жестом. После перезагрузки
-// жеста нет, поэтому каждое касание страницы будит и то, и другое (unlockSpeech,
-// resume — дешёвые, если уже не спят); до первого касания «ухо» спит (paused).
+// Слушает распознавание самого браузера (speechEar.js, задача 202 от 16.11.2026 — без
+// загрузки модели; прежнее «ухо» на Vosk — wakeEar.js — осталось только лаборатории
+// /wake-lab). Распознавание и звук Луны браузер пускает только после касания страницы,
+// поэтому каждое касание будит и то, и другое (unlockSpeech, resume — дешёвые, если уже
+// не спят); до первого касания «ухо» спит (paused).
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { isTtsActive, unlockSpeech } from '../../speech.js'
 import { installMicArbiter } from './micArbiter.js'
-import { wakeSet } from './matchWake.js'
-import { WAKE_MODELS } from './model.js'
-import { createWakeEar } from './wakeEar.js'
+import { createSpeechEar, speechRecognitionCtor } from './speechEar.js'
 import { wav16k } from './preroll.js'
 import { useWakeOn, writeWakeOn } from './wakeSetting.js'
 
@@ -32,17 +32,15 @@ export const WAKE_COOLDOWN_MS = 5000
 const TICK_MS = 500
 
 const noop = () => () => {}
+// Распознаватель браузера есть (Chrome, Edge, Safari; в Firefox — нет, и переключателя позывного нет). «Немой»
+// распознаватель (Opera GX) так не отличить — его ловит speechEar по поведению.
 function isSupported() {
-  return (
-    typeof WebAssembly === 'object' &&
-    Boolean(globalThis.AudioContext || globalThis.webkitAudioContext) &&
-    Boolean(globalThis.navigator?.mediaDevices?.getUserMedia)
-  )
+  return Boolean(speechRecognitionCtor()) && Boolean(globalThis.navigator?.mediaDevices?.getUserMedia)
 }
 const useSupported = () => useSyncExternalStore(noop, isSupported, () => false)
 
-// e2e: настоящий Vosk в headless не гоняем (45 МБ модели и WASM на процессоре; его
-// проверяет tests/wake-lab.spec.js). Тест ставит window.__jtsFakeWakeEar до загрузки —
+// e2e: настоящее распознавание браузера в headless не гоняем (у headless-Chrome оно
+// не слышит фальшивый микрофон). Тест ставит window.__jtsFakeWakeEar до загрузки —
 // «ухо» становится заглушкой, а window.__jtsWake(текст) изображает итог Vosk с позывным
 // («луна дальше» — с командой; без текста — одно имя). В прод-сборке этой ветки нет.
 function createFakeEar({ onWake, onState }) {
@@ -66,23 +64,26 @@ function createFakeEar({ onWake, onState }) {
     ear.state = s
     onState(s)
   }
-  window.__jtsWake = (text = 'луна') => {
-    if (ear.state === 'listening') onWake({ text, words: [], preroll: () => wav16k(new Float32Array(3200), 16000) })
+  // full — итог как у распознавания браузера (speechEar.js): текст целиком, звука команды нет.
+  window.__jtsWake = (text = 'луна', { full = false } = {}) => {
+    if (ear.state !== 'listening') return
+    if (full) onWake({ text, words: [], preroll: () => null, full: true })
+    else onWake({ text, words: [], preroll: () => wav16k(new Float32Array(3200), 16000) })
   }
   return ear
 }
 
 function earFactory() {
   if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined' && window.__jtsFakeWakeEar) return createFakeEar
-  return createWakeEar
+  return createSpeechEar
 }
 
 /**
- * persona — id помощника (lib/assistant/persona.js): Луна слушает русской моделью и
- * ждёт «Луна», Айзере — казахской и ждёт «Айзере» (matchWake.js).
+ * persona — id помощника (lib/assistant/persona.js): Луну зовут «Луна» и слушают по-русски,
+ * Айзере — «Айзере» и по-казахски (matchWake.js, speechEar.js WAKE_LANGS).
  * onDenied — микрофон не дали (окно объясняет, где снять запрет).
  * @returns {{ supported: boolean, on: boolean, state: 'off'|'loading'|'listening'|'paused',
- *   error: null|'model'|'denied'|'mic', enable: () => void, disable: () => void }}
+ *   error: null|'denied'|'mic'|'network'|'unsupported', enable: () => void, disable: () => void }}
  */
 export function useWakeWord({ token, enabled, open, onWake, onDenied, persona = 'luna' }) {
   const supported = useSupported()
@@ -100,10 +101,9 @@ export function useWakeWord({ token, enabled, open, onWake, onDenied, persona = 
   })
 
   const getEar = useCallback(() => {
-    const wake = wakeSet(persona)
     earRef.current ??= earFactory()({
-      modelUrl: WAKE_MODELS[wake.model],
-      wake,
+      // Помощник решает фразы позывного и язык распознавания (matchWake.js, speechEar.js).
+      persona,
       onWake: (detail) => {
         cooldownRef.current = Date.now() + WAKE_COOLDOWN_MS
         earRef.current?.stop()
@@ -124,7 +124,7 @@ export function useWakeWord({ token, enabled, open, onWake, onDenied, persona = 
 
   const live = Boolean(supported && on && token && enabled)
 
-  // Сменился язык интерфейса — сменился помощник: прежнее «ухо» (чужая модель и
+  // Сменился язык интерфейса — сменился помощник: прежнее «ухо» (чужой язык и
   // фразы) отпускаем, новое создаст getEar на следующем тике. Эффект стоит ДО тика:
   // тот перезапускается на новый getEar и должен застать earRef пустым.
   const personaRef = useRef(persona)
@@ -192,8 +192,8 @@ export function useWakeWord({ token, enabled, open, onWake, onDenied, persona = 
     }
   }, [live, open, getEar])
 
-  // В жесте (клик по переключателю): будим звук и контекст, качаем модель и спрашиваем
-  // разрешение сейчас — рядом с переключателем, а не посреди урока.
+  // В жесте (клик по переключателю): будим звук и спрашиваем разрешение сейчас — рядом
+  // с переключателем, а не посреди урока.
   const enable = useCallback(() => {
     unlockSpeech()
     writeWakeOn(true)

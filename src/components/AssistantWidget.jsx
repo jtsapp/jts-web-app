@@ -421,6 +421,8 @@ const WAKE_ERRORS = {
   denied: 'assistant.wake.denied',
   model: 'assistant.wake.modelFailed',
   mic: 'assistant.wake.micFailed',
+  network: 'assistant.wake.network',
+  unsupported: 'assistant.wake.unsupported',
 }
 
 function readMuted() {
@@ -1902,7 +1904,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     runText(text, { quiet: true })
   }, [greetOnWake, runText])
 
-  // Итог «уха» (wake/wakeEar.js): { text — что распознал Vosk, preroll() — звук от имени }.
+  // Итог «уха» (wake/speechEar.js — распознавание браузера, full: текст целиком; у Vosk в /wake-lab — wakeEar.js:
+  // текст грамматики и preroll() — звук от имени).
   // Возвращает «ухо» глухоту: после команды следующую ученик скажет скоро.
   const onWake = useCallback((detail = {}) => {
     const cur = stateRef.current
@@ -1915,7 +1918,12 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       if (!tryFast(command, text, { quiet: true })) send(wakeTail(text, name).join(' '), { voice: true, quiet: true })
       return fast
     }
-    // Слова после имени — команда одним духом: её звук уже в буфере «уха».
+    // Слова после имени — команда одним духом. Распознавание браузера (speechEar.js, full) уже отдало её текстом —
+    // второе распознавание на сервере не нужно; у Vosk её звук лежит в буфере «уха».
+    if (detail.full && wakeTail(text, name).length) {
+      onWakeText(text)
+      return fast
+    }
     const wav = wakeTail(text, name).length ? detail.preroll?.() : null
     if (wav) {
       showCmd('thinking')
