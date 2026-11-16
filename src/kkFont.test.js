@@ -31,6 +31,11 @@ const COVERED = {
   'demo.css | .hm-temper': "html[data-ui-lang='kk'] .hm-temper",
   'mobile/home.css | .hm-temper': "html[data-ui-lang='kk'] .hm-temper",
   'placement.css | .pl-speak': "html[data-ui-lang='kk'] .pl-speak",
+  'hiring/hiring.css | .hr-site': "html[data-ui-lang='kk'] .hr-site",
+  'hiring/hiring.css | .hr-site .hr-wordmark': "html[data-ui-lang='kk'] .hr-site .hr-wordmark",
+  'hiring/hiring.css | .hr-site .hr-display,.hr-site h1': "html[data-ui-lang='kk'] .hr-site .hr-display",
+  'hiring/hiring.css | .hr-site .hr-result .hr-big': "html[data-ui-lang='kk'] .hr-site .hr-result .hr-big",
+  'hiring/hiring.css | .hr-site .hr-stat b': "html[data-ui-lang='kk'] .hr-site .hr-stat b",
 }
 
 function cssFiles(dir) {

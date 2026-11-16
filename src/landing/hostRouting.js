@@ -31,7 +31,9 @@ const SHORT_LINK = /^\/([a-z0-9][a-z0-9_-]{1,39})\/?$/i
 export const SHORT_LINK_RESERVED = new Set(['_next', 'api', 'assets', 'fonts', 'info', 'landing', 'legal',
   'favicon.ico', 'robots.txt', 'sitemap.xml', 'complete-registration', 'report', 'trial', 'wake-lab',
   'arcade', 'course', 'demo', 'exam', 'ielts', 'learning', 'placement', 'practice', 'sat', 'shadowing',
-  'tutor', 'vocab', 'pricing', 'minutes', 'login', 'admin', 'pay', 'payment', 'app'])
+  'tutor', 'vocab', 'pricing', 'minutes', 'login', 'admin', 'pay', 'payment', 'app',
+  // Сайт онлайн-отбора преподавателей (/hr/apply, /hr/c/<токен>).
+  'hr'])
 
 /** Имя короткой ссылки из пути («/Dana/» → «dana») или null. */
 export function shortLinkSlug(pathname) {
