@@ -6,6 +6,8 @@ describe('временное скрытие кабинетов ученика н
   it.each(hidden)('%s закрыт на проде и доступен для проверки на dev', (screen) => {
     expect(isStudentSectionHidden(screen, 'ai-tutor.justtostudy.kz')).toBe(true)
     expect(isStudentSectionHidden(screen, 'AI-TUTOR.JUSTTOSTUDY.KZ:443')).toBe(true)
+    expect(isStudentSectionHidden(screen, 'justtostudy-english.kz')).toBe(true)
+    expect(isStudentSectionHidden(screen, 'www.justtostudy-english.kz')).toBe(true)
     expect(isStudentSectionHidden(screen, 'dev-tutor.justtostudy.kz')).toBe(false)
     expect(isStudentSectionHidden(screen, 'localhost')).toBe(false)
   })

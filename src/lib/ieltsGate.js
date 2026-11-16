@@ -2,7 +2,13 @@
 // поэтому единственное, что их различает на лету, — домен. Список короткий и явный: незнакомый адрес (дев, localhost,
 // превью) прод-доменом не считается. IELTS и SAT на проде открыты (раньше скрывались по этому признаку); по нему же
 // сейчас скрыт только звонок ассистента (lib/assistant/callGate.js).
-export const PROD_HOSTS = ['ai-tutor.justtostudy.kz']
+// Домены лендинга — тоже прод: на них открывается то же приложение (оформление заказа ?screen=pricing/minutes,
+// дальше ученик ходит по меню без перезагрузки), и без них там были видны все скрытые на проде разделы (16.11.2026).
+export const PROD_HOSTS = [
+  'ai-tutor.justtostudy.kz',
+  'justtostudy-english.kz', 'www.justtostudy-english.kz',
+  'justtostudy.kz', 'www.justtostudy.kz',
+]
 
 const clean = (v) => String(v ?? '').trim().toLowerCase().replace(/:\d+$/, '')
 

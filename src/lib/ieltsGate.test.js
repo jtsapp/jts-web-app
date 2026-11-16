@@ -6,6 +6,11 @@ describe('прод-домен', () => {
     expect(isProdHost('ai-tutor.justtostudy.kz')).toBe(true)
     expect(isProdHost('AI-Tutor.JustToStudy.kz:443')).toBe(true)
   })
+  it('домены лендинга — тоже прод: на них открывается приложение с оплатой', () => {
+    for (const host of ['justtostudy-english.kz', 'www.justtostudy-english.kz', 'JustToStudy-English.kz:443', 'justtostudy.kz', 'www.justtostudy.kz']) {
+      expect(isProdHost(host)).toBe(true)
+    }
+  })
   it('дев, localhost и превью прод-доменом не считаются', () => {
     for (const host of ['dev-ai-tutor.justtostudy.kz', 'localhost', '127.0.0.1', '', null]) {
       expect(isProdHost(host)).toBe(false)
