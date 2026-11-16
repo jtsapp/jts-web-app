@@ -4,6 +4,7 @@ import { dayMonth, weekdayLong, weekdayShort } from '../../lib/localDate.js'
 import { plural } from '../../lib/plural.js'
 import { SUPPORT_WHATSAPP_URL } from '../../lib/support.js'
 import { canOpenLesson, dayLabelKey, isLessonLive, lessonTimeRange, parseLessonDate } from '../schedule/lessonFormat.js'
+import { openRules } from '../lessons/rules/openRules.js'
 import { nextCourseTest, nextLesson, teacherHomework, weekDays } from './homeBlocks.js'
 import { useLessonTopic } from './useHomeData.js'
 
@@ -146,6 +147,25 @@ function TeacherHomework({ items, state, onRetry, onNav }) {
 }
 
 /**
+ * «📄 Правила обучения» (ТЗ v2.0, 5.4; задача 190 «Добавить правила на главную»): перенос, отмена, заморозка. ТЗ
+ * просит PDF на языке интерфейса, но файла у школы нет — правила живут вкладкой «Правила» в «Уроках» (ru/kk/en,
+ * src/screens/lessons/rules/), туда кнопка и ведёт. Появится PDF — меняется только этот переход.
+ */
+export function RulesButton({ onNav }) {
+  const { t } = useI18n()
+  return (
+    <button type="button" className="hm-tl__rules" data-testid="home-rules" onClick={() => openRules(onNav)}>
+      <Plate ico="assignment" />
+      <span className="hm-blk__rowText">
+        <b className="hm-blk__rowTitle">{t('home.tl.rules')}</b>
+        <span className="hm-blk__rowSub">{t('home.tl.rulesSub')}</span>
+      </span>
+      <span className="hm-tl__rulesChev" aria-hidden="true" />
+    </button>
+  )
+}
+
+/**
  * «Уроки с преподавателем» (ТЗ 5.4): всё про уроки в одном месте. «Осталось» — та же цифра, что плитка «Осталось» на
  * экране «Уроки» (/admin/lessons/summary: занятия по расписанию). Размера пакета ученику бэкенд не отдаёт, поэтому
  * «из M» здесь нет — пока не появится ручка пакета. «Записаться» — к менеджеру в WhatsApp: запись на уроки идёт через
@@ -184,6 +204,7 @@ export function TeacherLessonsCard({ token, occurrences, summary, homework, home
           </button>
         </p>
       )}
+      <RulesButton onNav={onNav} />
       <TeacherHomework items={homework} state={homeworkState} onRetry={onRetryHomework} onNav={onNav} />
     </section>
   )

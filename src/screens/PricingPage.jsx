@@ -13,6 +13,7 @@ import { CURRENCY, formatPrice, offerCategory, offerTitle, offerDetails } from '
 import { addItem, cartCount, cartTotal, qtyOf, removeItem, setQty } from '../lib/cart.js'
 import { consumePendingOffer } from '../lib/pendingOffer.js'
 import { checkoutUrl, fetchCheckoutOrigin } from '../lib/checkoutOrigin.js'
+import { orderRefusal } from '../lib/orderRefusal.js'
 
 
 /**
@@ -35,8 +36,11 @@ function newOrderKey() {
 // ценой и составом, клиент словами, поэтому экран остаётся трёхъязычным.
 export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
   const { t, lang } = useI18n()
-  const { offers, failed, reload } = useOffers()
+  // Только то, что можно оплатить онлайн: непродаваемое «Купить» вело в 422 и в чат менеджера.
+  const { offers, failed, reload } = useOffers({ sellableOnly: true })
   const [items, setItems] = useState([])
+  // Сервер отказал в заказе по существу (тариф снят с продажи, нужен уровень) — ключ текста причины.
+  const [refused, setRefused] = useState(null)
   const [payOpen, setPayOpen] = useState(false)
   const [sent, setSent] = useState(false)
   // Окно закрыли — плашка в корзине остаётся, второй раз окно не всплывает.
@@ -70,6 +74,15 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
       prev,
     ))
   }, [offers]) // eslint-disable-line react-hooks/exhaustive-deps -- cartLine зависит от языка, подстановка одна
+  // Каталог перечитан после отказа — снятое с продажи уходит и из корзины, иначе отказ повторился бы.
+  useEffect(() => {
+    if (!offers?.length) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- корзина сверяется с пришедшим каталогом
+    setItems((prev) => {
+      const next = prev.filter((x) => offers.some((o) => o.code === x.id))
+      return next.length === prev.length ? prev : next
+    })
+  }, [offers])
   const bump = (id, delta) => setItems((prev) => setQty(prev, id, qtyOf(prev, id) + delta))
 
   // Ключ идемпотентности живёт, пока не изменилась корзина: повторный клик по
@@ -140,8 +153,15 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
           window.location.assign(order.paymentUrl)
           return
         }
-      } catch {
-        /* заказ не создался — остаётся запасной путь ниже */
+      } catch (err) {
+        // Отказ по существу — говорим причину здесь же и не уводим в чат молча. Сбой связи или 5xx — запасной путь ниже.
+        const reason = orderRefusal(err)
+        if (reason) {
+          setPayOpen(false)
+          setRefused(reason)
+          reload()
+          return
+        }
       }
     }
 
@@ -225,6 +245,13 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
                 <b>{formatPrice(total)} {CURRENCY}</b>
               </div>
 
+              {refused && !sent && (
+                <div className="pr-refused" role="alert">
+                  <b>{t(refused)}</b>
+                  <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">{t('pay.refused.manager')}</a>
+                </div>
+              )}
+
               {sent ? (
                 <div className="pr-sent" role="status">
                   <b>{t('pay.sent')}</b>
@@ -236,7 +263,11 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
                     type="button"
                     className="pr-cart__pay"
                     disabled={count === 0}
-                    onClick={() => setPayOpen(true)}
+                    onClick={() => {
+                      // Новая попытка — прежний отказ (его каталог уже перечитан, корзина сверена) больше не висит.
+                      setRefused(null)
+                      setPayOpen(true)
+                    }}
                   >
                     {t('pricing.cart.pay')}
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">

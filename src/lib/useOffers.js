@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getOffers } from '../api.js'
+import { sellableOffers } from './sellableOffers.js'
 
 /**
  * Каталог витрины с бэкенда.
@@ -9,10 +10,13 @@ import { getOffers } from '../api.js'
  * заказ посчитался бы по серверной, другой. Не загрузилось — честная ошибка и
  * кнопка «попробовать снова».
  *
+ * `sellableOnly` — только то, что можно оплатить онлайн (экраны с оплатой картой). Экраны, где «Купить» пишет
+ * менеджеру (тарифы IELTS/SAT), видят всё опубликованное.
+ *
  * @returns {{ offers: Array|null, failed: boolean, reload: () => void }}
  *          offers === null — ещё грузим.
  */
-export function useOffers() {
+export function useOffers({ sellableOnly = false } = {}) {
   const [offers, setOffers] = useState(null)
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -22,8 +26,9 @@ export function useOffers() {
     setFailed(false)
     setOffers(null)
     getOffers()
-      .then((list) => {
+      .then((all) => {
         if (!alive) return
+        const list = sellableOnly ? sellableOffers(all) : all
         setOffers(list)
         // Пустой каталог — тоже нечего показывать: это не «загрузилось», это
         // «продавать нечего», и вести себя должно как ошибка.
@@ -35,7 +40,7 @@ export function useOffers() {
     return () => {
       alive = false
     }
-  }, [attempt])
+  }, [attempt, sellableOnly])
 
   const reload = useCallback(() => setAttempt((n) => n + 1), [])
   return { offers, failed, reload }

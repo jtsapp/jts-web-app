@@ -12,12 +12,15 @@ const backend = {
   offersFail: false,
   leadAccepted: true,
   order: { paymentUrl: null },
+  orderError: null,
+  offersCalls: 0,
   orderCalls: [],
   leadCalls: [],
 }
 
 vi.mock('../api.js', () => ({
   getOffers: vi.fn(async () => {
+    backend.offersCalls += 1
     if (backend.offersFail) throw new Error('offline')
     return backend.offers
   }),
@@ -27,6 +30,7 @@ vi.mock('../api.js', () => ({
   }),
   createOrder: vi.fn(async (token, payload) => {
     backend.orderCalls.push(payload)
+    if (backend.orderError) throw backend.orderError
     return backend.order
   }),
 }))
@@ -84,6 +88,8 @@ beforeEach(() => {
   backend.offersFail = false
   backend.leadAccepted = true
   backend.order = { paymentUrl: null }
+  backend.orderError = null
+  backend.offersCalls = 0
   backend.orderCalls.length = 0
   backend.leadCalls.length = 0
 })
@@ -358,5 +364,63 @@ describe('Витрина тарифов', () => {
     const { onBack } = await renderLoaded()
     fireEvent.click(screen.getByLabelText('Назад'))
     expect(onBack).toHaveBeenCalled()
+  })
+})
+
+// 15.11.2026: на проде непродаваемые тарифы (нет тарифа уроков или срока) стояли с «Купить», заказ получал 422,
+// и витрина молча открывала WhatsApp. Теперь их нет в списке, а отказ сервера объясняется на месте.
+describe('Непродаваемые тарифы и отказ в заказе', () => {
+  const refusal = (status, code) => Object.assign(new Error(`request failed: ${status}`), { status, code })
+
+  it('тариф с purchasable: false в витрину не попадает', async () => {
+    backend.offers = CATALOG.map((o) => (o.code === 'ind-60-12' ? { ...o, purchasable: false } : { ...o, purchasable: true }))
+    const { container } = await renderLoaded()
+    await waitFor(() => expect(tile(container, '8 уроков')).toBeTruthy())
+    expect(tile(container, '12 уроков')).toBeFalsy()
+  })
+
+  it('из ссылки «Купить» непродаваемый тариф в корзину не встаёт', async () => {
+    backend.offers = CATALOG.map((o) => (o.code === 'ind-60-12' ? { ...o, purchasable: false } : o))
+    rememberPendingOffer('ind-60-12,group-12')
+    const { container } = await renderLoaded()
+    await waitFor(() => expect(container.querySelectorAll('.pr-line')).toHaveLength(1))
+    expect(container.querySelector('.pr-line b').textContent).not.toContain('12 уроков · 60')
+  })
+
+  it('422 OFFER_UNAVAILABLE — причина в корзине, чат не открывается, тариф уходит из списка и корзины', async () => {
+    backend.orderError = refusal(422, 'OFFER_UNAVAILABLE')
+    const { container } = await renderLoaded()
+    await addTile(container, '12 уроков')
+    // К моменту перечитывания каталога сервер уже не отдаёт тариф как продаваемый.
+    backend.offers = CATALOG.map((o) => (o.code === 'ind-60-12' ? { ...o, purchasable: false } : o))
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Оплатить картой'))
+
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('нельзя оплатить онлайн'))
+    expect(window.open).not.toHaveBeenCalled()
+    expect(backend.offersCalls).toBe(2)
+    await waitFor(() => expect(container.querySelectorAll('.pr-line')).toHaveLength(0))
+    expect(screen.getByRole('alert').textContent).toContain('нельзя оплатить онлайн')
+    expect(screen.queryByText('Заявка принята')).toBeNull()
+  })
+
+  it('422 LEVEL_REQUIRED — просит уровень в профиле', async () => {
+    backend.orderError = refusal(422, 'LEVEL_REQUIRED')
+    const { container } = await renderLoaded()
+    await addTile(container, '12 уроков')
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Оплатить картой'))
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('уровень английского'))
+    expect(window.open).not.toHaveBeenCalled()
+  })
+
+  it('сбой связи — прежний запасной путь к менеджеру', async () => {
+    backend.orderError = new Error('Нет связи с сервером.')
+    const { container } = await renderLoaded()
+    await addTile(container, '12 уроков')
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Оплатить картой'))
+    await waitFor(() => expect(window.open).toHaveBeenCalled())
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 })

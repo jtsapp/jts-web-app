@@ -9,6 +9,7 @@ import PurchaseSuccessModal from '../components/PurchaseSuccessModal.jsx'
 import CatalogError from '../components/CatalogError.jsx'
 import { clearPendingOffer, peekPendingOffer } from '../lib/pendingOffer.js'
 import { checkoutUrl, fetchCheckoutOrigin } from '../lib/checkoutOrigin.js'
+import { orderRefusal } from '../lib/orderRefusal.js'
 import { CURRENCY, formatPrice, packDiscount, pricePerMinute, splitOffers } from '../data/pricing.js'
 
 
@@ -33,7 +34,9 @@ function newOrderKey() {
 // сумму заказа считает сервер.
 export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin }) {
   const { t, lang } = useI18n()
-  const { offers, failed, reload } = useOffers()
+  // Только то, что можно оплатить онлайн, — как на витрине тарифов.
+  const { offers, failed, reload } = useOffers({ sellableOnly: true })
+  const [refused, setRefused] = useState(null)
   const [pickedCode, setPickedCode] = useState(null)
   // Пакет, с которым приложение увело оплату на домен лендинга (?offer=<код>):
   // начальный выбор, а не запись из эффекта — см. ниже, почему.
@@ -121,8 +124,15 @@ export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin })
           window.location.assign(order.paymentUrl)
           return
         }
-      } catch {
-        /* заказ не создался — остаётся запасной путь ниже */
+      } catch (err) {
+        // Отказ по существу — причина здесь же, без чата; сбой связи или 5xx — запасной путь ниже.
+        const reason = orderRefusal(err)
+        if (reason) {
+          setPayOpen(false)
+          setRefused(reason)
+          reload()
+          return
+        }
       }
     }
 
@@ -216,6 +226,12 @@ export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin })
                 <span>{t('topup.due')}</span>
                 <b>{formatPrice(picked.price)} {CURRENCY}</b>
               </div>
+              {refused && !sent && (
+                <div className="pr-refused" role="alert">
+                  <b>{t(refused)}</b>
+                  <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">{t('pay.refused.manager')}</a>
+                </div>
+              )}
               {sent ? (
                 <div className="pr-sent" role="status">
                   <b>{t('pay.sent')}</b>
@@ -223,7 +239,7 @@ export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin })
                 </div>
               ) : (
                 <>
-                  <button type="button" className="tu-order__pay" onClick={() => setPayOpen(true)}>
+                  <button type="button" className="tu-order__pay" onClick={() => { setRefused(null); setPayOpen(true) }}>
                     {t('topup.pay', { price: formatPrice(picked.price) })}
                   </button>
                   <p className="tu-order__note">

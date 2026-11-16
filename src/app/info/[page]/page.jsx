@@ -12,6 +12,7 @@ import { APP_LOGIN_URL, pickContent } from '../../../landing/content.js'
 import { INFO_PAGES, pickInfo } from '../../../landing/info.js'
 import { appLink, checkoutOrigin, normalizeAppUrl, parseHosts, requestHost } from '../../../landing/hostRouting.js'
 import { BACKEND_URL } from '../../../lib/auth-server.js'
+import { sellableOffers } from '../../../lib/sellableOffers.js'
 
 async function langOf(searchParams) {
   const sp = await searchParams
@@ -35,7 +36,8 @@ async function loadOffers() {
     const res = await fetch(`${BACKEND_URL}/catalog/offers`, { next: { revalidate: 300 } })
     if (!res.ok) return null
     const data = await res.json()
-    return Array.isArray(data) ? data : null
+    // «Купить» здесь ведёт в оплату картой: непродаваемое (purchasable: false) не показываем.
+    return Array.isArray(data) ? sellableOffers(data) : null
   } catch {
     return null
   }

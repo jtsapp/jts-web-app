@@ -657,10 +657,6 @@ html[data-theme="dark"] .sb__item--active, html[data-theme="dark"] .sb__item--ac
     background: var(--dk-acc);
     color: var(--dk-on-acc)
 }
-html[data-theme="dark"] .sb__badge--new {
-    background: var(--dk-yellow-tint);
-    color: var(--dk-yellow)
-}
 html[data-theme="dark"] .sb__badge {
     background: var(--dk-red);
     color: var(--dk-on-bright)
@@ -24204,6 +24200,94 @@ html[data-theme="dark"] .hm-report {
     background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc));
     color: var(--dk-on-acc)
 }
+/*  lessonRules.css  */
+html[data-theme="dark"] .lr {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .lr__hero {
+    background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc));
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .lr__tag {
+    background: rgba(255, 255, 255, .2)
+}
+html[data-theme="dark"] .lr-stat {
+    background: var(--dk-card);
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .lr-stat__num {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .lr-stat__label {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .lr__toc {
+    background: var(--dk-card);
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .lr__toc-title {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .lr__toc-list {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .lr__toc-link {
+    border: 0;
+    background: none;
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .lr-card {
+    background: var(--dk-card);
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .lr-card__n {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .lr-card__p--aside {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .lr-note {
+    border-left: 4px solid
+}
+html[data-theme="dark"] .lr-note--ok {
+    background: var(--dk-green-tint);
+    border-left-color: var(--dk-green)
+}
+html[data-theme="dark"] .lr-note--warn {
+    background: var(--dk-yellow-tint);
+    border-left-color: var(--dk-yellow)
+}
+html[data-theme="dark"] .lr-note--bad {
+    background: var(--dk-page);
+    border-left-color: var(--dk-red)
+}
+html[data-theme="dark"] .lr-table th, html[data-theme="dark"] .lr-table td {
+    border-bottom: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .lr-table th {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .lr-pill--ok {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .lr-pill--warn {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .lr-pill--bad {
+    background: var(--dk-page);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .lr__closing {
+    background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc));
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .lr__foot {
+    color: var(--dk-text-2)
+}
 /*  demo.css  */
 html[data-theme="dark"] .dm-banner {
     background: var(--dk-ink-bg);
@@ -25033,6 +25117,13 @@ html[data-theme="dark"] .pr-sent b {
 html[data-theme="dark"] .pr-sent span {
     color: var(--dk-green)
 }
+html[data-theme="dark"] .pr-refused {
+    background: var(--dk-orange-tint, rgba(245, 158, 11, 0.14))
+}
+html[data-theme="dark"] .pr-refused b,
+html[data-theme="dark"] .pr-refused a {
+    color: var(--dk-orange, #f5b25c)
+}
 html[data-theme="dark"] .pr-load__text {
     color: var(--dk-muted)
 }
@@ -25485,6 +25576,19 @@ html[data-theme="dark"] .hm-tl__none {
 }
 html[data-theme="dark"] .hm-tl__pack {
     color: var(--hm-sec, #5a5a66)
+}
+html[data-theme="dark"] .hm-tl__rules {
+    border: 1px solid var(--hm-line, #e8e8ee);
+    background: transparent
+}
+html[data-theme="dark"] .hm-tl__rules:hover {
+    background: var(--hm-tile, #f8f8f8)
+}
+html[data-theme="dark"] .hm-tl__rules:focus-visible {
+    outline: 2px solid var(--hm-ac, #9047ff)
+}
+html[data-theme="dark"] .hm-tl__rulesChev {
+    background: var(--hm-mut, #8e8e99)
 }
 html[data-theme="dark"] .hm-tl__h3 {
     color: var(--hm-ink, #181818)

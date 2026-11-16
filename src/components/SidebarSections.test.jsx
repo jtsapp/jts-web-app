@@ -21,7 +21,7 @@ function tokenFor(role) {
   return `${b64({ alg: 'HS256' })}.${b64({ role, userId: 4 })}.sig`
 }
 
-// Подпись пункта — первый span: метка «new» и счётчики лежат рядом и в подпись не входят.
+// Счётчики расположены рядом с подписью пункта.
 const labels = () => [...document.querySelectorAll('.sb__nav .sb__item > span')].map((b) => b.textContent)
 
 describe('Sidebar — разделы по тарифу и формату', () => {
@@ -46,7 +46,7 @@ describe('Sidebar — разделы по тарифу и формату', () =>
     expect(labels()).not.toContain('Выбрать группу')
   })
 
-  it('порядок: Практика сразу перед Speaking Buddy; «new» у Шахмат, Призов, Not Just English и Feedback', async () => {
+  it('Практика сразу перед Speaking Buddy, в меню нет меток «new»', async () => {
     getMySections.mockResolvedValue({ known: false, tariff: null, format: null, allowed: [] })
     render(
       <I18nProvider>
@@ -56,8 +56,7 @@ describe('Sidebar — разделы по тарифу и формату', () =>
     await waitFor(() => expect(labels()).toContain('Speaking Buddy'))
     const all = labels()
     expect(all.indexOf('Speaking Buddy')).toBe(all.indexOf('Практика') + 1)
-    const fresh = [...document.querySelectorAll('.sb__nav .sb__item')].filter((b) => b.querySelector('.sb__badge--new')).map((b) => b.dataset.nav)
-    expect(fresh).toEqual(['chess', 'prizes', 'birge', 'feedback'])
+    expect(screen.queryByText('new')).toBeNull()
   })
 
   it('пока абонемента нет (онбординг), меню полное', async () => {
