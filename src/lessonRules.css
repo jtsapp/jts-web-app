@@ -394,6 +394,8 @@
   .lr-split { grid-template-columns: 1fr; }
   .lr-tariffs { gap: 8px; }
   .lr-tariff { padding: 12px 14px; }
+  /* «ИНДИВИДУАЛЬНЫЙ» с разрядкой на 390 px встаёт ровно в карточку; уже — тарифы в столбик (ниже). */
+  .lr-tariff__k { letter-spacing: .02em; overflow-wrap: anywhere; }
   .lr-tariff__v { font-size: 21px; }
   .lr-table { font-size: 14px; }
   .lr-table th,
@@ -402,6 +404,12 @@
      помещается одной строкой и выталкивал таблицу в горизонтальную прокрутку. */
   .lr-pill { white-space: normal; }
   .lr__closing-title { font-size: 21px; }
+}
+
+/* 360 px и уже (частые Android): в 2×2 «ИНДИВИДУАЛЬНЫЙ» рвался посередине слова. */
+@media (max-width: 400px) {
+  .lr-tariffs { grid-template-columns: 1fr; }
+  .lr-tariff__plans { min-height: 0; }
 }
 
 @media print {
