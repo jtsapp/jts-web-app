@@ -9,7 +9,8 @@ import { FLAGS, HELLO, WAKE, bubble, enableWake, setup, silentWav } from './help
 // иногда считается речью, и тест стал бы лотереей. Флаг браузера — на весь файл.
 const SILENCE_FILE = path.join(os.tmpdir(), 'jts-e2e-silence.wav')
 fs.writeFileSync(SILENCE_FILE, silentWav(16000 * 3, 16000))
-test.use({ launchOptions: { args: [...FLAGS, `--use-file-for-fake-audio-capture=${SILENCE_FILE}`] } })
+// Разрешение на микрофон уже дано: иначе Луна сперва просит его плашкой (задача 202, assistant-mic-permission.spec.js).
+test.use({ permissions: ['microphone'], launchOptions: { args: [...FLAGS, `--use-file-for-fake-audio-capture=${SILENCE_FILE}`] } })
 
 test('одно «Луна» и тишина — «слушаю», потом прежнее приветствие с окном и запись одного ответа', async ({ page }) => {
   const calls = await setup(page)

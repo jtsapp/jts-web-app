@@ -80,10 +80,11 @@ function earFactory() {
 /**
  * persona — id помощника (lib/assistant/persona.js): Луна слушает русской моделью и
  * ждёт «Луна», Айзере — казахской и ждёт «Айзере» (matchWake.js).
+ * onDenied — микрофон не дали (окно объясняет, где снять запрет).
  * @returns {{ supported: boolean, on: boolean, state: 'off'|'loading'|'listening'|'paused',
  *   error: null|'model'|'denied'|'mic', enable: () => void, disable: () => void }}
  */
-export function useWakeWord({ token, enabled, open, onWake, persona = 'luna' }) {
+export function useWakeWord({ token, enabled, open, onWake, onDenied, persona = 'luna' }) {
   const supported = useSupported()
   const on = useWakeOn()
   const [ear, setEar] = useState({ state: 'idle', error: null })
@@ -92,8 +93,10 @@ export function useWakeWord({ token, enabled, open, onWake, persona = 'luna' }) 
   const arbiterRef = useRef(null)
   const cooldownRef = useRef(0)
   const onWakeRef = useRef(onWake)
+  const onDeniedRef = useRef(onDenied)
   useLayoutEffect(() => {
     onWakeRef.current = onWake
+    onDeniedRef.current = onDenied
   })
 
   const getEar = useCallback(() => {
@@ -112,6 +115,8 @@ export function useWakeWord({ token, enabled, open, onWake, persona = 'luna' }) 
       onState: (state, error) => {
         setEar({ state, error: error || null })
         if (state === 'error') writeWakeOn(false)
+        // Отказ в микрофоне — колбэком: повторный отказ error не меняет, и окно не узнало бы о нём.
+        if (state === 'error' && error === 'denied') onDeniedRef.current?.()
       },
     })
     return earRef.current

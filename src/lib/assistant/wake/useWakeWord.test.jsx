@@ -139,6 +139,18 @@ describe('useWakeWord', () => {
     expect(result.current.error).toBe('denied')
   })
 
+  // Задача 202: отказ — колбэком, и на каждый раз: повторный отказ error не меняет, а окно должно показать плашку снова.
+  it('отказ в микрофоне — onDenied на каждый отказ, другая ошибка — нет', async () => {
+    const onDenied = vi.fn()
+    mount({ onDenied })
+    await wait()
+    act(() => ears[0].fail('denied'))
+    act(() => ears[0].fail('denied'))
+    expect(onDenied).toHaveBeenCalledTimes(2)
+    act(() => ears[0].fail('model'))
+    expect(onDenied).toHaveBeenCalledTimes(2)
+  })
+
   it('enable — в жесте: будит контекст и готовит модель с разрешением', () => {
     writeWakeOn(false)
     const { result } = mount({ open: true })

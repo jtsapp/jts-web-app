@@ -38,6 +38,9 @@ import { eventActions } from '../lib/assistant/eventActions.js'
 import { screenBlocks } from '../lib/assistant/proactiveDom.js'
 import { stopSummary, stopToday } from '../lib/assistant/stopDay.js'
 import { installMicArbiter } from '../lib/assistant/wake/micArbiter.js'
+import { blockedSteps, micErrorKind, micGate, queryMicPermission } from '../lib/micAccess.js'
+import { useMicPermission } from '../lib/useMicPermission.js'
+import MicPermissionPrompt from './MicPermissionPrompt.jsx'
 import { hintMark, hintState, isHintAsk, keyAllowed, nextHintStep, noteWrong, recordHint } from '../lib/assistant/hintSteps.js'
 import { hintTask, keyFor } from '../lib/assistant/hintTask.js'
 import { reportHomeworkHint } from '../lib/assistant/homeworkHints.js'
@@ -407,6 +410,8 @@ const MUTE_KEY = 'jts_assistant_voice_muted'
 
 const VOICE_ERRORS = {
   denied: 'assistant.mic.denied',
+  nodevice: 'assistant.mic.nodevice',
+  busy: 'assistant.mic.busy',
   not_heard: 'assistant.mic.notHeard',
   stt_failed: 'assistant.mic.failed',
   auth: 'assistant.err.auth',
@@ -992,6 +997,9 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     performRef.current = perform
   })
 
+  // Плашка о микрофоне (см. gateMic ниже): { action: 'question'|'call'|'wake', kind: 'ask'|'blocked', steps? }.
+  const [micAsk, setMicAsk] = useState(null)
+
   // Экран стал запрещённым — окно закрывается. Не эффектом, а при рендере: так
   // окно не успевает мелькнуть на экзамене ни на кадр.
   const [prevEnabled, setPrevEnabled] = useState(enabled)
@@ -1000,6 +1008,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     if (!enabled) {
       setOpen(false)
       setHeld(null)
+      setMicAsk(null)
       // Звонок на экзамене или в звонке тьютору — кладём трубку (AssistantCall
       // снимется и закроет комнату).
       setCall(null)
@@ -1637,10 +1646,36 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     [dropCall, runCallAction],
   )
 
+  // Просьба о микрофоне (задача 202, 16.11.2026, владелец: «сделать запрос как на Speaking Buddy»). Перед первым
+  // доступом по нажатию — вопрос голосом, звонок, позывной — Луна объясняет, зачем ей микрофон, плашкой Speaking
+  // Buddy (MicPermissionPrompt); «Разрешить» на ней — тот же жест, в котором уходит запрос браузера, поэтому запись и
+  // звук будятся, как от кнопки. Отказ и запрет в браузере — та же плашка с тем, где снять запрет: строка «нет
+  // доступа» внизу окна молча ломала голос. Разрешение браузер уже помнит или не говорит о нём (unknown) — плашки
+  // нет: в первом случае она лишняя, во втором спросит сам браузер, а отказ всё равно объяснит плашка.
+  // Состояние плашки (micAsk) объявлено выше, у prevEnabled: экран без Луны снимает её при рендере.
+  const micPerm = useMicPermission()
+  // true — можно открывать микрофон сразу; иначе показана плашка, действие ждёт её кнопки.
+  const gateMic = (action) => {
+    const gate = micGate(micPerm)
+    if (gate === 'go') return true
+    setMicAsk(gate === 'ask' ? { action, kind: 'ask' } : { action, kind: 'blocked', steps: blockedSteps({ permission: 'denied' }) })
+    return false
+  }
+  // Микрофон не дали. Где запрет, видно по разрешению после отказа: denied — сайту в браузере, granted — браузеру
+  // в системе (blockedSteps); prompt — окно браузера закрыли, не ответив, и он спросит снова: та же просьба.
+  const micDenied = useCallback(async (action) => {
+    const permission = await queryMicPermission()
+    if (!mountedRef.current || !stateRef.current?.enabled) return
+    if (permission === 'prompt') setMicAsk({ action, kind: 'ask' })
+    else setMicAsk({ action, kind: 'blocked', steps: blockedSteps({ permission }) })
+  }, [])
+
   // «Позвонить»: микрофон (жест — разрешение спрашивается в этом же нажатии),
-  // токен комнаты, дальше AssistantCall.
-  const startCall = async () => {
+  // токен комнаты, дальше AssistantCall. asked — нажали кнопку плашки о микрофоне:
+  // она уже объяснила, второй раз не показываем, а пробуем микрофон.
+  const startCall = async ({ asked = false } = {}) => {
     if (call || !token) return
+    if (!asked && !gateMic('call')) return
     const seq = ++callSeqRef.current
     hangingUpRef.current = false
     unlockSpeech()
@@ -1663,8 +1698,12 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       stream.getTracks().forEach((tr) => tr.stop())
-    } catch {
-      return fail('assistant.call.err.mic')
+    } catch (e) {
+      const kind = micErrorKind(e)
+      if (kind !== 'denied') return fail(kind === 'nodevice' ? 'assistant.mic.nodevice' : kind === 'busy' ? 'assistant.mic.busy' : 'assistant.call.err.mic')
+      if (callSeqRef.current !== seq) return
+      setCall(null)
+      return micDenied('call')
     }
     if (callSeqRef.current !== seq) return
     try {
@@ -1815,6 +1854,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       sttMsRef.current = meta?.sttMs ?? null
       runTextRef.current?.(text)
     },
+    // Запись вопроса не дали (кнопкой или после позывного) — плашка с тем, где снять запрет (micAsk).
+    onMicDenied: () => micDenied('question'),
   })
   const { cancel: cancelRecording } = voiceQ
   // Для обработчика события открытия: он подписан один раз на send.
@@ -1888,7 +1929,12 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     return undefined
   }, [tryFast, send, showCmd, onWakeText, greetOnWake])
   // Во время звонка «ухо» молчит: микрофон у звонка, и Луна и так на связи.
-  const wake = useWakeWord({ token, enabled: enabled && !call, open, onWake, persona: persona.id })
+  // «Ухо» не дали микрофон — плашка, только если окно открыто (ученик сам включал позывной): выключившись в фоне,
+  // оно не всплывает посреди урока, а причину покажет подсказка под переключателем.
+  const onWakeDenied = useCallback(() => {
+    if (stateRef.current?.open) micDenied('wake')
+  }, [micDenied])
+  const wake = useWakeWord({ token, enabled: enabled && !call, open, onWake, onDenied: onWakeDenied, persona: persona.id })
   // Облачко «Я Луна…» у кнопки, пока ученик её ни разу не открывал (introHint.js).
   const introHint = useIntroHint({ screen, active: enabled && !call, open })
 
@@ -1915,6 +1961,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     }
     stopVoice()
     cancelRecording()
+    setMicAsk(null)
     setOpen(false)
   }, [stopVoice, cancelRecording])
 
@@ -1987,11 +2034,28 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
 
   // Синхронно в обработчике нажатия: unlockSpeech — это жест, после которого
   // iPhone разрешит сыграть ответ, пришедший через несколько секунд без жеста.
-  const onMic = () => {
+  const askByVoice = () => {
     unlockSpeech()
     stopVoice()
     voiceQ.clearError()
     voiceQ.toggle()
+  }
+  // Вторым нажатием вопрос заканчивают — микрофон уже открыт, спрашивать не о чем.
+  const onMic = () => {
+    if (voiceQ.state === 'idle' && !gateMic('question')) return
+    askByVoice()
+  }
+  // Позывной включают в жесте (wake.enable): там же спрашивается и разрешение.
+  const enableWake = () => {
+    if (gateMic('wake')) wake.enable()
+  }
+  // Кнопка плашки о микрофоне — тот же жест, что и нажатие, которое плашку вызвало.
+  const allowMic = () => {
+    const ask = micAsk
+    setMicAsk(null)
+    if (ask?.action === 'call') startCall({ asked: true })
+    else if (ask?.action === 'wake') wake.enable()
+    else if (ask) askByVoice()
   }
 
   // Набранный вопрос — тоже жест. Ответ на него Луна не озвучивает, но быстрая
@@ -2043,9 +2107,10 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // Пока вопрос голосом не задан до конца, другой вопрос не отправляем: чат
   // занят одним вопросом, и голосовой потерялся бы молча.
   const voiceBusy = voiceQ.state !== 'idle'
+  // Отказ в микрофоне объясняет плашка (micAsk), строкой внизу окна его не дублируем.
   const voiceError = voiceQ.error === 'rate'
     ? t('assistant.err.rate', { min: Math.max(1, Math.ceil((voiceQ.retryAfterSec || 60) / 60)) })
-    : voiceQ.error
+    : voiceQ.error && voiceQ.error !== 'denied'
       ? t(VOICE_ERRORS[voiceQ.error])
       : null
   // Кнопка звука — когда Луна говорила: ответ на голосовой вопрос.
@@ -2336,6 +2401,25 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
 
   return (
     <div className={`asst${free ? ' asst--free' : ''}`} data-persona={persona.id} data-assistant-ignore="">
+      {micAsk && (
+        <MicPermissionPrompt
+          className="asst__micperm"
+          blocked={micAsk.kind === 'blocked'}
+          hint={t(micAsk.kind === 'blocked' ? 'assistant.perm.blocked' : `assistant.perm.${micAsk.action}`)}
+          allowLabel={t(micAsk.kind === 'blocked' ? 'assistant.perm.retry' : 'assistant.perm.allow')}
+          onAllow={allowMic}
+          closeLabel={t('assistant.perm.later')}
+          onClose={() => setMicAsk(null)}
+        >
+          {micAsk.kind === 'blocked' && (
+            <ol className="asst__perm-steps">
+              {micAsk.steps.map((step) => (
+                <li key={step}>{t(`assistant.perm.step.${step}`)}</li>
+              ))}
+            </ol>
+          )}
+        </MicPermissionPrompt>
+      )}
       {open && (
         <div
           ref={panelRef}
@@ -2367,7 +2451,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                 className="asst__icon asst__call-btn"
                 aria-label={t('assistant.call.start')}
                 title={t('assistant.call.start')}
-                onClick={startCall}
+                onClick={() => startCall()}
               >
                 <PhoneIcon />
               </button>
@@ -2618,11 +2702,11 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                 <input
                   type="checkbox"
                   checked={wake.on}
-                  onChange={(e) => (e.target.checked ? wake.enable() : wake.disable())}
+                  onChange={(e) => (e.target.checked ? enableWake() : wake.disable())}
                 />
                 <span>{t('assistant.wake.toggle')}</span>
               </label>
-              {(wake.on || wake.error) && (
+              {(wake.on || wake.error) && micAsk?.action !== 'wake' && (
                 <p className="asst__wake-hint" role={wake.error ? 'alert' : undefined}>
                   {wake.error
                     ? t(WAKE_ERRORS[wake.error])

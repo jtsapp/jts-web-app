@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { micEnvironment, micErrorKind, micPlatform, openMic } from './micAccess.js'
+import { blockedSteps, micEnvironment, micErrorKind, micGate, micPlatform, openMic, queryMicPermission } from './micAccess.js'
 
 const err = (name) => Object.assign(new Error(name), { name })
 
@@ -83,4 +83,48 @@ describe('micPlatform', () => {
     ['Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'windows'],
     ['Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5)', 'mac'],
   ])('%s', (ua, platform) => expect(micPlatform(ua)).toBe(platform))
+})
+
+// Просьба Луны о микрофоне (задача 202, 16.11.2026).
+describe('micGate — что делать перед микрофоном по нажатию', () => {
+  it.each([
+    ['prompt', 'ask'],
+    ['denied', 'blocked'],
+    ['granted', 'go'],
+    ['unknown', 'go'],
+  ])('%s → %s', (permission, gate) => {
+    expect(micGate(permission)).toBe(gate)
+  })
+})
+
+describe('blockedSteps — где снять запрет', () => {
+  it('запрет сайту — шаг в браузере своей платформы и «нажми снова»', () => {
+    expect(blockedSteps({ permission: 'denied', platform: 'windows' })).toEqual(['site', 'retry'])
+    expect(blockedSteps({ permission: 'denied', platform: 'ios' })).toEqual(['ios', 'retry'])
+    expect(blockedSteps({ permission: 'denied', platform: 'android' })).toEqual(['android', 'retry'])
+  })
+  it('браузер разрешение помнит, а система — нет: шаг в системе', () => {
+    expect(blockedSteps({ permission: 'granted', platform: 'windows' })).toEqual(['windows', 'retry'])
+    expect(blockedSteps({ permission: 'granted', platform: 'mac' })).toEqual(['mac', 'retry'])
+    expect(blockedSteps({ permission: 'granted', platform: 'ios' })).toEqual(['iosSystem', 'retry'])
+    expect(blockedSteps({ permission: 'granted', platform: 'android' })).toEqual(['androidSystem', 'retry'])
+  })
+  it('не знаем, где запрет, — оба шага; системы не знаем — только браузер', () => {
+    expect(blockedSteps({ permission: 'unknown', platform: 'mac' })).toEqual(['site', 'mac', 'retry'])
+    expect(blockedSteps({ permission: 'unknown', platform: 'other' })).toEqual(['site', 'retry'])
+    expect(blockedSteps({ permission: 'granted', platform: 'other' })).toEqual(['site', 'retry'])
+  })
+})
+
+describe('queryMicPermission', () => {
+  it('ответ браузера как есть', async () => {
+    const nav = { permissions: { query: vi.fn(async () => ({ state: 'denied' })) } }
+    await expect(queryMicPermission(nav)).resolves.toBe('denied')
+    expect(nav.permissions.query).toHaveBeenCalledWith({ name: 'microphone' })
+  })
+  it('нет Permissions API или имя не знает — unknown', async () => {
+    await expect(queryMicPermission({})).resolves.toBe('unknown')
+    const nav = { permissions: { query: vi.fn(async () => { throw new TypeError('microphone') }) } }
+    await expect(queryMicPermission(nav)).resolves.toBe('unknown')
+  })
 })

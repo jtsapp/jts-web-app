@@ -635,6 +635,34 @@
 }
 .asst-ask::before { content: '💬'; text-decoration: none; }
 
+/* Просьба о микрофоне (задача 202, 16.11.2026): плашка Speaking Buddy (MicPermissionPrompt, .t-micperm в tutor.css)
+   у левого верхнего угла — там, где спросит браузер. Её цвета — токены тьютора, объявленные на .t-app; у Луны их
+   нет, берём свои: они же переходят в тёмную тему. z-index плашки (50) выше окна Луны (35) и колокольчика (40). */
+.asst .t-micperm {
+  --t-purple: var(--asst-accent);
+  --t-ink: var(--asst-ink);
+}
+.asst__perm-steps {
+  margin: -4px 0 0;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--asst-ink);
+}
+.asst__perm-steps li + li { margin-top: 4px; }
+@media (max-width: 720px) {
+  /* Окно Луны на телефоне — лист снизу, и его поле с кнопками плашка закрывать не должна: она сверху, во всю ширину.
+     У тьютора на телефоне она стоит под шапкой экрана (top 88), а Луна бывает на любом экране — отступ свой. */
+  .asst .t-micperm {
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+    bottom: auto;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+  .asst .t-micperm__hint { font-size: 16px; line-height: 1.35; }
+}
+
 /* Звонок Луне (16.10.2026, AssistantWidget + AssistantCall): полоса звонка
    вместо поля ввода, разговор — в том же списке сообщений. Окно можно закрыть
    посреди звонка — кнопка Луны тогда в зелёном кольце: она на связи. */

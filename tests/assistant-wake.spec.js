@@ -9,7 +9,8 @@ import { FLAGS, WAKE, bubble, dot, enableWake, setup } from './helpers/assistant
 // Писк фальшивого микрофона Chrome то считается речью, то нет (порог голоса считается от
 // шума первых 300 мс, а писк попадает в них через раз), поэтому «говорит» здесь только
 // фраза одним духом: её звук «ухо» отдаёт само.
-test.use({ launchOptions: { args: FLAGS } })
+// Разрешение на микрофон уже дано: иначе Луна сперва просит его плашкой (задача 202, assistant-mic-permission.spec.js).
+test.use({ permissions: ['microphone'], launchOptions: { args: FLAGS } })
 
 test('«Луна, где домашка?» одним духом — без окна, распознавание, ответ-объяснение открывает окно', async ({ page }) => {
   const calls = await setup(page)
