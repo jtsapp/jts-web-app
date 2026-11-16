@@ -1,6 +1,7 @@
 import { isStudentSectionHidden } from '../config.js'
 import { isTeacher } from '../lib/jwt.js'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
+import { EmbedContext } from '../lib/embedMode.js'
 import Sidebar from './Sidebar.jsx'
 import MobileTopBar from './MobileTopBar.jsx'
 import { useMobileTab } from './mobileTab.js'
@@ -36,6 +37,7 @@ export default function LearningLayout({
 }) {
   const { t } = useI18n()
   const [drawer, setDrawer] = useState(false)
+  const embedded = useContext(EmbedContext)
   const notificationsEnabled = notifications && (isTeacher(token) || !isStudentSectionHidden('notifications'))
   // Телефон (≤560): вместо бургера шапки — нижняя панель приложения, одна на всё приложение (App, mobileTab.js);
   // оболочка сообщает, какая вкладка горит. Шапка с бургером остаётся планшету 561–760.
@@ -45,6 +47,9 @@ export default function LearningLayout({
       ?
     </button>
   ) : null
+
+  // Рамка урока (блок «Раздел Практики»): только содержимое раздела — без сайдбара, шапки, колокольчика и подвала.
+  if (embedded) return <main className="learn__main learning-embed">{children}</main>
 
   return (
     <NotificationProvider enabled={notificationsEnabled} token={token} onNavigate={onNav}>

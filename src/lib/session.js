@@ -42,7 +42,19 @@ export async function mergeAnonymousProgress(token) {
   }
 }
 
+// Кабинет в рамке урока (блок «Раздел Практики»): вход даёт страница урока, и этот токен живёт только в памяти вкладки.
+// В хранилище он не пишется: не каждый браузер держит хранилище рамки отдельно от вкладки кабинета, и запись подменила бы
+// там сессию самого кабинета (и стёрла бы её refresh-токен). Пока токен рамки задан, сессия читается и меняется только в
+// памяти; refresh-токена у рамки нет — истёкший токен страница урока выдаст заново при следующем открытии.
+let embedToken = null
+
+/** Принять токен страницы урока как сессию этой вкладки; `null` — вернуться к обычной сессии из хранилища. */
+export function adoptEmbedToken(token) {
+  embedToken = token || null
+}
+
 export function loadToken() {
+  if (embedToken) return embedToken
   try {
     return localStorage.getItem(TOKEN_KEY) || null
   } catch {
@@ -51,6 +63,7 @@ export function loadToken() {
 }
 
 export function loadRefreshToken() {
+  if (embedToken) return null
   try {
     return localStorage.getItem(REFRESH_KEY) || null
   } catch {
@@ -70,6 +83,8 @@ function loadUserSnapshot() {
 }
 
 export function saveUserSnapshot(user) {
+  // Сессия рамки урока в хранилище не пишется — снимок пользователя тоже: он лежит рядом с токеном кабинета.
+  if (embedToken) return
   try {
     if (!user) {
       localStorage.removeItem(USER_KEY)
@@ -114,6 +129,7 @@ export function saveUserSnapshot(user) {
  * отработал, полю всё равно неоткуда быть настоящим.
  */
 export function patchUserSnapshot(fields) {
+  if (embedToken) return
   try {
     const prev = loadUserSnapshot()
     if (!prev) return
@@ -139,6 +155,10 @@ export function patchBoothAccount(isBooth) {
 
 /** access обязателен; refresh/user — по возможности с ответа логина. */
 export function saveToken(token, refreshToken) {
+  if (embedToken) {
+    embedToken = token || null
+    return
+  }
   try {
     if (token) localStorage.setItem(TOKEN_KEY, token)
     else localStorage.removeItem(TOKEN_KEY)
@@ -162,6 +182,10 @@ export function saveAuthSession({ accessToken, refreshToken, user } = {}) {
 }
 
 export function clearToken() {
+  if (embedToken) {
+    embedToken = null
+    return
+  }
   try {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(REFRESH_KEY)

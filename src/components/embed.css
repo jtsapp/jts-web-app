@@ -1,0 +1,34 @@
+/* Кабинет в рамке урока (блок «Раздел Практики» конструктора): один раздел без оболочки. Корню ставит класс App. */
+.learning-embed {
+  min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.learning-embed--notice {
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.learning-embed--notice h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.learning-embed--notice p {
+  margin: 0;
+}
+
+.learning-embed--notice a {
+  min-height: 44px;
+  display: inline-grid;
+  place-content: center;
+  font-weight: 700;
+}
+
+/* «Назад в Практику» у экранов разделов: в рамке уходить некуда. */
+.jts-embed .nmb-back {
+  display: none;
+}

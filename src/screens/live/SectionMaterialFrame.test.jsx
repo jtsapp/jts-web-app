@@ -1017,6 +1017,16 @@ describe('SectionMaterialFrame — права рамки (allow)', () => {
 
     expect(allowOf(container.querySelector('iframe'))).toEqual(expect.arrayContaining(['autoplay', 'fullscreen']))
   })
+
+  // Блок «Раздел Практики»: рамка раздела кабинета внутри урока (говорение, произношение) просит микрофон.
+  it('рамка урока пускает микрофон к вложенной рамке «Практики», простая рамка чужой ссылки — нет', () => {
+    const { iframe } = renderFrame()
+    expect(allowOf(iframe)).toContain('microphone')
+
+    const video = { ...MATERIAL, materialType: 'VIDEO', fileUrl: 'https://files/v.mp4' }
+    const { container } = render(frame({ material: video }))
+    expect(allowOf(container.querySelector('iframe'))).not.toContain('microphone')
+  })
 })
 
 // Снимок «догнать» раньше требовал перезагрузить рамку: его клики повторились бы на странице,
