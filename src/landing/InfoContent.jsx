@@ -29,7 +29,7 @@ function offerNote(o, t) {
   return parts.join(' · ')
 }
 
-// buyUrl(offer) — витрина приложения с этим тарифом в корзине: там вход,
+// buyUrl(code) — витрина приложения с этим тарифом в корзине: там вход,
 // заказ и оплата картой (Freedom Pay). Без адреса приложения кнопок нет.
 function Tariffs({ t, offers, buyUrl }) {
   return (
@@ -51,7 +51,7 @@ function Tariffs({ t, offers, buyUrl }) {
                   <span className="ld-info__price">
                     {o.previousPrice > o.price && <s aria-label={t.priceFrom}>{formatPrice(o.previousPrice)} ₸</s>}
                     <b>{formatPrice(o.price)} ₸</b>
-                    {buyUrl && <a className="ld-info__buy" href={buyUrl(o)}>{t.buy}</a>}
+                    {buyUrl && <a className="ld-info__buy" href={buyUrl(o.code)}>{t.buy}</a>}
                   </span>
                 </li>
               ))}

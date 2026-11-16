@@ -11,7 +11,7 @@ import { PricingIncluded } from '../components/PricingDecorations.jsx'
 import LegalDocumentsPanel from '../components/LegalDocumentsPanel.jsx'
 import { CURRENCY, formatPrice, offerCategory, offerTitle, offerDetails } from '../data/pricing.js'
 import { addItem, cartCount, cartTotal, qtyOf, removeItem, setQty } from '../lib/cart.js'
-import { consumePendingOffer, formatOfferParam, rememberPendingOffer } from '../lib/pendingOffer.js'
+import { consumePendingOffer } from '../lib/pendingOffer.js'
 import { checkoutUrl, fetchCheckoutOrigin } from '../lib/checkoutOrigin.js'
 import { orderRefusal } from '../lib/orderRefusal.js'
 
@@ -112,7 +112,6 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
     // Оплата картой — из аккаунта: заказ привязан к ученику, которому выдаётся
     // доступ. Гостя ведём ко входу, после него он вернётся сюда.
     if (method === 'card' && !token && onNeedLogin) {
-      rememberPendingOffer(formatOfferParam(items.map(({ id, qty }) => ({ code: id, qty }))))
       setPayOpen(false)
       onNeedLogin()
       return
@@ -136,7 +135,11 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
       // Молча: заявка — не единственный путь, ниже есть и оплата, и чат.
     }
 
-    // Заказ создаётся только после выбора оплаты картой.
+    // Настоящая оплата, если эквайринг подключён. Ссылки нет (провайдер не
+    // настроен или не ответил) — идём прежним путём, к менеджеру: пустая
+    // страница оплаты хуже, чем живой человек.
+    // Заказ и платёж — только для «Оплатить картой»: выбравший менеджера
+    // не должен внезапно оказаться на странице оплаты.
     if (method === 'card') {
       try {
         const order = await createOrder(token, {
@@ -151,6 +154,7 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
           return
         }
       } catch (err) {
+        // Отказ по существу — говорим причину здесь же и не уводим в чат молча. Сбой связи или 5xx — запасной путь ниже.
         const reason = orderRefusal(err)
         if (reason) {
           setPayOpen(false)
@@ -159,9 +163,6 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
           return
         }
       }
-      setPayOpen(false)
-      setRefused('pay.refused.gateway')
-      return
     }
 
     setPayOpen(false)

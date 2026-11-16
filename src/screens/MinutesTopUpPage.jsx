@@ -7,7 +7,7 @@ import { createLead, createOrder } from '../api.js'
 import PaymentMethodModal from '../components/PaymentMethodModal.jsx'
 import PurchaseSuccessModal from '../components/PurchaseSuccessModal.jsx'
 import CatalogError from '../components/CatalogError.jsx'
-import { clearPendingOffer, peekPendingOffer, rememberPendingOffer } from '../lib/pendingOffer.js'
+import { clearPendingOffer, peekPendingOffer } from '../lib/pendingOffer.js'
 import { checkoutUrl, fetchCheckoutOrigin } from '../lib/checkoutOrigin.js'
 import { orderRefusal } from '../lib/orderRefusal.js'
 import { CURRENCY, formatPrice, packDiscount, pricePerMinute, splitOffers } from '../data/pricing.js'
@@ -89,7 +89,6 @@ export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin })
         return
       }
       if (!token && onNeedLogin) {
-        rememberPendingOffer(picked.code)
         setPayOpen(false)
         onNeedLogin()
         return
@@ -102,7 +101,7 @@ export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin })
     ].join('\n')
 
     // Как и на витрине тарифов: заявка в CRM при любом способе, оплата — если
-    // эквайринг подключён.
+    // эквайринг подключён, чат — запасной путь.
     let accepted = false
     try {
       accepted = (await createLead(token, { source: 'MINUTES', comment: text, amount: picked.price })).accepted
@@ -126,6 +125,7 @@ export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin })
           return
         }
       } catch (err) {
+        // Отказ по существу — причина здесь же, без чата; сбой связи или 5xx — запасной путь ниже.
         const reason = orderRefusal(err)
         if (reason) {
           setPayOpen(false)
@@ -134,9 +134,6 @@ export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin })
           return
         }
       }
-      setPayOpen(false)
-      setRefused('pay.refused.gateway')
-      return
     }
 
     setPayOpen(false)
