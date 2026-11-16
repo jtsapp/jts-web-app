@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 // Плашка голосовой команды и ореол кнопки (макет «При вызове Луны», 22.10.2026).
@@ -129,5 +129,20 @@ describe('плашка «Слушаю тебя» у кнопки помощни�
     expect(badge().dataset.cmd).toBe('listening')
     expect(badge().textContent).toBe('Тыңдап тұрмын')
     expect(halo()).not.toBeNull()
+  })
+
+  // Позывной на распознавании браузера (задача 202, п.2): команда, сказанная одним духом, приходит готовым текстом
+  // (full) — в чат сразу, без записи вопроса и без второго распознавания на сервере.
+  it('«Луна, где домашка?» текстом браузера — сразу в чат, без записи', async () => {
+    localStorage.setItem('lang', 'ru')
+    renderWidget()
+    await act(async () => {
+      wake.onWake({ text: 'Луна, где домашка?', words: [], preroll: () => null, full: true })
+    })
+    expect(voice.listen).not.toHaveBeenCalled()
+    await waitFor(() => expect(fetch.mock.calls.some(([u]) => u === '/api/assistant/chat')).toBe(true))
+    const [, init] = fetch.mock.calls.find(([u]) => u === '/api/assistant/chat')
+    expect(JSON.parse(init.body).messages.at(-1).content).toContain('где домашка?')
+    expect(fetch.mock.calls.some(([u]) => u === '/api/assistant/transcribe')).toBe(false)
   })
 })

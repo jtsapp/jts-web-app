@@ -2,10 +2,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 
-// «Ухо» подменено: здесь проверяется, КОГДА хук слушает и отдаёт микрофон.
+// «Ухо» подменено: здесь проверяется, КОГДА хук слушает и отдаёт микрофон. С 16.11.2026 оно на распознавании
+// браузера (speechEar.js); есть ли распознаватель — тоже подменено: в jsdom его нет.
 const ears = []
-vi.mock('./wakeEar.js', () => ({
-  createWakeEar: (opts) => {
+vi.mock('./speechEar.js', () => ({
+  speechRecognitionCtor: () => function FakeRecognition() {},
+  createSpeechEar: (opts) => {
     const ear = {
       opts,
       state: 'idle',
@@ -139,7 +141,26 @@ describe('useWakeWord', () => {
     expect(result.current.error).toBe('denied')
   })
 
-  it('enable — в жесте: будит контекст и готовит модель с разрешением', () => {
+  // Задача 202: отказ — колбэком, и на каждый раз: повторный отказ error не меняет, а окно должно показать плашку снова.
+  it('отказ в микрофоне — onDenied на каждый отказ, другая ошибка — нет', async () => {
+    const onDenied = vi.fn()
+    mount({ onDenied })
+    await wait()
+    act(() => ears[0].fail('denied'))
+    act(() => ears[0].fail('denied'))
+    expect(onDenied).toHaveBeenCalledTimes(2)
+    act(() => ears[0].fail('model'))
+    expect(onDenied).toHaveBeenCalledTimes(2)
+  })
+
+  // Помощник — Луна или Айзере по языку интерфейса: «ухо» узнаёт, кого звать и на каком языке слушать.
+  it('«ухо» получает помощника', async () => {
+    mount({ persona: 'aizere' })
+    await wait()
+    expect(ears[0].opts.persona).toBe('aizere')
+  })
+
+  it('enable — в жесте: будит звук и спрашивает разрешение', () => {
     writeWakeOn(false)
     const { result } = mount({ open: true })
     act(() => result.current.enable())

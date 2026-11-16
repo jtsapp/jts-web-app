@@ -6,11 +6,12 @@ import { act, renderHook } from '@testing-library/react'
 // которые на живом микрофоне ловятся плохо, — двойное нажатие, пока браузер
 // спрашивает разрешение; закрытие окна в это время; выход из аккаунта посреди
 // распознавания.
-const rec = vi.hoisted(() => ({ state: 'idle', error: null, starts: [], stop: null, release: null, drop: null, gate: null }))
+const rec = vi.hoisted(() => ({ state: 'idle', error: null, lastError: null, starts: [], stop: null, release: null, drop: null, gate: null }))
 vi.mock('../../ielts/speaking/useRecorder.js', () => ({
   useRecorder: () => ({
     state: rec.state,
     error: rec.error,
+    lastError: () => rec.lastError,
     elapsed: 0,
     stream: null,
     start: (opts) => {
@@ -52,7 +53,7 @@ const out = () => ({ wav: new Blob([new Uint8Array(10)]), url: 'blob:q', duratio
 describe('useVoiceQuestion', () => {
   let fetchMock, onText, resolveGate
   beforeEach(() => {
-    Object.assign(rec, { state: 'idle', error: null, starts: [], stop: vi.fn(), release: vi.fn(), drop: vi.fn() })
+    Object.assign(rec, { state: 'idle', error: null, lastError: null, starts: [], stop: vi.fn(), release: vi.fn(), drop: vi.fn() })
     rec.gate = new Promise((r) => (resolveGate = r))
     FakeAudioContext.made = 0
     FakeAudioContext.resumed = 0
@@ -166,6 +167,34 @@ describe('useVoiceQuestion', () => {
     rec.error = 'denied'
     const { result } = mount()
     expect(result.current.error).toBe('denied')
+  })
+
+  // Микрофона нет или его держит другая программа — свои слова, а не «не получилось распознать» (задача 202).
+  it.each([
+    ['nodevice', 'nodevice'],
+    ['busy', 'busy'],
+    ['failed', 'stt_failed'],
+  ])('ошибка записи %s — %s', (recError, error) => {
+    rec.error = recError
+    const { result } = mount()
+    expect(result.current.error).toBe(error)
+  })
+
+  // Плашка о запрете открывается и на повторный отказ: error при нём не меняется («denied» → «denied»).
+  it('отказ в микрофоне — onMicDenied на каждое нажатие, без отказа — молчит', async () => {
+    const onMicDenied = vi.fn()
+    const { result } = renderHook(() => useVoiceQuestion({ token: 'tok', lang: 'ru', screenId: 'home', onText, onMicDenied }))
+    rec.lastError = 'denied'
+    rec.gate = Promise.resolve(false)
+    act(() => result.current.toggle())
+    await flush()
+    act(() => result.current.toggle())
+    await flush()
+    expect(onMicDenied).toHaveBeenCalledTimes(2)
+    rec.lastError = 'nodevice'
+    act(() => result.current.toggle())
+    await flush()
+    expect(onMicDenied).toHaveBeenCalledTimes(2)
   })
 
   // Позывной «Луна» (21.10.2026): запись без нажатия и звук, уже снятый «ухом».

@@ -1,10 +1,13 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 
 // Голосовой вопрос в окне помощника целиком в браузере: фальшивый микрофон
 // Chrome → настоящая запись (MediaRecorder → WAV 16 кГц) → распознавание →
 // чат с voice: true → озвучка фразы и её проигрывание. Распознавание, модель и
 // синтез подменены — проверяется цепочка экрана, а не Soniox, Claude и Gemini.
 test.use({
+  // Разрешение на микрофон уже дано: иначе Луна сперва просит его плашкой (задача 202, assistant-mic-permission.spec.js).
+  permissions: ['microphone'],
   launchOptions: { args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'] },
 })
 
@@ -65,6 +68,7 @@ async function setup(
       return p
     }
   })
+  await mockGates(page)
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 7, name: 'Айгерім', role: 'STUDENT', phone: '77001234567', languageLevel: 'A2' } })),
   )
@@ -230,7 +234,8 @@ test('текст — вслед за голосом, переход — когд
   await askByVoice(page)
   await expect.poll(() => calls.speak.length).toBe(1)
   // Ответ уже пришёл, голос ещё готовится: строка ожидания, без текста и без перехода.
-  await expect(page.getByRole('status')).toHaveText(/Сейчас скажу|Ещё секунду/)
+  // Строка состояния Луны, а не «Не загрузилось» домашки «Главной» под окном (у неё тоже role=status).
+  await expect(page.locator('.asst__status')).toHaveText(/Сейчас скажу|Ещё секунду/)
   await expect(page.locator('.asst__list')).not.toContainText('Открываю Словарь')
   await expect(page.locator('.vp')).toHaveCount(0)
 

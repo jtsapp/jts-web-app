@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import { mockGates } from './login.js'
 
 // Позывной Луны без бэкенда: вход, подменные модель, синтез и распознавание и «ухо»
 // (window.__jtsFakeWakeEar, useWakeWord.js). Общий файл для спек позывного — с писком
@@ -34,6 +35,7 @@ export async function setup(page) {
     localStorage.setItem('lang', 'ru')
     window.__jtsFakeWakeEar = true
   })
+  await mockGates(page)
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 7, name: 'Айгерім', role: 'STUDENT', phone: '77001234567', languageLevel: 'A2' } })),
   )
@@ -69,7 +71,7 @@ export async function enableWake(page) {
   await page.getByRole('button', { name: 'Помощник' }).click()
   const dialog = page.getByRole('dialog', { name: 'Луна' })
   await dialog.getByRole('checkbox', { name: 'Звать Луну голосом' }).check()
-  await expect(dialog.getByText('Скажите «Луна»')).toBeVisible()
+  await expect(dialog.getByText('Скажи «Луна»')).toBeVisible()
   await dialog.getByRole('button', { name: 'Закрыть' }).click()
   await expect(dot(page)).toHaveAttribute('data-wake', 'listening', { timeout: 10_000 })
 }

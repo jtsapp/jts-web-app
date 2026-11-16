@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 
 // Звонок Луне в окне помощника: кнопка-трубка, полоса звонка вместо поля ввода,
 // «Завершить» возвращает чат. Сам разговор (агент LiveKit) здесь не проверить —
@@ -19,6 +20,8 @@ test('звонок: трубка в шапке → полоса звонка →
     localStorage.setItem('lang', 'ru')
     localStorage.setItem('jts_assistant_voice_muted', '1')
   })
+  // «Документы платформы» и разделы тарифа встают поверх кабинета (helpers/login.js) — здесь они приняты.
+  await mockGates(page)
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 7, name: 'Айгерім', role: 'STUDENT', phone: '77001234567', languageLevel: 'A2' } })),
   )

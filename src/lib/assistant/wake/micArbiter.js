@@ -23,7 +23,7 @@ const POLL_MS = 1000
 let own = 0
 let state = null
 
-/** Вызов getUserMedia самого «уха» — его арбитр не считает чужим. fn — синхронный. */
+/** Вызов getUserMedia или start() распознавателя самого «уха» — его арбитр не считает чужим. fn — синхронный. */
 export function withOwnMic(fn) {
   own += 1
   try {
@@ -86,7 +86,9 @@ function wrapGetUserMedia(md, restore) {
 function wrapRecognition(proto, restore) {
   const orig = proto.start
   proto.start = function start(...args) {
-    if (!state) return orig.apply(this, args)
+    // own — распознаватель самого «уха» (speechEar.js, позывной без модели с 16.11.2026): иначе его запуск гасил
+    // бы его же.
+    if (own > 0 || !state) return orig.apply(this, args)
     claim()
     const rec = this
     const done = () => {
