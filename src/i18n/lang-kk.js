@@ -2406,6 +2406,8 @@ const dict = {
     'live.summaryTitle': 'Сабақ қорытындысы',
     'live.summaryDone': '{total} қадамның {done}-і орындалды',
     'live.materialTab': '{n}-материал',
+    'live.tileLesson': '{n}-сабақ',
+    'live.tileUnitTest': '{n}-юнит тесті',
     'live.connected': 'Байланыста',
     'live.disconnected': 'Байланыс жоқ',
     'live.status.inProgress': 'Жүріп жатыр',

@@ -2453,6 +2453,8 @@ const dict = {
     'live.summaryTitle': 'Итог урока',
     'live.summaryDone': 'Выполнено {done} из {total} шагов',
     'live.materialTab': 'Материал {n}',
+    'live.tileLesson': 'урок {n}',
+    'live.tileUnitTest': 'тест юнита {n}',
     'live.connected': 'На связи',
     'live.disconnected': 'Нет соединения',
     'live.status.inProgress': 'Идёт',

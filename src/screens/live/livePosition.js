@@ -14,16 +14,18 @@ export function loadLivePosition(lessonId) {
     if (!raw) return null
     const value = JSON.parse(raw)
     if (!value || typeof value !== 'object' || value.sectionId == null) return null
-    return { sectionId: value.sectionId, materialId: value.materialId ?? null }
+    return { sectionId: value.sectionId, materialId: value.materialId ?? null, tileId: value.tileId ?? null }
   } catch {
     return null
   }
 }
 
-export function saveLivePosition(lessonId, { sectionId, materialId }) {
+// tileId — строка раздела (id ссылки): у двух уроков одного файла в одном разделе материал один, и без плитки
+// перезагрузка открывала бы первую из них (прод 16.11.2026).
+export function saveLivePosition(lessonId, { sectionId, materialId, tileId }) {
   if (sectionId == null) return
   try {
-    sessionStorage.setItem(key(lessonId), JSON.stringify({ sectionId, materialId: materialId ?? null }))
+    sessionStorage.setItem(key(lessonId), JSON.stringify({ sectionId, materialId: materialId ?? null, tileId: tileId ?? null }))
   } catch {
     /* приватное окно и т.п. — место просто не переживёт перезагрузку */
   }
@@ -31,7 +33,8 @@ export function saveLivePosition(lessonId, { sectionId, materialId }) {
 
 /**
  * Запомненное место, если оно ещё есть среди разделов занятия (раздел могли убрать, пока ученик был вне
- * урока). Материал — только если он всё ещё в этом разделе, иначе раздел откроется на первом материале.
+ * урока). Материал — только если он всё ещё в этом разделе, иначе раздел откроется на первом материале; плитка —
+ * только если она всё ещё в разделе с этим материалом, иначе откроется первая плитка материала.
  */
 export function rememberedPlace(lessonId, sections) {
   const saved = loadLivePosition(lessonId)
@@ -40,5 +43,7 @@ export function rememberedPlace(lessonId, sections) {
   if (!section) return null
   const hasMaterial = saved.materialId != null
     && (section.materials || []).some((m) => String(m.materialId) === String(saved.materialId))
-  return { sectionId: section.id, materialId: hasMaterial ? saved.materialId : null }
+  const hasTile = hasMaterial && saved.tileId != null
+    && (section.materials || []).some((m) => String(m.id) === String(saved.tileId) && String(m.materialId) === String(saved.materialId))
+  return { sectionId: section.id, materialId: hasMaterial ? saved.materialId : null, tileId: hasTile ? saved.tileId : null }
 }
