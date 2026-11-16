@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { stageSteps, stageStatusById, parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage, fileLessonKey } from './lessonStages.js'
+import { stageSteps, stageStatusById, parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage, fileLessonKey, activeTileOf, repeatedFileTileLesson } from './lessonStages.js'
 
 // Эталон снят с файла A0 · Урок 05 (ответ ручки …/lesson-view/stages).
 const STAGES = [
@@ -78,5 +78,47 @@ describe('lessonStages — стадии файла в «Темах» учени�
     expect(fileLessonKey({ focusLessonNo: null })).toBeNull()
     expect(fileLessonKey({})).toBeNull()
     expect(fileLessonKey(null)).toBeNull()
+  })
+})
+
+// Два урока одного файла в одном разделе — один материал, разные плитки (прод 16.11.2026).
+describe('activeTileOf', () => {
+  const TILES = [
+    { id: 50, materialId: 7 },
+    { id: 51, materialId: 11, focusLessonNo: 1, focusReview: true },
+    { id: 52, materialId: 11, focusLessonNo: 2, focusReview: false },
+  ]
+
+  it('плитка по строке раздела, а не первая плитка материала', () => {
+    expect(activeTileOf(TILES, 11, 52)).toBe(TILES[2])
+  })
+
+  it('без плитки — первая плитка материала, как раньше', () => {
+    expect(activeTileOf(TILES, 11, null)).toBe(TILES[1])
+  })
+
+  it('плитка другого материала или чужого раздела не выбирается', () => {
+    expect(activeTileOf(TILES, 11, 50)).toBe(TILES[1])
+    expect(activeTileOf(TILES, 11, 999)).toBe(TILES[1])
+  })
+
+  it('без материала — первая в разделе; пустой раздел — null', () => {
+    expect(activeTileOf(TILES, null, null)).toBe(TILES[0])
+    expect(activeTileOf([], 11, 52)).toBeNull()
+  })
+})
+
+describe('repeatedFileTileLesson', () => {
+  const TEST_TILE = { id: 51, materialId: 11, focusLessonNo: 1, focusReview: true }
+  const LESSON_TILE = { id: 52, materialId: 11, focusLessonNo: 2, focusReview: false }
+
+  it('файл в разделе не одной плиткой — подпись урока или теста юнита', () => {
+    expect(repeatedFileTileLesson(TEST_TILE, [TEST_TILE, LESSON_TILE])).toEqual({ key: 'live.tileUnitTest', n: 1 })
+    expect(repeatedFileTileLesson(LESSON_TILE, [TEST_TILE, LESSON_TILE])).toEqual({ key: 'live.tileLesson', n: 2 })
+  })
+
+  it('одна плитка файла в разделе или файл целиком — без подписи', () => {
+    expect(repeatedFileTileLesson(LESSON_TILE, [LESSON_TILE, { id: 60, materialId: 12 }])).toBeNull()
+    expect(repeatedFileTileLesson({ id: 53, materialId: 11 }, [TEST_TILE, { id: 53, materialId: 11 }])).toBeNull()
   })
 })

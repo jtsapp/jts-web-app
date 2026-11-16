@@ -2406,6 +2406,8 @@ const dict = {
     'live.summaryTitle': 'Lesson summary',
     'live.summaryDone': '{done} of {total} steps done',
     'live.materialTab': 'Material {n}',
+    'live.tileLesson': 'lesson {n}',
+    'live.tileUnitTest': 'unit {n} test',
     'live.connected': 'Connected',
     'live.disconnected': 'Disconnected',
     'live.status.inProgress': 'Live',
