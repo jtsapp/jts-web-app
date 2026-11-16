@@ -82,6 +82,11 @@ deploy:
   stage: deploy
   script:
     - echo $APP_ENV
+    # На dev лендинг открывается по /landing, а заказ остаётся на dev-домене.
+    - |
+      if [ "$APP_ENV" = "development" ]; then
+        export LANDING_HOSTS="" LANDING_PREVIEW=1
+      fi
     # ВАЖНО: НЕ переиспользовать голое "-p $APP_ENV", как у backend — сервис
     # тут тоже называется "postgres", и с одинаковым project name Docker
     # Compose считает это ТЕМ ЖЕ контейнером, что и у backend, и пересоздаёт
