@@ -51,7 +51,8 @@ import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLogi
 import { saveToken, clearToken, loadToken, adoptEmbedToken, restoreSession, setSessionHooks, reportUnauthorized, endSessionOnServer, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
-import { screenNeedsLogin } from './lib/guestLogin.js'
+import { AUTH_SCREENS, screenNeedsLogin } from './lib/guestLogin.js'
+import { CHECKOUT_SCREENS } from './landing/hostRouting.js'
 import { isTeacher, userIdFromToken } from './lib/jwt.js'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
 import { APP_NAV, onAssistantNavigate } from './lib/assistant/assistantBus.js'
@@ -60,8 +61,8 @@ import { isItemRef, itemNav } from './lib/assistant/items/refs.js'
 import { readSituationsDone } from './practice/situations/situationsProgress.js'
 import { holdTours } from './lib/tourBus.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
-import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
-import { rememberPendingOffer } from './lib/pendingOffer.js'
+import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, peekPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
+import { clearPendingOffer, rememberPendingOffer } from './lib/pendingOffer.js'
 import { openLandingHandoff } from './landing/handoffClient.js'
 import { captureAttribution, safeStorage } from './lib/attribution.js'
 import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
@@ -500,7 +501,12 @@ export default function App() {
     }
     // ?screen=pricing&offer=<код> — «Купить» со страницы тарифов сайта: тариф
     // ляжет в корзину витрины, в том числе после входа (lib/pendingOffer.js).
-    if (deepLink === 'pricing' || deepLink === 'minutes') rememberPendingOffer(searchParams.get('offer'))
+    if (CHECKOUT_SCREENS.has(deepLink) && searchParams.has('offer')) {
+      rememberPendingOffer(searchParams.get('offer'))
+      const url = new URL(window.location.href)
+      url.searchParams.delete('offer')
+      window.history.replaceState(null, '', url)
+    }
     // ?screen=listen&set=A1 — сразу уровень (или направление) Just to Listen:
     // проверить набор по ссылке, не проходя меню.
     if (deepLink === 'listen') {
@@ -1672,6 +1678,7 @@ export default function App() {
     // Намерение принадлежит тому, кто пришёл по ссылке. Не сняв его, следующий
     // вход в этой же вкладке увёл бы другого человека на чужой текст.
     clearPendingScreen()
+    clearPendingOffer()
     // Путь «откуда пришли» — тоже его: «назад» следующего ученика в этой
     // вкладке не должен вести по чужим экранам. skipPush — и экран, с которого
     // вышли, в новый путь не кладём.
@@ -1770,9 +1777,12 @@ export default function App() {
     // Само решение — чистой функцией в lib/screenUrlParams.js: там оно
     // проверяется тестами, а здесь остаётся только запись.
     const url = new URL(window.location.href)
+    // При обновлении во время входа за покупкой остаёмся на домене оплаты.
+    const pending = AUTH_SCREENS.has(screen) ? peekPendingScreen() : null
+    const addressScreen = CHECKOUT_SCREENS.has(pending) ? pending : screen
     const changed = applyScreenUrlParams(url, screenUrlParams({
-      screen,
-      persists: persistsInUrl(screen),
+      screen: addressScreen,
+      persists: persistsInUrl(addressScreen),
       liveLessonId,
       liveWorkspaceId,
       workspaceCardId,
@@ -2477,7 +2487,8 @@ export default function App() {
         <LoginPasswordScreen
           onBack={() => {
             clearError()
-            setScreen('welcome')
+            const pending = peekPendingScreen()
+            setScreen(CHECKOUT_SCREENS.has(pending) ? pending : 'welcome')
           }}
           onSubmit={handlePasswordLogin}
           onCodeLogin={() => {

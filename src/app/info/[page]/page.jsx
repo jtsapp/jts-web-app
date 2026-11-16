@@ -77,7 +77,10 @@ export default async function InfoPage({ params, searchParams }) {
   // «Купить» — витрина с тарифом в корзине на домене лендинга: вход, заказ и
   // оплата картой идут там (этот домен — в анкете Freedom Pay, оферте и политике).
   const shopOrigin = checkoutOrigin({ onLandingHost, landingHosts }) || ''
-  const buyUrl = (code) => `${shopOrigin}/?screen=pricing&offer=${encodeURIComponent(code)}`
+  const buyUrl = (offer) => {
+    const screen = offer.kind === 'TUTOR_MINUTES' ? 'minutes' : 'pricing'
+    return `${shopOrigin}/?screen=${screen}&offer=${encodeURIComponent(offer.code)}`
+  }
 
   return (
     <>

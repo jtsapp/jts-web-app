@@ -219,6 +219,7 @@ const dict = {
     'pay.refused.level': 'To buy Self Study, your English level must be in your profile. Take the level test or message a manager.',
     'pay.refused.changed': 'The plan terms have changed and the list is updated. Check your cart and pay again.',
     'pay.refused.other': 'We couldn’t place the order. Try again or message a manager.',
+    'pay.refused.gateway': 'Couldn’t open the Freedom Pay page. Please try paying again.',
     'pay.refused.manager': 'Message a manager',
     'limit.title': 'Limit reached',
     'limit.bodyDaily': 'You have used your free {n} min of tutor talk time.',

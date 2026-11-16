@@ -228,10 +228,18 @@
   gap: 12px;
 }
 
-/* На узкой шапке «Тарифам» места нет — там они в подвале. */
+/* На узком экране ссылка на тарифы остаётся рядом с основным действием. */
+.ld-hero .ld-hero__tariffs {
+  display: none;
+}
+
 @media (max-width: 960px) {
   .ld-header__tariffs {
     display: none;
+  }
+
+  .ld-hero .ld-hero__tariffs {
+    display: inline-flex;
   }
 }
 

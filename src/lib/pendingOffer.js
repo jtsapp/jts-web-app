@@ -11,6 +11,10 @@ const LINE = /^([A-Za-z0-9_-]{1,64})(?::(\d{1,2}))?$/
 const MAX_LINES = 10
 const MAX_QTY = 20
 
+export function formatOfferParam(lines) {
+  return lines.map(({ code, qty }) => (qty > 1 ? `${code}:${qty}` : code)).join(',')
+}
+
 /** Строка адреса → [{code, qty}]; кривое молча отбрасывается. */
 export function parseOfferParam(raw) {
   if (typeof raw !== 'string' || !raw) return []

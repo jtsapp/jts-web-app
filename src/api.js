@@ -1100,8 +1100,7 @@ export async function getOffers() {
 // `idempotencyKey` обязателен: двойной клик по «Перейти к оплате» с тем же
 // ключом вернёт тот же заказ, а не создаст второй платёж.
 //
-// paymentUrl пуст, когда эквайринг ещё не подключён — тогда экран показывает
-// запасной путь (написать менеджеру), а не пустую страницу оплаты.
+// Если провайдер не выдал paymentUrl, экран предлагает повторить оплату.
 export async function createOrder(token, { items, idempotencyKey, returnUrl } = {}) {
   return authPost('/mobile/orders', token, { items, idempotencyKey, returnUrl })
 }

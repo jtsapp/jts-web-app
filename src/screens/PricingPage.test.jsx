@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import PricingPage from './PricingPage.jsx'
-import { rememberPendingOffer } from '../lib/pendingOffer.js'
+import { peekPendingOffer, rememberPendingOffer } from '../lib/pendingOffer.js'
 
 // Каталог приезжает с бэкенда — в тесте сети нет. Ответы держим в объекте:
 // vi.mock поднимается наверх файла, и подменить их внутри it нечем.
@@ -83,6 +83,7 @@ async function addTile(container, title) {
 }
 
 beforeEach(() => {
+  window.sessionStorage.clear()
   window.open = vi.fn()
   backend.offers = CATALOG
   backend.offersFail = false
@@ -264,6 +265,7 @@ describe('Витрина тарифов', () => {
     fireEvent.click(screen.getByText('Оплатить картой'))
 
     await waitFor(() => expect(onNeedLogin).toHaveBeenCalledTimes(1))
+    expect(peekPendingOffer()).toEqual([{ code: 'ind-60-12', qty: 1 }])
     expect(backend.orderCalls).toHaveLength(0)
     expect(window.open).not.toHaveBeenCalled()
   })
@@ -280,17 +282,19 @@ describe('Витрина тарифов', () => {
     expect(backend.orderCalls).toHaveLength(0)
   })
 
-  // Эквайринг ещё не подключён — заказ создаётся без ссылки, и человека ведём
-  // к менеджеру, а не на пустую страницу оплаты.
-  it('ссылки нет — остаётся прежний путь к менеджеру', async () => {
+  it('без ссылки Freedom Pay предлагает повторить оплату с тем же заказом', async () => {
     const { container } = await renderLoaded()
     await addTile(container, '12 уроков')
     fireEvent.click(container.querySelector('.pr-cart__pay'))
     fireEvent.click(screen.getByText('Оплатить картой'))
 
-    await waitFor(() => expect(window.open).toHaveBeenCalledTimes(1))
-    expect(window.open.mock.calls[0][0].startsWith('https://wa.me/')).toBe(true)
+    await screen.findByText('Не удалось открыть страницу Freedom Pay. Попробуйте оплатить ещё раз.')
+    expect(window.open).not.toHaveBeenCalled()
     expect(backend.leadCalls[0].source).toBe('PRICING')
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Оплатить картой'))
+    await waitFor(() => expect(backend.orderCalls).toHaveLength(2))
+    expect(backend.orderCalls[1].idempotencyKey).toBe(backend.orderCalls[0].idempotencyKey)
   })
 
   it('в заявку едет и состав заказа, и его сумма', async () => {
@@ -414,13 +418,13 @@ describe('Непродаваемые тарифы и отказ в заказе'
     expect(window.open).not.toHaveBeenCalled()
   })
 
-  it('сбой связи — прежний запасной путь к менеджеру', async () => {
+  it('сбой связи — понятная ошибка и возможность повторить', async () => {
     backend.orderError = new Error('Нет связи с сервером.')
     const { container } = await renderLoaded()
     await addTile(container, '12 уроков')
     fireEvent.click(container.querySelector('.pr-cart__pay'))
     fireEvent.click(screen.getByText('Оплатить картой'))
-    await waitFor(() => expect(window.open).toHaveBeenCalled())
-    expect(screen.queryByRole('alert')).toBeNull()
+    await screen.findByText('Не удалось открыть страницу Freedom Pay. Попробуйте оплатить ещё раз.')
+    expect(window.open).not.toHaveBeenCalled()
   })
 })
