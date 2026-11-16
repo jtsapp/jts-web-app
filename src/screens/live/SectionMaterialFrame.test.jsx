@@ -542,6 +542,34 @@ describe('SectionMaterialFrame — когда рамка открывается 
   })
 })
 
+// Прод 16.11.2026, занятие 48594: урок 4 в «Section 1», урок 5 в «Section 2» одного файла. Адрес страницы был один
+// на обе плитки, и сервер отдавал урок, выбранный последним, — пройденный урок 4 у ученицы не открывался.
+describe('SectionMaterialFrame — адрес страницы несёт урок плитки', () => {
+  const lessonNoOf = (iframe) => new URL(iframe.getAttribute('src')).searchParams.get('lessonNo')
+
+  it('плитка урока 4 — lessonNo=4', () => {
+    const { iframe } = renderFrame({ material: { ...MATERIAL, focusLessonNo: 4, focusReview: false } })
+    expect(lessonNoOf(iframe)).toBe('4')
+  })
+
+  it('плитка теста юнита 2 — lessonNo=R2, не урок 2', () => {
+    const { iframe } = renderFrame({ material: { ...MATERIAL, focusLessonNo: 2, focusReview: true } })
+    expect(lessonNoOf(iframe)).toBe('R2')
+  })
+
+  it('плитка файла целиком — без lessonNo, урок решает занятие', () => {
+    const { iframe } = renderFrame()
+    expect(lessonNoOf(iframe)).toBeNull()
+  })
+
+  it('у преподавателя, смотрящего ученика, — тот же урок плитки', () => {
+    const { iframe } = renderFrame({ isStaff: true, reviewStudentId: 7, material: { ...MATERIAL, focusLessonNo: 4 } })
+    const params = new URL(iframe.getAttribute('src')).searchParams
+    expect(params.get('mode')).toBe('review')
+    expect(params.get('lessonNo')).toBe('4')
+  })
+})
+
 // Материал занятия с номером урока (focusLessonNo): файл открывает этот урок
 // goto-lesson'ом уже после загрузки и переписывает разметку. Реплей показа,
 // стадия класса и доводка, ушедшие раньше, достались бы уроку, который сейчас

@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { lessonMaterialRenderUrl } from '../../api.js'
-import { parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage, GOTO_LESSON_MS } from './lessonStages.js'
+import { parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage, GOTO_LESSON_MS, fileLessonKey } from './lessonStages.js'
 import LiveLoader from './LiveLoader.jsx'
 import PdfViewer from './pdf/PdfViewer.jsx'
 import { isPdfMaterial } from './pdf/isPdfMaterial.js'
@@ -595,6 +595,8 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     mode: isStaff ? 'review' : 'live',
     forceReload: reloadToken || undefined,
     studentId: isStaff ? reviewStudentId : undefined,
+    // Урок этой плитки: тот же файл в соседнем разделе бывает другим уроком (прод 16.11.2026).
+    lessonNo: fileLessonKey(material),
   })
 
   return (

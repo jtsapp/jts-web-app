@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { stageSteps, stageStatusById, parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage } from './lessonStages.js'
+import { stageSteps, stageStatusById, parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage, fileLessonKey } from './lessonStages.js'
 
 // Эталон снят с файла A0 · Урок 05 (ответ ручки …/lesson-view/stages).
 const STAGES = [
@@ -67,5 +67,16 @@ describe('lessonStages — стадии файла в «Темах» учени�
       source: 'jts-workspace', type: 'goto-lesson', index: 5, review: false,
     })
     expect(gotoLessonMessage(2, true).review).toBe(true)
+  })
+
+  // Один файл бывает на занятии в двух разделах с разными уроками (прод 16.11.2026, занятие 48594: урок 4 и
+  // урок 5). Сервер открывает урок той плитки, которую назвала рамка, — ключ урока уходит ему в адресе.
+  it('fileLessonKey — ключ урока плитки для сервера: урок, тест юнита или ничего у файла целиком', () => {
+    expect(fileLessonKey({ focusLessonNo: 4, focusReview: false })).toBe('4')
+    expect(fileLessonKey({ focusLessonNo: 4 })).toBe('4')
+    expect(fileLessonKey({ focusLessonNo: 2, focusReview: true })).toBe('R2')
+    expect(fileLessonKey({ focusLessonNo: null })).toBeNull()
+    expect(fileLessonKey({})).toBeNull()
+    expect(fileLessonKey(null)).toBeNull()
   })
 })
