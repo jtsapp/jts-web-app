@@ -27,9 +27,11 @@ export function proxy(request) {
       // полный адрес (приложение) — как есть. 307, а не постоянный 308:
       // решение зависит от env (LANDING_HOSTS, APP_PUBLIC_URL), а 308 браузер
       // запомнит и после того, как env поменяют или лендинг откатят.
+      // Исключение — www → голый домен (permanent): это не зависит от
+      // выката, и поисковику нужен постоянный 301, чтобы склеить зеркала.
       return NextResponse.redirect(
         decision.to.startsWith('/') ? sameHostUrl(request.headers, decision.to) : decision.to,
-        307,
+        decision.permanent ? 301 : 307,
       )
     case 'notFound':
       // Несуществующий путь — Next отдаёт свою 404 с верным статусом.

@@ -22,7 +22,20 @@ describe('parseHosts / requestHost', () => {
 describe('домен лендинга', () => {
   it('корень показывает лендинг, язык в адресе сохраняется', () => {
     expect(on('justtostudy-english.kz', '/')).toEqual({ action: 'rewrite', to: '/landing' })
-    expect(on('www.justtostudy-english.kz', '/', '?lang=kz')).toEqual({ action: 'rewrite', to: '/landing?lang=kz' })
+    expect(on('justtostudy-english.kz', '/', '?lang=kz')).toEqual({ action: 'rewrite', to: '/landing?lang=kz' })
+  })
+  it('www уводится на голый домен постоянным редиректом, путь и метки целы', () => {
+    expect(on('www.justtostudy-english.kz', '/', '?lang=kz&utm_source=tiktok')).toEqual({
+      action: 'redirect', to: 'https://justtostudy-english.kz/?lang=kz&utm_source=tiktok', permanent: true,
+    })
+    expect(on('www.justtostudy-english.kz', '/info/tariffs')).toEqual({
+      action: 'redirect', to: 'https://justtostudy-english.kz/info/tariffs', permanent: true,
+    })
+  })
+  it('www без голого домена в LANDING_HOSTS остаётся лендингом', () => {
+    const onlyWww = parseHosts('www.justtostudy-english.kz')
+    expect(routeLanding({ host: 'www.justtostudy-english.kz', pathname: '/', landingHosts: onlyWww, appUrl: APP }))
+      .toEqual({ action: 'rewrite', to: '/landing' })
   })
   it('/landing на своём домене — на корень, адрес у страницы один', () => {
     expect(on('justtostudy-english.kz', '/landing', '?lang=kz')).toEqual({ action: 'redirect', to: '/?lang=kz' })

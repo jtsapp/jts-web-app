@@ -13,6 +13,7 @@ import { metaPixelId } from '../../landing/metaPixel.js'
 import { APP_LOGIN_URL, pickContent } from '../../landing/content.js'
 import { appLink, normalizeAppUrl, parseHosts, requestHost } from '../../landing/hostRouting.js'
 import { landingAppPath, pickUtm } from '../../lib/attribution.js'
+import { indexable, jsonLdScript, organizationJsonLd, pageMetadata, siteOrigin } from '../../landing/seo.js'
 
 // Язык — в адресе (?lang=kz), а не в localStorage: поисковик и ссылка из
 // рекламы должны получать казахскую страницу сразу, с сервера.
@@ -21,9 +22,19 @@ async function langOf(searchParams) {
   return sp?.lang === 'kz' ? 'kz' : 'ru'
 }
 
+// Адрес сайта и можно ли индексировать — по домену запроса (src/landing/seo.js):
+// на домене лендинга canonical — его голый домен, на дев-превью страница noindex.
+async function seoContext() {
+  const host = requestHost(await headers())
+  const landingHosts = parseHosts(process.env.LANDING_HOSTS)
+  return { origin: siteOrigin({ host, landingHosts }), index: indexable({ host, landingHosts }) }
+}
+
 export async function generateMetadata({ searchParams }) {
-  const { meta } = pickContent(await langOf(searchParams))
-  return { title: meta.title, description: meta.description }
+  const lang = await langOf(searchParams)
+  const { meta } = pickContent(lang)
+  const { origin, index } = await seoContext()
+  return pageMetadata({ origin, path: '/', lang, title: meta.title, description: meta.description, index })
 }
 
 export default async function LandingPage({ searchParams }) {
@@ -47,6 +58,14 @@ export default async function LandingPage({ searchParams }) {
           поднимает stylesheet с precedence в <head>, поэтому они не уходят в
           общий layout и не грузятся экранами приложения. */}
       <link rel="stylesheet" precedence="default" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;900&family=Geist:wght@400;500&display=swap" />
+      {/* Разметка schema.org: школа и сайт — поисковик связывает домен с названием. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(organizationJsonLd({
+          origin: (await seoContext()).origin,
+          description: pickContent(lang).meta.description,
+        })) }}
+      />
       <Landing c={pickContent(lang)} lang={lang} links={links} />
       {/* Meta Pixel — только на домене лендинга: на dev и в самом приложении учеников его нет,
           иначе в рекламную аудиторию попадали бы экраны кабинета и тестовые заявки. */}

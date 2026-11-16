@@ -92,6 +92,14 @@ export function normalizeAppUrl(raw) {
  */
 export function routeLanding({ host, pathname, search = '', landingHosts, appUrl = '', preview = false }) {
   if (landingHosts.has(host)) {
+    // www — копия голого домена: поисковик видел два одинаковых сайта и делил
+    // между ними вес (16.11.2026). Уводим постоянным редиректом на голый, если
+    // и он в LANDING_HOSTS (иначе увели бы туда, где лендинга нет). /api сюда
+    // не доходит (matcher в proxy.js): оплата и формы на www не ломаются.
+    const bare = host.startsWith('www.') ? host.slice(4) : null
+    if (bare && landingHosts.has(bare)) {
+      return { action: 'redirect', to: `https://${bare}${pathname}${search}`, permanent: true }
+    }
     if (pathname === '/landing') return { action: 'redirect', to: '/' + search }
     const screen = pathname === '/' ? new URLSearchParams(search).get('screen') : null
     if (pathname === '/' && !screen) return { action: 'rewrite', to: '/landing' + search }
