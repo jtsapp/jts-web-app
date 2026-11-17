@@ -263,7 +263,7 @@ export default function PracticePage({
       skillOfModule(openTarget?.filter) ||
       (SKILL_KEYS.includes(openTarget?.skill) ? openTarget.skill : null) ||
       (openTarget?.area === 'situations' ? 'speaking' : null) ||
-      (openTarget?.unitId != null ? 'writing' : null)
+      (openTarget?.unitId != null ? 'grammarGames' : null)
     if (fromTarget) return fromTarget
     const saved = readSession(TAB_KEY)
     return SKILL_KEYS.includes(saved) ? saved : 'listening'
@@ -1116,7 +1116,8 @@ export default function PracticePage({
 
   const skill = SKILLS.find((s) => s.key === tab) || SKILLS[0]
   // У «Грамматики» нет каталогов, которые уровень мог бы отфильтровать: темы ведут на экран тем со своими
-  // уровнями, игры уровней не знают. Чипы там ничего бы не меняли — их нет (макет 7402:7133).
+  // уровнями, игры уровней не знают. Чипы там ничего бы не меняли — их нет (макет 7402:7133). Юниты «Грамматики»,
+  // переехавшие сюда из «Письма» (17.11.2026), уровень выбирают своими чипами в развёрнутом каталоге.
   const levelsOff = skill.key === 'grammarGames'
 
   // Карточка, которой сейчас на экране не место: каталоги караоке и комиксов, пока они пусты (материал заводит
