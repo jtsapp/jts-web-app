@@ -11,10 +11,11 @@
 //
 // Рисует настоящий браузер: текст и тени иначе не повторить. Итог — 480×296 с альфой, как у экспортов макета.
 //
-// Материалов Prepositions World, Pronunciation World, Tenses World, Punctuation World, Parts of Speech World и Cartoon
-// World в репозитории нет (раздел живёт на бэкенде), поэтому выбранные картинки лежат в data/practice-cards/: prep-*,
+// Материалов Prepositions World, Pronunciation World, Tenses World, Punctuation World, Parts of Speech World, Literature
+// World и Cartoon World в репозитории нет (раздел живёт на бэкенде), поэтому выбранные картинки лежат в data/practice-cards/: prep-*,
 // pron-*, punct-* и pos-* — из прототипов методиста (у Punctuation World строка банка, у Parts of Speech World задание
-// упражнения — из фикстуры тестов, это настоящие данные; pos-* режет scripts/partsofspeech/extract-card-images.js), tenses-* —
+// упражнения — из фикстуры тестов, это настоящие данные; pos-* режет scripts/partsofspeech/extract-card-images.js, lit-* —
+// scripts/literature/extract-card-images.js), tenses-* —
 // постеры видеоуроков прототипа (обрезаны до номера, названия и мини-карты времён), cartoon-* — превью видео каталога
 // с i.ytimg.com, saw/tree — рисунки из src/screens/arcade/ArcadeScene.jsx.
 //
@@ -178,6 +179,14 @@ function partsofspeech() {
   return fan(ask, world, photo(data('pos-foundry.webp')))
 }
 
+// Литература — сцены книги: вход с четырьмя маскотами у раскрытой книги, Глобус и викторианская библиотека
+// (lit-* режет scripts/literature/extract-card-images.js из прототипа).
+function literature() {
+  // маскоты стоят в правой части сцены входа — кадр сдвинут к ним
+  const entry = `<div class="f"><img class="ph" style="object-position:72% 60%" src="${data('lit-entrance.webp')}" alt=""></div>`
+  return fan(photo(data('lit-globe.webp')), entry, photo(data('lit-library.webp')))
+}
+
 // ---------- Текстовые разделы: настоящие строки своих данных ----------
 
 function reading() {
@@ -306,6 +315,7 @@ const COVERS = {
   tenses: ['grammar', tenses],
   punctuation: ['grammar', punctuation],
   partsofspeech: ['grammar', partsofspeech],
+  literature: ['reading', literature],
   speedReading: ['grammar', speedReading],
   listening: ['grammar', listening],
   words: ['grammar', words],

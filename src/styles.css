@@ -4533,6 +4533,14 @@ body:has(.pct-host[data-game='1']) .asst__badge { display: none; }
 @media (max-width: 560px) {
   .pos-top { padding: 8px 16px 0; }
 }
+/* Literature World: оболочка как у Parts of Speech World — липкая шапка раздела липнет к окну (overflow: visible). */
+.lit-top { display: flex; align-items: center; margin: 0 0 12px; padding: 12px 32px 0; }
+.lit-host { display: block; }
+.lit-host[hidden] { display: none; }
+.learn__main:has(.lit-host) { overflow: visible; }
+@media (max-width: 560px) {
+  .lit-top { padding: 8px 16px 0; }
+}
 /* «Грамматика · игры» своим экраном (карточка «Темы по уровням») — оболочка как у Prepositions World; тумблер
    звука стоит слева, у кнопки «назад»: правый верхний угол занят группой .learn__bell. */
 .ggp-top { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 12px 32px 0; }

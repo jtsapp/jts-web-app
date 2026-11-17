@@ -8,7 +8,7 @@ describe('practiceTabs', () => {
 
   it('карточки вкладок — в порядке экранов макета', () => {
     expect(skillCards('listening')).toEqual(['listenchoose', 'justListen', 'cartoons', 'shadowing', 'karaoke', 'memes', 'tales'])
-    expect(skillCards('reading')).toEqual(['reading', 'speedReading', 'books', 'comics', 'tales'])
+    expect(skillCards('reading')).toEqual(['reading', 'speedReading', 'books', 'comics', 'literature', 'tales'])
     expect(skillCards('writing')).toEqual(['grammar', 'prepositions', 'writing', 'verbs', 'workbooks'])
     expect(skillCards('speaking')).toEqual(['pronunciation', 'situations', 'speakspin', 'shadowing', 'karaoke', 'tales'])
     expect(skillCards('grammarGames')).toEqual(['topics', 'tenses', 'punctuation', 'partsofspeech', 'listening', 'words', 'numbers', 'wordhunt', 'speak', 'runner'])
@@ -21,8 +21,8 @@ describe('practiceTabs', () => {
     for (const k of withTales) expect(skillCards(k).at(-1), k).toBe('tales')
   })
 
-  it('«N тренажёров» под вкладками: 7, 5, 5, 6 (в макете у «Чтения» 4 — без «Скорочтения»)', () => {
-    expect(['listening', 'reading', 'writing', 'speaking'].map((k) => skillModules(k).length)).toEqual([7, 5, 5, 6])
+  it('«N тренажёров» под вкладками: 7, 6, 5, 6 (в макете у «Чтения» 4 — без «Скорочтения» и Literature World)', () => {
+    expect(['listening', 'reading', 'writing', 'speaking'].map((k) => skillModules(k).length)).toEqual([7, 6, 5, 6])
     // Две карточки «Аркады» — один тренажёр.
     expect(skillModules('grammarGames').filter((m) => m === 'arcade')).toHaveLength(1)
   })
@@ -53,7 +53,7 @@ describe('practiceTabs', () => {
     const modules = [
       'grammar', 'writing', 'reading', 'words', 'verbs', 'listenchoose', 'listening', 'numbers', 'listen',
       'speedReading', 'cartoons', 'shadowing', 'situations', 'workbooks', 'tales', 'memes', 'books', 'comics',
-      'karaoke', 'wordhunt', 'arcade', 'prepositions', 'pronunciation', 'punctuation', 'speakspin', 'grammarGames', 'tenses', 'partsofspeech',
+      'karaoke', 'wordhunt', 'arcade', 'prepositions', 'pronunciation', 'punctuation', 'speakspin', 'grammarGames', 'tenses', 'partsofspeech', 'literature',
     ]
     for (const m of modules) expect(skillOfModule(m), m).toBeTruthy()
   })

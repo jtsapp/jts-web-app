@@ -18,6 +18,9 @@
     "chat": [
       "registration"
     ],
+    "chess": [
+      "chess"
+    ],
     "complete-registration": [
       "registration"
     ],
@@ -26,6 +29,15 @@
     ],
     "course-catalog": [
       "исключение: вход только у преподавателя (кнопка в «Уроках» — LessonsPage), ученик сюда не попадает"
+    ],
+    "embed": [
+      "исключение: заглушка рамки урока, пока открывается раздел «Практики»; в кабинете этого экрана нет"
+    ],
+    "embed-signin": [
+      "исключение: сообщение рамки урока «раздел не открылся»; в кабинете этого экрана нет"
+    ],
+    "embed-unavailable": [
+      "исключение: сообщение рамки урока «раздел недоступен»; в кабинете этого экрана нет"
     ],
     "feedback": [
       "feedback"
@@ -128,6 +140,9 @@
     ],
     "listening": [
       "listening"
+    ],
+    "literature": [
+      "literature"
     ],
     "live-lesson": [
       "live-lesson"
@@ -434,6 +449,11 @@
       "screen": "kingdom"
     },
     {
+      "key": "chess",
+      "label": "Шахматы",
+      "screen": "chess"
+    },
+    {
       "key": "tokens",
       "label": "Мои токены",
       "screen": "tokens"
@@ -445,7 +465,7 @@
     },
     {
       "key": "birge",
-      "label": "Birge",
+      "label": "Not Just English",
       "screen": "birge"
     },
     {
@@ -518,6 +538,10 @@
         {
           "id": "comics",
           "title": "Комиксы"
+        },
+        {
+          "id": "literature",
+          "title": "Literature World"
         },
         {
           "id": "tales",
@@ -714,6 +738,10 @@
       "screen": "partsofspeech"
     },
     {
+      "id": "literature",
+      "screen": "literature"
+    },
+    {
       "id": "reading",
       "screen": "reading"
     },
@@ -818,7 +846,7 @@
   "articles": {
     "about": {
       "title": "Что такое Just to Study и как устроен сайт",
-      "hash": "x4la0o"
+      "hash": "zdmp9p"
     },
     "coins": {
       "title": "Монеты и серия дней",
@@ -864,11 +892,11 @@
     },
     "lessons-tabs": {
       "title": "Уроки: вкладки и расписание",
-      "hash": "1eten58"
+      "hash": "x14mv7"
     },
     "school-rules": {
-      "title": "Правила обучения школы: перенос, отмена, заморозка",
-      "hash": "uwr5iv"
+      "title": "Правила обучения школы: перенос, отмена, заморозка, возврат",
+      "hash": "o16eoa"
     },
     "live-lesson": {
       "title": "Урок с преподавателем",
@@ -958,6 +986,10 @@
       "title": "Практика: Parts of Speech World",
       "hash": "cbkx6c"
     },
+    "literature": {
+      "title": "Практика: Literature World",
+      "hash": "1gfnfs"
+    },
     "punctuation": {
       "title": "Практика: Punctuation World",
       "hash": "dg4gf3"
@@ -1027,8 +1059,12 @@
       "hash": "10j2dfh"
     },
     "birge": {
-      "title": "Birge — сообщество студентов",
-      "hash": "p9r3du"
+      "title": "Not Just English — сообщество студентов",
+      "hash": "34y8hu"
+    },
+    "chess": {
+      "title": "Шахматы — партия против компьютера",
+      "hash": "14ppmx9"
     },
     "contacts": {
       "title": "Официальные контакты",
@@ -1044,7 +1080,7 @@
     },
     "faq": {
       "title": "Частые вопросы → куда",
-      "hash": "1nqkfi1"
+      "hash": "1oq90zy"
     }
   }
 }

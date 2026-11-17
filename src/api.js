@@ -2465,6 +2465,13 @@ export function getPartsOfSpeech(token, onFresh) {
   return cachedAuthGet('/mobile/parts-of-speech', token, onFresh)
 }
 
+// Literature World: пьесы, проза, стихи, слова одним бандлом (~5.3 МБ JSON, форма блоков данных прототипа; сцены,
+// маскоты и видео входа — ссылки MinIO; спека 2026-11-17-literature-world-design.md). Ответ далеко за порогом
+// localStorage — cachedAuthGet держит его только в памяти вкладки. 404 — раздел ещё не залит через админку.
+export function getLiterature(token, onFresh) {
+  return cachedAuthGet('/mobile/literature', token, onFresh)
+}
+
 // «Грамматика · игры»: список тем (шапки и набор игр), тема целиком, общий словарь кликабельных слов, звёзды
 // ученика и сдача игры (контракт — backend docs/practice/GRAMMAR_GAMES.md). Без cachedAuthGet: его копия в
 // localStorage вытесняла бы прогресс других разделов (словарь ~120 КБ), а звёзды должны быть свежими. Темы и
