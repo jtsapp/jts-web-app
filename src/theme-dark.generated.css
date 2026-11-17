@@ -25776,24 +25776,31 @@ html[data-theme="dark"] .footer .footer-copy {
     color: #fff
 }
 html[data-theme="dark"] .legal-panel {
-    background: var(--dk-ink-bg);
-    border: 1px solid rgba(255,255,255,.1);
-    color: #fff
+    background: var(--dk-acc-tint);
+    border: 0;
+    color: var(--dk-text)
 }
 html[data-theme="dark"] .legal-panel h2 {
-    color: #fff
+    color: var(--dk-text)
 }
 html[data-theme="dark"] .legal-panel .legal-links a {
-    border: 1px solid rgba(255,255,255,.15);
-    background: rgba(255,255,255,.04);
-    color: #fff
+    border: 0;
+    background: var(--dk-card);
+    box-shadow: inset 0 0 0 1px var(--dk-chip);
+    color: var(--dk-text)
 }
 html[data-theme="dark"] .legal-panel .legal-links a:hover {
-    background: rgba(255,255,255,.1);
-    border-color: rgba(255,255,255,.4)
+    box-shadow: inset 0 0 0 1px var(--dk-acc)
 }
 html[data-theme="dark"] .legal-panel .legal-links a:focus-visible {
-    outline: 2px solid var(--dk-line)
+    outline: 2px solid var(--dk-acc)
+}
+html[data-theme="dark"] .legal-panel .legal-link-icon {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .legal-panel .legal-link-arrow {
+    color: var(--dk-muted)
 }
 html[data-theme="dark"] .legal-panel.legal-profile {
     background: none;
@@ -25813,6 +25820,7 @@ html[data-theme="dark"] .legal-panel.legal-profile .legal-links li + li {
 html[data-theme="dark"] .legal-panel.legal-profile .legal-links a {
     border: 0;
     background: none;
+    box-shadow: none;
     color: var(--dk-text)
 }
 html[data-theme="dark"] .legal-panel.legal-profile .legal-links a:hover {
