@@ -2582,6 +2582,8 @@ export default function App() {
           // Без уровня «Главная» показывает приглашение на тест, а не чужие цифры.
           levelUnknown={needsLevelTest}
           ieltsAccount={ieltsAccount}
+          // Подписки на экзамены — для «Задач на сегодня» по направлениям (задача 218): то же правило, что у меню
+          exams={examTabs}
           onStartLevelTest={() => openPlacement('home')}
           geProfile={ieltsAccount ? null : geProfile}
           geLoaded={geLoaded}

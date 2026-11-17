@@ -225,6 +225,34 @@ describe('HomePage — General English', () => {
     await waitFor(() => expect(screen.getByText(/Занятий с преподавателем пока нет/)).toBeTruthy())
     expect(screen.getByText('Сегодня задач нет.')).toBeTruthy()
   })
+
+  // Задача 218: учится и по IELTS — вместо «Сегодня» одна карточка «Задачи на сегодня» с секцией на направление; без
+  // подписки на экзамен — прежнее «Сегодня» без лишней рамки.
+  it('учится по General English и IELTS — «Задачи на сегодня» по направлениям, без IELTS — прежнее «Сегодня»', async () => {
+    const day = {
+      today: '2026-10-14',
+      state: 'ready',
+      route: 'self_study',
+      week: { done: 0, total: 6 },
+      liveMissing: false,
+      tasks: [{ id: 31, date: '2026-10-14', kind: 'practice', module: 'ai_tutor', minutes: 15, got: 0, status: 'available', overdue: false }],
+    }
+    getGePlan.mockResolvedValueOnce(day)
+    const first = renderHome({ geProfile: goal, exams: { ready: true, ielts: true, sat: false } })
+    await waitFor(() => expect(document.querySelector('.hm-trk')).toBeTruthy())
+    expect(screen.getByRole('heading', { name: 'Задачи на сегодня' })).toBeTruthy()
+    // IELTS до анкеты — шаг старта; секция General English — то же «Сегодня» внутри карточки
+    await waitFor(() => expect(screen.getByRole('button', { name: 'IELTS, 1 задача' })).toBeTruthy())
+    expect(screen.getByRole('button', { name: 'General English, 1 задача' })).toBeTruthy()
+    expect(screen.getByText('2 задачи')).toBeTruthy()
+    expect(document.querySelector('.hm-card.ge-today')).toBe(null)
+    first.unmount()
+
+    getGePlan.mockResolvedValueOnce(day)
+    renderHome({ geProfile: goal, exams: { ready: true, ielts: false, sat: false } })
+    await waitFor(() => expect(document.querySelector('.hm-card.ge-today')).toBeTruthy())
+    expect(document.querySelector('.hm-trk')).toBe(null)
+  })
 })
 
 // Тур «Главной» общего курса: профиль анкеты приезжает асинхронно (App: getIeltsMe → getGeProfile), и пока он в пути,

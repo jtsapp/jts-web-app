@@ -11,6 +11,8 @@ import { defaultTodayView, skillOf, todayMinutes, whyLine } from '../../ge/plan/
 import { useGeTaskStart } from '../../ge/plan/useGeTaskStart.js'
 import { useTodayExtras } from '../../ge/plan/useTodayExtras.js'
 import { taskTokenPoints, useStudentTokens } from '../../practice/practiceTokens.js'
+import { plural } from '../../lib/plural.js'
+import { ROW_LIMIT, visibleRows } from './todayTracks.js'
 
 /**
  * «Сегодня» на «Главной» общего курса (спека 2026-10-13, секция 4; ТЗ v2.0, разделы 5.2–5.3): задачи дня из плана
@@ -23,9 +25,13 @@ import { taskTokenPoints, useStudentTokens } from '../../practice/practiceTokens
  * текст «Чтения», урок шэдоуинга), куда — строкой «Откроется: …». Внизу — «Весь план →» и «У меня мало времени»
  * (10/20/30 минут — бэкенд пересобирает день, ушедшее — строками «Перенесено»). token и onReload — для «Начать» и сбоя
  * отметки. Плашка «запишитесь на занятия» — группе и индивидуальным без занятий в расписании.
+ *
+ * embedded — секция General English в «Задачах на сегодня» по направлениям (TodayTracksCard, задача 218): без своей
+ * рамки и заголовка (их даёт аккордеон), а «По порядку» до «+ ещё N» показывает три строки, сначала несделанные.
+ * Остальное то же: «Начать», «Зачем», «Весь план» и «Мало времени» работают как в отдельной карточке.
  */
-export default function GeTodayCard({ plan, frontier, level, token, onReload, onNav }) {
-  const { t } = useI18n()
+export default function GeTodayCard({ plan, frontier, level, token, onReload, onNav, embedded = false }) {
+  const { t, lang } = useI18n()
   const titles = useMemo(() => courseTitles(plan.tasks, frontier), [plan.tasks, frontier])
   const lessons = useMemo(() => courseLessons(plan.tasks, frontier), [plan.tasks, frontier])
   const steps = useMemo(() => courseSteps(plan.tasks, frontier), [plan.tasks, frontier])
@@ -45,6 +51,10 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
   // выбор ученика сильнее подсказки «больше пяти — по навыкам»; до выбора вид следует числу задач
   const [picked, setPicked] = useState(null)
   const view = picked || defaultTodayView(tasks)
+  // «+ ещё N» — только в секции по направлениям: отдельная карточка «Сегодня» по-прежнему показывает весь день
+  const [allRows, setAllRows] = useState(false)
+  const isDone = (x) => x.status === 'completed'
+  const { shown: orderRows, hidden } = embedded ? visibleRows(tasks, { expanded: allRows, isDone }) : { shown: tasks, hidden: 0 }
 
   const lowTime = plan.shortDay?.minutes || null
   const [low, setLow] = useState({ open: false, busy: false, failed: false })
@@ -80,10 +90,15 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
     )
   }
 
+  const Root = embedded ? 'div' : 'section'
+  const hasHead = !embedded || mins.total > 0 || tasks.length > 1
   return (
-    <section className="hm-card ge-today ge-skin" aria-labelledby="ge-today-title">
-      <header className="ge-today__head">
-        <h2 id="ge-today-title" className="hm-card__title">{t('gePlan.today.title')}</h2>
+    <Root
+      className={embedded ? 'ge-today ge-skin ge-today--embedded' : 'hm-card ge-today ge-skin'}
+      aria-labelledby={embedded ? undefined : 'ge-today-title'}
+    >
+      {hasHead && <header className="ge-today__head">
+        {!embedded && <h2 id="ge-today-title" className="hm-card__title">{t('gePlan.today.title')}</h2>}
         {mins.total > 0 && (
           <span className="ge-today__mins">{t('gePlan.today.minutes', { done: String(mins.done), total: String(mins.total) })}</span>
         )}
@@ -96,7 +111,7 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
             ))}
           </div>
         )}
-      </header>
+      </header>}
       {mins.total > 0 && (
         <div
           className="ge-today__bar"
@@ -118,7 +133,12 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
         </p>
       )}
       {tasks.length > 0 &&
-        (view === 'skills' ? <GeTodaySkills tasks={tasks} renderRow={row} focus={focus} /> : <ul className="ge-tasks">{tasks.map((task) => row(task))}</ul>)}
+        (view === 'skills' ? <GeTodaySkills tasks={tasks} renderRow={row} focus={focus} /> : <ul className="ge-tasks">{orderRows.map((task) => row(task))}</ul>)}
+      {embedded && view !== 'skills' && tasks.length > ROW_LIMIT && (
+        <button type="button" className="hm-trk__more" aria-expanded={allRows} onClick={() => setAllRows((v) => !v)}>
+          {allRows ? t('home.tracks.less') : `+ ${plural(t, lang, 'home.tracks.more', hidden)}`}
+        </button>
+      )}
       {markFailed && <p className="ge-move__error" role="alert">{t('gePlan.markFail')}</p>}
       {firstOpen < 0 && (
         <>
@@ -174,6 +194,6 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
           </div>
         )}
       </div>
-    </section>
+    </Root>
   )
 }
