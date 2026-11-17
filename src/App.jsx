@@ -99,6 +99,7 @@ import ScreenBoundary, { OptionalPart, preloadScreenSkeleton } from './component
 const AssistantWidget = lazyScreen(() => import('./components/AssistantWidget.jsx'))
 const PlatformPresence = lazyScreen(() => import('./components/PlatformPresence.jsx'))
 const MatchingPopups = lazyScreen(() => import('./matching/MatchingPopups.jsx'))
+const StudentNewsPopup = lazyScreen(() => import('./news/StudentNewsPopup.jsx'))
 const LessonFeedbackPrompt = lazyScreen(() => import('./components/LessonFeedbackPrompt.jsx'))
 const PurchaseSuccessModal = lazyScreen(() => import('./components/PurchaseSuccessModal.jsx'))
 const DemoSubscriptionModal = lazyScreen(() => import('./components/DemoSubscriptionModal.jsx'))
@@ -152,6 +153,7 @@ const ArcadePage = lazyScreen(() => import('./screens/ArcadePage.jsx'))
 const LessonsPage = lazyScreen(() => import('./screens/LessonsPage.jsx'))
 const GroupPickPage = lazyScreen(() => import('./screens/GroupPickPage.jsx'))
 const NotificationsPage = lazyScreen(() => import('./screens/NotificationsPage.jsx'))
+const StudentNewsPage = lazyScreen(() => import('./news/StudentNewsPage.jsx'))
 const ContractsPage = lazyScreen(() => import('./screens/ContractsPage.jsx'))
 const TeacherWizardPage = lazyScreen(() => import('./screens/TeacherWizardPage.jsx'))
 const TeacherPickPage = lazyScreen(() => import('./screens/TeacherPickPage.jsx'))
@@ -251,7 +253,7 @@ const PERSISTABLE_SCREENS = new Set([
   // здесь не стоит: с 17.11.2026 это вкладка «Уроков», а прежний адрес ?screen=my-teacher App переводит на неё.
   'teacher-wizard', 'teacher-pick',
   // Запись в группу и уведомления (ТЗ кабинетов, 14): состояние живёт на сервере
-  'group', 'notifications', 'contracts',
+  'group', 'notifications', 'contracts', 'whats-new',
   // Birge: открытую ветку экран держит в ?post= сам (birge/postParam.js), F5 возвращает в неё
   'birge',
   // Шахматы: недоигранная партия живёт в прогрессе раздела, адресу хватает экрана
@@ -1946,6 +1948,7 @@ export default function App() {
       setScreen('feedback')
     }
     // Birge: из уведомления — сразу в ветку, из меню — в ленту. Цель с меткой времени: экран уже открыт — он её увидит.
+    else if (key === 'whats-new') setScreen('whats-new')
     else if (key === 'chess') setScreen('chess')
     else if (key === 'birge') {
       setBirgeTarget({ postId: payload?.postId ? Number(payload.postId) : null, at: Date.now() })
@@ -2347,6 +2350,8 @@ export default function App() {
           переходы между экранами. Смонтирован для любого ученика, а на
           экзаменах, живом уроке и звонке тьютора только скрыт (enabled). */}
       <OptionalPart>{token && !isTeacher(token) && <PlatformPresence token={token} />}</OptionalPart>
+      <OptionalPart>{token && !boothAccount && !isTeacher(token) && <StudentNewsPopup key={token} token={token}
+        enabled={!celebrate && ['home', 'services', 'profile', 'kingdom', 'practice', 'lessons', 'tutor-dashboard'].includes(view)} onNav={handleNav} />}</OptionalPart>
       {/* Окна подбора учителя при входе (ТЗ 08 §2.12) — вне обёртки с key по той же причине. */}
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && <LessonFeedbackPrompt key={userIdFromToken(token)} token={token} enabled={isLegalDocumentsScreen(view) && !['live-lesson', 'lesson-workspace'].includes(view)} />}</OptionalPart>
       {/* На вкладке «Мой учитель» окна не выходят — экран показывает то же сам; для окон это прежний экран 'my-teacher'. */}
@@ -2743,6 +2748,8 @@ export default function App() {
       return <ContractsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'notifications':
       return <NotificationsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    case 'whats-new':
+      return <StudentNewsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'group':
       return <GroupPickPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'teacher-wizard':

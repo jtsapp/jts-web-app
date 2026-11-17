@@ -35,6 +35,7 @@ const dict = {
     'nav.myTeacher': 'Менің мұғалімім',
     'nav.group': 'Топ таңдау',
     'nav.notifications': 'Хабарландырулар',
+    'nav.whatsNew': 'What’s New',
     'nav.contracts': 'Шарттар',
     'demo.badge': 'ДЕМО',
     'demo.banner': 'Демо-қолжетімділік ашық — кейбір бөлімдер шектеулі жұмыс істейді',

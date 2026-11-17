@@ -1,0 +1,95 @@
+.student-news-card { display: block; min-width: 0; container-type: inline-size; font-family: Manrope, system-ui, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.45; }
+.student-news-card * { box-sizing: border-box; }
+.student-news-card .news-type-icon { display: inline-block; flex: 0 0 16px; width: 16px; height: 16px; background: currentColor; -webkit-mask: var(--news-icon) center / contain no-repeat; mask: var(--news-icon) center / contain no-repeat; }
+.student-news-card .news-view { --news-color: #7432e0; position: relative; display: grid; min-width: 0; border-radius: 22px; color: #191431; overflow: hidden; }
+.student-news-card .news-view.with-mascot { grid-template-columns: minmax(0, 38%) minmax(0, 62%); }
+.student-news-card .news-view.dark { color: #fff; }
+.student-news-card .news-view.white { border: 1px solid #ece8f5; border-top: 7px solid var(--news-color); }
+.student-news-card .news-decoration { position: absolute; right: 20px; top: 20px; font-size: 100px; color: var(--news-color); opacity: .12; pointer-events: none; }
+.student-news-card .dark .news-decoration { color: #fff; }
+.student-news-card .news-copy { position: relative; z-index: 1; }
+.student-news-card .news-art { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 18px; min-width: 0; min-height: 280px; padding: 22px 10px 8px 18px; }
+.student-news-card .news-bubble { position: relative; z-index: 1; align-self: flex-start; background: #fff; color: #191431; padding: 12px 15px; border-radius: 18px; max-width: 100%; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; box-shadow: 0 6px 18px #3c1e8c1f; }
+.student-news-card .news-bubble::after { content: ''; position: absolute; bottom: -8px; left: 22px; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 9px solid #fff; }
+.student-news-card .news-mascot { display: block; width: 100%; height: 230px; max-width: 300px; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 10px 18px #3c1e8c2e); }
+.student-news-card .news-mascot.call { height: auto; max-height: 230px; border: 5px solid #fff; border-radius: 18px; transform: rotate(-2deg); margin: 16px 0 20px; box-shadow: 0 12px 30px #3c1e8c38; }
+.student-news-card .news-copy { min-width: 0; padding: 28px; align-self: center; }
+.student-news-card .with-mascot .news-copy { padding-left: 16px; }
+.student-news-card .news-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.student-news-card .news-tag { display: inline-flex; gap: 6px; align-items: center; max-width: 100%; padding: 5px 11px; border-radius: 20px; background: #fff; color: var(--news-color); font-size: 11px; line-height: 1.4; font-weight: 800; text-transform: uppercase; letter-spacing: .3px; }
+.student-news-card .news-tag .ms { font-size: 16px; }
+.student-news-card .news-pin { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; }
+.student-news-card .news-pin .ms { font-size: 16px; }
+.student-news-card h2 { font: inherit; font-size: 28px; font-weight: 800; line-height: 1.15; letter-spacing: -.4px; margin: 0 0 12px; overflow-wrap: anywhere; }
+.student-news-card .news-body { margin: 0 0 16px; color: #4a4664; font-size: 15px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.student-news-card .dark .news-body { color: #fffffff0; }
+.student-news-card .news-banner { margin: 0 0 16px; border-radius: 12px; overflow: hidden; background: #ffffffb3; }
+.student-news-card .news-banner img { display: block; width: 100%; height: auto; max-height: 320px; object-fit: contain; }
+.student-news-card .news-image-error { font-size: 13px; padding: 10px; border-radius: 8px; background: #fff3de; color: #7a5200; }
+.student-news-card .news-detail { display: flex; gap: 8px; align-items: center; margin: 0 0 16px; font-size: 14px; font-weight: 700; }
+.student-news-card .news-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.student-news-card .news-button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; max-width: 100%; padding: 10px 18px; border: 1px solid transparent; border-radius: 24px; background: var(--news-color); color: #fff; text-decoration: none; text-align: center; font: inherit; font-size: 14px; font-weight: 700; line-height: 1.4; cursor: pointer; overflow-wrap: anywhere; }
+.student-news-card .news-button.secondary, .student-news-card .news-button.calendar { background: #fff; color: #4a4664; border-color: #e4def5; }
+.student-news-card .dark .news-button { background: #fff; color: #39205d; }
+.student-news-card .dark .news-button.secondary, .student-news-card .dark .news-button.calendar { background: #ffffff1f; color: #fff; border-color: #ffffff80; }
+.student-news-card button:disabled { opacity: .6; cursor: default; }
+.student-news-card button:focus-visible, .student-news-card a:focus-visible { outline: 3px solid #b99aff; outline-offset: 3px; }
+.student-news-card .news-acked { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
+.student-news-card .news-poll { display: grid; gap: 8px; margin-bottom: 18px; }
+.student-news-card .news-option { position: relative; isolation: isolate; overflow: hidden; display: flex; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #e4def5; border-radius: 12px; background: #fff; color: #191431; text-align: left; font: inherit; font-size: 14px; line-height: 1.4; cursor: pointer; }
+.student-news-card .news-option > span:not(.news-option-fill) { overflow-wrap: anywhere; min-width: 0; }
+.student-news-card .news-option.selected { border-color: var(--news-color); opacity: 1; }
+.student-news-card .news-option-fill { position: absolute; inset: 0 auto 0 0; z-index: -1; background: color-mix(in srgb, var(--news-color) 15%, #fff); }
+.student-news-card .news-poll small { font-size: 12px; }
+.student-news-card .feed { background: #fff; border: 1px solid #ece8f5; border-left: 5px solid var(--news-color); margin-bottom: 14px; border-radius: 16px; }
+.student-news-card .feed .news-copy { padding: 20px; }
+.student-news-card .feed h2 { font-size: 20px; }
+.student-news-card .feed .news-tag { padding-left: 0; }
+.student-news-card .news-author { font-size: 12px; color: #6b6878; }
+.student-news-card .news-reactions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.student-news-card .news-reactions button { min-height: 36px; padding: 5px 12px; border: 1px solid #ece8f5; border-radius: 24px; background: #fff; color: #191431; font: inherit; font-size: 14px; cursor: pointer; }
+.student-news-card .news-reactions button.selected { background: #f2ebff; border-color: var(--news-color); }
+.student-news-card .unread::after { content: ''; position: absolute; top: 12px; right: 12px; width: 8px; height: 8px; border-radius: 50%; background: #e5484d; }
+@container (max-width: 560px) {
+.student-news-card .news-view.with-mascot { grid-template-columns: 1fr; }
+.student-news-card .news-art { padding: 20px 20px 0; min-height: 0; gap: 14px; }
+.student-news-card .news-mascot { height: 180px; width: auto; max-width: 100%; }
+.student-news-card .news-mascot.call { max-width: 240px; max-height: 180px; margin: 8px 0; }
+.student-news-card .news-bubble { max-width: 260px; align-self: center; }
+.student-news-card .news-copy, .student-news-card .with-mascot .news-copy { padding: 22px; }
+.student-news-card h2 { font-size: 24px; }
+}
+.student-news-popup { display: contents; }
+.student-news-popup .news-overlay { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 16px; background: #15131a80; backdrop-filter: blur(4px); font-family: Manrope, system-ui, sans-serif; }
+.student-news-popup .news-dialog { width: min(820px, 100%); min-width: 0; max-height: calc(100dvh - 32px); overflow: auto; overscroll-behavior: contain; border-radius: 24px; background: #fff; color: #191431; box-shadow: 0 30px 70px #1e0a5059; }
+.student-news-popup .news-toolbar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+.student-news-popup .news-counter { margin-right: auto; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.student-news-popup .news-languages { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid #ece8f5; border-radius: 10px; }
+.student-news-popup .news-languages button, .student-news-popup .news-close { border: 0; background: none; color: #6b6878; cursor: pointer; font: inherit; }
+.student-news-popup .news-languages button { padding: 5px 8px; border-radius: 7px; font-size: 12px; font-weight: 700; }
+.student-news-popup .news-languages button.on { background: #f2ebff; color: #7432e0; }
+.student-news-popup .news-close { flex: none; width: 36px; height: 36px; border-radius: 50%; background: #f6f3fe; font-size: 24px; line-height: 1; }
+.student-news-popup .news-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 16px 20px; }
+.student-news-popup .news-footer button { min-height: 42px; border-radius: 22px; padding: 10px 16px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.student-news-popup .news-all { background: none; border: 0; color: #7432e0; }
+.student-news-popup .news-next { background: #f2ebff; border: 1px solid #e4def5; color: #5b22c2; }
+.student-news-popup .news-error { margin: 16px; padding: 12px; border-radius: 10px; background: #fdecec; color: #a5262a; font-size: 14px; }
+.student-news-popup button:disabled { cursor: wait; opacity: .5; }
+.student-news-popup button:focus-visible { outline: 3px solid #b99aff; outline-offset: 2px; }
+@media (max-width: 480px) {
+.student-news-popup .news-overlay { padding: 8px; }
+.student-news-popup .news-dialog { max-height: calc(100dvh - 16px); border-radius: 20px; }
+.student-news-popup .news-toolbar { gap: 6px; padding: 10px 12px; }
+.student-news-popup .news-footer { padding: 12px; }
+}
+.student-news-page { box-sizing: border-box; width: min(100%, 1100px); margin: 0 auto; padding: 28px; }
+.student-news-page h1 { margin: 0 0 8px; font-size: 30px; }
+.student-news-page > p { color: var(--muted, #6b6878); }
+.student-news-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+.student-news-filters button { border: 1px solid #e4def5; border-radius: 24px; padding: 9px 14px; color: #4a4664; background: #fff; font: inherit; cursor: pointer; }
+.student-news-filters button[aria-pressed="true"] { background: #7432e0; color: #fff; border-color: #7432e0; }
+@media (max-width: 560px) {
+  .student-news-page { padding: 20px 14px; }
+  .student-news-filters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; }
+  .student-news-filters button { flex-shrink: 0; }
+}

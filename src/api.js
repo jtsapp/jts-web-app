@@ -146,6 +146,18 @@ export function getCabinetFeedback(token) {
   return authGet('/cabinet/feedback/mine', token)
 }
 
+export function getStudentNews(token) {
+  return authGet('/cabinet/news/feed', token)
+}
+
+export function getStudentNewsPopup(token) {
+  return authGet('/cabinet/news/popup', token)
+}
+
+export function reactToStudentNews(token, id, kind, body = {}) {
+  return authPost(`/cabinet/news/${encodeURIComponent(id)}/${encodeURIComponent(kind)}`, token, body)
+}
+
 export function getPublishedGrammar(token, level) {
   const query = level ? `?level=${encodeURIComponent(level)}` : ''
   return authGet(`/mobile/grammar${query}`, token)

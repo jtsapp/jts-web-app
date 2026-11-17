@@ -11,6 +11,7 @@ export function notificationTarget(deepLink) {
   // Запись в группу набора (ТЗ кабинетов, 14): бэкенд пишет ученику ссылку '/group-choice'. Стоит выше общих веток по словам.
   if (/^\/?group-choice\/?$/.test(trimmed)) return { screen: 'group', payload: null }
   if (/^\/?notifications\/?$/.test(trimmed)) return { screen: 'notifications', payload: null }
+  if (/^(?:\/system\/|\/)?whats-new\/?$/.test(trimmed)) return { screen: 'whats-new', payload: null }
   if (/^\/?contracts\/?$/.test(trimmed)) return { screen: 'contracts', payload: null }
   // Birge (спека 2026-11-11 §6): у всех уведомлений раздела ссылка `birge/<id ветки>`. Выше общих веток по словам — как
   // у отчётов ниже: случайное слово в адресе не должно увести ученика в расписание.
