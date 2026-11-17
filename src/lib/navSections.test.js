@@ -20,10 +20,10 @@ describe('меню ученика', () => {
     expect(keys(menuItems({ sections }))).not.toContain('speed-reading')
   })
 
-  it('«Мой учитель» — сразу под «Главной», когда на стенде есть подбор, и не у преподавателя', () => {
-    expect(keys(menuItems({ myTeacher: true })).slice(0, 4)).toEqual(['home', 'my-teacher', 'group', 'practice'])
-    expect(keys(menuItems({ myTeacher: true, ieltsAccount: true })).slice(0, 2)).toEqual(['home', 'my-teacher'])
-    expect(keys(menuItems({ myTeacher: true, teacher: true }))).toEqual(['practice', 'lessons'])
+  it('«Мой учитель» пунктом меню не стоит — это вкладка «Уроков» (задача 219)', () => {
+    expect(keys(menuItems()).slice(0, 3)).toEqual(['home', 'group', 'practice'])
+    expect(keys(menuItems({ ieltsAccount: true }))).not.toContain('my-teacher')
+    expect(keys(menuItems({ teacher: true }))).toEqual(['practice', 'lessons'])
   })
 
   it('экзамен появляется только при своей подписке', () => {
@@ -133,7 +133,7 @@ describe('нижняя панель телефона', () => {
 
 describe('где видна нижняя панель', () => {
   it('на корнях вкладок и экранах без своей «назад» — есть', () => {
-    for (const s of ['home', 'practice', 'lessons', 'services', 'tutor-dashboard', 'kingdom', 'homework', 'vocab', 'ielts', 'sat', 'my-teacher']) {
+    for (const s of ['home', 'practice', 'lessons', 'services', 'tutor-dashboard', 'kingdom', 'homework', 'vocab', 'ielts', 'sat']) {
       expect(showsTabBar(s)).toBe(true)
     }
   })

@@ -2093,6 +2093,7 @@ const dict = {
     'lessons.tabSelf': 'Self-study',
     'lessons.tabReports': 'Reports',
     'lessons.tabRules': 'Rules',
+    'lessons.tabTeacher': 'My teacher',
     'reports.title': 'Progress report',
     'reports.loading': 'Loading…',
     'reports.emptyTitle': 'No reports yet',
@@ -2557,8 +2558,6 @@ const dict = {
     'assistant.map.ielts': 'exam preparation',
     'assistant.map.name.sat': 'SAT',
     'assistant.map.sat': 'SAT preparation',
-    'assistant.map.name.my-teacher': 'My teacher',
-    'assistant.map.my-teacher': 'choose or change your teacher',
     'assistant.map.name.group': 'Group',
     'assistant.map.group': 'your group and its schedule',
     'assistant.map.name.tokens': 'Tokens',
@@ -3153,6 +3152,9 @@ const dict = {
     'tour.lessons.tabs.title': 'Two tabs',
     'tour.lessons.tabs.text':
       'Online — classes with a teacher by schedule. Self-study — course materials for your level that you go through on your own.',
+    'tour.lessons.teacher.title': 'My teacher',
+    'tour.lessons.teacher.text':
+      'Choose your teacher, confirm class times and switch teachers if you need to — all in this tab.',
     'tour.lessons.next.title': 'Your next class',
     'tour.lessons.next.text':
       'The card on top is the upcoming lesson. When the teacher starts it, you join from right here.',
@@ -4521,7 +4523,6 @@ const dict = {
     'tour.sections.ielts': 'Exam preparation: questionnaire, diagnostics and a plan',
     'tour.sections.sat': 'SAT preparation: math practice',
     'tour.sections.vocab': 'Words by level, by profession and the ones you saved',
-    'tour.sections.my-teacher': 'Your teacher: matching and switching teachers',
     'tour.sections.group': 'A group for your level and a convenient time',
     'tour.sections.tokens': 'Tokens for studying: how many you have and what for',
     'tour.sections.prizes': 'Prizes for the tokens you collect',

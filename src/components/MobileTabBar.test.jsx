@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, fireEvent } from '@testing-library/react'
+import { render, fireEvent, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import MobileTabBar from './MobileTabBar.jsx'
 
 vi.mock('../matching/matchingStore.js', () => ({ useMatching: vi.fn() }))
+// Вкладка «Мой учитель» и её бейдж сверяются с разделами тарифа: ответ «тариф неизвестен» — всё открыто.
+vi.mock('../api.js', async (load) => ({ ...(await load()), getMySections: vi.fn(async () => ({ known: false, allowed: [] })) }))
 import { useMatching } from '../matching/matchingStore.js'
 
 beforeEach(() => {
@@ -42,10 +44,11 @@ describe('нижняя панель', () => {
     expect(onNav).toHaveBeenCalledWith('practice')
   })
 
-  it('раздел в «Сервисах» ждёт действия — точка на вкладке «Сервисы»', () => {
+  it('подбор учителя ждёт действия — точка на «Уроках», а не на «Сервисах»: «Мой учитель» — вкладка «Уроков»', async () => {
     expect(renderBar().container.querySelector('.mtab__dot')).toBeNull()
     useMatching.mockReturnValue({ status: 'ready', card: { apiVersion: 2, matchStatus: 'self', tariffConfirmed: true, requests: [] }, handoffs: [] })
     const { container } = renderBar({ token: 'T' })
-    expect(container.querySelector('[data-tab="services"] .mtab__dot')).not.toBeNull()
+    await waitFor(() => expect(container.querySelector('[data-tab="lessons"] .mtab__dot')).not.toBeNull())
+    expect(container.querySelector('[data-tab="services"] .mtab__dot')).toBeNull()
   })
 })

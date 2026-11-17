@@ -14,7 +14,6 @@ export const MAP_KEYS = [
   'vocab',
   'ielts',
   'sat',
-  'my-teacher',
   'group',
   'tokens',
   'prizes',

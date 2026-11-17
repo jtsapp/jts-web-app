@@ -67,13 +67,13 @@ describe('Сервисы', () => {
     expect(container.querySelector('.svc-tile--vocab .svc-tile__new')).toBeNull()
   })
 
-  it('«Мой учитель» — первой плиткой и с бейджем, когда ждут действия ученика', async () => {
+  it('плитки «Мой учитель» нет — это вкладка «Уроков» (задача 219), и её бейдж плиткам не достаётся', async () => {
     useMatching.mockReturnValue({ status: 'ready', card: { apiVersion: 2, matchStatus: 'self', tariffConfirmed: true, requests: [] }, handoffs: [] })
     const { container } = renderServices()
-    await waitFor(() => expect(container.querySelector('.svc-tile--my-teacher')).not.toBeNull())
-    const first = container.querySelector('.svc-grid .svc-tile')
-    expect(first.classList.contains('svc-tile--my-teacher')).toBe(true)
-    expect(first.querySelector('.svc-tile__badge').textContent).toBe('1')
+    await waitFor(() => expect(container.querySelector('.svc-tile--vocab')).not.toBeNull())
+    expect(container.querySelector('.svc-tile--my-teacher')).toBeNull()
+    expect(container.querySelector('.svc-grid .svc-tile').classList.contains('svc-tile--group')).toBe(true)
+    expect(container.querySelector('.svc-tile__badge')).toBeNull()
   })
 
   it('монеты и стрик — плашками рядом с уровнем', async () => {

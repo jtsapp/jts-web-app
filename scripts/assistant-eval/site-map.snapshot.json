@@ -399,11 +399,6 @@
       "screen": "home"
     },
     {
-      "key": "my-teacher",
-      "label": "Мой учитель",
-      "screen": "my-teacher"
-    },
-    {
       "key": "group",
       "label": "Выбрать группу",
       "screen": "group"
@@ -892,7 +887,7 @@
     },
     "lessons-tabs": {
       "title": "Уроки: вкладки и расписание",
-      "hash": "x14mv7"
+      "hash": "112xb7o"
     },
     "school-rules": {
       "title": "Правила обучения школы: перенос, отмена, заморозка, возврат",
@@ -912,7 +907,7 @@
     },
     "cabinet": {
       "title": "Мой учитель, Выбрать группу, Уведомления, Договоры",
-      "hash": "1aor2vj"
+      "hash": "1vti8o"
     },
     "practice": {
       "title": "Практика: обзор и лимиты",

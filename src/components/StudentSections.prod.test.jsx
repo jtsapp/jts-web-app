@@ -15,7 +15,7 @@ vi.mock('../api.js', async (load) => ({ ...await load(),
 }))
 const student = `e30.${btoa(JSON.stringify({ role: 'STUDENT', userId: 4 }))}.sig`
 it('убирает разделы на компьютере и в Сервисах телефона даже при открытых правах', () => {
-  const items = menuItems({ rewards: true, myTeacher: true, sections: { known: false, allowed: [] } })
+  const items = menuItems({ rewards: true, sections: { known: false, allowed: [] } })
   for (const list of [items, serviceItems(items)]) {
     expect(list.map(i => i.key)).not.toEqual(expect.arrayContaining(['tokens']))
     expect(list.some(i => i.key === 'feedback')).toBe(true)
@@ -23,7 +23,8 @@ it('убирает разделы на компьютере и в Сервиса
       expect(list.some(i => i.key === key)).toBe(false)
     }
   }
-  expect(items.some(i => i.key === 'my-teacher')).toBe(true)
+  // «Мой учитель» — вкладка «Уроков» (задача 219), пунктом меню его нет ни на одном стенде.
+  expect(items.some(i => i.key === 'my-teacher')).toBe(false)
   expect(items.some(i => i.key === 'lessons')).toBe(true)
 })
 it('не показывает плашки, колокольчик и не запрашивает данные скрытых разделов', () => {

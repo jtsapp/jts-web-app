@@ -42,7 +42,7 @@ export default function TeacherWizardPage({ token, userName, userLevel, initialS
   }, [leave, view.status, onNav])
 
   const layout = (children) => (
-    <LearningLayout userName={userName} userLevel={userLevel} active="my-teacher" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="mt">
         <div className="mt-wrap mt-wrap--bar">{children}</div>
       </div>

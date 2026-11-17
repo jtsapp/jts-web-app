@@ -21,31 +21,36 @@ function tokenFor(role) {
 }
 
 const items = () => [...document.querySelectorAll('.sb__nav [data-nav]')].map((b) => b.dataset.nav)
+const ready = (matchStatus) => ({ status: 'ready', card: { apiVersion: 2, matchStatus, tariffConfirmed: true, requests: [] }, handoffs: [] })
 
-// «Мой учитель» (ТЗ 08 §1): под «Главной», с бейджем, когда ждут действия ученика; без подбора на стенде — нет пункта.
-describe('Sidebar — «Мой учитель»', () => {
-  it('stands right after «Главная» with an action badge', async () => {
-    useMatching.mockReturnValue({ status: 'ready', card: { apiVersion: 2, matchStatus: 'self', tariffConfirmed: true, requests: [] }, handoffs: [] })
+// «Мой учитель» (ТЗ 08) с 17.11.2026 — вкладка «Уроков» (задача 219): пункта меню нет, а бейдж «ждут действия ученика»
+// переехал на «Уроки».
+describe('Sidebar — подбор учителя', () => {
+  it('пункта «Мой учитель» нет, бейдж действия — на «Уроках»', async () => {
+    useMatching.mockReturnValue(ready('self'))
     render(<I18nProvider><Sidebar token={tokenFor('STUDENT')} onNav={() => {}} /></I18nProvider>)
-    await waitFor(() => expect(items().slice(0, 2)).toEqual(['home', 'my-teacher']))
-    expect(document.querySelector('[data-nav="my-teacher"] .sb__badge').textContent).toBe('1')
+    await waitFor(() => expect(document.querySelector('[data-nav="lessons"] .sb__badge')?.textContent).toBe('1'))
+    expect(items()).not.toContain('my-teacher')
   })
 
-  it('has no badge while waiting for teachers', () => {
-    useMatching.mockReturnValue({ status: 'ready', card: { apiVersion: 2, matchStatus: 'sent', tariffConfirmed: true, requests: [] }, handoffs: [] })
+  it('пока ждём учителей, бейджа нет', async () => {
+    useMatching.mockReturnValue(ready('sent'))
     render(<I18nProvider><Sidebar token={tokenFor('STUDENT')} onNav={() => {}} /></I18nProvider>)
-    expect(document.querySelector('[data-nav="my-teacher"] .sb__badge')).toBeNull()
+    await waitFor(() => expect(items()).toContain('lessons'))
+    expect(document.querySelector('[data-nav="lessons"] .sb__badge')).toBeNull()
   })
 
-  it('is hidden when the backend has no matching v2', () => {
+  it('без подбора на стенде бейджа нет', async () => {
     useMatching.mockReturnValue({ status: 'unavailable', card: null, handoffs: [] })
     render(<I18nProvider><Sidebar token={tokenFor('STUDENT')} onNav={() => {}} /></I18nProvider>)
-    expect(items()).not.toContain('my-teacher')
+    await waitFor(() => expect(items()).toContain('lessons'))
+    expect(document.querySelector('[data-nav="lessons"] .sb__badge')).toBeNull()
   })
 
-  it('is never shown to a teacher', () => {
-    useMatching.mockReturnValue({ status: 'ready', card: { apiVersion: 2, matchStatus: 'self', tariffConfirmed: true, requests: [] }, handoffs: [] })
+  it('у преподавателя бейджа подбора нет', () => {
+    useMatching.mockReturnValue(ready('self'))
     render(<I18nProvider><Sidebar token={tokenFor('TEACHER')} onNav={() => {}} /></I18nProvider>)
     expect(items()).not.toContain('my-teacher')
+    expect(document.querySelector('[data-nav="lessons"] .sb__badge')).toBeNull()
   })
 })

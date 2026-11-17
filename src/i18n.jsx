@@ -2124,6 +2124,7 @@ const dict = {
     'lessons.tabSelf': 'Самостоятельно',
     'lessons.tabReports': 'Отчёты',
     'lessons.tabRules': 'Правила',
+    'lessons.tabTeacher': 'Мой учитель',
     'reports.title': 'Отчёт о прогрессе',
     'reports.loading': 'Загружаем…',
     'reports.emptyTitle': 'Отчётов пока нет',
@@ -2604,8 +2605,6 @@ const dict = {
     'assistant.map.ielts': 'подготовка к экзамену',
     'assistant.map.name.sat': 'SAT',
     'assistant.map.sat': 'подготовка к SAT',
-    'assistant.map.name.my-teacher': 'Мой учитель',
-    'assistant.map.my-teacher': 'подбор и смена преподавателя',
     'assistant.map.name.group': 'Группа',
     'assistant.map.group': 'твоя группа и её расписание',
     'assistant.map.name.tokens': 'Токены',
@@ -3208,6 +3207,9 @@ const dict = {
     'tour.lessons.tabs.title': 'Две вкладки',
     'tour.lessons.tabs.text':
       '«Онлайн» — занятия с преподавателем по расписанию. «Самостоятельно» — материалы курса твоего уровня, которые проходишь сам.',
+    'tour.lessons.teacher.title': 'Мой учитель',
+    'tour.lessons.teacher.text':
+      'Здесь выбираешь преподавателя, подтверждаешь время занятий и, если нужно, меняешь учителя.',
     'tour.lessons.next.title': 'Ближайшее занятие',
     'tour.lessons.next.text':
       'Карточка сверху — следующий урок. Когда преподаватель начнёт занятие, отсюда же в него и заходишь.',
@@ -4579,7 +4581,6 @@ const dict = {
     'tour.sections.sat': 'Подготовка к SAT: задания по математике',
     'tour.sections.vocab': 'Слова по уровням, по специальности и твои сохранённые',
     // Пункты, появившиеся в меню после макета тура: без строки список показывал сам ключ.
-    'tour.sections.my-teacher': 'Твой преподаватель: подбор и смена учителя',
     'tour.sections.group': 'Группа под твой уровень и удобное время',
     'tour.sections.tokens': 'Токены за учёбу: сколько накоплено и за что',
     'tour.sections.prizes': 'Призы за накопленные токены',

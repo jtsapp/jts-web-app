@@ -22,8 +22,9 @@
  * @param liveWorkspaceId id урока каталога — у экрана урока
  * @param workspaceCardId адрес карточки, заданной на дом
  * @param workspaceSource откуда открыт урок: 'self' — раздел «Самостоятельно»
- * @returns `{ screen, live, catalog, card, self }`, где null — «этого параметра быть
- *          не должно»
+ * @param lessonsTab открытая вкладка «Уроков»
+ * @returns `{ screen, live, catalog, card, self, tab }`, где null — «этого параметра
+ *          быть не должно»
  */
 export function screenUrlParams({
   screen,
@@ -32,8 +33,9 @@ export function screenUrlParams({
   liveWorkspaceId = null,
   workspaceCardId = null,
   workspaceSource = null,
+  lessonsTab = null,
 } = {}) {
-  const params = { screen: null, live: null, catalog: null, card: null, self: null }
+  const params = { screen: null, live: null, catalog: null, card: null, self: null, tab: null }
 
   const isLiveLesson = screen === 'live-lesson' && liveLessonId != null
   // Карточка урока, заданная на дом: на неё ведёт ссылка из домашней работы, и
@@ -58,6 +60,9 @@ export function screenUrlParams({
     params.card = String(workspaceCardId)
   }
   if (isSelfWorkspace) params.self = String(liveWorkspaceId)
+  // Вкладка «Уроков», кроме первой: F5 на «Моём учителе» (до 17.11.2026 — свой экран ?screen=my-teacher) или на
+  // «Правилах» оставляет на ней, а не роняет на расписание. Читает её тот же диплинк ?screen=lessons&tab=….
+  if (screen === 'lessons' && lessonsTab && lessonsTab !== 'online') params.tab = String(lessonsTab)
   return params
 }
 

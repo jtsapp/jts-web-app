@@ -6,7 +6,7 @@ import { screenUrlParams, applyScreenUrlParams } from './screenUrlParams.js'
  * из-за неё ученик посреди живого урока улетал на главную. Поэтому решение и
  * вынесено из эффекта в чистую функцию.
  */
-const пусто = { screen: null, live: null, catalog: null, card: null, self: null }
+const пусто = { screen: null, live: null, catalog: null, card: null, self: null, tab: null }
 
 describe('параметры адреса по экрану', () => {
   it('обычный экран пишется одним ?screen=', () => {
@@ -36,7 +36,7 @@ describe('параметры адреса по экрану', () => {
   it('урок с карточкой пишется полным адресом', () => {
     expect(screenUrlParams({
       screen: 'lesson-workspace', persists: false, liveWorkspaceId: 314, workspaceCardId: 'cad401560',
-    })).toEqual({ screen: 'lesson-workspace', live: null, catalog: '314', card: 'cad401560', self: null })
+    })).toEqual({ screen: 'lesson-workspace', live: null, catalog: '314', card: 'cad401560', self: null, tab: null })
   })
 
   it('урок без карточки в адрес не едет — это обычное открытие из каталога', () => {
@@ -57,6 +57,12 @@ describe('параметры адреса по экрану', () => {
   it('на другом экране параметр самостоятельного урока стирается', () => {
     expect(screenUrlParams({ screen: 'lessons', persists: true, liveWorkspaceId: 601, workspaceSource: 'self' }))
       .toEqual({ ...пусто, screen: 'lessons' })
+  })
+
+  it('вкладка «Уроков» едет в адрес, кроме первой, и стирается на других экранах', () => {
+    expect(screenUrlParams({ screen: 'lessons', persists: true, lessonsTab: 'teacher' })).toEqual({ ...пусто, screen: 'lessons', tab: 'teacher' })
+    expect(screenUrlParams({ screen: 'lessons', persists: true, lessonsTab: 'online' })).toEqual({ ...пусто, screen: 'lessons' })
+    expect(screenUrlParams({ screen: 'homework', persists: true, lessonsTab: 'teacher' })).toEqual({ ...пусто, screen: 'homework' })
   })
 
   it('карточка без урока — тоже не едет: искать её негде', () => {

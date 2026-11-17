@@ -2093,6 +2093,7 @@ const dict = {
     'lessons.tabSelf': 'Өз бетімше',
     'lessons.tabReports': 'Есептер',
     'lessons.tabRules': 'Ережелер',
+    'lessons.tabTeacher': 'Менің мұғалімім',
     'reports.title': 'Прогресс есебі',
     'reports.loading': 'Жүктелуде…',
     'reports.emptyTitle': 'Әзірге есеп жоқ',
@@ -2557,8 +2558,6 @@ const dict = {
     'assistant.map.ielts': 'емтиханға дайындық',
     'assistant.map.name.sat': 'SAT',
     'assistant.map.sat': 'SAT-қа дайындық',
-    'assistant.map.name.my-teacher': 'Менің мұғалімім',
-    'assistant.map.my-teacher': 'оқытушыны таңдау және ауыстыру',
     'assistant.map.name.group': 'Топ',
     'assistant.map.group': 'тобың және оның кестесі',
     'assistant.map.name.tokens': 'Токендер',
@@ -3153,6 +3152,9 @@ const dict = {
     'tour.lessons.tabs.title': 'Екі қойынды',
     'tour.lessons.tabs.text':
       '«Онлайн» — мұғаліммен кесте бойынша сабақ. «Өз бетінше» — өз деңгейіңдегі курс материалдары, оларды өзің өтесің.',
+    'tour.lessons.teacher.title': 'Менің мұғалімім',
+    'tour.lessons.teacher.text':
+      'Осында мұғалім таңдайсың, сабақ уақытын растайсың және қажет болса мұғалімді ауыстырасың.',
     'tour.lessons.next.title': 'Жақындағы сабақ',
     'tour.lessons.next.text':
       'Жоғарыдағы карточка — келесі сабақ. Мұғалім сабақты бастағанда, оған осы жерден кіресің.',
@@ -4521,7 +4523,6 @@ const dict = {
     'tour.sections.ielts': 'Емтиханға дайындық: сауалнама, диагностика және жоспар',
     'tour.sections.sat': 'SAT-қа дайындық: математика тапсырмалары',
     'tour.sections.vocab': 'Деңгей мен мамандық бойынша сөздер және сақтағандарың',
-    'tour.sections.my-teacher': 'Мұғалімің: мұғалім таңдау және ауыстыру',
     'tour.sections.group': 'Деңгейіңе және ыңғайлы уақытқа сай топ',
     'tour.sections.tokens': 'Оқу үшін токендер: қанша жиналды және не үшін',
     'tour.sections.prizes': 'Жинаған токендерге сыйлықтар',

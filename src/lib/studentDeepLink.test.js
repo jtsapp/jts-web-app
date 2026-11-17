@@ -9,7 +9,7 @@ describe('notificationTarget', () => {
   })
   // Уведомления подбора учителя (бэкенд пишет 'teacher-matching') ведут в «Мой учитель», а не в расписание (ТЗ 08 §2.12)
   it('opens teacher matching notices in My teacher', () => {
-    expect(notificationTarget('teacher-matching')).toEqual({ screen: 'my-teacher', payload: null })
+    expect(notificationTarget('teacher-matching')).toEqual({ screen: 'lessons', payload: { tab: 'teacher' } })
   })
   it('opens a live lesson from the teacher workspace route', () => {
     expect(notificationTarget('/system/schedule/42/workspace')).toEqual({
