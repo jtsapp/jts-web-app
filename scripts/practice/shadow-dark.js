@@ -73,6 +73,21 @@ const SECTIONS = {
     // не фон: правило по цвету увело бы его в тинт, и акцент пропал бы — остаётся сплошным жёлтым бренда.
     app: `${D}{--yellow:var(--dk-yellow)}`,
   },
+  // Literature World: вход в книгу, сцены глав и переулков, шапки миров и пьес, арки дверей карты (подписи под ними — на странице), карточки «Learn English»
+  // — нарисованные сцены с маскотами под светлой вуалью прототипа, текст лежит на вуали; золочёные рамы и паспарту
+  // картин (.art-wrap, .plate, .frame, рама «In history») и рамы экспонатов «кабинета» — музейная рама вокруг картины (подписи под ними — на странице): правило
+  // по цвету делало из золота сплошной жёлтый бренда. Всё это — иллюстрация, а не страница: остаётся в палитре
+  // прототипа. Цвет текста зоны наследуется от корня раздела (в тёмной теме — белый), поэтому ей он возвращается.
+  // Выбор уровня (.sel) прототип рисует фоном-шевроном с no-repeat, а тёмная копия его правила задаёт фон сокращённой
+  // записью — повтор и место шеврона сбрасывались, и он ложился «ёлочкой» на всю кнопку.
+  literature: {
+    css: 'LITERATURE_CSS',
+    zones: {
+      lightZones: ['.lw-entry', '.lw-arrive', '.world-hero.lw-scened', '.lw-door .arch', '.lw-desks .ph', '.lw-curio .fr', '.lw-role .stage', '.art-wrap', '.plate', '.frame', '.lw-hist .fr'],
+      zoneColor: { '.lw-entry': 'var(--ink)', '.lw-arrive': 'var(--ink)', '.world-hero.lw-scened': 'var(--ink)' },
+    },
+    app: `${D} .sel{background-repeat:no-repeat!important;background-position:right 12px center!important}`,
+  },
 }
 
 const darkName = (name) => SECTIONS[name].css.replace(/_CSS$/, '_DARK_CSS')

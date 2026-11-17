@@ -94,6 +94,9 @@ const ENGINES = {
   punctuation: (css) => expect(css).toContain(`.punct [lang="kk"]{font-family:'Inter'`),
   // Интерфейс английский, гарнитуры — сайта через --pos-font; казахский перевод с lang="kk" — на Inter.
   partsofspeech: (css) => expect(css).toContain(`.posw [lang="kk"]{font-family:'Inter'`),
+  // Интерфейс раздела en / kz / ru (свой переключатель), гарнитура интерфейса — сайта через --lit-font; по-казахски
+  // движок ставит lang="kk" на корень раздела, и тогда интерфейс — Inter (литература остаётся serif).
+  literature: (css) => expect(css).toContain(`.lw[lang="kk"]{--ui:'Inter'`),
   // Интерфейс раздела — на языке приложения, гарнитура — сайта через --cw-font (в kk экран отдаёт Inter).
   cartoons: (css) => expect(css).toContain('--ct-font-text: var(--cw-font, inherit);'),
   // Интерфейс — на языке приложения, гарнитура — сайта через --gg-font (в kk экран отдаёт Inter).
