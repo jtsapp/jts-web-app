@@ -1100,8 +1100,7 @@ export async function getOffers() {
 // `idempotencyKey` обязателен: двойной клик по «Перейти к оплате» с тем же
 // ключом вернёт тот же заказ, а не создаст второй платёж.
 //
-// paymentUrl пуст, когда эквайринг ещё не подключён — тогда экран показывает
-// запасной путь (написать менеджеру), а не пустую страницу оплаты.
+// Если провайдер не выдал paymentUrl, экран предлагает повторить оплату.
 export async function createOrder(token, { items, idempotencyKey, returnUrl } = {}) {
   return authPost('/mobile/orders', token, { items, idempotencyKey, returnUrl })
 }
@@ -1214,9 +1213,14 @@ export function deleteLessonMessage(token, lessonId, messageId) {
 // меняется на каждый ре-рендер SectionMaterialFrame (например от полинга
 // "учитель начал урок" раз в 5с), и браузер молча перезагружает iframe весь
 // остаток урока, обнуляя непереживший дебаунс прогресс студента.
-export function lessonMaterialRenderUrl(lessonId, materialId, token, { mode = 'live', forceReload, studentId } = {}) {
+// lessonNo — урок плитки (fileLessonKey): один файл бывает на занятии в двух
+// разделах с разными уроками, и без него сервер открывал в обеих плитках урок,
+// выбранный последним (прод 16.11.2026). Сервер берёт его, только если такой
+// урок стоит на плитке этого занятия.
+export function lessonMaterialRenderUrl(lessonId, materialId, token, { mode = 'live', forceReload, studentId, lessonNo } = {}) {
   const params = new URLSearchParams({ mode, access_token: token || '' })
   if (studentId != null) params.set('studentId', String(studentId))
+  if (lessonNo) params.set('lessonNo', lessonNo)
   if (forceReload) params.set('_r', String(forceReload))
   return `${BASE}/student/lessons/${lessonId}/materials/${materialId}/render?${params.toString()}`
 }
@@ -1242,9 +1246,11 @@ export function saveLessonMaterialProgress(token, lessonId, materialId, eventsJs
 // Стадии файлового урока (`section.stage` в самом файле, сняты сервером при
 // импорте ключей) — из них собираются «Темы», когда разбор на шаги выключен.
 // Материал не-файла или без ключей отдаёт пустой список. Доступ — как у /render:
-// ученик занятия и его преподаватель (assertLessonAccess).
-export function getLessonViewStages(token, lessonId, materialId) {
-  return authGet(`/student/lessons/${lessonId}/materials/${materialId}/lesson-view/stages`, token)
+// ученик занятия и его преподаватель (assertLessonAccess). lessonNo — урок
+// плитки, как у адреса страницы (lessonMaterialRenderUrl): «Темы» — её урока.
+export function getLessonViewStages(token, lessonId, materialId, lessonNo = null) {
+  const q = lessonNo ? `?lessonNo=${encodeURIComponent(lessonNo)}` : ''
+  return authGet(`/student/lessons/${lessonId}/materials/${materialId}/lesson-view/stages${q}`, token)
 }
 
 // «Настройки учеников» доски: начальная загрузка. Живые переключения приходят по

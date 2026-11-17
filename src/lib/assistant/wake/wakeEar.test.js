@@ -186,6 +186,16 @@ describe('«ухо» позывного', () => {
     expect(states.at(-1)).toBe('listening')
   })
 
+  // Задача 202: «Разрешить» на плашке Луны — и окно браузера сразу, а не после 45 МБ; без разрешения модель не качаем.
+  it('prepare: сначала микрофон — отказ не качает модель', async () => {
+    const f = fakes()
+    f.getUserMedia.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'NotAllowedError' }))
+    const { e, states } = ear(f)
+    await e.prepare()
+    expect(states).toEqual(['loading', 'error:denied'])
+    expect(f.loadModel).not.toHaveBeenCalled()
+  })
+
   it('отказ в микрофоне — error:denied; модель не скачалась — error:model, повтор качает снова', async () => {
     const f = fakes()
     f.getUserMedia.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'NotAllowedError' }))

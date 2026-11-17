@@ -80,3 +80,42 @@ export function micPlatform(ua = globalThis.navigator?.userAgent || '') {
   if (/Windows/i.test(ua)) return 'windows'
   return 'other'
 }
+
+/**
+ * Разрешение на микрофон без запроса: granted | denied | prompt | unknown. unknown — браузер про микрофон не
+ * отвечает (старый Safari и Firefox) или Permissions API нет вовсе.
+ */
+export async function queryMicPermission(nav = globalThis.navigator) {
+  try {
+    const st = await nav?.permissions?.query?.({ name: 'microphone' })
+    return st?.state || 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
+
+/**
+ * Что делать перед микрофоном по нажатию (просьба Луны, задача 202 от 16.11.2026):
+ *   go      — открывать сразу: разрешение уже есть, или браузер не говорит — тогда объяснит его собственный запрос;
+ *   ask     — сначала объяснить, зачем микрофон, и попросить, как Speaking Buddy;
+ *   blocked — браузер уже запретил и сам не спросит: объяснить, где снять запрет.
+ */
+export function micGate(permission) {
+  if (permission === 'prompt') return 'ask'
+  if (permission === 'denied') return 'blocked'
+  return 'go'
+}
+
+/**
+ * Где снять запрет — шаги по порядку. Запрет бывает двух видов: сайту в браузере (разрешение denied) и браузеру в
+ * системе — тогда браузер разрешение помнит (granted), а getUserMedia всё равно отказывает. Не знаем, какой
+ * (unknown), — оба шага. Последний шаг — «нажми снова, не помогло — обнови страницу».
+ * Ответ — id шагов: site | ios | android | windows | mac | iosSystem | androidSystem | retry.
+ */
+export function blockedSteps({ permission, platform = micPlatform() }) {
+  // На телефоне значка замка нет: в Safari — «аА», в Chrome Android — значок настроек сайта.
+  const site = platform === 'ios' ? 'ios' : platform === 'android' ? 'android' : 'site'
+  const system = { windows: 'windows', mac: 'mac', ios: 'iosSystem', android: 'androidSystem' }[platform]
+  const steps = permission === 'denied' || !system ? [site] : permission === 'granted' ? [system] : [site, system]
+  return [...steps, 'retry']
+}

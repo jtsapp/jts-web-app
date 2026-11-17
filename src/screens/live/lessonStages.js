@@ -80,3 +80,37 @@ export const GOTO_LESSON_MS = 600
 export function gotoLessonMessage(index, review = false) {
   return { source: WORKSPACE_SOURCE, type: 'goto-lesson', index, review: Boolean(review) }
 }
+
+/**
+ * Ключ урока плитки для сервера: «4» — урок, «R2» — тест юнита; плитка файла целиком — null.
+ * Один файл бывает на занятии в нескольких разделах с разными уроками (прод 16.11.2026, занятие 48594:
+ * урок 4 и урок 5), и без этого ключа в адресе сервер открывал в каждой плитке урок, выбранный последним.
+ */
+export function fileLessonKey(material) {
+  const no = material?.focusLessonNo
+  if (no == null) return null
+  return material.focusReview ? `R${no}` : String(no)
+}
+
+/**
+ * Открытая плитка раздела. Плитку называет строка раздела (id ссылки), материал — только вместе с ней: у двух
+ * уроков одного файла в одном разделе материал один (прод 16.11.2026, 100 занятий до правила сервера от 12.11), и
+ * выбор по материалу всегда находил первую из них. Плитка не из этого раздела или другого материала не считается —
+ * тогда, как и раньше, первая плитка материала, а без материала — первая в разделе.
+ */
+export function activeTileOf(tiles, materialId, tileId) {
+  const list = tiles || []
+  const own = tileId == null ? null : list.find((m) => m.id === tileId && m.materialId === materialId)
+  return own || list.find((m) => m.materialId === materialId) || list[0] || null
+}
+
+/**
+ * Подпись урока плитки к названию вкладки — только когда файл стоит в разделе не одной плиткой: у таких вкладок
+ * одно название файла, и без урока их не различить. {key, n} для t() или null.
+ */
+export function repeatedFileTileLesson(material, tiles) {
+  if (material?.focusLessonNo == null) return null
+  const repeats = (tiles || []).filter((m) => m.materialId === material.materialId).length > 1
+  if (!repeats) return null
+  return { key: material.focusReview ? 'live.tileUnitTest' : 'live.tileLesson', n: material.focusLessonNo }
+}

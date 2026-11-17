@@ -48,8 +48,7 @@ export default function PaymentMethodModal({ onClose, onPick }) {
         <h2 className="pm-title" id="pm-title">{t('pay.title')}</h2>
         <p className="pm-sub" id="pm-sub">{t('pay.sub')}</p>
 
-        {/* Карта — через Freedom Pay. Если платёж не создался (эквайринг не
-            настроен или не ответил), экран уводит к менеджеру. */}
+        {/* Карта — через Freedom Pay. */}
         <button type="button" className="pm-main" ref={firstRef} onClick={() => onPick?.('card')}>
           <span className="pm-main__ic" aria-hidden="true"><CardMark /></span>
           <span className="pm-main__body">

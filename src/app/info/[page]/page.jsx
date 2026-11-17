@@ -13,6 +13,7 @@ import { INFO_PAGES, pickInfo } from '../../../landing/info.js'
 import { appLink, checkoutOrigin, normalizeAppUrl, parseHosts, requestHost } from '../../../landing/hostRouting.js'
 import { BACKEND_URL } from '../../../lib/auth-server.js'
 import { sellableOffers } from '../../../lib/sellableOffers.js'
+import { indexable, pageMetadata, siteOrigin } from '../../../landing/seo.js'
 
 async function langOf(searchParams) {
   const sp = await searchParams
@@ -22,8 +23,18 @@ async function langOf(searchParams) {
 export async function generateMetadata({ params, searchParams }) {
   const { page } = await params
   if (!INFO_PAGES.includes(page)) return {}
-  const info = pickInfo(await langOf(searchParams))
-  return { title: `${info[page].title} — Just to Study`, description: info[page].lead }
+  const lang = await langOf(searchParams)
+  const info = pickInfo(lang)
+  const host = requestHost(await headers())
+  const landingHosts = parseHosts(process.env.LANDING_HOSTS)
+  return pageMetadata({
+    origin: siteOrigin({ host, landingHosts }),
+    path: `/info/${page}`,
+    lang,
+    title: `${info[page].title} — Just to Study`,
+    description: info[page].lead,
+    index: indexable({ host, landingHosts }),
+  })
 }
 
 // Прайс — с бэкенда (GET /catalog/offers, публично), как и на витрине
@@ -66,7 +77,10 @@ export default async function InfoPage({ params, searchParams }) {
   // «Купить» — витрина с тарифом в корзине на домене лендинга: вход, заказ и
   // оплата картой идут там (этот домен — в анкете Freedom Pay, оферте и политике).
   const shopOrigin = checkoutOrigin({ onLandingHost, landingHosts }) || ''
-  const buyUrl = (code) => `${shopOrigin}/?screen=pricing&offer=${encodeURIComponent(code)}`
+  const buyUrl = (offer) => {
+    const screen = offer.kind === 'TUTOR_MINUTES' ? 'minutes' : 'pricing'
+    return `${shopOrigin}/?screen=${screen}&offer=${encodeURIComponent(offer.code)}`
+  }
 
   return (
     <>

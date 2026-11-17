@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { lessonMaterialRenderUrl } from '../../api.js'
-import { parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage, GOTO_LESSON_MS } from './lessonStages.js'
+import { parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage, GOTO_LESSON_MS, fileLessonKey } from './lessonStages.js'
 import LiveLoader from './LiveLoader.jsx'
 import PdfViewer from './pdf/PdfViewer.jsx'
 import { isPdfMaterial } from './pdf/isPdfMaterial.js'
@@ -595,6 +595,8 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     mode: isStaff ? 'review' : 'live',
     forceReload: reloadToken || undefined,
     studentId: isStaff ? reviewStudentId : undefined,
+    // Урок этой плитки: тот же файл в соседнем разделе бывает другим уроком (прод 16.11.2026).
+    lessonNo: fileLessonKey(material),
   })
 
   return (
@@ -608,14 +610,17 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
           делегирует разрешение родителя внутрь, и ученику не нужно нажимать
           ничего. fullscreen — так же, для встроенных в урок активностей вроде
           Wordwall: их кнопка «на весь экран» работает, только если право выдано
-          по всей цепочке рамок сверху вниз. */}
+          по всей цепочке рамок сверху вниз. microphone — так же, для блока «Раздел
+          Практики»: в уроке стоит рамка раздела кабинета (говорение, произношение,
+          шэдоуинг), и без права по всей цепочке браузер микрофон ей не даст. Простой
+          рамке выше (чужая ссылка, видео, PDF) микрофон не выдаётся. */}
       <iframe
         ref={iframeRef}
         key={documentKey}
         src={src}
         title={material.title}
         className="lw-material-iframe"
-        allow="autoplay; fullscreen"
+        allow="autoplay; fullscreen; microphone"
         onLoad={handleLoad}
       />
       {loader}

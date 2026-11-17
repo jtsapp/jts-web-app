@@ -31,7 +31,9 @@ const SHORT_LINK = /^\/([a-z0-9][a-z0-9_-]{1,39})\/?$/i
 export const SHORT_LINK_RESERVED = new Set(['_next', 'api', 'assets', 'fonts', 'info', 'landing', 'legal',
   'favicon.ico', 'robots.txt', 'sitemap.xml', 'complete-registration', 'report', 'trial', 'wake-lab',
   'arcade', 'course', 'demo', 'exam', 'ielts', 'learning', 'placement', 'practice', 'sat', 'shadowing',
-  'tutor', 'vocab', 'pricing', 'minutes', 'login', 'admin', 'pay', 'payment', 'app'])
+  'tutor', 'vocab', 'pricing', 'minutes', 'login', 'admin', 'pay', 'payment', 'app',
+  // Сайт онлайн-отбора преподавателей (/hr/apply, /hr/c/<токен>).
+  'hr'])
 
 /** Имя короткой ссылки из пути («/Dana/» → «dana») или null. */
 export function shortLinkSlug(pathname) {
@@ -92,6 +94,14 @@ export function normalizeAppUrl(raw) {
  */
 export function routeLanding({ host, pathname, search = '', landingHosts, appUrl = '', preview = false }) {
   if (landingHosts.has(host)) {
+    // www — копия голого домена: поисковик видел два одинаковых сайта и делил
+    // между ними вес (16.11.2026). Уводим постоянным редиректом на голый, если
+    // и он в LANDING_HOSTS (иначе увели бы туда, где лендинга нет). /api сюда
+    // не доходит (matcher в proxy.js): оплата и формы на www не ломаются.
+    const bare = host.startsWith('www.') ? host.slice(4) : null
+    if (bare && landingHosts.has(bare)) {
+      return { action: 'redirect', to: `https://${bare}${pathname}${search}`, permanent: true }
+    }
     if (pathname === '/landing') return { action: 'redirect', to: '/' + search }
     const screen = pathname === '/' ? new URLSearchParams(search).get('screen') : null
     if (pathname === '/' && !screen) return { action: 'rewrite', to: '/landing' + search }

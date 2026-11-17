@@ -86,7 +86,7 @@ function HeroVisual({ h }) {
   )
 }
 
-function Hero({ c }) {
+function Hero({ c, lang }) {
   const h = c.hero
   return (
     <section className="ld-hero">
@@ -103,6 +103,9 @@ function Hero({ c }) {
           <a className="ld-cta" href="#trial">
             <span>{h.cta}</span>
             <span className="ld-cta__arrow"><Icon src={IC + 'ic-arrow-hero.svg'} size={22} /></span>
+          </a>
+          <a className="ld-btn ld-btn--ghost ld-hero__tariffs" href={infoUrl('tariffs', lang)}>
+            {pickInfo(lang).nav.tariffs}
           </a>
           <ul className="ld-hero__checks">
             {h.checks.map((t) => (
@@ -535,7 +538,7 @@ export default function Landing({ c, lang, links }) {
     <div className="ld" id="top" lang={lang === 'kz' ? 'kk' : 'ru'}>
       <Header c={c} lang={lang} links={links} />
       <main>
-        <Hero c={c} />
+        <Hero c={c} lang={lang} />
         <Perks c={c} />
         <Pains c={c} />
         <Platform c={c} />

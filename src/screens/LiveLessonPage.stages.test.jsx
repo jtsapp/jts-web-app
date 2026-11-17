@@ -37,7 +37,8 @@ vi.mock('../api.js', () => ({
   getLessonMaterialProgress: vi.fn(async () => ({})),
   saveLessonMaterialProgress: vi.fn(async () => ({})),
   getLessonViewStages,
-  lessonMaterialRenderUrl: (lessonId, materialId) => `http://api.test/student/lessons/${lessonId}/materials/${materialId}/render`,
+  lessonMaterialRenderUrl: (lessonId, materialId, token, opts = {}) =>
+    `http://api.test/student/lessons/${lessonId}/materials/${materialId}/render${opts.lessonNo ? `?lessonNo=${opts.lessonNo}` : ''}`,
   startLiveLesson: vi.fn(async () => ({})),
   pauseLiveLesson: vi.fn(async () => ({})),
   resumeLiveLesson: vi.fn(async () => ({})),
@@ -126,7 +127,7 @@ beforeEach(() => {
 describe('LiveLessonPage — «Темы» ученика на файловом уроке', () => {
   it('темы — стадии файла, а не единственный раздел «Материал урока»', async () => {
     const { container } = await renderAsStudent()
-    expect(getLessonViewStages).toHaveBeenCalledWith(tokenFor('STUDENT', 7), 14, 11)
+    expect(getLessonViewStages).toHaveBeenCalledWith(tokenFor('STUDENT', 7), 14, 11, null)
     expect(titlesOf(container)).toEqual(['Warm-up', 'Vocabulary', 'Grammar', 'Practice', 'Listening', 'Speaking', 'Wrap'])
   })
 
@@ -173,5 +174,62 @@ describe('LiveLessonPage — «Темы» ученика на файловом �
     stagesFixture = []
     const { container } = await renderAsStudent()
     expect(titlesOf(container)).toEqual(['Материал урока'])
+  })
+
+  // Прод 16.11.2026, занятие 48594: один файл в двух разделах — урок 4 в «Section 1», урок 5 в «Section 2». Стадии
+  // запрашиваются по уроку плитки и перечитываются при переходе на плитку другого урока того же файла.
+  it('стадии — урока плитки; другой урок того же файла в другом разделе — стадии запрашиваются заново', async () => {
+    stagesFixture = []
+    sectionsFixture = [
+      { id: 3, title: 'Section 1', materials: [{ ...MATERIAL, id: 31, focusLessonNo: 4, focusReview: false }] },
+      { id: 4, title: 'Section 2', materials: [{ ...MATERIAL, id: 41, focusLessonNo: 5, focusReview: false }] },
+    ]
+    const { getByRole } = await renderAsStudent()
+    expect(getLessonViewStages).toHaveBeenLastCalledWith(tokenFor('STUDENT', 7), 14, 11, '4')
+
+    await act(async () => { fireEvent.click(getByRole('button', { name: 'Section 2' })) })
+
+    expect(getLessonViewStages).toHaveBeenLastCalledWith(tokenFor('STUDENT', 7), 14, 11, '5')
+  })
+
+  // Прод 16.11.2026: в 100 занятиях два урока одного файла стоят в ОДНОМ разделе (так ставили до правила сервера от
+  // 12.11 «в разделе один урок файла»). Вкладка выбиралась по материалу, а он у обеих один: вторая вкладка
+  // подсвечивалась, но рамка оставалась на первой, и второй урок в этом разделе не открывался ничем.
+  describe('два урока одного файла в одном разделе', () => {
+    const UNIT_TEST_TILE = { ...MATERIAL, id: 51, focusLessonNo: 1, focusReview: true }
+    const LESSON_TWO_TILE = { ...MATERIAL, id: 52, focusLessonNo: 2, focusReview: false }
+    const frameSrc = (container) => container.querySelector('iframe.lw-material-iframe')?.getAttribute('src')
+    const tabsOf = (container) => [...container.querySelectorAll('.lw-material-tabs .ls-tab')]
+    const activeTabs = (container) => tabsOf(container).filter((tab) => tab.classList.contains('ls-tab--active'))
+
+    beforeEach(() => {
+      stagesFixture = []
+      sectionsFixture = [{ id: 3, title: 'Section 1', materials: [UNIT_TEST_TILE, LESSON_TWO_TILE] }]
+      sessionStorage.clear()
+    })
+
+    it('вкладки одного файла подписаны своим уроком, активна одна — первая', async () => {
+      const { container } = await renderAsStudent()
+      expect(tabsOf(container).map((tab) => tab.textContent.trim()))
+        .toEqual(['A0 · Урок 05 · тест юнита 1', 'A0 · Урок 05 · урок 2'])
+      expect(activeTabs(container)).toEqual([tabsOf(container)[0]])
+      expect(frameSrc(container)).toContain('lessonNo=R1')
+    })
+
+    it('вторая вкладка открывает свой урок: рамка, подсветка и стадии — её', async () => {
+      const { container } = await renderAsStudent()
+      await act(async () => { fireEvent.click(tabsOf(container)[1]) })
+      expect(frameSrc(container)).toContain('lessonNo=2')
+      expect(activeTabs(container)).toEqual([tabsOf(container)[1]])
+      expect(getLessonViewStages).toHaveBeenLastCalledWith(tokenFor('STUDENT', 7), 14, 11, '2')
+    })
+
+    it('после перезагрузки ученик возвращается на ту же вкладку, а не на первую плитку файла', async () => {
+      const first = await renderAsStudent()
+      await act(async () => { fireEvent.click(tabsOf(first.container)[1]) })
+      first.unmount()
+      const { container } = await renderAsStudent()
+      expect(frameSrc(container)).toContain('lessonNo=2')
+    })
   })
 })

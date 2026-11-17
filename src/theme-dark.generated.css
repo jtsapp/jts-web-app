@@ -24244,8 +24244,41 @@ html[data-theme="dark"] .lr-card__n {
     background: var(--dk-acc-tint);
     color: var(--dk-acc-text)
 }
-html[data-theme="dark"] .lr-card__p--aside {
+html[data-theme="dark"] .lr a {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .lr-fact {
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .lr-fact__k {
     color: var(--dk-text-2)
+}
+html[data-theme="dark"] .lr-fact__v {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .lr-tariff {
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .lr-tariff__k {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .lr-tariff__plans {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .lr-tariff__v {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .lr-tariff__d {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .lr-tariff--none .lr-tariff__v {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .lr-split__col {
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .lr-split__h {
+    color: var(--dk-acc-text)
 }
 html[data-theme="dark"] .lr-note {
     border-left: 4px solid

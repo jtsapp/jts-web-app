@@ -46,13 +46,13 @@ const AudioCtx = () => globalThis.AudioContext || globalThis.webkitAudioContext 
 
 /**
  * @returns {{ supported: boolean, state: 'idle'|'starting'|'recording'|'transcribing', elapsed: number,
- *   error: null|'denied'|'not_heard'|'stt_failed'|'rate'|'auth', retryAfterSec: number|null,
+ *   error: null|'denied'|'nodevice'|'busy'|'not_heard'|'stt_failed'|'rate'|'auth', retryAfterSec: number|null,
  *   toggle: () => void, cancel: () => void, clearError: () => void,
  *   listen: (opts: { noVoiceMs?: number, onText?: (t: string, meta: { sttMs: number }) => void, onNoVoice?: () => void }) => void,
  *   transcribeAudio: (wav: Blob, opts?: { onText?: (t: string, meta: { sttMs: number }) => void }) => Promise<void>|undefined }}
  */
-export function useVoiceQuestion({ token, lang, screenId, onText }) {
-  const { state: recState, error: recError, elapsed, stream, start: recStart, stop: recStop, release, drop } = useRecorder()
+export function useVoiceQuestion({ token, lang, screenId, onText, onMicDenied }) {
+  const { state: recState, error: recError, lastError, elapsed, stream, start: recStart, stop: recStop, release, drop } = useRecorder()
   const supported = useSupported()
   const [starting, setStarting] = useState(false) // ждём разрешения на микрофон
   const [busy, setBusy] = useState(false) // идёт распознавание
@@ -67,9 +67,9 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
   // и анализатор отдавал бы нули — каждый вопрос кончался бы «не расслышала».
   const acRef = useRef(null)
   // Свежие значения для колбэков записи: они живут дольше одного рендера.
-  const ctx = useRef({ token, lang, screenId, onText })
+  const ctx = useRef({ token, lang, screenId, onText, onMicDenied })
   useLayoutEffect(() => {
-    ctx.current = { token, lang, screenId, onText }
+    ctx.current = { token, lang, screenId, onText, onMicDenied }
   })
   // Параметры текущей записи (позывной окна, 21.10.2026): своё ожидание первой речи,
   // свой получатель текста и «промолчал» вместо ошибки. У кнопки микрофона их нет.
@@ -201,11 +201,14 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
       })
       // Окно закрыли, пока браузер спрашивал разрешение, — запись уже пошла: гасим.
       if (ok && cancelledRef.current) recStop()
+      // Отказ в микрофоне — колбэком, а не только error: повторный отказ error не меняет («denied» → «denied»), и
+      // окно не узнало бы, что ученик снова нажал и снова получил запрет.
+      if (!ok && lastError() === 'denied') ctx.current.onMicDenied?.()
     } finally {
       startingRef.current = false
       setStarting(false)
     }
-  }, [recStart, recStop, release, drop, transcribe])
+  }, [recStart, recStop, release, drop, transcribe, lastError])
 
   const toggle = useCallback(() => {
     if (startingRef.current || busy || recState === 'processing') return
@@ -247,8 +250,8 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
 
   // Ошибки самой записи (нет разрешения, не открылся микрофон) приходят из
   // useRecorder и гаснут с началом следующей записи.
-  // Микрофон не найден или занят — для Луны то же «не вышло», что и прочий сбой записи.
-  const error = ownError ?? (recError === 'denied' ? 'denied' : ['failed', 'nodevice', 'busy'].includes(recError) ? 'stt_failed' : null)
+  // Микрофона нет или его держит другая программа — своими словами (что сделать — разное), прочий сбой — «не вышло».
+  const error = ownError ?? (['denied', 'nodevice', 'busy'].includes(recError) ? recError : recError === 'failed' ? 'stt_failed' : null)
   const state = recState === 'recording'
     ? 'recording'
     : starting

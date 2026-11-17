@@ -1,7 +1,7 @@
 export const LEGAL_AND_PRICING = {
   "ru": {
     "legal.title": "Документы платформы",
-    "pricing.cart.note": "Все цены в тенге. Детали заказа подтвердит менеджер.",
+    "pricing.cart.note": "Все цены в тенге. Оплата картой проходит на защищённой странице Freedom Pay.",
     "legal.intro": "Перед началом работы ознакомьтесь с документами. Согласие сохранится в вашем аккаунте.",
     "legal.offer": "Публичная оферта",
     "legal.privacy": "Политика конфиденциальности",
@@ -36,7 +36,7 @@ export const LEGAL_AND_PRICING = {
   },
   "kz": {
     "legal.title": "Платформа құжаттары",
-    "pricing.cart.note": "Барлық бағалар теңгемен. Тапсырыс мәліметтерін менеджер растайды.",
+    "pricing.cart.note": "Барлық бағалар теңгемен көрсетілген. Картамен төлем Freedom Pay қорғалған бетінде жасалады.",
     "legal.intro": "Жұмысты бастамас бұрын құжаттармен танысыңыз. Келісім аккаунтыңызда сақталады.",
     "legal.offer": "Жария оферта",
     "legal.privacy": "Құпиялылық саясаты",
@@ -71,7 +71,7 @@ export const LEGAL_AND_PRICING = {
   },
   "en": {
     "legal.title": "Platform documents",
-    "pricing.cart.note": "All prices are in KZT. A manager will confirm the order details.",
+    "pricing.cart.note": "All prices are in KZT. Card payments are processed on Freedom Pay’s secure page.",
     "legal.intro": "Please read the documents before continuing. Your agreement will be saved to your account.",
     "legal.offer": "Public offer",
     "legal.privacy": "Privacy policy",

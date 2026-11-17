@@ -31,7 +31,7 @@ import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
 import { VOCAB_REVEAL_PREFIX } from './live/vocabReveal.js'
 import { createProgressSaver } from './workspace/progressSaver.js'
 import { catalogLessonIdFor, shouldResolveCatalogLesson } from './live/catalogLessonByUrl.js'
-import { stageSteps, stageStatusById } from './live/lessonStages.js'
+import { stageSteps, stageStatusById, fileLessonKey, activeTileOf, repeatedFileTileLesson } from './live/lessonStages.js'
 import { rememberedPlace, saveLivePosition } from './live/livePosition.js'
 import { useOtherLiveLesson } from './live/useOtherLiveLesson.js'
 import { isLessonLive, lessonTimeRange } from './schedule/lessonFormat.js'
@@ -241,12 +241,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // web-admin для этого есть вкладки, здесь их не было.
   const sectionMaterials = activeSection?.materials || []
   const [activeMaterialId, setActiveMaterialId] = useState(null)
-  const activeMaterial = sectionMaterials.find((m) => m.materialId === activeMaterialId) || sectionMaterials[0] || null
+  // Плитка (строка раздела) — к материалу: два урока одного файла в одном разделе — один материал (см. activeTileOf).
+  const [activeTileId, setActiveTileId] = useState(null)
+  const activeMaterial = activeTileOf(sectionMaterials, activeMaterialId, activeTileId)
   // Запоминаем место ученика: после перезагрузки страницы он вернётся сюда, а не на первый раздел (livePosition.js).
   useEffect(() => {
     if (isStaff || activeSectionId == null) return
-    saveLivePosition(lessonId, { sectionId: activeSectionId, materialId: activeMaterial?.materialId ?? null })
-  }, [isStaff, lessonId, activeSectionId, activeMaterial?.materialId])
+    saveLivePosition(lessonId, { sectionId: activeSectionId, materialId: activeMaterial?.materialId ?? null, tileId: activeMaterial?.id ?? null })
+  }, [isStaff, lessonId, activeSectionId, activeMaterial?.materialId, activeMaterial?.id])
   // Кого из участников смотрит преподаватель — выбирается через
   // вкладкой «Группа» (несколько студентов в групповом уроке), по умолчанию
   // первый участник занятия, как и раньше (loadLesson()/selectStudent() в
@@ -315,6 +317,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // Только ученику и только пока места ещё нет: живой переход и указка класса приходят своими путями.
       const place = !isStaff && activeSectionIdRef.current == null ? rememberedPlace(lessonId, list) : null
       if (place?.materialId != null) setActiveMaterialId(place.materialId)
+      if (place?.tileId != null) setActiveTileId(place.tileId)
       setActiveSectionId((prev) => (prev != null && list.some((s) => String(s.id) === String(prev))) ? prev : (place?.sectionId ?? list[0]?.id ?? null))
       return list
     }).catch((err) => {
@@ -336,6 +339,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // Материал выбирается заново: id из прошлого раздела в новом не найдётся,
     // и без сброса первый рендер сваливался бы на «первый по списку» молча.
     setActiveMaterialId(null)
+    setActiveTileId(null)
     leaveClass()
     if (isStaff) {
       // Ушёл с раздела — перестал вести. Сервер должен это знать: иначе
@@ -346,12 +350,20 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     }
   }
 
-  // Другой материал внутри раздела — такой же ручной уход, как другой раздел
-  // (решение владельца 27.09). Своя же вкладка — не выбор другого.
-  function selectMaterial(materialId) {
-    if (materialId === activeMaterial?.materialId) return
-    setActiveMaterialId(materialId)
+  // Другая плитка внутри раздела — такой же ручной уход, как другой раздел
+  // (решение владельца 27.09). Своя же вкладка — не выбор другого. Плитка, а не
+  // материал: другой урок того же файла — тоже другая вкладка (прод 16.11.2026).
+  function selectTile(tile) {
+    if (tile === activeMaterial) return
+    setActiveMaterialId(tile.materialId)
+    setActiveTileId(tile.id ?? null)
     leaveClass()
+  }
+
+  function materialTabTitle(m, i) {
+    const title = m.title || t('live.materialTab', { n: i + 1 })
+    const lessonOfTile = repeatedFileTileLesson(m, sectionMaterials)
+    return lessonOfTile ? `${title} · ${t(lessonOfTile.key, { n: lessonOfTile.n })}` : title
   }
 
   // Ушёл сам (§4.3): смена позиции или стадии класса его больше не тянет,
@@ -483,31 +495,36 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   //
   // И список, и позиция помнят, чьи они: при смене материала чужие обнуляются
   // сравнением, а не setState в теле эффекта (это был бы каскад рендеров).
-  const [fileStages, setFileStages] = useState({ materialId: null, stages: NO_STAGES })
+  const [fileStages, setFileStages] = useState({ tileKey: null, stages: NO_STAGES })
   const [stageAt, setStageAt] = useState({ materialId: null, index: 0 })
   // Разделы, которые рамка прочитала из открытого урока. У файла уровня они
   // сидят в JS, сервер их не отдаёт — без этого списка у ученика остаётся «Section 1».
-  const [liveStageTitles, setLiveStageTitles] = useState({ materialId: null, titles: [] })
+  const [liveStageTitles, setLiveStageTitles] = useState({ tileKey: null, titles: [] })
   const activeMaterialKey = activeMaterial?.materialId ?? null
+  // Урок плитки: один файл бывает на занятии в двух разделах с разными уроками (прод
+  // 16.11.2026, занятие 48594: урок 4 и урок 5). Список тем — её урока, поэтому он
+  // помнит не только материал, но и урок, и перечитывается на плитке другого урока.
+  const activeTileLesson = fileLessonKey(activeMaterial)
+  const activeTileKey = activeMaterialKey == null ? null : `${activeMaterialKey}:${activeTileLesson ?? ''}`
 
   useEffect(() => {
     if (activeMaterialKey == null || !token) return undefined
     let cancelled = false
-    getLessonViewStages(token, lessonId, activeMaterialKey)
+    getLessonViewStages(token, lessonId, activeMaterialKey, activeTileLesson)
       .then((list) => {
         if (cancelled) return
-        setFileStages({ materialId: activeMaterialKey, stages: Array.isArray(list) && list.length ? list : NO_STAGES })
+        setFileStages({ tileKey: activeTileKey, stages: Array.isArray(list) && list.length ? list : NO_STAGES })
       })
       // Стадий нет (не файл живого урока, ключи не импортированы, сбой сети) —
       // список остаётся разделами, как и было до стадий.
       .catch(() => {
-        if (!cancelled) setFileStages({ materialId: activeMaterialKey, stages: NO_STAGES })
+        if (!cancelled) setFileStages({ tileKey: activeTileKey, stages: NO_STAGES })
       })
     return () => { cancelled = true }
-  }, [activeMaterialKey, lessonId, token])
+  }, [activeMaterialKey, activeTileLesson, activeTileKey, lessonId, token])
 
-  const serverStages = fileStages.materialId === activeMaterialKey ? fileStages.stages : NO_STAGES
-  const liveTitles = liveStageTitles.materialId === activeMaterialKey ? liveStageTitles.titles : []
+  const serverStages = fileStages.tileKey === activeTileKey ? fileStages.stages : NO_STAGES
+  const liveTitles = liveStageTitles.tileKey === activeTileKey ? liveStageTitles.titles : []
   const stages = liveTitles.length
     ? liveTitles.map((title, index) => ({ index, title, taskCount: 0 }))
     : serverStages
@@ -661,7 +678,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   function handleFrameStageList(titles) {
-    setLiveStageTitles({ materialId: activeMaterialKey, titles })
+    setLiveStageTitles({ tileKey: activeTileKey, titles })
   }
 
   // Позиция сохраняется вместе с ответами: вернувшись, ученик продолжает там,
@@ -2089,12 +2106,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         <div className="ls__tabs lw-material-tabs">
                           {sectionMaterials.map((m, i) => (
                             <button
-                              key={m.materialId}
+                              key={m.id ?? `${m.materialId}:${i}`}
                               type="button"
-                              className={`ls-tab ${m.materialId === activeMaterial?.materialId ? 'ls-tab--active' : ''}`}
-                              onClick={() => selectMaterial(m.materialId)}
+                              className={`ls-tab ${m === activeMaterial ? 'ls-tab--active' : ''}`}
+                              onClick={() => selectTile(m)}
                             >
-                              {m.title || t('live.materialTab', { n: i + 1 })}
+                              {materialTabTitle(m, i)}
                             </button>
                           ))}
                         </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { RULES, rulesFor, splitBold } from './rulesContent.js'
+import { RULES, blockTexts, rulesFor, splitBold } from './rulesContent.js'
 
 // Скелет языка: всё, что обязано совпасть у перевода с русским, — без самих слов.
 // Перевод, потерявший пункт, строку таблицы или поменявший тон плашки, здесь краснеет.
@@ -12,7 +12,10 @@ function skeleton(r) {
         if (b.type === 'list') return { type: 'list', items: b.items.length }
         if (b.type === 'note') return { type: 'note', tone: b.tone }
         if (b.type === 'table') return { type: 'table', rows: b.rows.map((row) => row.tone) }
-        return { type: b.type, italic: !!b.italic }
+        if (b.type === 'facts') return { type: 'facts', items: b.items.map((f) => ['k', 'v', 'sub', 'd'].filter((key) => f[key]).join()) }
+        if (b.type === 'tariffs') return { type: 'tariffs', items: b.items.map((t) => `${t.id}${t.none ? ':none' : ''}`) }
+        if (b.type === 'split') return { type: 'split', cols: b.cols.map((col) => col.items.length) }
+        return { type: b.type }
       }),
     })),
     closing: r.closing.items.length,
@@ -22,15 +25,7 @@ function skeleton(r) {
 // Цифры правил — то, ради чего ученик открывает вкладку; перевод не смеет их менять.
 const digits = (text) => (String(text).match(/\d+/g) || []).join(',')
 function allTexts(r) {
-  const out = []
-  for (const s of r.sections) {
-    for (const b of s.blocks) {
-      if (b.type === 'list') out.push(...b.items)
-      else if (b.type === 'table') out.push(...b.rows.map((row) => row.text))
-      else out.push(b.text)
-    }
-  }
-  return out
+  return r.sections.flatMap((s) => s.blocks.flatMap(blockTexts))
 }
 
 describe('правила обучения', () => {
@@ -52,6 +47,31 @@ describe('правила обучения', () => {
       for (const text of allTexts(RULES[lang])) {
         expect((text.match(/\*\*/g) || []).length % 2, `${lang}: ${text}`).toBe(0)
       }
+    }
+  })
+
+  it('порядок разделов — как в PDF школы, свои три — в конце', () => {
+    expect(RULES.ru.sections.map((s) => s.id)).toEqual([
+      'general', 'teacher', 'bonus', 'refund', 'manager', 'reschedule', 'late', 'freeze', 'burn',
+      'school', 'tech', 'table',
+    ])
+  })
+
+  // Прежняя редакция обещала всем «4 раза в месяц»; теперь лимит по тарифу (ТЗ, приёмка).
+  // «4 раза» законно только на карточке индивидуального тарифа — её не проверяем.
+  it('нет общего лимита «4 раза в месяц»', () => {
+    for (const lang of Object.keys(RULES)) {
+      const general = RULES[lang].sections.flatMap((s) => s.blocks).filter((b) => b.type !== 'tariffs').flatMap(blockTexts)
+      const texts = [...general, ...RULES[lang].stats.map((s) => `${s.num} ${s.label}`)]
+      for (const text of texts) expect(text, `${lang}: ${text}`).not.toMatch(/(^|[^–\d])4 (раз|рет|times)/)
+    }
+  })
+
+  it('ссылка на оферту есть у каждого языка', () => {
+    for (const lang of Object.keys(RULES)) {
+      const subs = RULES[lang].sections.flatMap((s) => s.blocks).filter((b) => b.type === 'facts').flatMap((b) => b.items.map((f) => f.sub || ''))
+      expect(subs.filter((sub) => sub.includes('{offer}')), lang).toHaveLength(1)
+      expect(RULES[lang].offer, lang).toBeTruthy()
     }
   })
 

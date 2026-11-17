@@ -1863,7 +1863,7 @@ describe('LiveLessonPage — ученик после перезагрузки в
     const first = await renderAsStudent()
     fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
     await flush()
-    expect(JSON.parse(sessionStorage.getItem(POSITION_KEY))).toEqual({ sectionId: 4, materialId: 12 })
+    expect(JSON.parse(sessionStorage.getItem(POSITION_KEY))).toEqual({ sectionId: 4, materialId: 12, tileId: null })
     first.unmount()
 
     const second = await renderAsStudent()

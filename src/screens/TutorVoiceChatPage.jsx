@@ -24,21 +24,14 @@ import { micLevel } from '../tutor/micLevel.js'
 import { lastSentence } from '../tutor/captions.js'
 import { useLiveCaption } from '../tutor/useLiveCaption.js'
 import { useCallSession } from '../tutor/callSession.js'
-import { MicIcon, MicLineIcon, MicOffIcon, CallEndIcon, CheckIcon, CrossIcon, TimerIcon } from '../tutor/TutorIcons.jsx'
+import { MicLineIcon, MicOffIcon, CallEndIcon, CheckIcon, CrossIcon, TimerIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
 import TutorLimitModal from '../components/TutorLimitModal.jsx'
+import MicPermissionPrompt from '../components/MicPermissionPrompt.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
 import { getEnglishOnly } from '../lib/englishOnly.js'
 import { getPushToTalk } from '../lib/pushToTalk.js'
 import { usePushToTalk } from '../tutor/usePushToTalk.js'
-
-function ArrowUpIcon({ size = 22 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M12 5l6 6-1.4 1.4L13 8.8V19h-2V8.8l-3.6 3.6L6 11l6-6z" fill="currentColor" />
-    </svg>
-  )
-}
 
 // Живой разговор: подключается к LiveKit-комнате (голосовой тьютор cascade),
 // показывает орб по состоянию агента и живую подпись из транскрипций.
@@ -237,22 +230,7 @@ export default function TutorVoiceChatPage({
       {/* Пока висит гейт со ситуацией, просьбы про микрофон быть не должно:
           иначе ученик жмёт «разрешить», следом «я готов» — и это два звонка. */}
       {perm !== 'granted' && !error && !(briefId && !briefAck) && (
-        <div className="t-micperm" role="dialog" aria-label={t('voice.permHint')}>
-          <div className="t-micperm__row">
-            <span className="t-micperm__chips">
-              <span className="t-micperm__chip t-micperm__chip--arrow">
-                <ArrowUpIcon size={22} />
-              </span>
-              <span className="t-micperm__chip t-micperm__chip--mic">
-                <MicIcon size={22} />
-              </span>
-            </span>
-            <button className="t-micperm__allow" type="button" onClick={requestMic}>
-              {t('voice.permAllow')}
-            </button>
-          </div>
-          <p className="t-micperm__hint">{t('voice.permHint')}</p>
-        </div>
+        <MicPermissionPrompt hint={t('voice.permHint')} allowLabel={t('voice.permAllow')} onAllow={requestMic} />
       )}
 
       <div className="t-voice tp-page">

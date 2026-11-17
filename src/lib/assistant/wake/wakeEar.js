@@ -176,18 +176,20 @@ export function createWakeEar({
     const my = ++gen
     try {
       set('loading')
-      try {
-        await ensureModel()
-      } catch {
-        if (my === gen) set('error', 'model')
-        return
-      }
-      if (my !== gen) return
+      // Сначала микрофон, потом модель (задача 202, 16.11.2026): ученик нажал «Разрешить» на плашке Луны и ждёт
+      // окна браузера сейчас, а не после 45 МБ; а без разрешения модель качать незачем.
       try {
         const probe = await withOwnMic(() => getUserMedia(AUDIO))
         for (const t of probe.getTracks()) t.stop()
       } catch (err) {
         if (my === gen) set('error', micError(err))
+        return
+      }
+      if (my !== gen) return
+      try {
+        await ensureModel()
+      } catch {
+        if (my === gen) set('error', 'model')
         return
       }
       if (my === gen) set('idle')

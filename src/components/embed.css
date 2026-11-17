@@ -1,0 +1,51 @@
+/* Кабинет в рамке урока (блок «Раздел Практики» конструктора): один раздел без оболочки. Корню ставит класс App. */
+.learning-embed {
+  min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* Сообщение рисуется без экрана раздела, прямо на странице, а её фон тёмный в обеих темах (--page-bg): своя подложка и
+   свой цвет текста обязательны. На деве 16.11.2026 сообщение без них было тёмным по тёмному. Ссылка — цветом текста с
+   подчёркиванием: фирменный фиолетовый на белом не дотягивает до контраста 4,5:1. */
+.learning-embed--notice {
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  text-align: center;
+  background: #ffffff;
+  color: #171326;
+}
+
+html[data-theme="dark"] .learning-embed--notice {
+  background: var(--page-bg);
+  color: var(--ink);
+}
+
+.learning-embed--notice h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.learning-embed--notice p {
+  margin: 0;
+}
+
+.learning-embed--notice a {
+  min-height: 44px;
+  display: inline-grid;
+  place-content: center;
+  font-weight: 700;
+  color: inherit;
+  text-decoration: underline;
+}
+
+.learning-embed--notice a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* «Назад в Практику» у экранов разделов: в рамке уходить некуда. */
+.jts-embed .nmb-back {
+  display: none;
+}

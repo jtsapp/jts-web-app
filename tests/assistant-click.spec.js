@@ -6,6 +6,8 @@ import { mockGates } from './helpers/login.js'
 // (window.__jtsFakeWakeEar, useWakeWord.js), кнопки вставлены в обёртку экрана: снимок
 // читает DOM, и Луне всё равно, чья это кнопка.
 test.use({
+  // Разрешение на микрофон уже дано: иначе Луна сперва просит его плашкой (задача 202, assistant-mic-permission.spec.js).
+  permissions: ['microphone'],
   launchOptions: { args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'] },
 })
 

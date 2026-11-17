@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { screenNeedsLogin } from './guestLogin.js'
 
 describe('гость не остаётся в кабинете', () => {
+  it('показывает гостю витрину и корзину до входа', () => {
+    expect(screenNeedsLogin('pricing', null)).toBe(false)
+    expect(screenNeedsLogin('minutes', null)).toBe(false)
+  })
+
   it('уроки и SAT без токена ведут на вход', () => {
     expect(screenNeedsLogin('lessons', null)).toBe(true)
     expect(screenNeedsLogin('sat', null)).toBe(true)
