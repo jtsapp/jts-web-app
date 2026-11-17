@@ -1,6 +1,6 @@
 import { useI18n } from '../i18n.jsx'
 import { useMenuItems } from './useMenuItems.js'
-import { mobileTabs, tabFor } from '../lib/navSections.js'
+import { mobileTabs, serviceItems, tabFor } from '../lib/navSections.js'
 
 // Нижняя панель телефона (≤560px) — дизайн мобильного приложения (Figma «Mobile», узел TabBar кадра 6419:6295).
 // Заменяет на телефоне бургер и выезжающее меню; планшет и компьютер её не видят (src/mobile/nav.css). Вкладки — из
@@ -8,8 +8,10 @@ import { mobileTabs, tabFor } from '../lib/navSections.js'
 export default function MobileTabBar({ active, token, onNav }) {
   const { t } = useI18n()
   const { items, badges } = useMenuItems(token)
-  // Раздел из «Сервисов» ждёт действия (бейдж в сайдбаре) — точка на вкладке, иначе на телефоне его не заметить.
-  const servicesAlert = Object.values(badges).some((n) => n > 0)
+  // Раздел ждёт действия (бейдж в сайдбаре) — точка на его вкладке, иначе на телефоне его не заметить; раздел из
+  // «Сервисов» — точка на «Сервисах». Бейдж «Уроков» (подбор учителя, с 17.11.2026 вкладка «Уроков») — на «Уроках».
+  const servicesAlert = serviceItems(items).some((i) => badges[i.key] > 0)
+  const alert = (key) => (key === 'services' ? servicesAlert : badges[key] > 0)
   const current = tabFor(active)
   return (
     <nav className="mtab" aria-label={t('mtab.label')}>
@@ -24,7 +26,7 @@ export default function MobileTabBar({ active, token, onNav }) {
         >
           <span className="mtab__pill">
             <i className="mtab__ico" style={{ '--mtab-ico': `url(/assets/home-v2/ico/${ico}.svg)` }} aria-hidden="true" />
-            {key === 'services' && servicesAlert && <b className="mtab__dot" aria-hidden="true" />}
+            {alert(key) && <b className="mtab__dot" aria-hidden="true" />}
           </span>
           <span className="mtab__label" data-label={t(label)}>{t(label)}</span>
         </button>

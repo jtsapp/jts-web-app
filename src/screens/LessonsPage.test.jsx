@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
@@ -42,6 +42,12 @@ vi.mock('../api.js', () => ({
   // тесты, которым вкладка нужна, отвечают true сами.
   getSelfStudyAccess: vi.fn(async () => false),
 }))
+
+// «Мой учитель» (задача 219): видна ли вкладка — правило useMyTeacherTab (его тесты — рядом с ним), а содержимое —
+// экран подбора, у которого свои тесты в src/matching. Здесь — только место вкладки, бейдж и переходы.
+const teacherTab = { state: 'no', badge: 0 }
+vi.mock('../matching/useMyTeacherTab.js', () => ({ useMyTeacherTab: () => teacherTab }))
+vi.mock('./lessons/MyTeacherTab.jsx', () => ({ default: () => <div data-testid="my-teacher-tab">Мой учитель — подбор</div> }))
 
 import LessonsPage from './LessonsPage.jsx'
 import { getFeedbackReports, getFeedbackReport, markFeedbackReportSeen, getSelfStudyAccess } from '../api.js'
@@ -255,5 +261,54 @@ describe('вкладка «Правила»', () => {
     expect(scroll).toHaveBeenCalledTimes(1)
     expect(scroll.mock.contexts[0]).toBe(container.querySelector('[data-rules-section="freeze"]'))
     expect(window.location.href).toBe(before)
+  })
+})
+
+describe('вкладка «Мой учитель»', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getSelfStudyAccess.mockResolvedValue(true)
+    Object.assign(teacherTab, { state: 'yes', badge: 0 })
+  })
+  // Остальные блоки файла рассчитывают на стенд без подбора.
+  afterEach(() => Object.assign(teacherTab, { state: 'no', badge: 0 }))
+  const labels = (container) => [...container.querySelectorAll('.ls-tab')].map((b) => b.textContent)
+
+  it('стоит сразу после «Онлайн-уроки», с бейджем, когда подбор ждёт действия', async () => {
+    teacherTab.badge = 1
+    const { container } = renderPage(tokenWithRole('STUDENT'))
+    await waitFor(() => expect(labels(container)).toEqual(['Онлайн-уроки', 'Мой учитель1', 'Самостоятельно', 'Отчёты', 'Правила']))
+    expect(container.querySelector('[data-tab="teacher"] .ls-tab__badge').textContent).toBe('1')
+    fireEvent.click(container.querySelector('[data-tab="teacher"]'))
+    expect(screen.getByTestId('my-teacher-tab')).toBeTruthy()
+  })
+
+  it('initialTab «teacher» (окна подбора, уведомление, ?screen=my-teacher) открывает её сразу и сообщает App', async () => {
+    const onTabChange = vi.fn()
+    const { container } = renderPage(tokenWithRole('STUDENT'), { initialTab: 'teacher', onTabChange })
+    await waitFor(() => expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Мой учитель'))
+    expect(screen.getByTestId('my-teacher-tab')).toBeTruthy()
+    expect(onTabChange).toHaveBeenLastCalledWith('teacher')
+  })
+
+  it('подбор ещё не ответил — ждёт его, а не остаётся на расписании', async () => {
+    teacherTab.state = 'pending'
+    const { container, rerender } = renderPage(tokenWithRole('STUDENT'), { initialTab: 'teacher' })
+    expect(container.querySelector('[data-tab="teacher"]')).toBeNull()
+    teacherTab.state = 'yes'
+    rerender(
+      <I18nProvider>
+        <LessonsPage token={tokenWithRole('STUDENT')} userName="Тест" onNav={() => {}} onProfile={() => {}} onOpenLesson={() => {}} initialTab="teacher" />
+      </I18nProvider>,
+    )
+    await waitFor(() => expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Мой учитель'))
+  })
+
+  it('без подбора на стенде (или на прод-домене) вкладки нет, и переход на неё открывает расписание', async () => {
+    teacherTab.state = 'no'
+    const { container } = renderPage(tokenWithRole('STUDENT'), { initialTab: 'teacher' })
+    await waitFor(() => expect(labels(container)).toEqual(['Онлайн-уроки', 'Самостоятельно', 'Отчёты', 'Правила']))
+    expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Онлайн-уроки')
+    expect(screen.queryByTestId('my-teacher-tab')).toBeNull()
   })
 })

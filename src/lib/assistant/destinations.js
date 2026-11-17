@@ -218,7 +218,7 @@ export const DESTINATIONS = [
   {
     id: 'lessons', nav: 'lessons', screen: 'lessons',
     name: { ru: 'Уроки', kk: 'Сабақтар', en: 'Lessons' },
-    about: 'расписание занятий с преподавателем, самостоятельные уроки',
+    about: 'расписание занятий с преподавателем, самостоятельные уроки; вкладка «Мой учитель» — подбор и смена преподавателя',
   },
   {
     id: 'homework', nav: 'homework', screen: 'homework',

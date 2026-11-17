@@ -2783,6 +2783,27 @@ textarea {
   background: #9047ff;
   color: #fff;
 }
+/* У ученика вкладок до пяти («Мой учитель» с 17.11.2026): на узком планшете они переносятся, а не вылезают за край. */
+.ls > .ls__tabs {
+  flex-wrap: wrap;
+}
+/* Бейдж «Мой учитель» — тот, что стоял у пункта меню: от ученика ждут действия в подборе учителя. Отрицательные поля
+   по вертикали — чтобы кружок не делал вкладку выше соседних и ряд не прыгал, когда бейдж появляется. */
+.ls-tab__badge {
+  display: inline-block;
+  min-width: 18px;
+  height: 18px;
+  margin: -2px 0 -2px 8px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  vertical-align: 1px;
+}
 .ls__body {
   flex: 1;
   display: flex;

@@ -51,7 +51,7 @@ describe('ссылки уведомлений ведут в новые разд�
   })
 
   it('прежние ссылки работают как работали', () => {
-    expect(notificationTarget('teacher-matching').screen).toBe('my-teacher')
+    expect(notificationTarget('teacher-matching')).toEqual({ screen: 'lessons', payload: { tab: 'teacher' } })
     expect(notificationTarget('homework').screen).toBe('homework')
     expect(notificationTarget('/system/schedule/12/workspace')).toEqual({ screen: 'lessons', payload: { lessonId: 12 } })
     expect(notificationTarget('')).toEqual({ screen: null, payload: null })

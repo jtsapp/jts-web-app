@@ -720,6 +720,10 @@ html[data-theme="dark"] .ls-tab--active {
     background: var(--dk-acc);
     color: var(--dk-on-acc)
 }
+html[data-theme="dark"] .ls-tab__badge {
+    background: var(--dk-red);
+    color: var(--dk-on-bright)
+}
 html[data-theme="dark"] .soon__art {
     background: var(--dk-acc)
 }

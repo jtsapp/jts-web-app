@@ -1,24 +1,27 @@
 import { useEffect, useState } from 'react'
-import LearningLayout from '../components/LearningLayout.jsx'
-import { reconfirmMatchingSchedule } from '../api.js'
-import { useMatching, applyMatchingCard, refreshMatching, takeMatchingFlash } from '../matching/matchingStore.js'
-import { matchingView } from '../matching/matchingState.js'
-import { schoolDay, studentTimezone } from '../matching/slots.js'
-import { useMatchingT } from '../matching/texts.js'
-import { errorText, useBusy, useToast } from '../matching/ui.jsx'
-import { useTeacher } from '../matching/useTeacher.js'
-import ConfirmCard from '../matching/ConfirmCard.jsx'
-import AssignedTeacher from '../matching/AssignedTeacher.jsx'
-import TeacherProfileModal from '../matching/TeacherProfileModal.jsx'
-import ManagerPickModal, { managerButtonLabel } from '../matching/ManagerPickModal.jsx'
-import TimezoneBanner from '../matching/TimezoneBanner.jsx'
-import { ChangeFormatModal, ChangeTeacherModal, VacationModal, shortDate } from '../matching/ChangeModals.jsx'
-import { CelebrateModal, InfoHero, ManagerPicking, NoTeacherHero, RequestsStatus } from '../matching/StatusViews.jsx'
-import FormatChoice from '../groups/FormatChoice.jsx'
+import { reconfirmMatchingSchedule } from '../../api.js'
+import { useMatching, applyMatchingCard, refreshMatching, takeMatchingFlash } from '../../matching/matchingStore.js'
+import { matchingView } from '../../matching/matchingState.js'
+import { schoolDay, studentTimezone } from '../../matching/slots.js'
+import { useMatchingT } from '../../matching/texts.js'
+import { errorText, useBusy, useToast } from '../../matching/ui.jsx'
+import { useTeacher } from '../../matching/useTeacher.js'
+import ConfirmCard from '../../matching/ConfirmCard.jsx'
+import AssignedTeacher from '../../matching/AssignedTeacher.jsx'
+import TeacherProfileModal from '../../matching/TeacherProfileModal.jsx'
+import ManagerPickModal, { managerButtonLabel } from '../../matching/ManagerPickModal.jsx'
+import TimezoneBanner from '../../matching/TimezoneBanner.jsx'
+import { ChangeFormatModal, ChangeTeacherModal, VacationModal, shortDate } from '../../matching/ChangeModals.jsx'
+import { CelebrateModal, InfoHero, ManagerPicking, NoTeacherHero, RequestsStatus } from '../../matching/StatusViews.jsx'
+import FormatChoice from '../../groups/FormatChoice.jsx'
 
-// «Мой учитель» (ТЗ 08 §2.9): один экран на все статусы подбора — какой показать, решает matchingView по карточке
+// «Мой учитель» (ТЗ 08 §2.9): одна вкладка на все статусы подбора — какой показать, решает matchingView по карточке
 // бэкенда. Кнопки «Написать в чат» нет ни в одном состоянии (ТЗ).
-export default function MyTeacherPage({ token, userName, userLevel, onNav, onProfile }) {
+//
+// До 17.11.2026 это был свой экран с пунктом меню; задача 219 доски перенесла его вкладкой в «Уроки» сразу после
+// «Онлайн-уроки» (LessonsPage). Заголовка своего нет — его роль играет вкладка; адрес ?screen=my-teacher и все
+// переходы onNav('my-teacher') App ведёт сюда же.
+export default function MyTeacherTab({ token, onNav }) {
   const { t, lang } = useMatchingT()
   const snap = useMatching(token)
   const view = matchingView(snap)
@@ -137,10 +140,9 @@ export default function MyTeacherPage({ token, userName, userLevel, onNav, onPro
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="my-teacher" token={token} onNav={onNav} onProfile={onProfile}>
+    <>
       <div className="mt">
-        <div className="mt-wrap">
-          <h1 className="mt-h1">{t('title')}</h1>
+        <div className="mt-wrap mt-wrap--tab">
           {view.status !== 'unavailable' && <TimezoneBanner token={token} saved={snap.card?.timezone} toast={toast} />}
           {body}
         </div>
@@ -203,7 +205,7 @@ export default function MyTeacherPage({ token, userName, userLevel, onNav, onPro
       )}
       {done && <CelebrateModal done={done} tz={tz} onClose={() => setDone(null)} />}
       {toastNode}
-    </LearningLayout>
+    </>
   )
 }
 

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { gateReply } from './helpers/login.js'
 
 // Подбор учителя стороной ученика (ТЗ 08, спека 2026-10-26-student-teacher-matching-design.md): онбординг →
 // формат → время → учителя → заявки → «Подтвердите расписание». Бэкенд JTS подменён: карточка подбора живёт в
@@ -48,6 +49,9 @@ async function setup(page, card) {
     const url = new URL(req.url())
     const path = url.pathname
     const method = req.method()
+    // Замки кабинета (документы платформы, разделы тарифа): на пустой ответ они встают поверх экрана подбора.
+    const gate = gateReply(req.url())
+    if (gate) return route.fulfill(json(gate))
     if (path.endsWith('/student/matching') && method === 'GET') return route.fulfill(json(st.card))
     if (path.endsWith('/student/matching/handoffs')) return route.fulfill(json([]))
     if (path.endsWith('/student/matching/grid')) return route.fulfill(json(GRID))
@@ -132,20 +136,38 @@ test('тариф не подтверждён: выбрать нельзя, а п
   expect(st.asked.wish).toBe('Хочу готовиться к собеседованию')
 })
 
-test('пункт «Мой учитель» в меню с цифрой, когда ждут действия', async ({ page }) => {
+// «Мой учитель» с 17.11.2026 — вкладка «Уроков» сразу после «Онлайн-уроки» (задача 219 доски): пункта меню и плитки
+// «Сервисов» нет, цифра «ждут действия» — на вкладке и на «Уроках» в меню.
+test('«Мой учитель» — вкладка «Уроков» с цифрой, когда ждут действия; пункта меню нет', async ({ page }) => {
   await setup(page, proposedCard())
   await page.goto('/?screen=lessons')
-  // На телефоне (≤560) меню — «Сервисы» нижней панели: точка на вкладке и цифра на плитке. «Сервисы» — адресом, а не
-  // кликом: вкладку перекрывает окно «Подтвердите расписание» того же подбора.
+  const tabs = page.locator('.ls__tabs .ls-tab')
+  await expect(tabs.nth(1)).toHaveAttribute('data-tab', 'teacher')
+  await expect(tabs.nth(0)).toHaveAttribute('data-tab', 'online')
+  await expect(page.locator('.ls-tab[data-tab="teacher"] .ls-tab__badge')).toHaveText('1')
   if ((page.viewportSize()?.width ?? 0) <= 560) {
-    await expect(page.locator('.mtab [data-tab="services"] .mtab__dot')).toBeVisible()
+    // На телефоне меню — нижняя панель: точка на «Уроках», а не на «Сервисах»; плитки «Мой учитель» в «Сервисах» нет.
+    await expect(page.locator('.mtab [data-tab="lessons"] .mtab__dot')).toBeVisible()
+    await expect(page.locator('.mtab [data-tab="services"] .mtab__dot')).toHaveCount(0)
     await page.goto('/?screen=services')
-    await expect(page.locator('.svc-tile--my-teacher .svc-tile__badge')).toHaveText('1')
+    await expect(page.locator('.svc-tile').first()).toBeVisible()
+    await expect(page.locator('.svc-tile--my-teacher')).toHaveCount(0)
     return
   }
-  const item = page.locator('.sb__nav [data-nav="my-teacher"]')
-  await expect(item).toBeVisible()
-  await expect(item.locator('.sb__badge')).toHaveText('1')
+  await expect(page.locator('.sb__nav [data-nav="lessons"] .sb__badge')).toHaveText('1')
+  await expect(page.locator('.sb__nav [data-nav="my-teacher"]')).toHaveCount(0)
+})
+
+test('прежний адрес ?screen=my-teacher открывает вкладку «Мой учитель», F5 её не теряет', async ({ page }) => {
+  await setup(page, proposedCard())
+  await page.goto('/?screen=my-teacher')
+  await expect(page.locator('.ls-tab--active')).toHaveAttribute('data-tab', 'teacher')
+  await expect(page.getByRole('heading', { name: 'Подтвердите расписание' })).toBeVisible()
+  await expect(page).toHaveURL(/[?&]screen=lessons&tab=teacher$/)
+  // окно «Подтвердите расписание» поверх своей же вкладки не выходит
+  await expect(page.locator('[role="dialog"]')).toHaveCount(0)
+  await page.reload()
+  await expect(page.locator('.ls-tab--active')).toHaveAttribute('data-tab', 'teacher')
 })
 
 test('360 px: сетка времени скроллится внутри блока, страница вбок не уезжает', async ({ page }) => {
@@ -191,7 +213,7 @@ test('сетка открывается на первом времени со с
 })
 
 // У .learn__main своих полей нет: до 1160 px (колонка подбора — 1120) заголовок и карточки ложились к краю окна.
-test('узкий экран: у «Мой учитель» и мастера поле 16 px по бокам', async ({ page }) => {
+test('узкий экран: у вкладки «Мой учитель» и мастера поле 16 px по бокам', async ({ page }) => {
   const gaps = (sel) => page.locator(sel).first().evaluate((el) => {
     const r = el.getBoundingClientRect()
     return { left: r.left, right: document.documentElement.clientWidth - r.right }
@@ -199,9 +221,8 @@ test('узкий экран: у «Мой учитель» и мастера по
   for (const width of [375, 700]) {
     await page.setViewportSize({ width, height: 800 })
     await setup(page, proposedCard())
-    await page.goto('/?screen=my-teacher')
-    await expect(page.getByRole('heading', { name: 'Мой учитель' })).toBeVisible()
-    expect((await gaps('.mt-wrap .mt-h1')).left).toBeGreaterThanOrEqual(16)
+    await page.goto('/?screen=lessons&tab=teacher')
+    await expect(page.getByRole('heading', { name: 'Подтвердите расписание' })).toBeVisible()
     const card = await gaps('.mt-wrap .mt-card')
     expect(card.left).toBeGreaterThanOrEqual(16)
     expect(card.right).toBeGreaterThanOrEqual(16)
