@@ -9,9 +9,9 @@ describe('practiceTabs', () => {
   it('карточки вкладок — в порядке экранов макета', () => {
     expect(skillCards('listening')).toEqual(['listenchoose', 'justListen', 'cartoons', 'shadowing', 'karaoke', 'memes', 'tales'])
     expect(skillCards('reading')).toEqual(['reading', 'speedReading', 'books', 'comics', 'literature', 'tales'])
-    expect(skillCards('writing')).toEqual(['grammar', 'prepositions', 'writing', 'verbs', 'workbooks'])
+    expect(skillCards('writing')).toEqual(['writing', 'verbs', 'workbooks'])
     expect(skillCards('speaking')).toEqual(['pronunciation', 'situations', 'speakspin', 'shadowing', 'karaoke', 'tales'])
-    expect(skillCards('grammarGames')).toEqual(['topics', 'tenses', 'punctuation', 'partsofspeech', 'listening', 'words', 'numbers', 'wordhunt', 'speak', 'runner'])
+    expect(skillCards('grammarGames')).toEqual(['topics', 'grammar', 'tenses', 'punctuation', 'partsofspeech', 'prepositions', 'listening', 'words', 'numbers', 'wordhunt', 'speak', 'runner'])
     expect(skillCards('nope')).toEqual([])
   })
 
@@ -21,8 +21,8 @@ describe('practiceTabs', () => {
     for (const k of withTales) expect(skillCards(k).at(-1), k).toBe('tales')
   })
 
-  it('«N тренажёров» под вкладками: 7, 6, 5, 6 (в макете у «Чтения» 4 — без «Скорочтения» и Literature World)', () => {
-    expect(['listening', 'reading', 'writing', 'speaking'].map((k) => skillModules(k).length)).toEqual([7, 6, 5, 6])
+  it('«N тренажёров» под вкладками: 7, 6, 3, 6 (в макете у «Чтения» 4 — без «Скорочтения» и Literature World; из «Письма» юниты и предлоги ушли в «Грамматику»)', () => {
+    expect(['listening', 'reading', 'writing', 'speaking'].map((k) => skillModules(k).length)).toEqual([7, 6, 3, 6])
     // Две карточки «Аркады» — один тренажёр.
     expect(skillModules('grammarGames').filter((m) => m === 'arcade')).toHaveLength(1)
   })
@@ -31,8 +31,8 @@ describe('practiceTabs', () => {
     const skill = SKILLS.find((s) => s.key === 'grammarGames')
     expect(skill.groups.map((g) => g.title)).toEqual(['practice.group.trainers', 'practice.group.games'])
     // Tenses World и Punctuation World — тренажёры сразу после «Тем по уровням» (спека 2026-11-10, Д3); Parts of
-    // Speech World — после Punctuation World (спека 2026-11-14)
-    expect(skill.groups[0].cards).toEqual(['topics', 'tenses', 'punctuation', 'partsofspeech'])
+    // Speech World — после Punctuation World (спека 2026-11-14); юниты и Prepositions World — из «Письма» (17.11.2026)
+    expect(skill.groups[0].cards).toEqual(['topics', 'grammar', 'tenses', 'punctuation', 'partsofspeech', 'prepositions'])
     expect(skill.sub).toBe('practice.skillSub.grammarGames')
   })
 
@@ -41,7 +41,9 @@ describe('practiceTabs', () => {
     expect(skillOfModule('situations')).toBe('speaking')
     expect(skillOfModule('tales')).toBe('listening')
     expect(skillOfModule('shadowing')).toBe('listening')
-    expect(skillOfModule('grammar')).toBe('writing')
+    expect(skillOfModule('grammar')).toBe('grammarGames')
+    expect(skillOfModule('prepositions')).toBe('grammarGames')
+    expect(skillOfModule('verbs')).toBe('writing')
     expect(skillOfModule('listen')).toBe('listening')
     expect(skillOfModule('speedReading')).toBe('reading')
     for (const m of ['words', 'listening', 'numbers', 'wordhunt', 'arcade', 'grammarGames', 'punctuation', 'partsofspeech'])
