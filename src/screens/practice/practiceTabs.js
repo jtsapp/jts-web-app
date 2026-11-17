@@ -10,6 +10,9 @@
 // Д5 спеки), а 10.11.2026 по просьбе владельца перенесли в «Чтение» — сразу после «Чтения»: ученик сам читает
 // текст вслух, образец диктора — только подсказка темпа.
 //
+// «Грамматика» (юниты по уровням) и Prepositions World стояли в «Письме»; 17.11.2026 по просьбе владельца
+// перенесены в «Грамматику», в «Тренажёры»: юниты — сразу после «Тем по уровням», предлоги — последними.
+//
 // Сказки — последняя карточка везде, где они есть (решение владельца 27.09.2026); макет это соблюдает.
 
 import { cardOf } from './practiceCatalog.js'
@@ -17,15 +20,18 @@ import { cardOf } from './practiceCatalog.js'
 export const SKILLS = [
   { key: 'listening', groups: [{ cards: ['listenchoose', 'justListen', 'cartoons', 'shadowing', 'karaoke', 'memes', 'tales'] }] },
   { key: 'reading', groups: [{ cards: ['reading', 'speedReading', 'books', 'comics', 'tales'] }] },
-  { key: 'writing', groups: [{ cards: ['grammar', 'prepositions', 'writing', 'verbs', 'workbooks'] }] },
+  { key: 'writing', groups: [{ cards: ['writing', 'verbs', 'workbooks'] }] },
   { key: 'speaking', groups: [{ cards: ['pronunciation', 'situations', 'speakspin', 'shadowing', 'karaoke', 'tales'] }] },
   {
     key: 'grammarGames',
     sub: 'practice.skillSub.grammarGames',
     groups: [
       // Tenses World и Punctuation World (10.11.2026) — тренажёры рядом с темами, сначала времена; Parts of Speech
-      // World (14.11.2026) — следом.
-      { title: 'practice.group.trainers', cards: ['topics', 'tenses', 'punctuation', 'partsofspeech'] },
+      // World (14.11.2026) — следом. Юниты «Грамматики» и Prepositions World — из «Письма» (17.11.2026).
+      {
+        title: 'practice.group.trainers',
+        cards: ['topics', 'grammar', 'tenses', 'punctuation', 'partsofspeech', 'prepositions'],
+      },
       {
         title: 'practice.group.games',
         sub: 'practice.group.gamesSub',

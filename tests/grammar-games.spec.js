@@ -152,8 +152,11 @@ test('в «Письме» раздела больше нет, переключа
   await mockBackend(page)
   await page.goto('/?screen=practice')
   await page.locator('.pk-skill', { hasText: 'Письмо' }).click({ timeout: 60_000 })
-  await expect(page.locator('#sec-grammar')).toBeVisible()
+  await expect(page.locator('#sec-writing')).toBeVisible()
   await expect(page.locator('#sec-topics')).toHaveCount(0)
+  // Юниты «Грамматики» и Prepositions World с 17.11.2026 — в «Грамматике», рядом с темами.
+  await expect(page.locator('#sec-grammar')).toHaveCount(0)
+  await expect(page.locator('#sec-prepositions')).toHaveCount(0)
   await expect(page.locator('.pk-levels')).toBeVisible()
 })
 
