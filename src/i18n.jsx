@@ -60,6 +60,7 @@ const dict = {
     'nav.myTeacher': 'Мой учитель',
     'nav.group': 'Выбрать группу',
     'nav.notifications': 'Уведомления',
+    'nav.whatsNew': 'What’s New',
     'nav.contracts': 'Договоры',
     'demo.badge': 'ДЕМО',
     'demo.banner': 'Демо-доступ открыт — часть разделов работает с ограничениями',

@@ -35,6 +35,7 @@ const dict = {
     'nav.myTeacher': 'My teacher',
     'nav.group': 'Choose a group',
     'nav.notifications': 'Notifications',
+    'nav.whatsNew': 'What’s New',
     'nav.contracts': 'Contracts',
     'demo.badge': 'DEMO',
     'demo.banner': 'Demo access is open — some sections work with limits',

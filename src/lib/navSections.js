@@ -47,6 +47,7 @@ const NAV_FULL = [
   { key: 'feedback', label: 'nav.feedback', ico: 'forum' },
   // «Уведомления» видны всем ученикам независимо от тарифа и формата (ТЗ кабинетов, 14е).
   { key: 'notifications', label: 'nav.notifications', ico: 'notifications' },
+  { key: 'whats-new', label: 'nav.whatsNew', ico: 'campaign' },
   // «Договоры» тоже видны всем (ТЗ кабинетов, 14е); значок — сколько договоров ждут подписи.
   { key: 'contracts', label: 'nav.contracts', ico: 'edit_note' },
 ]
@@ -70,7 +71,7 @@ const TEACHER_SECTIONS = ['lessons', 'practice']
 
 // Аккаунт IELTS (дизайн «IELTS new», 08.10.2026): ровно эти разделы и в этом порядке, а внизу «Настройки». Игровых
 // счётчиков и плашки уровня в макете нет. Каждый экзамен ниже проверяется и по матрице, и по своему доступу.
-const IELTS_SECTIONS = ['practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'chess', 'ielts', 'sat', 'tokens', 'prizes', 'birge', 'feedback', 'notifications', 'contracts']
+const IELTS_SECTIONS = ['practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'chess', 'ielts', 'sat', 'tokens', 'prizes', 'birge', 'feedback', 'notifications', 'whats-new', 'contracts']
 
 // «Повторение» стоит после «Словаря» у всех учеников, включая IELTS/SAT (владелец, 03.11.2026; до того у экзаменов было первым).
 function learningAfterVocab(items) {
