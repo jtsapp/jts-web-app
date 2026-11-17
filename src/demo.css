@@ -2700,6 +2700,231 @@ button.hm-level__goal:focus-visible {
   gap: 8px 18px;
   margin-top: 14px;
 }
+/* ── «Задачи на сегодня» по направлениям (задача 218, 17.11.2026; home/TodayTracksCard.jsx) ──
+   Секция — рамка r16 с шапкой-кнопкой: значок, имя направления, счётчик и шеврон; внутри — строки IELTS и SAT или «Сегодня»
+   общего курса без своей рамки (.ge-today--embedded). Цвета — только токенами --hm-*: их переопределяет тёмная тема
+   (theme-dark.css), поэтому своей тёмной правки у блока нет. На телефоне блок скрыт вместе с «Сегодня» общего курса
+   (src/mobile/home.css, решение владельца 26.10.2026: там только блоки макета приложения). */
+.hm-trk__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.hm-trk__head .hm-card__title {
+  margin: 0;
+}
+.hm-trk__total {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--hm-tile);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 20px;
+  white-space: nowrap;
+  color: var(--hm-ink);
+}
+.hm-trk__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.hm-trk__sec {
+  border: 1px solid var(--hm-line);
+  border-radius: 16px;
+  background: var(--hm-card);
+}
+.hm-trk__h {
+  margin: 0;
+  font: inherit;
+}
+.hm-trk__toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 60px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 15px;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--hm-ink);
+  cursor: pointer;
+}
+.hm-trk__toggle:hover {
+  background: var(--hm-lav2);
+}
+.hm-trk__toggle:focus-visible,
+.hm-trk__go:focus-visible,
+.hm-trk__more:focus-visible {
+  outline: 2px solid var(--hm-ac);
+  outline-offset: 2px;
+}
+.hm-trk__toggle.is-static {
+  cursor: default;
+}
+.hm-trk__toggle.is-static:hover {
+  background: none;
+}
+.hm-trk__sec.is-open .hm-trk__toggle {
+  border-radius: 15px 15px 0 0;
+}
+.hm-trk__ico,
+.hm-trk__chev {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  background: currentColor;
+  -webkit-mask: var(--hm-ico) center / contain no-repeat;
+  mask: var(--hm-ico) center / contain no-repeat;
+}
+.hm-trk__chev {
+  --hm-ico: url(/assets/home-v2/ico/expand_more.svg);
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  transition: transform 0.2s;
+}
+.hm-trk__sec.is-open .hm-trk__chev {
+  transform: rotate(180deg);
+}
+.hm-trk__name {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 24px;
+}
+.hm-trk__count {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--hm-tile);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 26px;
+  text-align: center;
+  color: var(--hm-ink);
+}
+.hm-trk__count.is-zero {
+  background: var(--hm-up-bg);
+  color: var(--hm-up);
+}
+.hm-trk__body {
+  padding: 16px;
+  border-top: 1px solid var(--hm-line);
+}
+.hm-trk__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hm-trk__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--hm-tile);
+}
+.hm-trk__dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--hm-mut);
+  border-radius: 50%;
+}
+.hm-trk__row.is-started .hm-trk__dot {
+  border-color: var(--hm-ac);
+  background: linear-gradient(90deg, var(--hm-ac) 50%, transparent 50%);
+}
+.hm-trk__row.is-done .hm-trk__dot {
+  border-color: var(--hm-up);
+  background: var(--hm-up);
+}
+.hm-trk__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.hm-trk__text b {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 20px;
+  overflow-wrap: break-word;
+  color: var(--hm-ink);
+}
+.hm-trk__text i {
+  font-size: 13px;
+  font-style: normal;
+  line-height: 18px;
+  color: var(--hm-sec);
+}
+.hm-trk__row.is-done .hm-trk__text b {
+  color: var(--hm-sec);
+}
+.hm-trk__go {
+  flex: none;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--hm-ac);
+  border-radius: 999px;
+  background: var(--hm-card);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--hm-ac);
+  cursor: pointer;
+}
+.hm-trk__go:hover {
+  background: var(--hm-lav2);
+}
+.hm-trk__done {
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--hm-up);
+}
+.hm-trk__note {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--hm-sec);
+}
+.hm-trk__rows + .hm-trk__note {
+  margin-top: 10px;
+}
+.hm-trk__more {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--hm-sec);
+  cursor: pointer;
+}
+.hm-trk__more:hover {
+  color: var(--hm-ac);
+}
+/* узкий планшет: кнопка строки уходит под текст, а не сжимает его до слова в строке */
+@media (max-width: 760px) {
+  .hm-trk__row {
+    flex-wrap: wrap;
+  }
+  .hm-trk__go {
+    margin-left: 24px;
+  }
+}
 .ge-today__foot .ge-today__low {
   margin-top: 0;
 }

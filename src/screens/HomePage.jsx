@@ -15,6 +15,8 @@ import GeGoalBanner from './home/GeGoalBanner.jsx'
 import GeStartHero, { GeFinishHero, StartHereCard } from './home/GeStartHero.jsx'
 import { usePlacementReport } from './home/PlacementReport.jsx'
 import GeTodayCard from './home/GeTodayCard.jsx'
+import TodayTracksCard from './home/TodayTracksCard.jsx'
+import { needsTracksCard } from './home/todayTracks.js'
 import { NearCard, RulesButton, TeacherLessonsCard } from './home/LessonsBlocks.jsx'
 import { courseStep, dayProgress, homeFormat, teacherPlanToday } from './home/homeBlocks.js'
 import { useCourseProgress, useLessonsSummary } from './home/useHomeData.js'
@@ -64,6 +66,9 @@ export default function HomePage({
   levelUnknown = false,
   // Аккаунт IELTS (App: getIeltsMe, на проде IELTS скрыт — тогда false): вместо уровня General English — старт IELTS.
   ieltsAccount = false,
+  // Подписки на экзамены (App: useStudentExams — { ielts, sat }, то же правило, что пункты меню): по ним «Задачи на
+  // сегодня» делятся на направления (задача 218). null — ответа нет, тогда направлений сверх общего курса не видно.
+  exams = null,
   // Профиль General English (App: getGeProfile; null — ручки нет, IELTS-аккаунт или гость): анкета, цель и формат.
   // Есть профиль — сверху приглашение или блок цели вместо прежней карточки уровня (спека 2026-10-12, секция 3).
   geProfile = null,
@@ -198,6 +203,15 @@ export default function HomePage({
   // Нет ручки (старый бэкенд) или план не собран — карточка прежняя.
   const gePlan = useGePlan(token, { enabled: geTop === 'goal', level: summary.level || userLevel })
   const geToday = gePlan.status === 'ready' && gePlan.plan?.state === 'ready'
+  // «Задачи на сегодня» по направлениям (задача 218 доски, 17.11.2026): общий курс — когда собран его план, IELTS и SAT —
+  // по подписке, как пункты меню; раздел, скрытый на проде, сюда тоже не попадает. Один общий курс — прежнее «Сегодня»;
+  // есть IELTS или SAT — одна карточка с секцией на направление (home/todayTracks.js).
+  const trackKeys = [
+    geToday && 'ge',
+    !!exams?.ielts && !isStudentSectionHidden('ielts') && 'ielts',
+    !!exams?.sat && !isStudentSectionHidden('sat') && 'sat',
+  ].filter(Boolean)
+  const tracksCard = needsTracksCard(trackKeys)
   // Отчёт теста уровня живёт своей страницей (PlacementResultsPage, ТЗ v2.0, 5.7); здесь он нужен ради даты теста в
   // строке-источнике «Сильных и слабых сторон» («Уровень A2 (тест 20 октября)»).
   const placement = usePlacementReport(ieltsAccount ? null : token, placementVersion)
@@ -613,7 +627,20 @@ export default function HomePage({
                 владельца 21.10.2026); у прежней «Главной» — подсказка дня. План или профиль ещё в пути — пусто, а не
                 подсказка, которая через секунду сменится на «Сегодня». */}
             <div className="hm-slot hm-slot--today">
-            {geToday ? (
+            {/* Есть IELTS или SAT — «Задачи на сегодня» по направлениям: секция общего курса внутри неё (тот же план и
+                те же кнопки). Пока у общего курса нет плана (тест, формат), «Начни отсюда» остаётся над карточкой: это
+                его следующий шаг. Подсказку дня прежней «Главной» карточка заменяет — у ученика есть задачи. */}
+            {tracksCard && geLoaded && !(geTop === 'goal' && gePlan.status === 'loading') ? (
+              <>
+                {geMode && geTop !== 'goal' && <StartHereCard state={geTop} onStart={onGeStart} onTest={onGeTest} onRoute={onGeRoute} />}
+                <TodayTracksCard
+                  tracks={trackKeys}
+                  ge={geToday ? { plan: gePlan.plan, frontier: gePlan.frontier, level: summary.level || userLevel, onReload: gePlan.reload } : null}
+                  token={token}
+                  onNav={onNav}
+                />
+              </>
+            ) : geToday ? (
               <GeTodayCard plan={gePlan.plan} frontier={gePlan.frontier} level={summary.level || userLevel} token={token} onReload={gePlan.reload} onNav={onNav} />
             ) : !geLoaded || (geTop === 'goal' && gePlan.status === 'loading') ? null : geMode && geTop !== 'goal' ? (
               <StartHereCard state={geTop} onStart={onGeStart} onTest={onGeTest} onRoute={onGeRoute} />
