@@ -6,7 +6,8 @@ let lastClient
 vi.mock('@stomp/stompjs', () => {
   class Client {
     constructor(cfg) { this.cfg = cfg; this.published = []; this.connected = false; lastClient = this }
-    activate() { this.connected = true; this.cfg.beforeConnect && this.cfg.beforeConnect(); this.cfg.onConnect && this.cfg.onConnect() }
+    // Как stompjs: beforeConnect получает сам клиент.
+    activate() { this.active = true; this.connected = true; this.cfg.beforeConnect && this.cfg.beforeConnect(this); this.cfg.onConnect && this.cfg.onConnect() }
     publish(frame) { this.published.push(frame) }
     deactivate() { this.deactivated = true }
   }

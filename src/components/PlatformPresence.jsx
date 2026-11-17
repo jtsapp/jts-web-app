@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { Client } from '@stomp/stompjs'
 import { wsBase } from '../lib/wsUrl.js'
-import { stompConnectHeaders } from '../lib/stompAuth.js'
+import { withStompAuth } from '../lib/stompAuth.js'
 
 const PULSE_MS = 10000
 
@@ -17,23 +17,17 @@ export default function PlatformPresence({ token }) {
   useEffect(() => {
     if (!token) return undefined
     let beat = null
-    const client = new Client({
+    const client = new Client(withStompAuth(token, {
       brokerURL: wsBase(),
-      connectHeaders: stompConnectHeaders(token),
       reconnectDelay: 5000,
       heartbeatIncoming: 25000,
       heartbeatOutgoing: 0,
-      beforeConnect: () => {
-        // Токен в React мог устареть, пока в хранилище уже лежит свежий.
-        // Со старым Bearer соединение анонимное, и пульс не засчитывается.
-        client.connectHeaders = stompConnectHeaders(token)
-      },
       onConnect: () => {
         pulse()
         if (beat) clearInterval(beat)
         beat = setInterval(pulse, PULSE_MS)
       },
-    })
+    }))
     const pulse = () => {
       if (!client.connected) return
       client.publish({ destination: '/app/presence/platform', body: '{}' })
