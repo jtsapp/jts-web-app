@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { saveTrialLead } from '../../api.js'
 
 // Форматы обучения и заявка на консультацию — финальный экран урока.
@@ -134,6 +135,15 @@ export default function TrialPlanScreen({ result, token, onBack }) {
         {state === 'sent' ? (
           <div className="trial-leadok">
             <b>Спасибо, {name}! 🎉</b> Заявка принята — менеджер Just to Study свяжется с вами, подберёт тариф и расписание.
+            {/* Бэкенд узнаёт прошедшего пробный по этому номеру и даёт неделю вместо суток
+                (DemoAccessStart), поэтому важно зарегистрироваться с тем же телефоном. */}
+            <p className="trial-hint">
+              🎁 Спецпредложение после пробного урока: неделя бесплатного доступа к платформе. Зарегистрируйтесь с этим
+              же номером — {phone.trim()}.
+            </p>
+            <Link className="trial-primary" href="/">
+              Получить неделю доступа
+            </Link>
           </div>
         ) : (
           <div className="trial-lead">
