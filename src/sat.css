@@ -12253,3 +12253,6 @@ button.st-strip__body:focus-visible {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
+
+/* «Выбрать дату» в заметке условного плана (ТЗ SAT, задачи 1 и 4) */
+.st-plan__pick { margin-left: auto; flex-shrink: 0; }

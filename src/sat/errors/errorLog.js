@@ -82,3 +82,34 @@ export function insightTone(key) {
   if (key === 'trend') return 'trend'
   return [...REASONS, 'unanswered'].includes(key) ? key : 'unanswered'
 }
+
+/**
+ * Выводы «Над чем работать» над диаграммами (ТЗ SAT, задача 9). Бэкенд называет преобладающую причину, только когда
+ * ошибок много и доля причины велика; при меньшем журнале экран оставался с одними цифрами. Поэтому, если среди выводов
+ * сервера нет ни одного про причину, первой строкой идёт самая частая названная причина журнала (без «нет причины»).
+ */
+export function insightsOf(stats) {
+  const list = Array.isArray(stats?.insights) ? stats.insights : []
+  const hasReason = list.some((x) => REASONS.includes(x.key) || x.key === 'knowledgeSkill')
+  if (hasReason) return list
+  const top = reasonBars(stats?.byReason || {}, stats?.total || 0).rows[0]
+  return top ? [{ key: top.reason, skillId: null }, ...list] : list
+}
+
+/**
+ * Начало вопроса для строки журнала: превью приходит кусочком HTML банка (`k&pi;`, `&le;`, `<sup>`), а ячейка
+ * выводит его текстом — сущности и теги надо раскрыть, иначе ученик видит «k&pi;» вместо «kπ».
+ */
+export function previewText(html) {
+  const s = String(html ?? '')
+  if (!/[&<]/.test(s)) return s
+  if (typeof DOMParser !== 'undefined') {
+    return (new DOMParser().parseFromString(s, 'text/html').body.textContent || '').replace(/\s+/g, ' ').trim()
+  }
+  const named = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', pi: 'π', le: '≤', ge: '≥', ne: '≠', deg: '°', times: '×', divide: '÷', minus: '−', plusmn: '±', radic: '√', theta: 'θ', infin: '∞', middot: '·', ndash: '–', mdash: '—', rsquo: '’', lsquo: '‘', ldquo: '“', rdquo: '”' }
+  return s.replace(/<[^>]*>/g, '')
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&([a-z]+);/gi, (m, n) => named[n] ?? m)
+    .replace(/\s+/g, ' ').trim()
+}

@@ -5,6 +5,7 @@ import RoadmapView from '../plan/RoadmapView.jsx'
 import WeekView from '../plan/WeekView.jsx'
 import MonthView from '../plan/MonthView.jsx'
 import { SatModal } from '../question/ToolDialogs.jsx'
+import { DatePicker } from '../onboarding/chapters.jsx'
 import { iso } from '../model/plan.js'
 import { nextGroupLesson, scheduleAsPlan } from '../model/roadmap.js'
 
@@ -69,10 +70,36 @@ export function HowItWorks({ onClose }) {
  * выбирает, их ставит школа. Клик по занятию ведёт сразу в практику по его теме — меню занятия убрано (задача 3.4).
  * Счётчика «X из N занятий» в строке вкладок больше нет: макет держит его в полосе фаз «Недели» и в карточке фазы.
  */
-export default function PlanTab({ roadmap, bluebook, schedule, onLesson, onToday, onBluebook, onCompare, selfPrepActions }) {
+/**
+ * Выбор даты экзамена прямо из «Плана» (ТЗ SAT, задачи 1 и 4): раньше условный план отсылал в главу 4 гайда.
+ * Тот же DatePicker, что в онбординге; сохраняет экран SAT (onPickDate), он же перечитывает роадмап.
+ */
+function DateDialog({ examDate, undecided, onPick, onClose }) {
+  const { t } = useI18n()
+  const [busy, setBusy] = useState(false)
+  const pick = async (patch) => {
+    setBusy(true)
+    try {
+      await onPick(patch)
+      onClose()
+    } catch {
+      setBusy(false)
+    }
+  }
+  return (
+    <SatModal title={t('sat.plan.pickDate')} onClose={onClose} wide>
+      <div aria-busy={busy}>
+        <DatePicker value={examDate} undecided={undecided} onChange={(patch) => !busy && pick(patch)} />
+      </div>
+    </SatModal>
+  )
+}
+
+export default function PlanTab({ roadmap, bluebook, schedule, onLesson, onToday, onBluebook, onCompare, selfPrepActions, examDate = null, dateUndecided = false, onPickDate }) {
   const { t } = useI18n()
   const [view, setView] = useState('roadmap')
   const [how, setHow] = useState(false)
+  const [dates, setDates] = useState(false)
   const [phase, setPhase] = useState(null)
   useEffect(() => {
     const n = takePhase()
@@ -113,7 +140,14 @@ export default function PlanTab({ roadmap, bluebook, schedule, onLesson, onToday
           <button type="button" className="st-tool" onClick={() => setHow(true)}><HelpIcon size={16} />{t('sat.how.title')}</button>
         )}
       </div>
-      {r.provisional && <p className="st-plan__note">{t('sat.plan.provisional')}</p>}
+      {r.provisional && (
+        <p className="st-plan__note">
+          {t('sat.plan.provisional')}
+          {onPickDate && (
+            <button type="button" className="st-tool st-plan__pick" onClick={() => setDates(true)}>{t('sat.plan.pickDate')}</button>
+          )}
+        </p>
+      )}
       <div key={view} className="ih-enter">
         {view === 'roadmap' && (
           <RoadmapView data={roadmap} bluebook={bluebook} schedule={schedule} onToday={onToday} onBluebook={onBluebook}
@@ -124,6 +158,7 @@ export default function PlanTab({ roadmap, bluebook, schedule, onLesson, onToday
         {view === 'month' && plan.weeks.length > 0 && <MonthView plan={plan} roadmap={r} next={next} todayIso={todayIso} onStart={open} />}
       </div>
       {how && <HowItWorks onClose={() => setHow(false)} />}
+      {dates && <DateDialog examDate={examDate} undecided={dateUndecided} onPick={onPickDate} onClose={() => setDates(false)} />}
     </div>
   )
 }
