@@ -49,7 +49,7 @@ export const DESTINATIONS = [
   {
     id: 'practice-writing', nav: 'practice', payload: { skill: 'writing' }, screen: 'practice',
     name: { ru: 'Практика → Письмо', kk: 'Тәжірибе → Жазылым', en: 'Practice → Writing' },
-    about: 'грамматика, Prepositions World (предлоги), письмо по шагам, неправильные глаголы, воркбуки',
+    about: 'письмо по шагам, неправильные глаголы, воркбуки',
   },
   {
     id: 'practice-speaking', nav: 'practice', payload: { skill: 'speaking' }, screen: 'practice',
@@ -97,7 +97,7 @@ export const DESTINATIONS = [
   {
     id: 'grammar-games', nav: 'grammar-games', screen: 'grammar-games',
     name: { ru: 'Грамматика · игры', kk: 'Грамматика · ойындар', en: 'Grammar · games' },
-    about: '125 тем грамматики A0–C1 (карточка «Темы по уровням» вкладки «Грамматика» Практики; там же все мини-игры): правило с формулами и примерами, потом игры по теме и финальный бой',
+    about: '125 тем грамматики A0–C1 (карточка «Темы по уровням» вкладки «Грамматика» Практики; там же юниты «Грамматика», Prepositions World и все мини-игры): правило с формулами и примерами, потом игры по теме и финальный бой',
   },
   {
     id: 'prepositions', nav: 'prepositions', screen: 'prepositions',
