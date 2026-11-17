@@ -79,6 +79,9 @@ const REPLACEMENTS = [
   ['кнопка «послушать» — если экран дал голос', "const hasTTS = () => typeof speechSynthesis !== 'undefined';", 'const hasTTS = () => !!speak;', 1],
   ['микрофон после ухода с раздела — сразу отпустить', 'const st = await navigator.mediaDevices.getUserMedia({ audio: true }); const ch = [];', 'const st = await navigator.mediaDevices.getUserMedia({ audio: true }); if (dead) { st.getTracks().forEach(x => x.stop()); return; } LW_STREAMS.add(st); const ch = [];', 1],
   ['запись себя — ссылка отпускается в destroy', 'a.src = URL.createObjectURL(new Blob(ch, { type: REC.mimeType }));', 'a.src = lwObjectUrl(new Blob(ch, { type: REC.mimeType }));', 1],
+  // destroy() останавливает запись, а onstop приходит позже, когда ссылки уже отпущены: новую не создаём
+  ['запись себя — после ухода с раздела ссылку не создаём', 'REC.onstop = () => { st.getTracks().forEach(x => x.stop());', 'REC.onstop = () => { st.getTracks().forEach(x => x.stop()); if (dead) return;', 1],
+  ['выгрузка метаданных («About») — ссылка отпускается в destroy', "a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));", "a.href = lwObjectUrl(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));", 1],
 
   // ---------- подсказка-слово: окно внутри раздела ----------
   // ---------- синтаксис: Safari до 16.4 не разбирает lookbehind, и модуль движка не загрузился бы вовсе ----------
@@ -240,12 +243,14 @@ ${EPILOGUE}
 }
 
 // Разметка <body> прототипа без логотипов и скриптов; inline-обработчики — сразу data-lw-on… (код тот же).
+// Логотип прототипа был кнопкой «на главную книги»; уже 1330 px его подпись прячется правилом прототипа, и без логотипа
+// кнопка сжималась в 0×0 — других переходов на главную у движка нет. Поэтому у кнопки свой значок-книга.
 const SHELL = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
   <clipPath id="bubble" clipPathUnits="objectBoundingBox"><path d="M.5,.02 C.77,.02 .98,.23 .98,.5 C.98,.77 .77,.98 .5,.98 L.075,.98 C.035,.98 .02,.94 .045,.91 L.135,.81 C.065,.725 .02,.62 .02,.5 C.02,.23 .23,.02 .5,.02 Z"/></clipPath>
 </defs></svg>
 <header class="top"><div class="top-in">
   <button class="lw-exit" type="button" id="lwExit" aria-label="Back" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></button>
-  <button class="brand" data-lw-onclick="go('home')" aria-label="Literature World home"><i></i><span>Literature World</span></button>
+  <button class="brand" data-lw-onclick="go('home')" aria-label="Literature World home"><svg class="lw-home" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.2c3-1.4 6-1.4 9 .6 3-2 6-2 9-.6v12.4c-3-1.4-6-1.4-9 .6-3-2-6-2-9-.6zM12 6.8v12.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><i></i><span>Literature World</span></button>
   <nav class="nav" id="nav"></nav>
   <div class="tools"><select class="sel" id="lvlSel" aria-label="Level"></select><div class="lang" id="lang"></div></div>
   <button class="burger" aria-label="Menu" data-lw-onclick="$id('nav').classList.toggle('open')">☰</button>
@@ -432,6 +437,14 @@ const EPILOGUE = `
 // onerror картинок — после lwImgError: тот гасит событие у картинок Wikimedia (свой обработчик заменяет «спрятать»),
 // и тогда атрибут не исполняется, как и у прототипа.
 on(ROOT, 'error', (e) => { if (!dead) lwInline('error', e) }, true)
+
+// Подсказка к слову (#pop) закрывается кликом мимо. У прототипа слушатель стоял на документе, у нас «документ» — корень
+// раздела, и клик по сайдбару или шапке приложения до него не доходит: ловим нажатие на документе вне хоста.
+on(document, 'pointerdown', (e) => {
+  if (dead || (e.composedPath && e.composedPath().includes(HOST))) return
+  const p = $('#pop'); if (p) p.hidden = true
+  $$('.w.on').forEach((x) => x.classList.remove('on'))
+})
 
 function destroy() {
   if (dead) return

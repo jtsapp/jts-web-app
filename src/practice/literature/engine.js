@@ -76,7 +76,7 @@
 export const ENGINE_SHA = '3ca72307b6eeec30f34f97c9683846cbeceb931d05e5ea95351bc03dc9bcfd8b'
 
 // Разметка <body> прототипа без логотипов (см. шапку).
-const SHELL = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs>\n  <clipPath id=\"bubble\" clipPathUnits=\"objectBoundingBox\"><path d=\"M.5,.02 C.77,.02 .98,.23 .98,.5 C.98,.77 .77,.98 .5,.98 L.075,.98 C.035,.98 .02,.94 .045,.91 L.135,.81 C.065,.725 .02,.62 .02,.5 C.02,.23 .23,.02 .5,.02 Z\"/></clipPath>\n</defs></svg>\n<header class=\"top\"><div class=\"top-in\">\n  <button class=\"lw-exit\" type=\"button\" id=\"lwExit\" aria-label=\"Back\" hidden><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M15 5l-7 7 7 7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\"/></svg></button>\n  <button class=\"brand\" data-lw-onclick=\"go('home')\" aria-label=\"Literature World home\"><i></i><span>Literature World</span></button>\n  <nav class=\"nav\" id=\"nav\"></nav>\n  <div class=\"tools\"><select class=\"sel\" id=\"lvlSel\" aria-label=\"Level\"></select><div class=\"lang\" id=\"lang\"></div></div>\n  <button class=\"burger\" aria-label=\"Menu\" data-lw-onclick=\"$id('nav').classList.toggle('open')\">☰</button>\n</div></header>\n<div id=\"app\"></div>\n<footer><div class=\"wrap\"><span id=\"footText\"></span><button data-lw-onclick=\"aboutModal()\" id=\"aboutBtn\">About these texts</button></div></footer>\n<div id=\"pop\" class=\"pop\" hidden></div>"
+const SHELL = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs>\n  <clipPath id=\"bubble\" clipPathUnits=\"objectBoundingBox\"><path d=\"M.5,.02 C.77,.02 .98,.23 .98,.5 C.98,.77 .77,.98 .5,.98 L.075,.98 C.035,.98 .02,.94 .045,.91 L.135,.81 C.065,.725 .02,.62 .02,.5 C.02,.23 .23,.02 .5,.02 Z\"/></clipPath>\n</defs></svg>\n<header class=\"top\"><div class=\"top-in\">\n  <button class=\"lw-exit\" type=\"button\" id=\"lwExit\" aria-label=\"Back\" hidden><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M15 5l-7 7 7 7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\"/></svg></button>\n  <button class=\"brand\" data-lw-onclick=\"go('home')\" aria-label=\"Literature World home\"><svg class=\"lw-home\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 6.2c3-1.4 6-1.4 9 .6 3-2 6-2 9-.6v12.4c-3-1.4-6-1.4-9 .6-3-2-6-2-9-.6zM12 6.8v12.4\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linejoin=\"round\"/></svg><i></i><span>Literature World</span></button>\n  <nav class=\"nav\" id=\"nav\"></nav>\n  <div class=\"tools\"><select class=\"sel\" id=\"lvlSel\" aria-label=\"Level\"></select><div class=\"lang\" id=\"lang\"></div></div>\n  <button class=\"burger\" aria-label=\"Menu\" data-lw-onclick=\"$id('nav').classList.toggle('open')\">☰</button>\n</div></header>\n<div id=\"app\"></div>\n<footer><div class=\"wrap\"><span id=\"footText\"></span><button data-lw-onclick=\"aboutModal()\" id=\"aboutBtn\">About these texts</button></div></footer>\n<div id=\"pop\" class=\"pop\" hidden></div>"
 
 const isObj = (x) => !!x && typeof x === 'object' && !Array.isArray(x)
 const copy = (x) => JSON.parse(JSON.stringify(x))
@@ -2594,7 +2594,7 @@ async function toggleRec() {
   try {
     const st = await navigator.mediaDevices.getUserMedia({ audio: true }); if (dead) { st.getTracks().forEach(x => x.stop()); return; } LW_STREAMS.add(st); const ch = [];
     REC = new MediaRecorder(st); REC.ondataavailable = e => ch.push(e.data);
-    REC.onstop = () => { st.getTracks().forEach(x => x.stop()); const a = $('#recOut'); if (a) { a.src = lwObjectUrl(new Blob(ch, { type: REC.mimeType })); a.hidden = false; } const b = $('#recBtn'); if (b) b.textContent = '● ' + t('record'); $('#rec') && $('#rec').classList.remove('recording'); };
+    REC.onstop = () => { st.getTracks().forEach(x => x.stop()); if (dead) return; const a = $('#recOut'); if (a) { a.src = lwObjectUrl(new Blob(ch, { type: REC.mimeType })); a.hidden = false; } const b = $('#recBtn'); if (b) b.textContent = '● ' + t('record'); $('#rec') && $('#rec').classList.remove('recording'); };
     REC.start(); $('#rec').classList.add('recording'); $('#recBtn').textContent = '■ ' + t('stop');
   } catch (e) { const r = $('#rec'); if (r && !r.querySelector('.err')) r.insertAdjacentHTML('beforeend', '<span class="meta err">Microphone not available or permission refused.</span>'); }
 }
@@ -2632,7 +2632,7 @@ function aboutModal() {
 }
 function exportJSON() {
   const data = { generated: '2026-11-10', sources: SOURCES, plays: Object.fromEntries(Object.keys(PLAYS).map(k => [k, { title: PMETA[k].title, author: W.plays[k] ? 'William Shakespeare' : PMETA[k].author, edition: W.plays[k] ? 'The Complete Works of William Shakespeare (Project Gutenberg eBook 100)' : PMETA[k].edition, url: 'https://www.gutenberg.org/ebooks/' + (W.plays[k] ? 100 : PMETA[k].pg), facts: PMETA[k].facts || [PMETA[k].date].filter(Boolean), translated: PMETA[k].translated || null, rights: 'Public domain', verification: 'complete text extracted from the named edition; letter-count check against source' }])), texts: W.prose.concat(W.poemsX).map(x => ({ id: x.id, title: x.title, author: x.author, edition: x.edition, url: 'https://www.gutenberg.org/ebooks/' + LIB.prose[x.id].pg, complete: !!x.complete, translated: !!x.translated, facts: x.facts, factSource: x.fsrc, rights: 'Public domain' })), notInLibrary: [W.godot], items: ALL.map(i => ({ id: i.id, title: i.title, author: aut(i).name, dates: aut(i).dates, form: i.form, level: i.level, era: i.era, origin: i.origin, sourceWork: SOURCES[i.src].work, sourceRef: i.ref, sourceUrl: SOURCES[i.src].url, rights: i.rightsNote, audio: (i.audio || []).map(a => ({ reader: a.reader, licence: a.lic, ogg: a.ogg, mp3: a.mp3, page: a.page })), video: [i.video].concat(i.videos || []).filter(Boolean), image: i.image ? { file: i.image.file, credit: i.image.credit, page: COMMONS(i.image.file) } : null, verification: 'text matched to source edition', text: i.text })) };
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); a.download = 'english-literature-metadata.json'; a.click();
+  const a = document.createElement('a'); a.href = lwObjectUrl(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); a.download = 'english-literature-metadata.json'; a.click();
 }
 
 /* ---------------- after render ---------------- */
@@ -4197,6 +4197,14 @@ route();
 // onerror картинок — после lwImgError: тот гасит событие у картинок Wikimedia (свой обработчик заменяет «спрятать»),
 // и тогда атрибут не исполняется, как и у прототипа.
 on(ROOT, 'error', (e) => { if (!dead) lwInline('error', e) }, true)
+
+// Подсказка к слову (#pop) закрывается кликом мимо. У прототипа слушатель стоял на документе, у нас «документ» — корень
+// раздела, и клик по сайдбару или шапке приложения до него не доходит: ловим нажатие на документе вне хоста.
+on(document, 'pointerdown', (e) => {
+  if (dead || (e.composedPath && e.composedPath().includes(HOST))) return
+  const p = $('#pop'); if (p) p.hidden = true
+  $$('.w.on').forEach((x) => x.classList.remove('on'))
+})
 
 function destroy() {
   if (dead) return

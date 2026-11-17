@@ -2638,6 +2638,9 @@ export const LITERATURE_DARK_CSS = `:host([data-theme="dark"]) {
     background: none;
     color: inherit
 }
+:host([data-theme="dark"]) .lw .brand .lw-home:not(:is(.lw-entry, .lw-arrive, .world-hero.lw-scened, .lw-door .arch, .lw-desks .ph, .lw-curio .fr, .lw-role .stage, .art-wrap, .plate, .frame, .lw-hist .fr, .lw-entry *, .lw-arrive *, .world-hero.lw-scened *, .lw-door .arch *, .lw-desks .ph *, .lw-curio .fr *, .lw-role .stage *, .art-wrap *, .plate *, .frame *, .lw-hist .fr *)) {
+    color: var(--violet-ink)
+}
 :host([data-theme="dark"]) :is(.lw-entry, .lw-arrive, .world-hero.lw-scened, .lw-door .arch, .lw-desks .ph, .lw-curio .fr, .lw-role .stage, .art-wrap, .plate, .frame, .lw-hist .fr) {
     color-scheme: light;
     --violet: #874BF8;

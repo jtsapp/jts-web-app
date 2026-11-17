@@ -1030,7 +1030,7 @@ mark{background:#FFE58A;color:inherit;border-radius:3px;padding:0 2px}
 .lw-say.rev p{border-radius:22px 22px 5px 22px}
 
 .lw-home{background:var(--paper)}
-.lw-entry{position:relative;height:calc(100svh - 62px);min-height:620px;max-height:940px;overflow:hidden;background:var(--veil);color:var(--ink);display:flex;align-items:flex-end;isolation:isolate}
+.lw-entry{position:relative;height:calc(100svh - 62px - var(--lit-above,0px));min-height:620px;max-height:940px;overflow:hidden;background:var(--veil);color:var(--ink);display:flex;align-items:flex-end;isolation:isolate}
 .lw-entry .scene{position:absolute;inset:-2%;background-size:cover;background-position:64% 50%;animation:lwKen 46s ease-in-out infinite alternate;z-index:-3}
 .lw-entry video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:64% 50%;z-index:-2;opacity:0;transition:opacity 1.6s ease}
 .lw-entry video.on{opacity:1}
@@ -1353,7 +1353,7 @@ footer button{background:rgba(169,130,62,.14);color:var(--ink)}
 }
 @container lw (max-width:720px){
   .wrap{padding-left:16px;padding-right:16px}
-  .lw-entry{height:auto;min-height:calc(100svh - 58px);max-height:none}
+  .lw-entry{height:auto;min-height:calc(100svh - 58px - var(--lit-above,0px));max-height:none}
   .lw-entry .scene,.lw-entry video{inset:0 0 auto 0;height:360px;background-position:80% 50%;object-position:80% 50%;-webkit-mask-image:linear-gradient(180deg,#000 62%,transparent 100%);mask-image:linear-gradient(180deg,#000 62%,transparent 100%)}
   .lw-entry .scene{animation:none}
   .lw-entry:before{background:none}
@@ -1520,4 +1520,6 @@ header .tools,.tools{min-height:36px}
 .lw .lw-exit{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;flex:none;border:1px solid var(--line);border-radius:50%;background:none;color:inherit;cursor:pointer;padding:0}
 .lw .lw-exit svg{width:20px;height:20px}
 .lw .lw-exit[hidden]{display:none!important}
+.lw .brand .lw-home{width:24px;height:24px;flex:none;color:var(--violet-ink)}
+@container lw (max-width:640px){.lw #lvlSel{max-width:118px}}
 `

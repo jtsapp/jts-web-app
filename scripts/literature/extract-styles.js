@@ -20,8 +20,10 @@
 //   и кегли по vw. У нас раздел — колонка рядом с сайдбаром, поэтому ширина
 //   считается по ней (@container, cqw). Контейнер — ХОСТ тени, а не .lw: часть
 //   правил красит сам корень, а контейнер не может спрашивать сам себя.
-//   Высоты по окну (100svh − шапка у входа, 70vh у сцен) — как есть: окно у
-//   раздела то же.
+//   Высоты по окну (70vh у сцен) — как есть: окно у раздела то же. Только герой
+//   входа (100svh − шапка раздела) ещё вычитает --lit-above — полосу приложения
+//   над разделом («← В Практику»), её ставит экран: иначе ряд цифр героя уходил
+//   под край окна.
 //
 // Fixed-слой (окно «About») остаётся position:fixed внутри корня: контейнер
 // inline-size не держит его, оно считается от окна — как у Punctuation World.
@@ -53,10 +55,14 @@ const PATCHES = [
   [/\[data-theme=/g, '[data-lw-theme=', 25],
   [/@media \(((?:max|min)-width:\d+px)\)(?: and \(((?:max|min)-width:\d+px)\))?/g, (m, a, b) => `@container lw (${a})${b ? ` and (${b})` : ''}`, 23],
   [/(\d)vw\b/g, '$1cqw', 39],
+  ['height:calc(100svh - 62px)', 'height:calc(100svh - 62px - var(--lit-above,0px))', 1],
+  ['min-height:calc(100svh - 58px)', 'min-height:calc(100svh - 58px - var(--lit-above,0px))', 1],
 ]
 
 // Своё приложения: хост — контейнер ширины; корень — точка отсчёта для подсказки к слову (#pop: движок ставит её от
-// корня раздела); казахский интерфейс — Inter; кнопка «назад» из раздела в шапке — круглая, как бургер.
+// корня раздела); казахский интерфейс — Inter; кнопка «назад» из раздела в шапке — круглая, как бургер; значок «на
+// главную книги» вместо логотипа (подпись прототип прячет уже 1330 px); выбор уровня на телефоне — шире: логотипа нет,
+// место освободилось, а «Все уровни» / «Барлық деңгей» в 86 px прототипа не влезали.
 const APP_CSS = `
 :host{display:block;container:lw/inline-size}
 .lw{position:relative;overflow-wrap:break-word}
@@ -65,6 +71,8 @@ const APP_CSS = `
 .lw .lw-exit{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;flex:none;border:1px solid var(--line);border-radius:50%;background:none;color:inherit;cursor:pointer;padding:0}
 .lw .lw-exit svg{width:20px;height:20px}
 .lw .lw-exit[hidden]{display:none!important}
+.lw .brand .lw-home{width:24px;height:24px;flex:none;color:var(--violet-ink)}
+@container lw (max-width:640px){.lw #lvlSel{max-width:118px}}
 `
 
 function arg(name) {

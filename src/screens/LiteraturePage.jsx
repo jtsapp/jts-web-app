@@ -47,6 +47,15 @@ function scrollSection(host, y) {
   else window.scrollTo(0, window.scrollY + delta)
 }
 
+// Сколько занимает приложение над разделом, когда страница прокручена к началу: герой входа прототипа — «окно минус
+// шапка», и без этой поправки его низ (ряд цифр) уходил под край окна.
+function measureAbove(host) {
+  const main = host.closest('.learn__main')
+  const scrolls = !!main && main.scrollHeight > main.clientHeight + 1 && getComputedStyle(main).overflowY !== 'visible'
+  const top = host.getBoundingClientRect().top + (window.scrollY || 0) + (scrolls ? main.scrollTop : 0)
+  host.style.setProperty('--lit-above', `${Math.max(0, Math.round(top))}px`)
+}
+
 export default function LiteraturePage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel }) {
   const { t, lang } = useI18n()
   const hostRef = useRef(null)
@@ -72,6 +81,9 @@ export default function LiteraturePage({ userName, userLevel, token, onNav, onPr
     const shadow = host.shadowRoot || host.attachShadow({ mode: 'open' })
     // Шрифт сайта внутрь тени ДО отрисовки содержимого: иначе первый кадр пойдёт системным шрифтом.
     host.style.setProperty('--lit-font', getComputedStyle(host).fontFamily || FALLBACK_FONT)
+    measureAbove(host)
+    const onResize = () => measureAbove(host)
+    window.addEventListener('resize', onResize)
     shadow.innerHTML = `<style>${LITERATURE_CSS}\n${LITERATURE_DARK_CSS}</style><div class="lw"></div>`
     // Хранилище шлёт событие прогресса и на свою же запись, синхронно: свои записи помечаем и событие от них
     // пропускаем (у Pronunciation World перерисовка «по событию» на свою запись зацикливалась).
@@ -112,6 +124,7 @@ export default function LiteraturePage({ userName, userLevel, token, onNav, onPr
     window.addEventListener(LITERATURE_PROGRESS_EVENT, onProgress)
     return () => {
       window.removeEventListener(LITERATURE_PROGRESS_EVENT, onProgress)
+      window.removeEventListener('resize', onResize)
       if (window.__lit === api) delete window.__lit
       api.destroy()
       stopLiterature()
