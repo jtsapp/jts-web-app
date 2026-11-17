@@ -62,9 +62,9 @@ export function taskRoute(task, level, lesson = null) {
       return null
     default:
       if (task?.module === 'workbooks') {
-        // воркбуки есть A0–B2: у C1 экран воркбука открылся бы с ошибкой загрузки — ведём во вкладку «Письмо» Практики,
-        // где они лежат
-        if (level && !workbookLevel(level)) return { to: 'practice', payload: { skill: 'writing' } }
+        // воркбуки есть A0–B2: у C1 экран воркбука открылся бы с ошибкой загрузки — ведём во вкладку «Грамматика и
+        // письмо» Практики, где они лежат
+        if (level && !workbookLevel(level)) return { to: 'practice', payload: { skill: 'grammarWriting' } }
         return { to: 'workbook', payload: level ? { level: String(level).toLowerCase() } : null }
       }
       return MODULE_ROUTE[task?.module] || { to: 'practice' }

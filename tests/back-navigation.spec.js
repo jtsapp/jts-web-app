@@ -65,10 +65,10 @@ test('вкладка, открытая целью перехода, не тер�
 test('«Мир чисел»: одна кнопка «назад», шагом — раунд → урок → карта → Практика', async ({ page }) => {
   await page.addInitScript(() => { window.__NUMBERS_FAST = true })
   await page.goto('/?screen=practice')
-  // «Мир чисел» с редизайна 29.10.2026 — карточка игр вкладки «Грамматика».
-  const grammar = page.locator('.pk-skill--grammarGames')
-  await expect(grammar).toBeVisible({ timeout: 60_000 })
-  await grammar.click()
+  // «Мир чисел» с 17.11.2026 — в «Аудировании» и «Играх»; заходим из «Игр», «назад» туда и вернёт.
+  const games = page.locator('.pk-skill--games')
+  await expect(games).toBeVisible({ timeout: 60_000 })
+  await games.click()
   await page.locator('#sec-numbers').click()
   await expect(page.locator('.nmb-host .card')).toHaveCount(16, { timeout: 30_000 })
 
@@ -91,7 +91,7 @@ test('«Мир чисел»: одна кнопка «назад», шагом �
   await expect(back).toContainText('В Практику')
   await back.click()
   await expect(page).toHaveURL(/screen=practice/)
-  await expect(tabOn(page)).toContainText('Грамматика')
+  await expect(tabOn(page)).toContainText('Игры')
 })
 
 test('ситуация, открытая с карточки, ведёт назад в Практику, а не в список уровня', async ({ page }) => {

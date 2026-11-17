@@ -39,8 +39,8 @@ test.describe('онбординг-тур «Практики»', () => {
 
     // Под другой вкладкой шагов тура в DOM нет — «?» обязан вернуть
     // «Аудирование», иначе тур свёлся бы к двум шагам.
-    await page.locator('.pk-skill', { hasText: 'Письмо' }).click()
-    await expect(page.locator('.pk-skill[aria-selected="true"]')).toContainText('Письмо')
+    await page.locator('.pk-skill', { hasText: 'Грамматика и письмо' }).click()
+    await expect(page.locator('.pk-skill[aria-selected="true"]')).toContainText('Грамматика и письмо')
 
     await page.locator('.tour-help:visible').click()
     await expect(page.locator('.t-tour__intro')).toBeVisible()
