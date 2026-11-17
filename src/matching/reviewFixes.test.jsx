@@ -27,7 +27,7 @@ import ConfirmCard from './ConfirmCard.jsx'
 import { ChangeTeacherModal } from './ChangeModals.jsx'
 import { useDialogKeys } from '../lib/useDialogKeys.js'
 import { draftIsCurrent, loadDraft, saveDraft } from './wizardDraft.js'
-import { lessonsInPeriod } from '../screens/MyTeacherPage.jsx'
+import { lessonsInPeriod } from '../screens/lessons/MyTeacherTab.jsx'
 
 const wrap = (ui) => render(<I18nProvider>{ui}</I18nProvider>)
 const rejected = (code) => Object.assign(new Error('x'), { status: 409, code, serverMessage: 'Лимит учеников; Нет доступа General' })

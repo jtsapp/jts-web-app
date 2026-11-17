@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Client } from '@stomp/stompjs'
 import { wsBase } from '../../lib/wsUrl.js'
-import { stompConnectHeaders } from '../../lib/stompAuth.js'
+import { withStompAuth } from '../../lib/stompAuth.js'
 
 const PRESENCE_REJOIN_MS = 15000
 
@@ -47,15 +47,11 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
       if (!client.connected) return
       client.publish({ destination: `/app/lesson/${lessonId}/presence/join`, body: '{}' })
     }
-    const client = new Client({
+    const client = new Client(withStompAuth(token, {
       brokerURL: wsBase(),
-      connectHeaders: stompConnectHeaders(token),
       reconnectDelay: 3000,
       heartbeatIncoming: 25000,
       heartbeatOutgoing: 0,
-      beforeConnect: () => {
-        client.connectHeaders = stompConnectHeaders(token)
-      },
       // Обрыв и ошибку STOMP отмечаем так же, как в useLessonPresence: клиент
       // переподключится сам, но до этого публиковать некуда.
       onWebSocketClose: () => {
@@ -167,7 +163,7 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
         // каждом переподключении — за время обрыва класс мог уйти.
         handlersRef.current.onConnect?.()
       },
-    })
+    }))
     const stop = () => {
       client.reconnectDelay = 0
       if (rejoin) { clearInterval(rejoin); rejoin = null }

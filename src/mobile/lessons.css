@@ -89,6 +89,13 @@
     padding: 8px 10px;
     font-size: 15px;
   }
+  /* С «Моим учителем» (17.11.2026) вкладок бывает пять: последняя нечётная — во всю строку, а не половинкой. */
+  .ls > .ls__tabs:has(.ls-tab:nth-child(4)) .ls-tab:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+  .ls > .ls__tabs .ls-tab__badge {
+    margin-left: 6px;
+  }
   .ls__body--wide {
     padding: 12px 16px 24px;
   }

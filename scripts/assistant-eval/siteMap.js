@@ -49,7 +49,7 @@ export function i18nStrings(i18nSource) {
 export function buildSiteMap({ appSource, i18nSource }) {
   const t = i18nStrings(i18nSource)
   // Полное меню: всё, что ученик может увидеть на каком-нибудь стенде и тарифе (на проде часть скрыта — config.js).
-  const menu = menuItems({ rewards: true, myTeacher: true, exams: { ielts: true, sat: true }, sections: { known: false, allowed: [] } })
+  const menu = menuItems({ rewards: true, exams: { ielts: true, sat: true }, sections: { known: false, allowed: [] } })
     .map((i) => ({ key: i.key, label: t[i.label] || i.label, screen: MENU_SCREEN[i.key] || i.key }))
   const practice = SKILLS.map((s) => ({
     tab: s.key,

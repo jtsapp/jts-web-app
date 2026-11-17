@@ -14,3 +14,5 @@ src/practice/tenses/__fixtures__/*.html -text
 src/practice/punctuation/__fixtures__/*.html -text
 # Фикстура «Parts of Speech World» — движок байт в байт с прототипом (хэш сверяет бэкенд).
 src/practice/partsofspeech/__fixtures__/*.html -text
+# Фикстура «Literature World» — движок байт в байт с прототипом (хэш сверяет бэкенд), сборщик движка читает её.
+src/practice/literature/__fixtures__/*.html -text

@@ -1,45 +1,36 @@
-// Раскладка «Практики» — редизайн 29.10.2026 (Figma «pitch JTS (Copy)», секция «Практика · редизайн» 7393:14225;
-// спека docs/superpowers/specs/2026-10-29-practice-cards-redesign-design.md). Вкладка — группы, группа — карточки
-// одного вида; чем карточки отличаются, описывает practiceCatalog.js. Порядок карточек — с экранов макета.
+// Раскладка «Практики». Вкладка — карточки по порядку; чем карточки отличаются, описывает practiceCatalog.js.
 //
-// Ключи вкладок прежние: на них стоят сессия, «назад» (navStack), переходы Луны и плитки «Главной». Пятая вкладка
-// так и осталась `grammarGames`, хотя называется теперь «Грамматика»: кроме тем, в ней собраны игры из других
-// вкладок (карта переноса макета, 7404:4427). Подпись под ней — `sub`, а не «N тренажёров».
+// С 17.11.2026 (задача 226 доски, файл методиста practice-categories.md) вкладок пять: Аудирование, Говорение,
+// Чтение, «Грамматика и письмо» и «Игры»; подгрупп нет — у каждой вкладки один общий список карточек, порядок —
+// из файла. Прежние «Письмо» (`writing`) и «Грамматика» (`grammarGames`, в ней жили и темы, и игры) ушли: письмо и
+// грамматика слились в `grammarWriting`, игры получили свою вкладку `games`. Сохранённая в сессии старая вкладка
+// просто не находится — Практика откроется на «Аудировании».
 //
-// «Скорочтение» макет унёс в «Грамматику», 08.11.2026 его вернули в «Аудирование» (после Just to Listen, как в
-// Д5 спеки), а 10.11.2026 по просьбе владельца перенесли в «Чтение» — сразу после «Чтения»: ученик сам читает
-// текст вслух, образец диктора — только подсказка темпа.
+// Карточка может стоять в двух вкладках (шэдоуинг, караоке, сказки, «Скорочтение», мини-игра Listening, «Слова в
+// картинках», «Числа», Speak or Die, «Три формы глагола») — так задумано файлом, а не дубль.
 //
-// «Грамматика» (юниты по уровням) и Prepositions World стояли в «Письме»; 17.11.2026 по просьбе владельца
-// перенесены в «Грамматику», в «Тренажёры»: юниты — сразу после «Тем по уровням», предлоги — последними.
-//
-// Сказки — последняя карточка везде, где они есть (решение владельца 27.09.2026); макет это соблюдает.
+// Literature World появился в develop позже файла методиста (17.11.2026) и в нём не упомянут: оставлен в «Чтении»,
+// где и был, — после комиксов, перед сказками.
 
 import { cardOf } from './practiceCatalog.js'
 
 export const SKILLS = [
-  { key: 'listening', groups: [{ cards: ['listenchoose', 'justListen', 'cartoons', 'shadowing', 'karaoke', 'memes', 'tales'] }] },
-  { key: 'reading', groups: [{ cards: ['reading', 'speedReading', 'books', 'comics', 'tales'] }] },
-  { key: 'writing', groups: [{ cards: ['writing', 'verbs', 'workbooks'] }] },
-  { key: 'speaking', groups: [{ cards: ['pronunciation', 'situations', 'speakspin', 'shadowing', 'karaoke', 'tales'] }] },
   {
-    key: 'grammarGames',
-    sub: 'practice.skillSub.grammarGames',
-    groups: [
-      // Tenses World и Punctuation World (10.11.2026) — тренажёры рядом с темами, сначала времена; Parts of Speech
-      // World (14.11.2026) — следом. Юниты «Грамматики» и Prepositions World — из «Письма» (17.11.2026).
-      {
-        title: 'practice.group.trainers',
-        cards: ['topics', 'grammar', 'tenses', 'punctuation', 'partsofspeech', 'prepositions'],
-      },
-      {
-        title: 'practice.group.games',
-        sub: 'practice.group.gamesSub',
-        cards: ['listening', 'words', 'numbers', 'wordhunt', 'speak', 'runner'],
-      },
-    ],
+    key: 'listening',
+    groups: [{ cards: ['listenchoose', 'justListen', 'cartoons', 'memes', 'tales', 'shadowing', 'karaoke', 'listening', 'numbers', 'words'] }],
   },
+  { key: 'speaking', groups: [{ cards: ['situations', 'speakspin', 'pronunciation', 'shadowing', 'karaoke', 'speedReading', 'speak'] }] },
+  { key: 'reading', groups: [{ cards: ['reading', 'speedReading', 'books', 'comics', 'literature', 'tales'] }] },
+  {
+    key: 'grammarWriting',
+    groups: [{ cards: ['grammar', 'topics', 'tenses', 'verbs', 'prepositions', 'punctuation', 'partsofspeech', 'writing', 'workbooks'] }],
+  },
+  { key: 'games', groups: [{ cards: ['listening', 'words', 'numbers', 'wordhunt', 'speak', 'runner', 'verbs'] }] },
 ]
+
+// Вкладка-«дом» модуля, если первая по порядку ему не родная: «Скорочтение» стоит и в «Говорении» (оно раньше), но
+// это чтение — переход с фильтром и «назад» без истории ведут в «Чтение».
+const HOME = { speedReading: 'reading' }
 
 export const SKILL_KEYS = SKILLS.map((s) => s.key)
 
@@ -56,9 +47,10 @@ export function skillModules(key) {
 
 /**
  * Вкладка, где живёт модуль: для перехода «с фильтром» (плитка «Книги» на Главной, выдача из домашней работы,
- * Луна). Модуль в нескольких вкладках (сказки, шэдоуинг, караоке) открывается в первой.
+ * Луна). Модуль в нескольких вкладках (сказки, шэдоуинг, караоке, игры) открывается в первой, если не задан HOME.
  */
 export function skillOfModule(module) {
+  if (HOME[module]) return HOME[module]
   const skill = SKILLS.find((s) => skillModules(s.key).includes(module))
   return skill ? skill.key : null
 }

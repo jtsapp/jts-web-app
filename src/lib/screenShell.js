@@ -6,7 +6,7 @@
 // сайдбар на время загрузки.
 const PRACTICE = [
   'practice', 'listening', 'shadowing', 'writing', 'workbook', 'words', 'listen', 'numbers', 'prepositions',
-  'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'speakspin', 'verbs', 'situations',
+  'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'speakspin', 'verbs', 'situations',
   'listenchoose', 'arcade', 'reading',
 ]
 const TUTOR = [
@@ -39,8 +39,8 @@ const NAV_OF = {
   group: 'group',
   birge: 'birge',
   chess: 'chess',
-  'my-teacher': 'my-teacher',
-  'teacher-wizard': 'my-teacher',
+  // «Мой учитель» — вкладка «Уроков» (задача 219), мастер подбора горит тем же пунктом
+  'teacher-wizard': 'lessons',
 }
 
 /** Пункт меню экрана с оболочкой кабинета или undefined, если заглушке оболочка не нужна. */

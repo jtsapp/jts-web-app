@@ -34,7 +34,7 @@ export default function PunctuationPage({ userName, userLevel, token, onNav, onP
   const hostRef = useRef(null)
   const { status, bundle, retry } = usePunctuationData(token)
   const owner = ownerOf(token)
-  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammarGames' }))
+  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammarWriting' }))
   // Шрифт интерфейса меняется вместе с языком (kk — Inter): переносим его в тень заново, без пересоздания движка.
   useEffect(() => {
     const host = hostRef.current

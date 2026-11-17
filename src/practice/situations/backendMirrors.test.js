@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { staticMirrorOf, isStaticMirror, pickSituationsLevel } from './backendMirrors.js'
+import { staticMirrorOf, isStaticMirror, pickSituationsLevels } from './backendMirrors.js'
 
 // Ответ /mobile/situativki прода на 11.11.2026 (test_student) в нужной тесту
 // части: те же 50 сценариев, что лежат статикой, slug situ-<уровень>-<NN>.
@@ -36,27 +36,30 @@ describe('staticMirrorOf — ситуативка бэкенда, повторя
   })
 })
 
-describe('pickSituationsLevel — чьи сценарии статики показывать', () => {
+describe('pickSituationsLevels — чьи сценарии статики показывать', () => {
   const CODES = ['a1', 'a2', 'b1', 'b2', 'c1']
 
-  it('«Все» без замков — A1, как и раньше', () => {
-    expect(pickSituationsLevel(null, CODES, new Set())).toBe('a1')
+  // До 18.11.2026 «Все» брала один уровень (сначала всегда A1, с 11.11 — первый
+  // открытый), и из пятидесяти сценариев, заведённых в админке, на экране было
+  // десять.
+  it('«Все» без замков — все пять уровней по порядку', () => {
+    expect(pickSituationsLevels(null, CODES, new Set())).toEqual(CODES)
   })
 
-  it('«Все» при закрытом A1 — первый открытый уровень (прод, test_student)', () => {
-    expect(pickSituationsLevel(null, CODES, new Set(['a1', 'a2', 'b2', 'c1']))).toBe('b1')
+  it('«Все» с замками — только открытые (прод, test_student: тариф открывает один B1)', () => {
+    expect(pickSituationsLevels(null, CODES, new Set(['a1', 'a2', 'b2', 'c1']))).toEqual(['b1'])
   })
 
   it('«Все» при всех закрытых — ничего', () => {
-    expect(pickSituationsLevel(null, CODES, new Set(CODES))).toBeNull()
+    expect(pickSituationsLevels(null, CODES, new Set(CODES))).toEqual([])
   })
 
-  it('выбранный уровень не подменяется соседним, даже закрытый', () => {
-    expect(pickSituationsLevel('A2', CODES, new Set(['a2']))).toBe('a2')
-    expect(pickSituationsLevel('B2', CODES, new Set())).toBe('b2')
+  it('выбранный уровень — он один и не подменяется соседним, даже закрытый', () => {
+    expect(pickSituationsLevels('A2', CODES, new Set(['a2']))).toEqual(['a2'])
+    expect(pickSituationsLevels('B2', CODES, new Set())).toEqual(['b2'])
   })
 
   it('C2 — ближайший C1, как раньше', () => {
-    expect(pickSituationsLevel('C2', CODES, new Set())).toBe('c1')
+    expect(pickSituationsLevels('C2', CODES, new Set())).toEqual(['c1'])
   })
 })

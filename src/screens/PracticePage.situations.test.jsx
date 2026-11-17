@@ -107,12 +107,40 @@ describe('PracticePage — «Ситуации» и зеркала бэкенда
     })
   })
 
-  it('без замков «Все» — по-прежнему A1', async () => {
+  // Жалоба 18.11.2026: «в админке 50 ситуативок, на сайте их не видно». На «Все»
+  // (стоит по умолчанию) раздел показывал сценарии ОДНОГО уровня — 10 из 50, —
+  // остальные открывались только чипом уровня.
+  it('без замков «Все» — все пятьдесят сценариев, A1 → C1', async () => {
     const open = PROD.map((s) => ({ ...s, locked: false }))
-    const { container } = await renderSituations(open)
+    const { container, onNav } = await renderSituations(open)
+    const want = ['a1', 'a2', 'b1', 'b2', 'c1'].flatMap((c) => STATIC[c].map((s) => titleOf(s.title)))
     await waitFor(() => {
       const titles = [...container.querySelectorAll('.pk-situ__title')].map((el) => el.textContent)
-      expect(titles).toEqual(STATIC.a1.map((s) => titleOf(s.title)))
+      expect(titles).toEqual(want)
+    })
+    // Карточка открывает сценарий СВОЕГО уровня, а не уровня первой карточки.
+    const cards = container.querySelectorAll('.pk-situ')
+    fireEvent.click(cards[cards.length - 1])
+    expect(onNav).toHaveBeenCalledWith('situations', { level: 'c1', id: STATIC.c1.at(-1).id })
+  })
+
+  it('на «Все» отметка «пройдено» — по уровню карточки', async () => {
+    // Пройден второй сценарий B2 — галочка у него, а не у второго сценария A1.
+    localStorage.setItem('jts_situations_items', JSON.stringify({ b2: [STATIC.b2[1].id] }))
+    const open = PROD.map((s) => ({ ...s, locked: false }))
+    const { container } = await renderSituations(open)
+    await waitFor(() => expect(container.querySelectorAll('.pk-situ')).toHaveLength(50))
+    const done = [...container.querySelectorAll('.pk-situ')]
+      .filter((c) => c.querySelector('.pk-situ__check'))
+      .map((c) => c.querySelector('.pk-situ__title').textContent)
+    expect(done).toEqual([titleOf(STATIC.b2[1].title)])
+  })
+
+  it('на «Все» закрытые тарифом уровни не показываются (прод, test_student — открыт один B1)', async () => {
+    const { container } = await renderSituations(PROD)
+    await waitFor(() => {
+      const titles = [...container.querySelectorAll('.pk-situ__title')].map((el) => el.textContent)
+      expect(titles).toEqual(STATIC.b1.map((s) => titleOf(s.title)))
     })
   })
 })

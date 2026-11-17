@@ -11,7 +11,7 @@ import ErrorsTab from '../sat/tabs/ErrorsTab.jsx'
 import MocksTab from '../sat/tabs/MocksTab.jsx'
 import MaterialsTab from '../sat/tabs/MaterialsTab.jsx'
 import ProgressTab from '../sat/tabs/ProgressTab.jsx'
-import { getSatBluebook, getSatDiagnostic, getSatMe, getSatProfile, getSatRoadmap, getSatSchedule, getSatToday, startSatSession } from '../api.js'
+import { getSatBluebook, getSatDiagnostic, getSatMe, getSatProfile, getSatRoadmap, getSatSchedule, getSatToday, saveSatProfile, startSatSession } from '../api.js'
 import SatStartView from '../sat/tabs/SatStartView.jsx'
 import { satStarted } from '../sat/model/start.js'
 import { loadToken } from '../lib/session.js'
@@ -261,6 +261,14 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     onCurator: () => onNav?.('sat-pricing'),
   }
 
+  // Дата экзамена из «Плана»: сохранить в профиль и перечитать роадмап — фазы подстраиваются под дату на сервере
+  const pickExamDate = async (patch) => {
+    await saveSatProfile(authToken, patch)
+    setProfile((p) => ({ ...(p || {}), ...patch }))
+    const r = await getSatRoadmap(authToken).catch(() => null)
+    if (r) setRoadmap(r)
+  }
+
   let panel
   if (tab === 'guide') panel = <GuideTab explainLang={profile?.explainLang} />
   else if (tab === 'plan') {
@@ -274,6 +282,9 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         onBluebook={openBluebook}
         onCompare={openCompare}
         selfPrepActions={selfPrepActions}
+        examDate={profile?.examDate ?? null}
+        dateUndecided={!!profile?.dateUndecided}
+        onPickDate={pickExamDate}
       />
     )
   } else if (tab === 'today') {

@@ -81,6 +81,8 @@
   cursor: pointer;
 }
 .trial-primary:disabled { background: #cfc7e6; cursor: not-allowed; }
+/* Ссылка в виде кнопки (спецпредложение после заявки): иначе ширина и центр не работают. */
+a.trial-primary { display: block; box-sizing: border-box; text-align: center; text-decoration: none; }
 .trial-ghost {
   width: 100%;
   margin-top: 8px;

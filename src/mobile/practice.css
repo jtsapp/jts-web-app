@@ -91,6 +91,8 @@
     font-size: 15px;
     font-weight: 500;
     line-height: 20px;
+    /* В ленте подпись — одной строкой: перенос на две (styles.css, для плиток компьютера) здесь сломал бы полосу. */
+    white-space: nowrap;
     color: inherit;
   }
   .pk-skill__count {

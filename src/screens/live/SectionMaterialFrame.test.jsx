@@ -1046,10 +1046,11 @@ describe('SectionMaterialFrame — права рамки (allow)', () => {
     expect(allowOf(container.querySelector('iframe'))).toEqual(expect.arrayContaining(['autoplay', 'fullscreen']))
   })
 
-  // Блок «Раздел Практики»: рамка раздела кабинета внутри урока (говорение, произношение) просит микрофон.
-  it('рамка урока пускает микрофон к вложенной рамке «Практики», простая рамка чужой ссылки — нет', () => {
+  // На занятии речь ученика оценивает преподаватель: запись голоса не нужна, и микрофон не выдаётся ни одной рамке —
+  // ни уроку с вложенной рамкой «Практики», ни чужой ссылке.
+  it('микрофон на занятии не выдаётся ни рамке урока, ни простой рамке', () => {
     const { iframe } = renderFrame()
-    expect(allowOf(iframe)).toContain('microphone')
+    expect(allowOf(iframe)).not.toContain('microphone')
 
     const video = { ...MATERIAL, materialType: 'VIDEO', fileUrl: 'https://files/v.mp4' }
     const { container } = render(frame({ material: video }))

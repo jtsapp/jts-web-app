@@ -54,3 +54,27 @@ test('прод-зеркала: «Ситуации» — сценарии B1 эк
   await expect(view).toContainText('B1 · 1/10')
   await expect(page.getByRole('button', { name: 'Отметить пройденной' })).toHaveCount(0)
 })
+
+// Жалоба 18.11.2026: «в админке 50 ситуативок, на сайте их не видно». На «Все»
+// (стоит по умолчанию) раздел показывал сценарии одного уровня — 10 из 50.
+test('без замков «Все» — все 50 сценариев, карточка открывает свой уровень', async ({ page }) => {
+  await loginAsStudent(page, { level: 'A2' })
+  const open = PROD.map((s) => ({ ...s, locked: false }))
+  await page.route('**/mobile/situativki**', (r) =>
+    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(open) }),
+  )
+
+  await page.goto('/?screen=practice')
+  const speaking = page.locator('.pk-skill', { hasText: 'Говорение' })
+  await expect(speaking).toBeVisible({ timeout: 60_000 })
+  await speaking.click()
+  await page.locator('#sec-situations').click()
+
+  const titles = page.locator('.pk-situ__title')
+  await expect(titles).toHaveText(LEVELS.flatMap((c) => STATIC[c].map((s) => ru(s.title))), { timeout: 30_000 })
+
+  await titles.last().click()
+  const view = page.locator('.sit-view')
+  await expect(view).toBeVisible({ timeout: 30_000 })
+  await expect(view).toContainText('C1 · 10/10')
+})

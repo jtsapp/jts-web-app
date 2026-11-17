@@ -158,7 +158,7 @@ const ru = {
   'sat.scores.legend.other': 'Другие пробники',
 
   'sat.papers.title': 'Past papers',
-  'sat.papers.lead': 'Бумажные тесты целиком, во весь экран — их результаты на своей странице.',
+  'sat.papers.lead': 'Бумажные тесты целиком, во весь экран.',
   'sat.papers.pageLead': 'Полные тесты в формате экзамена: четыре модуля, без подсказок. Идут во весь экран.',
   'sat.papers.open': 'Открыть',
   'sat.papers.start': 'Начать',
@@ -328,7 +328,7 @@ const en = {
   'sat.scores.legend.other': 'Other practice tests',
 
   'sat.papers.title': 'Past papers',
-  'sat.papers.lead': 'Whole paper tests in full screen — their results live on their own page.',
+  'sat.papers.lead': 'Whole paper tests in full screen.',
   'sat.papers.pageLead': 'Full tests in exam format: four modules, no hints. They run in full screen.',
   'sat.papers.open': 'Open',
   'sat.papers.start': 'Start',
@@ -498,7 +498,7 @@ const kk = {
   'sat.scores.legend.other': 'Басқа сынақ тесттері',
 
   'sat.papers.title': 'Past papers',
-  'sat.papers.lead': 'Қағаз тесттер толығымен, толық экранда — нәтижелері өз бетінде.',
+  'sat.papers.lead': 'Қағаз тесттер толығымен, толық экранда.',
   'sat.papers.pageLead': 'Емтихан форматындағы толық тесттер: төрт модуль, кеңессіз. Толық экранда өтеді.',
   'sat.papers.open': 'Ашу',
   'sat.papers.start': 'Бастау',

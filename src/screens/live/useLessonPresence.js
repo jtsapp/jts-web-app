@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Client } from '@stomp/stompjs'
 import { wsBase } from '../../lib/wsUrl.js'
-import { stompConnectHeaders } from '../../lib/stompAuth.js'
+import { withStompAuth } from '../../lib/stompAuth.js'
 
 const PRESENCE_REJOIN_MS = 15000
 
@@ -19,15 +19,11 @@ export function useLessonPresence(lessonId, token) {
       if (!client?.connected) return
       client.publish({ destination: `/app/lesson/${lessonId}/presence/join`, body: '{}' })
     }
-    const client = new Client({
+    const client = new Client(withStompAuth(token, {
       brokerURL: wsBase(),
-      connectHeaders: stompConnectHeaders(token),
       reconnectDelay: 3000,
       heartbeatIncoming: 25000,
       heartbeatOutgoing: 0,
-      beforeConnect: () => {
-        client.connectHeaders = stompConnectHeaders(token)
-      },
       onConnect: () => {
         setConnected(true)
         client.subscribe(`/topic/lesson/${lessonId}/presence`, (m) => {
@@ -41,7 +37,7 @@ export function useLessonPresence(lessonId, token) {
         setConnected(false)
       },
       onStompError: () => setConnected(false),
-    })
+    }))
     const stop = () => {
       client.reconnectDelay = 0
       if (rejoin) { clearInterval(rejoin); rejoin = null }

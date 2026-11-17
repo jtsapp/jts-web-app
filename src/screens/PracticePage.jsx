@@ -8,7 +8,7 @@ import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import { readSituationsDone } from '../practice/situations/situationsProgress.js'
 import { loadLevel as loadSituationsLevel } from '../practice/situations/situationsData.js'
 import { readDoneItems } from '../practice/situations/itemsProgress.js'
-import { isStaticMirror, pickSituationsLevel } from '../practice/situations/backendMirrors.js'
+import { isStaticMirror, pickSituationsLevels } from '../practice/situations/backendMirrors.js'
 import { pickLang } from './situations/SituationsCatalog.jsx'
 import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
 import { readWorkbooksDone } from '../practice/workbooks/workbooksProgress.js'
@@ -263,7 +263,7 @@ export default function PracticePage({
       skillOfModule(openTarget?.filter) ||
       (SKILL_KEYS.includes(openTarget?.skill) ? openTarget.skill : null) ||
       (openTarget?.area === 'situations' ? 'speaking' : null) ||
-      (openTarget?.unitId != null ? 'grammarGames' : null)
+      (openTarget?.unitId != null ? 'grammarWriting' : null)
     if (fromTarget) return fromTarget
     const saved = readSession(TAB_KEY)
     return SKILL_KEYS.includes(saved) ? saved : 'listening'
@@ -595,25 +595,41 @@ export default function PracticePage({
   // раздела, и тот же кэш вкладки (situationsData.js): после Практики он
   // открывается уже без загрузки. Тянем, только когда открыт список: в обзоре у «Ситуаций» одна карточка.
   // У C2 своей программы нет — берём ближайший уровень, как грамматика. На
-  // «Все» — первый уровень, который админ ученику не закрыл (backendMirrors.js).
-  const situLevel = pickSituationsLevel(level, SITUATION_CODES, levelLocked)
-  const [situ, setSitu] = useState({ level: null, items: [] })
+  // «Все» — все уровни, которые ученику не закрыты (backendMirrors.js): до
+  // 18.11.2026 там был один уровень, и из 50 сценариев виднелись 10.
+  const situLevels = pickSituationsLevels(level, SITUATION_CODES, levelLocked)
+  const situKey = situLevels.join(',')
+  // Пришедшие уровни: { a1: [...], b2: [...] }. Каждый рисуется, как только
+  // доехал, — на «Все» это пять файлов (≈210 КБ сжатыми, C1 самый тяжёлый), и
+  // ждать последнего, чтобы показать первый, незачем. Сбой уровня — пустой
+  // список, как и раньше: остальные уровни из-за него не пропадают.
+  const [situ, setSitu] = useState({})
   const wantSitu = expanded === 'situations'
   useEffect(() => {
-    if (!wantSitu || !situLevel) return undefined
+    if (!wantSitu) return undefined
     let alive = true
-    loadSituationsLevel(situLevel)
-      .then((items) => alive && setSitu({ level: situLevel, items }))
-      .catch(() => alive && setSitu({ level: situLevel, items: [] }))
+    for (const code of situLevels) {
+      if (situ[code]) continue
+      loadSituationsLevel(code)
+        .catch(() => [])
+        .then((items) => alive && setSitu((prev) => ({ ...prev, [code]: items })))
+    }
     return () => {
       alive = false
     }
-  }, [wantSitu, situLevel])
-  const situLoading = wantSitu && situ.level !== situLevel
-  const situItems = situ.level === situLevel && !levelLocked.has(situLevel) ? situ.items : []
+  }, [wantSitu, situKey])   // eslint-disable-line react-hooks/exhaustive-deps
+  const situItems = situLevels
+    .filter((code) => !levelLocked.has(code))
+    .flatMap((code) => (situ[code] || []).map((item) => ({ code, item })))
+  // Скелет — пока не пришёл ни один уровень; дальше карточки дорастают сами.
+  const situLoading = wantSitu && situItems.length === 0 && situLevels.some((code) => !situ[code])
   // Пройденное меняется только на экране раздела, а возврат оттуда
-  // перемонтирует Практику — перечитывать по уровню достаточно.
-  const situDone = useMemo(() => new Set(situLevel ? readDoneItems(situLevel) : []), [situLevel])
+  // перемонтирует Практику — перечитывать по набору уровней достаточно.
+  // Ключ «уровень:номер»: на «Все» номера 1–10 есть у каждого уровня.
+  const situDone = useMemo(
+    () => new Set(situLevels.flatMap((code) => readDoneItems(code).map((id) => `${code}:${id}`))),
+    [situKey],   // eslint-disable-line react-hooks/exhaustive-deps
+  )
   // Зеркала сценариев статики своей карточки не получают: они только источник
   // замка уровня (levelLocked), а сам сценарий — карточка статики выше.
   const levelSituativki = situativkiAll.filter(
@@ -628,15 +644,15 @@ export default function PracticePage({
   const tour = useScreenTour(teacher ? null : tourKey)
   // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
   // Шаги — по устройству страницы, а не по разделам (редизайн 29.10.2026): вкладки → уровни → карточка тренажёра →
-  // карточка-каталог → начисления → «Грамматика», куда уехали все игры. Аккордеона без правил токенов нет — его шаг
-  // тур пропустит сам.
+  // карточка-каталог → начисления → вкладка «Игры», где собраны все игры (с 17.11.2026). Аккордеона без правил токенов
+  // нет — его шаг тур пропустит сам.
   const tourSteps = [
     { selector: '.pk-skills', title: t('tour.practice.skills.title'), text: t('tour.practice.skills.text'), art: tourMascot('sport-wave'), ...TOUR_COACH_CARD },
     { selector: '.pk-levels', title: t('tour.practice.levels.title'), text: t('tour.practice.levels.text'), art: tourMascot('dexter-cool', 200), ...TOUR_COACH_CARD },
     { selector: '#sec-listenchoose', title: t('tour.practice.card.title'), text: t('tour.practice.card.text'), art: tourMascot('aizere-thumbs'), ...TOUR_COACH_CARD },
     { selector: '#sec-shadowing', title: t('tour.practice.catalog.title'), text: t('tour.practice.catalog.text'), art: tourMascot('artist-paint'), ...TOUR_COACH_CARD },
     { selector: '.pk-acc', title: t('tour.practice.tokens.title'), text: t('tour.practice.tokens.text'), art: tourMascot('sport-fly'), ...TOUR_COACH_CARD },
-    { selector: '.pk-skill--grammarGames', title: t('tour.practice.grammar.title'), text: t('tour.practice.grammar.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
+    { selector: '.pk-skill--games', title: t('tour.practice.games.title'), text: t('tour.practice.games.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
   ]
   const tourIntro = {
     title: t('tour.intro.title'),
@@ -1078,13 +1094,13 @@ export default function PracticePage({
         // Заблокированные не показываем вовсе (раньше висели замком):
         // преподаватель закрывает контент, а не дразнит им.
         const cards = [
-          ...situItems.map((s) => (
+          ...situItems.map(({ code, item: s }) => (
             <SituationCard
-              key={`s-${s.id}`}
+              key={`s-${code}-${s.id}`}
               title={pickLang(s.title, lang)}
               poster={s.poster}
-              done={situDone.has(s.id)}
-              onOpen={() => openSituationsLevel(situLevel, s.id)}
+              done={situDone.has(`${code}:${s.id}`)}
+              onOpen={() => openSituationsLevel(code, s.id)}
             />
           )),
           ...levelSituativki.map((s) => (
@@ -1115,10 +1131,9 @@ export default function PracticePage({
   }
 
   const skill = SKILLS.find((s) => s.key === tab) || SKILLS[0]
-  // У «Грамматики» нет каталогов, которые уровень мог бы отфильтровать: темы ведут на экран тем со своими
-  // уровнями, игры уровней не знают. Чипы там ничего бы не меняли — их нет (макет 7402:7133). Юниты «Грамматики»,
-  // переехавшие сюда из «Письма» (17.11.2026), уровень выбирают своими чипами в развёрнутом каталоге.
-  const levelsOff = skill.key === 'grammarGames'
+  // Игры уровней не знают: чипы на их вкладке ничего бы не меняли — их нет (как у прежней «Грамматики», макет
+  // 7402:7133). У «Грамматики и письма» строка уровней есть: по ней открываются воркбуки, «Письмо» и юниты.
+  const levelsOff = skill.key === 'games'
 
   // Карточка, которой сейчас на экране не место: каталоги караоке и комиксов, пока они пусты (материал заводит
   // методист — пустая витрина выглядела бы поломкой), как и прежние секции. Пока каталог грузится, карточка

@@ -103,6 +103,12 @@ describe('куда Луна умеет вести', () => {
     expect(destinationsText()).toContain('- partsofspeech — Parts of Speech World (части речи): части речи английского A0–C2')
   })
 
+  it('Literature World открывается напрямую', () => {
+    expect(validAction('open', 'literature')).toEqual({ kind: 'open', target: 'literature', now: false })
+    expect(destinationIdForScreen('literature')).toBe('literature')
+    expect(destinationsText()).toContain('- literature — Literature World (литература): литература на английском')
+  })
+
   it('Punctuation World открывается напрямую', () => {
     expect(validAction('open', 'punctuation')).toEqual({ kind: 'open', target: 'punctuation', now: false })
     expect(destinationIdForScreen('punctuation')).toBe('punctuation')

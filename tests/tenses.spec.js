@@ -99,7 +99,7 @@ test('Практика → Грамматика → Tenses World → время 
   const grammar = page.locator('.pk-skill', { hasText: 'Грамматика' })
   await expect(grammar).toBeVisible({ timeout: 60_000 })
   await grammar.click()
-  // Вся карточка — кнопка перехода; Tenses World — в «Тренажёрах», сразу после «Тем по уровням».
+  // Вся карточка — кнопка перехода; Tenses World — во вкладке «Грамматика и письмо», сразу после «Тем по уровням».
   await expect(page.locator('#sec-tenses .pk-card__title')).toHaveText('Tenses World')
   await page.locator('#sec-tenses').click()
   await expect(page).toHaveURL(/screen=tenses/)

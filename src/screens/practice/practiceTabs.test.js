@@ -2,52 +2,63 @@ import { describe, it, expect } from 'vitest'
 import { SKILLS, SKILL_KEYS, skillCards, skillModules, skillOfModule, EXPANDABLE } from './practiceTabs.js'
 
 describe('practiceTabs', () => {
-  it('пять вкладок с прежними ключами', () => {
-    expect(SKILL_KEYS).toEqual(['listening', 'reading', 'writing', 'speaking', 'grammarGames'])
+  // Источник — файл методиста practice-categories.md (задача 226 доски, 17.11.2026): пять вкладок в этом порядке.
+  it('пять вкладок: Аудирование, Говорение, Чтение, «Грамматика и письмо», Игры', () => {
+    expect(SKILL_KEYS).toEqual(['listening', 'speaking', 'reading', 'grammarWriting', 'games'])
   })
 
-  it('карточки вкладок — в порядке экранов макета', () => {
-    expect(skillCards('listening')).toEqual(['listenchoose', 'justListen', 'cartoons', 'shadowing', 'karaoke', 'memes', 'tales'])
-    expect(skillCards('reading')).toEqual(['reading', 'speedReading', 'books', 'comics', 'tales'])
-    expect(skillCards('writing')).toEqual(['writing', 'verbs', 'workbooks'])
-    expect(skillCards('speaking')).toEqual(['pronunciation', 'situations', 'speakspin', 'shadowing', 'karaoke', 'tales'])
-    expect(skillCards('grammarGames')).toEqual(['topics', 'grammar', 'tenses', 'punctuation', 'partsofspeech', 'prepositions', 'listening', 'words', 'numbers', 'wordhunt', 'speak', 'runner'])
+  it('карточки вкладок — в порядке файла методиста', () => {
+    expect(skillCards('listening')).toEqual([
+      'listenchoose', 'justListen', 'cartoons', 'memes', 'tales', 'shadowing', 'karaoke', 'listening', 'numbers', 'words',
+    ])
+    expect(skillCards('speaking')).toEqual(['situations', 'speakspin', 'pronunciation', 'shadowing', 'karaoke', 'speedReading', 'speak'])
+    // Literature World появился позже файла — стоит, где был: после комиксов, перед сказками.
+    expect(skillCards('reading')).toEqual(['reading', 'speedReading', 'books', 'comics', 'literature', 'tales'])
+    expect(skillCards('grammarWriting')).toEqual([
+      'grammar', 'topics', 'tenses', 'verbs', 'prepositions', 'punctuation', 'partsofspeech', 'writing', 'workbooks',
+    ])
+    expect(skillCards('games')).toEqual(['listening', 'words', 'numbers', 'wordhunt', 'speak', 'runner', 'verbs'])
+    expect(skillCards('writing')).toEqual([])
+    expect(skillCards('grammarGames')).toEqual([])
     expect(skillCards('nope')).toEqual([])
   })
 
-  it('сказки — последней карточкой в каждой вкладке, где они есть', () => {
-    const withTales = SKILL_KEYS.filter((k) => skillCards(k).includes('tales'))
-    expect(withTales).toEqual(['listening', 'reading', 'speaking'])
-    for (const k of withTales) expect(skillCards(k).at(-1), k).toBe('tales')
+  it('у каждой вкладки одна группа без заголовка и подписи — «N тренажёров» считается сам', () => {
+    for (const s of SKILLS) {
+      expect(s.groups, s.key).toHaveLength(1)
+      expect(s.groups[0].title, s.key).toBeUndefined()
+      expect(s.sub, s.key).toBeUndefined()
+    }
   })
 
-  it('«N тренажёров» под вкладками: 7, 5, 3, 6 (в макете у «Чтения» 4 — без «Скорочтения»; из «Письма» юниты и предлоги ушли в «Грамматику»)', () => {
-    expect(['listening', 'reading', 'writing', 'speaking'].map((k) => skillModules(k).length)).toEqual([7, 5, 3, 6])
-    // Две карточки «Аркады» — один тренажёр.
-    expect(skillModules('grammarGames').filter((m) => m === 'arcade')).toHaveLength(1)
+  it('карточки в двух вкладках — как в файле: сказки уходят из «Говорения»', () => {
+    const tabsOf = (id) => SKILL_KEYS.filter((k) => skillCards(k).includes(id))
+    expect(tabsOf('shadowing')).toEqual(['listening', 'speaking'])
+    expect(tabsOf('karaoke')).toEqual(['listening', 'speaking'])
+    expect(tabsOf('tales')).toEqual(['listening', 'reading'])
+    expect(tabsOf('speedReading')).toEqual(['speaking', 'reading'])
+    for (const id of ['listening', 'numbers', 'words']) expect(tabsOf(id), id).toEqual(['listening', 'games'])
+    expect(tabsOf('speak')).toEqual(['speaking', 'games'])
+    expect(tabsOf('verbs')).toEqual(['grammarWriting', 'games'])
   })
 
-  it('у «Грамматики» две группы: тренажёры и игры; подпись вкладки — своя', () => {
-    const skill = SKILLS.find((s) => s.key === 'grammarGames')
-    expect(skill.groups.map((g) => g.title)).toEqual(['practice.group.trainers', 'practice.group.games'])
-    // Tenses World и Punctuation World — тренажёры сразу после «Тем по уровням» (спека 2026-11-10, Д3); Parts of
-    // Speech World — после Punctuation World (спека 2026-11-14); юниты и Prepositions World — из «Письма» (17.11.2026)
-    expect(skill.groups[0].cards).toEqual(['topics', 'grammar', 'tenses', 'punctuation', 'partsofspeech', 'prepositions'])
-    expect(skill.sub).toBe('practice.skillSub.grammarGames')
+  it('«N тренажёров» под вкладками: 10, 7, 6, 9, 6 — две карточки «Аркады» в «Играх» один тренажёр', () => {
+    expect(SKILL_KEYS.map((k) => skillModules(k).length)).toEqual([10, 7, 6, 9, 6])
+    expect(skillModules('games').filter((m) => m === 'arcade')).toHaveLength(1)
   })
 
-  it('переход с фильтром находит вкладку: игры — в «Грамматике», «Скорочтение» — в «Чтении»', () => {
+  it('переход с фильтром находит вкладку: первая из двух, «Скорочтение» — в «Чтении»', () => {
     expect(skillOfModule('books')).toBe('reading')
     expect(skillOfModule('situations')).toBe('speaking')
     expect(skillOfModule('tales')).toBe('listening')
     expect(skillOfModule('shadowing')).toBe('listening')
-    expect(skillOfModule('grammar')).toBe('grammarGames')
-    expect(skillOfModule('prepositions')).toBe('grammarGames')
-    expect(skillOfModule('verbs')).toBe('writing')
     expect(skillOfModule('listen')).toBe('listening')
     expect(skillOfModule('speedReading')).toBe('reading')
-    for (const m of ['words', 'listening', 'numbers', 'wordhunt', 'arcade', 'grammarGames', 'punctuation', 'partsofspeech'])
-      expect(skillOfModule(m), m).toBe('grammarGames')
+    for (const m of ['listening', 'numbers', 'words']) expect(skillOfModule(m), m).toBe('listening')
+    for (const m of ['grammar', 'grammarGames', 'tenses', 'verbs', 'prepositions', 'punctuation', 'partsofspeech', 'writing', 'workbooks'])
+      expect(skillOfModule(m), m).toBe('grammarWriting')
+    expect(skillOfModule('wordhunt')).toBe('games')
+    expect(skillOfModule('arcade')).toBe('speaking')
     expect(skillOfModule('nope')).toBeNull()
   })
 
@@ -55,7 +66,7 @@ describe('practiceTabs', () => {
     const modules = [
       'grammar', 'writing', 'reading', 'words', 'verbs', 'listenchoose', 'listening', 'numbers', 'listen',
       'speedReading', 'cartoons', 'shadowing', 'situations', 'workbooks', 'tales', 'memes', 'books', 'comics',
-      'karaoke', 'wordhunt', 'arcade', 'prepositions', 'pronunciation', 'punctuation', 'speakspin', 'grammarGames', 'tenses', 'partsofspeech',
+      'karaoke', 'wordhunt', 'arcade', 'prepositions', 'pronunciation', 'punctuation', 'speakspin', 'grammarGames', 'tenses', 'partsofspeech', 'literature',
     ]
     for (const m of modules) expect(skillOfModule(m), m).toBeTruthy()
   })

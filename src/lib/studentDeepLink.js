@@ -5,8 +5,9 @@
 export function notificationTarget(deepLink) {
   if (!deepLink || typeof deepLink !== 'string') return { screen: null, payload: null }
   const trimmed = deepLink.trim()
-  // Уведомления подбора учителя (бэкенд пишет ссылку 'teacher-matching') — в «Мой учитель» (ТЗ 08 §2.12).
-  if (trimmed === 'teacher-matching') return { screen: 'my-teacher', payload: null }
+  // Уведомления подбора учителя (бэкенд пишет ссылку 'teacher-matching') — в «Мой учитель» (ТЗ 08 §2.12): с 17.11.2026
+  // это вкладка «Уроков» (задача 219).
+  if (trimmed === 'teacher-matching') return { screen: 'lessons', payload: { tab: 'teacher' } }
   // Запись в группу набора (ТЗ кабинетов, 14): бэкенд пишет ученику ссылку '/group-choice'. Стоит выше общих веток по словам.
   if (/^\/?group-choice\/?$/.test(trimmed)) return { screen: 'group', payload: null }
   if (/^\/?notifications\/?$/.test(trimmed)) return { screen: 'notifications', payload: null }

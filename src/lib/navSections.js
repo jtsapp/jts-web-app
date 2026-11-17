@@ -14,11 +14,10 @@ import { learnerFormat } from './assistant/format.js'
 // public/assets/home-v2/ico. Рисуются маской, поэтому цвет берут от пункта.
 export const HOME_ITEM = { key: 'home', label: 'nav.home', ico: 'home' }
 
-// «Мой учитель» (ТЗ 08 §1): сразу под «Главной», только ученику и только когда на стенде есть подбор v2 —
-// без него пункт вёл бы на «раздел скоро появится». Есть ли подбор, решает хук меню (useMenuItems).
-const MY_TEACHER_ITEM = { key: 'my-teacher', label: 'nav.myTeacher', ico: 'person' }
+// «Мой учитель» (ТЗ 08) пунктом меню больше не стоит: с 17.11.2026 (задача 219 доски) это вкладка «Уроков» сразу после
+// «Онлайн-уроки» (LessonsPage, matching/useMyTeacherTab.js), а его бейдж — на пункте «Уроки» (useMenuItems).
 
-// «Выбрать группу» (ТЗ кабинетов, 14): рядом с «Моим учителем», только ученику. Видимость по тарифу и формату решает 14е —
+// «Выбрать группу» (ТЗ кабинетов, 14): сразу под «Главной», только ученику. Видимость по тарифу и формату решает 14е —
 // раздел `group` открыт только формату «в группе», а пока абонемента нет (онбординг), меню полное.
 const GROUP_ITEM = { key: 'group', label: 'nav.group', ico: 'groups' }
 
@@ -55,7 +54,7 @@ const NAV_FULL = [
 // остальные скрыты от обычных пользователей (доступны диплинком ?screen=… для отладки).
 const NAV = TUTOR_ONLY ? NAV_FULL.filter((i) => TUTOR_ONLY_SECTIONS.includes(i.key)) : NAV_FULL
 // Значок пункта по ключу — для списков разделов вне меню (тур «Главной»).
-export const NAV_ICONS = Object.fromEntries([HOME_ITEM, MY_TEACHER_ITEM, GROUP_ITEM, ...NAV_FULL].map((i) => [i.key, i.ico]))
+export const NAV_ICONS = Object.fromEntries([HOME_ITEM, GROUP_ITEM, ...NAV_FULL].map((i) => [i.key, i.ico]))
 
 // Метка «new» у пункта — разделы, которые ученику стоит заметить. Одна на сайдбар и на плитки «Сервисов» телефона:
 // до 11.11.2026 набор жил в Sidebar.jsx, и на телефоне новый раздел ничем не выделялся.
@@ -85,8 +84,7 @@ function learningAfterVocab(items) {
 
 /**
  * Пункты меню по роли. Награды (tokens, prizes) — только там, где они включены (rewards); вкладки экзаменов — только
- * при своей подписке, абонементе или тарифе (exams), пока ответа нет — спрятаны. «Мой учитель» — когда на стенде
- * есть подбор учителя (myTeacher). Разделы по тарифу и формату (sections, ТЗ кабинетов 14е): закрытый раздел в меню не
+ * при своей подписке, абонементе или тарифе (exams), пока ответа нет — спрятаны. Разделы по тарифу и формату (sections, ТЗ кабинетов 14е): закрытый раздел в меню не
  * показываем; при загрузке и ошибке остаются общие разделы, полное меню — только по явному ответу об онбординге.
  *
  * «Уроки» и «Домашняя работа» — только у формата с преподавателем (ТЗ v2.0, 4.2): у Self Study и демо их нет. Матрица
@@ -100,13 +98,12 @@ export function menuItems({
   ieltsAccount = false,
   exams = { ielts: false, sat: false },
   rewards = false,
-  myTeacher = false,
   sections = null,
   demo = false,
 } = {}) {
   const format = learnerFormat({ demo: demo === true, sections })
   const noTeacherItems = format === 'demo' || format === 'self_study' || (demo === null && format === null)
-  const head = teacher ? [HOME_ITEM] : myTeacher ? [HOME_ITEM, MY_TEACHER_ITEM, GROUP_ITEM] : [HOME_ITEM, GROUP_ITEM]
+  const head = teacher ? [HOME_ITEM] : [HOME_ITEM, GROUP_ITEM]
   const all = teacher
     ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key))
     : ieltsAccount
@@ -154,7 +151,7 @@ export function serviceItems(items) {
 const INNER_SCREENS = new Set([
   // разделы Практики — у каждого «← В Практику» или своя полоса с крестиком
   'reading', 'writing', 'workbook', 'listening', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen',
-  'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'situations', 'shadowing',
+  'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'situations', 'shadowing',
   // план по дням и маршрут General English, каталог курса — экраны со своей «назад»
   'ge-plan', 'ge-route', 'course-catalog',
   // мастер подбора учителя: «← Назад» в шапке шага и своя закреплённая снизу панель (.mt-bar) — наша легла бы на неё

@@ -5,7 +5,7 @@ import { useI18n } from '../i18n.jsx'
 import { loadToken } from '../lib/session.js'
 import { userIdFromToken } from '../lib/jwt.js'
 import { wsBase } from '../lib/wsUrl.js'
-import { stompConnectHeaders } from '../lib/stompAuth.js'
+import { withStompAuth } from '../lib/stompAuth.js'
 import { notificationTarget } from '../lib/studentDeepLink.js'
 import { playCue, isSoundEnabled, setSoundEnabled } from '../lib/notifySound.js'
 import {
@@ -60,13 +60,9 @@ export function NotificationProvider({ token, onNavigate, children, enabled = tr
     const userId = userIdFromToken(auth)
     if (!userId) return undefined
     let beat = null
-    const client = new Client({
+    const client = new Client(withStompAuth(auth, {
       brokerURL: wsBase(),
-      connectHeaders: stompConnectHeaders(auth),
       reconnectDelay: 5000,
-      beforeConnect: () => {
-        client.connectHeaders = stompConnectHeaders(auth)
-      },
       onConnect: () => {
         // Пульс, пока вкладка жива. Голого соединения мало: закрытая страница
         // успевает переподключиться, и преподаватель видит «на платформе».
@@ -82,7 +78,7 @@ export function NotificationProvider({ token, onNavigate, children, enabled = tr
           refreshList()
         })
       },
-    })
+    }))
     const pulse = () => client.publish({ destination: '/app/presence/platform', body: '{}' })
     const onVisible = () => {
       if (document.visibilityState === 'visible' && client.connected) pulse()

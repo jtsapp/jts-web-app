@@ -140,6 +140,7 @@ const PronunciationPage = lazyScreen(() => import('./screens/PronunciationPage.j
 const TensesPage = lazyScreen(() => import('./screens/TensesPage.jsx'))
 const PunctuationPage = lazyScreen(() => import('./screens/PunctuationPage.jsx'))
 const PartsOfSpeechPage = lazyScreen(() => import('./screens/PartsOfSpeechPage.jsx'))
+const LiteraturePage = lazyScreen(() => import('./screens/LiteraturePage.jsx'))
 const GrammarGamesPage = lazyScreen(() => import('./screens/GrammarGamesPage.jsx'))
 const SpeedReadingPage = lazyScreen(() => import('./screens/SpeedReadingPage.jsx'))
 const CartoonsPage = lazyScreen(() => import('./screens/CartoonsPage.jsx'))
@@ -149,7 +150,6 @@ const SituationsPage = lazyScreen(() => import('./screens/SituationsPage.jsx'))
 const ListenChoosePage = lazyScreen(() => import('./screens/ListenChoosePage.jsx'))
 const ArcadePage = lazyScreen(() => import('./screens/ArcadePage.jsx'))
 const LessonsPage = lazyScreen(() => import('./screens/LessonsPage.jsx'))
-const MyTeacherPage = lazyScreen(() => import('./screens/MyTeacherPage.jsx'))
 const GroupPickPage = lazyScreen(() => import('./screens/GroupPickPage.jsx'))
 const NotificationsPage = lazyScreen(() => import('./screens/NotificationsPage.jsx'))
 const ContractsPage = lazyScreen(() => import('./screens/ContractsPage.jsx'))
@@ -245,10 +245,11 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
-  // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана
-  'my-teacher', 'teacher-wizard', 'teacher-pick',
+  // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана. «Мой учитель»
+  // здесь не стоит: с 17.11.2026 это вкладка «Уроков», а прежний адрес ?screen=my-teacher App переводит на неё.
+  'teacher-wizard', 'teacher-pick',
   // Запись в группу и уведомления (ТЗ кабинетов, 14): состояние живёт на сервере
   'group', 'notifications', 'contracts',
   // Birge: открытую ветку экран держит в ?post= сам (birge/postParam.js), F5 возвращает в неё
@@ -374,7 +375,11 @@ export default function App() {
   useEffect(() => {
     let cancelled = false
     const searchParams = new URLSearchParams(window.location.search)
-    const deepLink = searchParams.get('screen')
+    // ?screen=my-teacher — прежний адрес «Моего учителя» (закладки, ссылки старых версий): с 17.11.2026 это вкладка
+    // «Уроков». Подменяем сразу, чтобы предзагрузка чанка и адрес в строке шли уже по «Урокам».
+    const legacyTeacher = searchParams.get('screen') === 'my-teacher'
+    const deepLink = legacyTeacher ? 'lessons' : searchParams.get('screen')
+    if (legacyTeacher) setLessonsTarget({ tab: 'teacher', reportId: null, at: Date.now() })
     const embed = embedTarget(searchParams)
     // Пришёл с лендинга после заявки: в адресе код с именем и номером
     // (src/landing/handoff.js). Из адреса убираем сразу — ему незачем
@@ -519,10 +524,10 @@ export default function App() {
       const tab = searchParams.get('tab')
       if (tab) {
         setLessonsTarget({ tab, reportId: searchParams.get('report'), at: Date.now() })
-        // Цель одноразовая, и в адресе ей не место: screenUrlParams знает только
-        // свои ключи, и после ухода и возврата F5 снова открыл бы тот же отчёт.
+        // Отчёт — цель одноразовая, и в адресе ему не место: screenUrlParams его
+        // не знает, и после ухода и возврата F5 снова открыл бы тот же отчёт.
+        // Саму вкладку (?tab=) адрес держит дальше — её пишет screenUrlParams.
         const clean = new URL(window.location.href)
-        clean.searchParams.delete('tab')
         clean.searchParams.delete('report')
         window.history.replaceState(null, '', clean)
       }
@@ -839,6 +844,17 @@ export default function App() {
   // «Уроки» уже открыты, не сменил бы вкладку (initialTab читается только при
   // монтировании).
   const [lessonsTarget, setLessonsTarget] = useState(null)
+  // Открытая вкладка «Уроков» — её сообщает сам экран. Нужна окнам подбора: на вкладке «Мой учитель» они не выходят.
+  const [lessonsTab, setLessonsTab] = useState(null)
+  // «Мой учитель» — вкладка «Уроков» с 17.11.2026 (задача 219), своего экрана нет. Сюда приходят то, что ещё зовёт
+  // прежний экран: стек «назад» и отложенный экран гостя, сохранённые до выката. Переход без записи в стек: иначе
+  // «назад» из «Уроков» вёл бы на 'my-teacher', а оттуда снова в «Уроки».
+  useEffect(() => {
+    if (screen !== 'my-teacher') return
+    setLessonsTarget({ tab: 'teacher', reportId: null, at: Date.now() })
+    skipPushRef.current = true
+    setScreen('lessons')
+  }, [screen, setScreen])
   // Шаг мастера подбора, с которого его открыли («Выбрать учителей» после отказов — сразу к учителям)
   const [wizardTarget, setWizardTarget] = useState(null)
   // Прокрутка, к которой вернуть экран после «назад» (goBack ниже). Только пока
@@ -1787,6 +1803,7 @@ export default function App() {
       liveWorkspaceId,
       workspaceCardId,
       workspaceSource,
+      lessonsTab,
     }))
     // SAT держит своё состояние в ?satTab=, ?satMock= и т.п.; вне SAT-экранов оно не нужно и не должно оставаться в адресе
     let satLeft = false
@@ -1799,7 +1816,7 @@ export default function App() {
       }
     }
     if (changed || satLeft) window.history.replaceState(null, '', url)
-  }, [embedded, screen, restoring, liveLessonId, liveWorkspaceId, workspaceCardId, workspaceSource])
+  }, [embedded, screen, restoring, liveLessonId, liveWorkspaceId, workspaceCardId, workspaceSource, lessonsTab])
 
   // «Известный урок» экрана класса — одно выражение на оба источника, а не два
   // разных по месту использования. boothLessonId — обычный случай (сеанс
@@ -1970,6 +1987,7 @@ export default function App() {
     else if (key === 'tenses') setScreen('tenses')
     else if (key === 'punctuation') setScreen('punctuation')
     else if (key === 'partsofspeech') setScreen('partsofspeech')
+    else if (key === 'literature') setScreen('literature')
     else if (key === 'grammar-games') { setGrammarGamesTarget(payload || null); setScreen('grammar-games') }
     else if (key === 'speed-reading') { setSpeedReadingTarget(payload || null); setScreen('speed-reading') }
     else if (key === 'cartoons') { setCartoonsTarget(payload || null); setScreen('cartoons') }
@@ -1985,7 +2003,11 @@ export default function App() {
     else if (key === 'listen') { setListenTarget(payload || null); setScreen('listen') }
     else if (key === 'arcade') { setArcadeTarget(payload || null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
-    else if (key === 'my-teacher') setScreen('my-teacher')
+    // «Мой учитель» — вкладка «Уроков» (задача 219): окна подбора, профиль, мастер, уведомления зовут прежний ключ.
+    else if (key === 'my-teacher') {
+      setLessonsTarget({ tab: 'teacher', reportId: null, at: Date.now() })
+      setScreen('lessons')
+    }
     else if (key === 'group') setScreen('group')
     else if (key === 'notifications') setScreen('notifications')
     else if (key === 'contracts') setScreen('contracts')
@@ -2168,9 +2190,9 @@ export default function App() {
   // Практики, где лежит карточка раздела. canReturn — есть ли откуда пришли:
   // экран, открытый сразу на сценарии или игре, по нему решает, выйти ли
   // назад целиком (пришли с карточки) или в список раздела (диплинк).
-  // `skill` — вкладка Практики, куда «назад» уводит без истории (диплинк, переход Луны). С редизайна 29.10.2026
-  // мини-игра Listening, «Слова в картинках», «Числа», Word Hunt и «Аркада» — во вкладке «Грамматика»;
-  // «Скорочтение» с 10.11.2026 — во вкладке «Чтение».
+  // `skill` — вкладка Практики, куда «назад» уводит без истории (диплинк, переход Луны). Раскладка с 17.11.2026
+  // (practiceTabs.js): раздел в двух вкладках возвращается в первую — мини-игра Listening, «Слова в картинках» и
+  // «Числа» в «Аудирование», «Три формы глагола» в «Грамматику и письмо»; Word Hunt — в «Игры»; «Скорочтение» — в «Чтение».
   function sectionBack(skill) {
     // В рамке урока уходить некуда: у экрана карточки нет «назад» в кабинет.
     if (embedded) return {}
@@ -2327,7 +2349,8 @@ export default function App() {
       <OptionalPart>{token && !isTeacher(token) && <PlatformPresence token={token} />}</OptionalPart>
       {/* Окна подбора учителя при входе (ТЗ 08 §2.12) — вне обёртки с key по той же причине. */}
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && <LessonFeedbackPrompt key={userIdFromToken(token)} token={token} enabled={isLegalDocumentsScreen(view) && !['live-lesson', 'lesson-workspace'].includes(view)} />}</OptionalPart>
-      <OptionalPart>{token && !boothAccount && !isTeacher(token) && !isStudentSectionHidden('my-teacher') && <MatchingPopups token={token} screen={view} onNav={handleNav} />}</OptionalPart>
+      {/* На вкладке «Мой учитель» окна не выходят — экран показывает то же сам; для окон это прежний экран 'my-teacher'. */}
+      <OptionalPart>{token && !boothAccount && !isTeacher(token) && !isStudentSectionHidden('my-teacher') && <MatchingPopups token={token} screen={view === 'lessons' && lessonsTab === 'teacher' ? 'my-teacher' : view} onNav={handleNav} />}</OptionalPart>
       <OptionalPart>{token && !boothAccount && !isTeacher(token) && (
         <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen proactive level={needsLevelTest ? null : userLevel} newcomer={needsLevelTest && accountCreatedAt != null && !isExistingStudent(accountCreatedAt)} format={learnerFormat({ demo: isDemoAccount, sections: sectionAccess?.status === 'ready' ? sectionAccess : null })} />
       )}</OptionalPart>
@@ -2580,6 +2603,8 @@ export default function App() {
           // Без уровня «Главная» показывает приглашение на тест, а не чужие цифры.
           levelUnknown={needsLevelTest}
           ieltsAccount={ieltsAccount}
+          // Подписки на экзамены — для «Задач на сегодня» по направлениям (задача 218): то же правило, что у меню
+          exams={examTabs}
           onStartLevelTest={() => openPlacement('home')}
           geProfile={ieltsAccount ? null : geProfile}
           geLoaded={geLoaded}
@@ -2720,8 +2745,6 @@ export default function App() {
       return <NotificationsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'group':
       return <GroupPickPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
-    case 'my-teacher':
-      return <MyTeacherPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'teacher-wizard':
       return <TeacherWizardPage key={wizardTarget?.at ?? 'wizard'} userLevel={userLevel} userName={name} token={token} initialStep={wizardTarget?.step ?? null} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'teacher-pick':
@@ -2750,7 +2773,7 @@ export default function App() {
     case 'listening':
       return (
         <ListeningPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2776,7 +2799,7 @@ export default function App() {
     case 'writing':
       return (
         <WritingPage
-          {...sectionBack('writing')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2789,7 +2812,7 @@ export default function App() {
     case 'workbook':
       return (
         <WorkbookPage
-          {...sectionBack('writing')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2802,7 +2825,7 @@ export default function App() {
     case 'words':
       return (
         <WordsPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2826,7 +2849,7 @@ export default function App() {
     case 'numbers':
       return (
         <NumbersPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2837,7 +2860,7 @@ export default function App() {
     case 'prepositions':
       return (
         <PrepositionsPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2861,7 +2884,7 @@ export default function App() {
     case 'tenses':
       return (
         <TensesPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2872,7 +2895,7 @@ export default function App() {
     case 'punctuation':
       return (
         <PunctuationPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2883,7 +2906,18 @@ export default function App() {
     case 'partsofspeech':
       return (
         <PartsOfSpeechPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('grammarWriting')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'literature':
+      return (
+        <LiteraturePage
+          {...sectionBack('reading')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2894,7 +2928,7 @@ export default function App() {
     case 'grammar-games':
       return (
         <GrammarGamesPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2930,7 +2964,7 @@ export default function App() {
     case 'wordhunt':
       return (
         <WordHuntPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('games')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2952,7 +2986,7 @@ export default function App() {
     case 'verbs':
       return (
         <VerbsPage
-          {...sectionBack('writing')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2988,7 +3022,7 @@ export default function App() {
     case 'arcade':
       return (
         <ArcadePage
-          {...sectionBack(arcadeTarget?.skill || 'grammarGames')}
+          {...sectionBack(arcadeTarget?.skill || 'games')}
           initialTarget={arcadeTarget}
           userLevel={userLevel}
           userName={name}
@@ -3010,8 +3044,12 @@ export default function App() {
           isDemoAccount={isDemoAccount}
         />
       )
+    // Прежний экран «Мой учитель»: эффект у lessonsTarget тут же уводит на вкладку «Уроков». Пустой кадр, а не
+    // ScreenFallback из default — тот увёл бы на «Главную».
+    case 'my-teacher':
+      return null
     case 'lessons':
-      return <LessonsPage key={lessonsTarget?.at ?? 'lessons'} userLevel={userLevel} userName={name} token={token} initialTab={lessonsTarget?.tab ?? resumeOf('lessons')?.tab} initialReportId={lessonsTarget?.reportId ?? null}onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} tourKey={lessonsTourKey} />
+      return <LessonsPage key={lessonsTarget?.at ?? 'lessons'} userLevel={userLevel} userName={name} token={token} initialTab={lessonsTarget?.tab ?? resumeOf('lessons')?.tab} initialReportId={lessonsTarget?.reportId ?? null} onTabChange={setLessonsTab} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} tourKey={lessonsTourKey} />
     case 'homework':
       return <HomeworkPage userLevel={userLevel} userName={name} token={token} initialId={homeworkTarget} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
     case 'tokens':
