@@ -133,6 +133,7 @@ const PRACTICE_SECTIONS = {
   tenses: 'nav.back.tenses',
   punctuation: 'nav.back.punctuation',
   partsofspeech: 'nav.back.partsofspeech',
+  literature: 'nav.back.literature',
   'grammar-games': 'nav.back.grammarGames',
   'speed-reading': 'nav.back.speedReading',
   listen: 'nav.back.listen',

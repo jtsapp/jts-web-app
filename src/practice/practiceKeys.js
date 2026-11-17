@@ -129,6 +129,16 @@ export const PARTSOFSPEECH_PREFS_KEY = 'jts_partsofspeech_prefs'
 // Черновики заданий «Write your own» { <упражнение>: текст } — только устройство (как черновики Cartoon World):
 // это текст ученика, на общей машине он не должен достаться следующему аккаунту — чистится вместе с прогрессом.
 export const PARTSOFSPEECH_DRAFTS_KEY = 'jts_partsofspeech_drafts'
+// Прогресс Literature World: { notebook: { <слово>: время сохранения } } — блокнот слов (jtsLit.notebook прототипа).
+// Replace со сведением merge в момент снимка сервера (literature/progress.js): слово, сохранённое на другом устройстве,
+// не пропадает; после снимка запись уходит как есть — убранное слово остаётся убранным.
+export const LITERATURE_KEY = 'jts_literature_v1'
+// Язык интерфейса раздела и подсказок { lang: en | kz | ru, sup: ru | kz } — настройка устройства, не синкается, но
+// чистится вместе с прогрессом, как язык Tenses World.
+export const LITERATURE_LANG_KEY = 'jts_literature_lang'
+// Свои предложения к словам «Produce» { <слово>: текст } — только устройство (как черновики Cartoon World): это текст
+// ученика, на общей машине он не должен достаться следующему аккаунту — чистится вместе с прогрессом.
+export const LITERATURE_DRAFTS_KEY = 'jts_literature_drafts'
 // «Грамматика · игры»: звук ответов вкл/выкл ('0' — выключен) — настройка устройства, как громкость; не синкается и
 // при выходе не чистится. Звёзды раздела живут на бэкенде (/mobile/grammar-games/progress), ключа в хранилище нет.
 export const GRAMMAR_GAMES_SOUND_KEY = 'jts_grammar_games_sound'
@@ -161,6 +171,7 @@ export const PRONUNCIATION_PROGRESS_EVENT = 'pronunciation-progress'
 export const TENSES_PROGRESS_EVENT = 'tenses-progress'
 export const PUNCTUATION_PROGRESS_EVENT = 'punctuation-progress'
 export const PARTSOFSPEECH_PROGRESS_EVENT = 'partsofspeech-progress'
+export const LITERATURE_PROGRESS_EVENT = 'literature-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }

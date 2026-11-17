@@ -47,6 +47,8 @@ export const CARDS = {
   punctuation: { nav: 'punctuation' },
   // Parts of Speech World — 16 юнитов о частях речи и игра-расследование; материал с бэкенда, без квоты.
   partsofspeech: { nav: 'partsofspeech' },
+  // Literature World — пьесы, проза, стихи и слова из настоящих строк; материал с бэкенда, без квоты.
+  literature: { nav: 'literature', badge: 'new' },
   speedReading: { nav: 'speed-reading', badge: 'new' },
   // Грамматика: игры, собранные из других вкладок. «Аркада» больше не зал из двух игр, а две карточки — каждая
   // открывает свою игру; вкладка едет в переходе, чтобы «назад» из игры вернул сюда.

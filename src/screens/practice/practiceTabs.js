@@ -19,7 +19,8 @@ import { cardOf } from './practiceCatalog.js'
 
 export const SKILLS = [
   { key: 'listening', groups: [{ cards: ['listenchoose', 'justListen', 'cartoons', 'shadowing', 'karaoke', 'memes', 'tales'] }] },
-  { key: 'reading', groups: [{ cards: ['reading', 'speedReading', 'books', 'comics', 'tales'] }] },
+  // Literature World (17.11.2026) — после комиксов, перед сказками: сказки — последние всегда.
+  { key: 'reading', groups: [{ cards: ['reading', 'speedReading', 'books', 'comics', 'literature', 'tales'] }] },
   { key: 'writing', groups: [{ cards: ['writing', 'verbs', 'workbooks'] }] },
   { key: 'speaking', groups: [{ cards: ['pronunciation', 'situations', 'speakspin', 'shadowing', 'karaoke', 'tales'] }] },
   {

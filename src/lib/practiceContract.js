@@ -67,6 +67,10 @@ import { mergeReadingState } from './readingState.js'
 // (partsofspeech/progress.js merge): решённое остаётся решённым, счёт — лучший. Черновики письма, звук и подписи слов
 // сюда не идут — только устройство. Area 'partsofspeech' бэкенду неизвестна — в домашнюю работу раздел не
 // отчитывается.
+// 'literature' — стейт-объект Literature World {notebook: {<слово>: время}} (блокнот слов). Replace; клиент сводит с
+// серверным (literature/progress.js merge) в момент снимка: слово, сохранённое где угодно, остаётся; после снимка
+// запись уходит как есть. Свои предложения «Produce» и язык раздела сюда не идут — только устройство. Area
+// 'literature' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
 // 'vocabLearned' / 'vocabMisses' — «изучено» и «хуже запомненные» «Словаря»
 // ({scopes} и {words}, см. practiceKeys.js). Replace: снятая отметка и снятая
 // ошибка не должны воскресать от объединения.
@@ -93,6 +97,7 @@ export const PRACTICE_MODULES = [
   'tenses',
   'punctuation',
   'partsofspeech',
+  'literature',
   'vocabLearned',
   'vocabMisses',
 ]
