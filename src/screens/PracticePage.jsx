@@ -8,7 +8,7 @@ import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import { readSituationsDone } from '../practice/situations/situationsProgress.js'
 import { loadLevel as loadSituationsLevel } from '../practice/situations/situationsData.js'
 import { readDoneItems } from '../practice/situations/itemsProgress.js'
-import { isStaticMirror, pickSituationsLevel } from '../practice/situations/backendMirrors.js'
+import { isStaticMirror, pickSituationsLevels } from '../practice/situations/backendMirrors.js'
 import { pickLang } from './situations/SituationsCatalog.jsx'
 import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
 import { readWorkbooksDone } from '../practice/workbooks/workbooksProgress.js'
@@ -595,25 +595,41 @@ export default function PracticePage({
   // раздела, и тот же кэш вкладки (situationsData.js): после Практики он
   // открывается уже без загрузки. Тянем, только когда открыт список: в обзоре у «Ситуаций» одна карточка.
   // У C2 своей программы нет — берём ближайший уровень, как грамматика. На
-  // «Все» — первый уровень, который админ ученику не закрыл (backendMirrors.js).
-  const situLevel = pickSituationsLevel(level, SITUATION_CODES, levelLocked)
-  const [situ, setSitu] = useState({ level: null, items: [] })
+  // «Все» — все уровни, которые ученику не закрыты (backendMirrors.js): до
+  // 18.11.2026 там был один уровень, и из 50 сценариев виднелись 10.
+  const situLevels = pickSituationsLevels(level, SITUATION_CODES, levelLocked)
+  const situKey = situLevels.join(',')
+  // Пришедшие уровни: { a1: [...], b2: [...] }. Каждый рисуется, как только
+  // доехал, — на «Все» это пять файлов (≈210 КБ сжатыми, C1 самый тяжёлый), и
+  // ждать последнего, чтобы показать первый, незачем. Сбой уровня — пустой
+  // список, как и раньше: остальные уровни из-за него не пропадают.
+  const [situ, setSitu] = useState({})
   const wantSitu = expanded === 'situations'
   useEffect(() => {
-    if (!wantSitu || !situLevel) return undefined
+    if (!wantSitu) return undefined
     let alive = true
-    loadSituationsLevel(situLevel)
-      .then((items) => alive && setSitu({ level: situLevel, items }))
-      .catch(() => alive && setSitu({ level: situLevel, items: [] }))
+    for (const code of situLevels) {
+      if (situ[code]) continue
+      loadSituationsLevel(code)
+        .catch(() => [])
+        .then((items) => alive && setSitu((prev) => ({ ...prev, [code]: items })))
+    }
     return () => {
       alive = false
     }
-  }, [wantSitu, situLevel])
-  const situLoading = wantSitu && situ.level !== situLevel
-  const situItems = situ.level === situLevel && !levelLocked.has(situLevel) ? situ.items : []
+  }, [wantSitu, situKey])   // eslint-disable-line react-hooks/exhaustive-deps
+  const situItems = situLevels
+    .filter((code) => !levelLocked.has(code))
+    .flatMap((code) => (situ[code] || []).map((item) => ({ code, item })))
+  // Скелет — пока не пришёл ни один уровень; дальше карточки дорастают сами.
+  const situLoading = wantSitu && situItems.length === 0 && situLevels.some((code) => !situ[code])
   // Пройденное меняется только на экране раздела, а возврат оттуда
-  // перемонтирует Практику — перечитывать по уровню достаточно.
-  const situDone = useMemo(() => new Set(situLevel ? readDoneItems(situLevel) : []), [situLevel])
+  // перемонтирует Практику — перечитывать по набору уровней достаточно.
+  // Ключ «уровень:номер»: на «Все» номера 1–10 есть у каждого уровня.
+  const situDone = useMemo(
+    () => new Set(situLevels.flatMap((code) => readDoneItems(code).map((id) => `${code}:${id}`))),
+    [situKey],   // eslint-disable-line react-hooks/exhaustive-deps
+  )
   // Зеркала сценариев статики своей карточки не получают: они только источник
   // замка уровня (levelLocked), а сам сценарий — карточка статики выше.
   const levelSituativki = situativkiAll.filter(
@@ -1078,13 +1094,13 @@ export default function PracticePage({
         // Заблокированные не показываем вовсе (раньше висели замком):
         // преподаватель закрывает контент, а не дразнит им.
         const cards = [
-          ...situItems.map((s) => (
+          ...situItems.map(({ code, item: s }) => (
             <SituationCard
-              key={`s-${s.id}`}
+              key={`s-${code}-${s.id}`}
               title={pickLang(s.title, lang)}
               poster={s.poster}
-              done={situDone.has(s.id)}
-              onOpen={() => openSituationsLevel(situLevel, s.id)}
+              done={situDone.has(`${code}:${s.id}`)}
+              onOpen={() => openSituationsLevel(code, s.id)}
             />
           )),
           ...levelSituativki.map((s) => (
