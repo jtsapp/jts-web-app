@@ -2190,9 +2190,9 @@ export default function App() {
   // Практики, где лежит карточка раздела. canReturn — есть ли откуда пришли:
   // экран, открытый сразу на сценарии или игре, по нему решает, выйти ли
   // назад целиком (пришли с карточки) или в список раздела (диплинк).
-  // `skill` — вкладка Практики, куда «назад» уводит без истории (диплинк, переход Луны). С редизайна 29.10.2026
-  // мини-игра Listening, «Слова в картинках», «Числа», Word Hunt и «Аркада» — во вкладке «Грамматика»;
-  // «Скорочтение» с 10.11.2026 — во вкладке «Чтение».
+  // `skill` — вкладка Практики, куда «назад» уводит без истории (диплинк, переход Луны). Раскладка с 17.11.2026
+  // (practiceTabs.js): раздел в двух вкладках возвращается в первую — мини-игра Listening, «Слова в картинках» и
+  // «Числа» в «Аудирование», «Три формы глагола» в «Грамматику и письмо»; Word Hunt — в «Игры»; «Скорочтение» — в «Чтение».
   function sectionBack(skill) {
     // В рамке урока уходить некуда: у экрана карточки нет «назад» в кабинет.
     if (embedded) return {}
@@ -2771,7 +2771,7 @@ export default function App() {
     case 'listening':
       return (
         <ListeningPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2797,7 +2797,7 @@ export default function App() {
     case 'writing':
       return (
         <WritingPage
-          {...sectionBack('writing')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2810,7 +2810,7 @@ export default function App() {
     case 'workbook':
       return (
         <WorkbookPage
-          {...sectionBack('writing')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2823,7 +2823,7 @@ export default function App() {
     case 'words':
       return (
         <WordsPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2847,7 +2847,7 @@ export default function App() {
     case 'numbers':
       return (
         <NumbersPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2858,7 +2858,7 @@ export default function App() {
     case 'prepositions':
       return (
         <PrepositionsPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2882,7 +2882,7 @@ export default function App() {
     case 'tenses':
       return (
         <TensesPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2893,7 +2893,7 @@ export default function App() {
     case 'punctuation':
       return (
         <PunctuationPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2904,7 +2904,7 @@ export default function App() {
     case 'partsofspeech':
       return (
         <PartsOfSpeechPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2926,7 +2926,7 @@ export default function App() {
     case 'grammar-games':
       return (
         <GrammarGamesPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2962,7 +2962,7 @@ export default function App() {
     case 'wordhunt':
       return (
         <WordHuntPage
-          {...sectionBack('grammarGames')}
+          {...sectionBack('games')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2984,7 +2984,7 @@ export default function App() {
     case 'verbs':
       return (
         <VerbsPage
-          {...sectionBack('writing')}
+          {...sectionBack('grammarWriting')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -3020,7 +3020,7 @@ export default function App() {
     case 'arcade':
       return (
         <ArcadePage
-          {...sectionBack(arcadeTarget?.skill || 'grammarGames')}
+          {...sectionBack(arcadeTarget?.skill || 'games')}
           initialTarget={arcadeTarget}
           userLevel={userLevel}
           userName={name}

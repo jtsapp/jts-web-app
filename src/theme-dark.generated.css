@@ -917,7 +917,7 @@ html[data-theme="dark"] .pk-c--reading {
     --pk-ink: var(--dk-orange);
     --pk-mark: rgba(255, 255, 255, 0.22)
 }
-html[data-theme="dark"] .pk-c--writing {
+html[data-theme="dark"] .pk-c--games {
     --pk-from: var(--dk-red);
     --pk-to: var(--dk-red);
     --pk-acc: var(--dk-red);
@@ -933,7 +933,7 @@ html[data-theme="dark"] .pk-c--speaking {
     --pk-ink: var(--dk-green);
     --pk-mark: rgba(255, 255, 255, 0.22)
 }
-html[data-theme="dark"] .pk-c--grammarGames {
+html[data-theme="dark"] .pk-c--grammarWriting {
     --pk-from: var(--dk-yellow);
     --pk-to: var(--dk-yellow);
     --pk-acc: var(--dk-yellow);

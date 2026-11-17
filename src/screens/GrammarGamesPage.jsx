@@ -12,7 +12,7 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import GrammarGamesView from './grammar-games/GrammarGamesView.jsx'
 
 export default function GrammarGamesPage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel, initialTarget }) {
-  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammarGames' }))
+  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammarWriting' }))
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>

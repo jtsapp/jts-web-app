@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test'
 import { mockGates } from './helpers/login.js'
 
-// Карточка мини-игры «Тренируй Listening» на странице Практики. С редизайна 29.10.2026 игра — карточка вкладки
-// «Грамматика» (там собраны все игры), а не баннер «Аудирования». Проверяем, где она живёт, и что переключатель
-// уровня под вкладками синхронизирован с уровнем пользователя (languageLevel из /api/auth/me).
+// Карточка мини-игры «Тренируй Listening» на странице Практики. С 17.11.2026 игра — карточка вкладок «Аудирование»
+// и «Игры» (файл методиста). Проверяем, где она живёт, и что переключатель уровня под вкладками синхронизирован с
+// уровнем пользователя (languageLevel из /api/auth/me).
 
 async function mockAuth(page, languageLevel) {
   // Замки develop с 29.10.2026 (документы платформы, разделы тарифа) — иначе вместо Практики их экран.
@@ -36,24 +36,24 @@ test.describe('Практика — карточка мини-игры «Listeni
     await expect(level(page)).toHaveText('B1')
   })
 
-  test('карточка игры только во вкладке «Грамматика»: в «Аудировании» её нет', async ({ page }) => {
+  test('карточка игры — в «Аудировании» и в «Играх», а в «Чтении» её нет', async ({ page }) => {
     await mockAuth(page, 'A2')
     await page.goto('/')
     await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
     await page.goto('/?screen=practice')
 
-    // По умолчанию открыто «Аудирование» — игра оттуда уехала в «Грамматику».
+    // По умолчанию открыто «Аудирование» — игра там.
     const card = page.locator('#sec-listening')
     await expect(page.locator('#sec-listenchoose')).toBeVisible({ timeout: 15000 })
-    await expect(card).toHaveCount(0)
-
-    await page.locator('.pk-skill--grammarGames').click()
     await expect(card).toBeVisible()
     await expect(card.locator('.pk-card__title')).toHaveText('Тренируй Listening в мини-игре')
-    // У «Грамматики» уровня нет: темы со своими уровнями, игры их не знают.
+
+    await page.locator('.pk-skill--games').click()
+    await expect(card).toBeVisible()
+    // У «Игр» уровня нет: игры его не знают.
     await expect(page.locator('.pk-levels')).toHaveCount(0)
 
-    await page.locator('.pk-skill', { hasText: 'Аудирование' }).click()
+    await page.locator('.pk-skill--reading').click()
     await expect(card).toHaveCount(0)
   })
 

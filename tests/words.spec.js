@@ -306,12 +306,12 @@ test.describe('звук', () => {
 })
 
 test.describe('вход из Практики', () => {
-  test('карточка раздела во вкладке «Грамматика» ведёт на его каталог', async ({ page }) => {
+  test('карточка раздела во вкладке «Игры» ведёт на его каталог', async ({ page }) => {
     // Гостю кабинет с 23.10.2026 не рисуется (лендинг «Войти»), поэтому Практику открываем учеником.
     await loginAsStudent(page)
     await page.goto('/?screen=practice')
-    // С редизайна 29.10.2026 игры собраны во вкладке «Грамматика», и вся карточка — кнопка перехода.
-    await page.locator('.pk-skill--grammarGames').click({ timeout: 15000 })
+    // С 17.11.2026 игра — в «Аудировании» и «Играх»; вся карточка — кнопка перехода.
+    await page.locator('.pk-skill--games').click({ timeout: 15000 })
     const card = page.locator('#sec-words')
     await expect(card).toBeVisible()
     await card.click()

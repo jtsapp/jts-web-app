@@ -85,17 +85,18 @@ export function LevelSwitch({ value, onChange }) {
   )
 }
 
+// «Игры» — значок Material Symbols sports_esports (Apache 2.0) в виде остальных: в макете такой вкладки не было.
 const SKILL_ICON = {
   listening: 'headphones',
-  reading: 'menu-book',
-  writing: 'edit-note',
   speaking: 'mic',
-  grammarGames: 'text-fields',
+  reading: 'menu-book',
+  grammarWriting: 'text-fields',
+  games: 'sports-esports',
 }
 
 // Вкладка раздела (макет «Практика · редизайн», 7393:14225): плитка значка в цвете своего раздела, название и
 // «N тренажёров». Выбранная залита градиентом раздела. Цвета — переменные `--pk-*` класса `pk-c--<раздел>`.
-// sub — подпись вместо «N тренажёров» («Грамматика»: темы и игры).
+// sub — подпись вместо «N тренажёров», если вкладке она понадобится (с 17.11.2026 такой нет).
 export function SkillCard({ skill, count, sub, active, onClick }) {
   const { t, lang } = useI18n()
   return (

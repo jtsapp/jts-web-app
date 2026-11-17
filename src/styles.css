@@ -3626,7 +3626,8 @@ textarea {
   --pk-ink: #b8480f;
   --pk-mark: rgba(255, 255, 255, 0.22);
 }
-.pk-c--writing {
+/* «Игры» (с 17.11.2026) взяли розовый прежнего «Письма»: своего цвета у вкладки в макете нет. */
+.pk-c--games {
   --pk-from: #f062b8;
   --pk-to: #b52c85;
   --pk-acc: #d6409f;
@@ -3643,8 +3644,9 @@ textarea {
   --pk-mark: rgba(255, 255, 255, 0.22);
 }
 /* Золотой: на светлом градиенте белый значок не читается — на обложках он тёмный (#3a2800), а плитка значка
-   плотнее (40 %). Подпись выбранной вкладки в макете белая. */
-.pk-c--grammarGames {
+   плотнее (40 %). Подпись выбранной вкладки в макете белая. С 17.11.2026 это «Грамматика и письмо» — цвет прежней
+   «Грамматики». */
+.pk-c--grammarWriting {
   --pk-from: #f9cb45;
   --pk-to: #e39a05;
   --pk-acc: #e5a512;
@@ -3754,6 +3756,15 @@ textarea {
   text-overflow: ellipsis;
 }
 .pk-skill__title { font-size: 16px; font-weight: 800; line-height: 22px; color: #181818; }
+/* «Грамматика и письмо» (с 17.11.2026) в плитку 208 не влезает строкой и резалась в «Грамматика и …» — название
+   переносится на вторую строку: 2 × 20 + 2 + 18 = 60 при высоте вкладки 72. Длиннее двух строк — многоточие. */
+.pk-skill__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 20px;
+  white-space: normal;
+}
 .pk-skill__count { font-size: 13px; font-weight: 500; line-height: 18px; color: #7a7a86; }
 .pk-skill.is-on .pk-skill__title { color: #ffffff; }
 .pk-skill.is-on .pk-skill__count { color: rgba(255, 255, 255, 0.88); }
