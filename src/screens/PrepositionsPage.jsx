@@ -61,7 +61,7 @@ export default function PrepositionsPage({ userName, userLevel, token, onNav, on
     const host = hostRef.current
     if (host) host.style.setProperty('--pw-font', getComputedStyle(host).fontFamily || "'Manrope', sans-serif")
   }, [lang])
-  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammarGames' }))
+  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammarWriting' }))
 
   useEffect(() => {
     const host = hostRef.current

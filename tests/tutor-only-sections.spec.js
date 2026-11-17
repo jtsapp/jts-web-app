@@ -73,9 +73,8 @@ test('Практика открывается из сайдбара, карто�
   await expect(page.locator('#sec-listenchoose')).toBeVisible({ timeout: 10_000 })
   await expect(page.locator('#sec-tales')).toBeVisible()
 
-  // Мини-игра «Listening» с редизайна 29.10.2026 — во вкладке «Грамматика»; карточка уводит на внутренний экран
+  // Мини-игра «Listening» с 17.11.2026 — прямо в «Аудировании» (и в «Играх»); карточка уводит на внутренний экран
   // тренажёра (case 'listening' в App.jsx).
-  await page.locator('.pk-skill--grammarGames').click()
   await page.locator('#sec-listening').click()
   await expect(page.locator('.lt-intro')).toBeVisible({ timeout: 10_000 })
 })

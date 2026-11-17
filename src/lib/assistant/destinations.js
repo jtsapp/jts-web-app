@@ -36,25 +36,32 @@ export const DESTINATIONS = [
     name: { ru: 'Практика', kk: 'Тәжірибе', en: 'Practice' },
     about: 'все тренажёры, по вкладкам навыков',
   },
+  // Вкладки Практики — раскладка 17.11.2026 (practiceTabs.js). Прежние «Письмо» (practice-writing) и «Грамматика»
+  // ушли: письмо и грамматика — одна вкладка, игры — своя.
   {
     id: 'practice-listening', nav: 'practice', payload: { skill: 'listening' }, screen: 'practice',
     name: { ru: 'Практика → Аудирование', kk: 'Тәжірибе → Тыңдалым', en: 'Practice → Listening' },
-    about: '«Услышь детали» (картинка по описанию), Just to Listen, Cartoon World, шэдоуинг, караоке, мемы, сказки',
-  },
-  {
-    id: 'practice-reading', nav: 'practice', payload: { skill: 'reading' }, screen: 'practice',
-    name: { ru: 'Практика → Чтение', kk: 'Тәжірибе → Оқылым', en: 'Practice → Reading' },
-    about: 'тексты с заданиями, книжки, комиксы, сказки',
-  },
-  {
-    id: 'practice-writing', nav: 'practice', payload: { skill: 'writing' }, screen: 'practice',
-    name: { ru: 'Практика → Письмо', kk: 'Тәжірибе → Жазылым', en: 'Practice → Writing' },
-    about: 'письмо по шагам, неправильные глаголы, воркбуки',
+    about: '«Услышь детали» (картинка по описанию), Just to Listen, Cartoon World, мемы, сказки, шэдоуинг, караоке, мини-игра Listening, «Мир чисел Декстера», «Слушай слово и находи его на картинке»',
   },
   {
     id: 'practice-speaking', nav: 'practice', payload: { skill: 'speaking' }, screen: 'practice',
     name: { ru: 'Практика → Говорение', kk: 'Тәжірибе → Айтылым', en: 'Practice → Speaking' },
-    about: 'Pronunciation World (произношение), ситуации, SpeakSpin, шэдоуинг, караоке, сказки',
+    about: 'ситуации, SpeakSpin, Pronunciation World (произношение), шэдоуинг, караоке, Скорочтение (читать вслух), Speak or Die',
+  },
+  {
+    id: 'practice-reading', nav: 'practice', payload: { skill: 'reading' }, screen: 'practice',
+    name: { ru: 'Практика → Чтение', kk: 'Тәжірибе → Оқылым', en: 'Practice → Reading' },
+    about: 'тексты с заданиями, Скорочтение, книжки, комиксы, Literature World, сказки',
+  },
+  {
+    id: 'practice-grammar-writing', nav: 'practice', payload: { skill: 'grammarWriting' }, screen: 'practice',
+    name: { ru: 'Практика → Грамматика и письмо', kk: 'Тәжірибе → Грамматика және жазылым', en: 'Practice → Grammar & Writing' },
+    about: 'грамматика по уровням, темы по уровням (правило и игры), Tenses World, три формы глагола, Prepositions World, Punctuation World, Parts of Speech World, письмо по шагам, воркбуки',
+  },
+  {
+    id: 'practice-games', nav: 'practice', payload: { skill: 'games' }, screen: 'practice',
+    name: { ru: 'Практика → Игры', kk: 'Тәжірибе → Ойындар', en: 'Practice → Games' },
+    about: 'мини-игра Listening, «Слушай слово и находи его на картинке», «Мир чисел Декстера», Word Hunt, Speak or Die, Word Rush, три формы глагола',
   },
 
   // Тренажёры, которые карточка Практики открывает сразу (без квоты).
@@ -91,13 +98,13 @@ export const DESTINATIONS = [
   {
     id: 'speed-reading', nav: 'speed-reading', screen: 'speed-reading',
     name: { ru: 'Скорочтение', kk: 'Жылдам оқу', en: 'Speed reading' },
-    about: 'читать вслух английский текст за бегущей строкой (вкладка «Чтение», сразу после «Читай по-английски и разбирай прочитанное»): образец озвучки, запись голоса, процент прочитанного и звёзды',
+    about: 'читать вслух английский текст за бегущей строкой (вкладка «Чтение», сразу после «Читай по-английски и разбирай прочитанное»; та же карточка — в «Говорении»): образец озвучки, запись голоса, процент прочитанного и звёзды',
   },
   // Темы «Грамматики · игр» тоже с бэкенда; без входа экран сам просит войти.
   {
     id: 'grammar-games', nav: 'grammar-games', screen: 'grammar-games',
     name: { ru: 'Грамматика · игры', kk: 'Грамматика · ойындар', en: 'Grammar · games' },
-    about: '125 тем грамматики A0–C1 (карточка «Темы по уровням» вкладки «Грамматика» Практики; там же юниты «Грамматика», Prepositions World и все мини-игры): правило с формулами и примерами, потом игры по теме и финальный бой',
+    about: '125 тем грамматики A0–C1 (карточка «Темы по уровням» вкладки «Грамматика и письмо» Практики, рядом с юнитами «Грамматика»): правило с формулами и примерами, потом игры по теме и финальный бой',
   },
   {
     id: 'prepositions', nav: 'prepositions', screen: 'prepositions',
@@ -108,7 +115,7 @@ export const DESTINATIONS = [
   {
     id: 'tenses', nav: 'tenses', screen: 'tenses',
     name: { ru: 'Tenses World (12 времён)', kk: 'Tenses World', en: 'Tenses World' },
-    about: '12 английских времён (вкладка «Грамматика», группа «Тренажёры»): карта времён, у каждого видеоурок, правила и формулы, Formula Lab, затем практика в пять этапов — от узнавания времени до всех двенадцати вместе',
+    about: '12 английских времён (вкладка «Грамматика и письмо»): карта времён, у каждого видеоурок, правила и формулы, Formula Lab, затем практика в пять этапов — от узнавания времени до всех двенадцати вместе',
   },
   // Курс Pronunciation World тоже с бэкенда; без входа экран сам просит войти.
   {
@@ -120,13 +127,13 @@ export const DESTINATIONS = [
   {
     id: 'punctuation', nav: 'punctuation', screen: 'punctuation',
     name: { ru: 'Punctuation World (пунктуация)', kk: 'Punctuation World', en: 'Punctuation World' },
-    about: 'пунктуация английского A0–C2 (вкладка «Грамматика»): 20 страниц-уроков на пяти островах — знак, его работа, когда и как ставить, — и после каждой игра-приключение Декстера в семь стадий',
+    about: 'пунктуация английского A0–C2 (вкладка «Грамматика и письмо»): 20 страниц-уроков на пяти островах — знак, его работа, когда и как ставить, — и после каждой игра-приключение Декстера в семь стадий',
   },
   // Parts of Speech World тоже с бэкенда; без входа экран сам просит войти.
   {
     id: 'partsofspeech', nav: 'partsofspeech', screen: 'partsofspeech',
     name: { ru: 'Parts of Speech World (части речи)', kk: 'Parts of Speech World', en: 'Parts of Speech World' },
-    about: 'части речи английского A0–C2 (вкладка «Грамматика», группа «Тренажёры»): карта мира из девяти островов, 16 уроков с объяснением и упражнениями — существительные, местоимения, детерминативы, глаголы, прилагательные, наречия, предлоги, союзы, — и 14 квестов-расследований «Quests»',
+    about: 'части речи английского A0–C2 (вкладка «Грамматика и письмо»): карта мира из девяти островов, 16 уроков с объяснением и упражнениями — существительные, местоимения, детерминативы, глаголы, прилагательные, наречия, предлоги, союзы, — и 14 квестов-расследований «Quests»',
   },
   // Literature World тоже с бэкенда; без входа экран сам просит войти.
   {
@@ -154,7 +161,7 @@ export const DESTINATIONS = [
   {
     id: 'wordhunt', nav: 'wordhunt', screen: 'wordhunt',
     name: { ru: 'Word Hunt (кроссворд и поиск слов)', kk: 'Word Hunt', en: 'Word Hunt' },
-    about: 'кроссворд и поиск слов над словами курса A0–B2 и 16 профессий (вкладка «Грамматика», группа «Игры»), слова с подсказкой — на повторение',
+    about: 'кроссворд и поиск слов над словами курса A0–B2 и 16 профессий (вкладка «Игры»), слова с подсказкой — на повторение',
   },
   {
     id: 'arcade', nav: 'arcade', screen: 'arcade',

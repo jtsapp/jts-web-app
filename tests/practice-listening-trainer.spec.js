@@ -56,11 +56,11 @@ test.describe('Практика — тренажёр «Аудирование»'
     await expect.poll(async () => page.locator('.lt-audio audio').evaluate((el) => el.currentSrc)).toBe(url)
   })
 
-  test('карточка игры во вкладке «Грамматика» открывает интро тренажёра', async ({ page }) => {
+  test('карточка игры во вкладке «Игры» открывает интро тренажёра', async ({ page }) => {
     await boot(page)
     await page.goto('/?screen=practice')
-    // С редизайна 29.10.2026 мини-игра живёт во вкладке «Грамматика», а вся карточка — кнопка перехода.
-    await page.locator('.pk-skill--grammarGames').click({ timeout: 15000 })
+    // С 17.11.2026 мини-игра — в «Аудировании» и «Играх»; вся карточка — кнопка перехода.
+    await page.locator('.pk-skill--games').click({ timeout: 15000 })
     await page.locator('#sec-listening').click()
     await expect(page.locator('.lt-intro')).toBeVisible({ timeout: 10000 })
   })

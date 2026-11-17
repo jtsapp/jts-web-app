@@ -263,7 +263,7 @@ export default function PracticePage({
       skillOfModule(openTarget?.filter) ||
       (SKILL_KEYS.includes(openTarget?.skill) ? openTarget.skill : null) ||
       (openTarget?.area === 'situations' ? 'speaking' : null) ||
-      (openTarget?.unitId != null ? 'grammarGames' : null)
+      (openTarget?.unitId != null ? 'grammarWriting' : null)
     if (fromTarget) return fromTarget
     const saved = readSession(TAB_KEY)
     return SKILL_KEYS.includes(saved) ? saved : 'listening'
@@ -628,15 +628,15 @@ export default function PracticePage({
   const tour = useScreenTour(teacher ? null : tourKey)
   // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
   // Шаги — по устройству страницы, а не по разделам (редизайн 29.10.2026): вкладки → уровни → карточка тренажёра →
-  // карточка-каталог → начисления → «Грамматика», куда уехали все игры. Аккордеона без правил токенов нет — его шаг
-  // тур пропустит сам.
+  // карточка-каталог → начисления → вкладка «Игры», где собраны все игры (с 17.11.2026). Аккордеона без правил токенов
+  // нет — его шаг тур пропустит сам.
   const tourSteps = [
     { selector: '.pk-skills', title: t('tour.practice.skills.title'), text: t('tour.practice.skills.text'), art: tourMascot('sport-wave'), ...TOUR_COACH_CARD },
     { selector: '.pk-levels', title: t('tour.practice.levels.title'), text: t('tour.practice.levels.text'), art: tourMascot('dexter-cool', 200), ...TOUR_COACH_CARD },
     { selector: '#sec-listenchoose', title: t('tour.practice.card.title'), text: t('tour.practice.card.text'), art: tourMascot('aizere-thumbs'), ...TOUR_COACH_CARD },
     { selector: '#sec-shadowing', title: t('tour.practice.catalog.title'), text: t('tour.practice.catalog.text'), art: tourMascot('artist-paint'), ...TOUR_COACH_CARD },
     { selector: '.pk-acc', title: t('tour.practice.tokens.title'), text: t('tour.practice.tokens.text'), art: tourMascot('sport-fly'), ...TOUR_COACH_CARD },
-    { selector: '.pk-skill--grammarGames', title: t('tour.practice.grammar.title'), text: t('tour.practice.grammar.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
+    { selector: '.pk-skill--games', title: t('tour.practice.games.title'), text: t('tour.practice.games.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
   ]
   const tourIntro = {
     title: t('tour.intro.title'),
@@ -1115,10 +1115,9 @@ export default function PracticePage({
   }
 
   const skill = SKILLS.find((s) => s.key === tab) || SKILLS[0]
-  // У «Грамматики» нет каталогов, которые уровень мог бы отфильтровать: темы ведут на экран тем со своими
-  // уровнями, игры уровней не знают. Чипы там ничего бы не меняли — их нет (макет 7402:7133). Юниты «Грамматики»,
-  // переехавшие сюда из «Письма» (17.11.2026), уровень выбирают своими чипами в развёрнутом каталоге.
-  const levelsOff = skill.key === 'grammarGames'
+  // Игры уровней не знают: чипы на их вкладке ничего бы не меняли — их нет (как у прежней «Грамматики», макет
+  // 7402:7133). У «Грамматики и письма» строка уровней есть: по ней открываются воркбуки, «Письмо» и юниты.
+  const levelsOff = skill.key === 'games'
 
   // Карточка, которой сейчас на экране не место: каталоги караоке и комиксов, пока они пусты (материал заводит
   // методист — пустая витрина выглядела бы поломкой), как и прежние секции. Пока каталог грузится, карточка

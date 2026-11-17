@@ -14,9 +14,9 @@ test.beforeEach(({ page }) => loginAsStudent(page))
 
 const openCatalog = async (page) => {
   await page.goto('/?screen=practice')
-  // Грамматика с 17.11.2026 живёт во вкладке «Грамматика» (до того — «Письмо»); полный каталог — по
+  // Грамматика с 17.11.2026 — первая карточка вкладки «Грамматика и письмо»; полный каталог — по
   // карточке-каталогу (редизайн 29.10.2026).
-  await page.locator('.pk-skill', { hasText: 'Грамматика' }).click()
+  await page.locator('.pk-skill--grammarWriting').click()
   await page.locator('#sec-grammar').click()
   await expect(page.locator('.gr-catalog .gr-gcard').first()).toBeVisible()
 }
@@ -170,9 +170,9 @@ test.describe('Грамматика — каталог', () => {
   })
 
   // Ленты юнитов в обзоре с редизайна 29.10.2026 нет: «Грамматика» — карточка-каталог, юниты — в каталоге.
-  test('карточка «Грамматика» во вкладке «Грамматика» ведёт в каталог', async ({ page }) => {
+  test('карточка «Грамматика» во вкладке «Грамматика и письмо» ведёт в каталог', async ({ page }) => {
     await page.goto('/?screen=practice')
-    await page.locator('.pk-skill', { hasText: 'Грамматика' }).click()
+    await page.locator('.pk-skill--grammarWriting').click()
     const card = page.locator('#sec-grammar')
     await expect(card.locator('.pk-card__title')).toHaveText('Грамматика')
     await card.click()
