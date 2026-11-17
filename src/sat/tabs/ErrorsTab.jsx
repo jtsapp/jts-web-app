@@ -10,7 +10,7 @@ import { parse } from '../model/plan.js'
 import { fmtDate } from '../model/dates.js'
 import { DIFFICULTIES } from '../practice/FilterBlocks.jsx'
 import {
-  EMPTY, REASON_FILTER, SOURCES, STATUSES, activeFilters, barsOf, counters, filterItems, insightTone, reasonBars, skillsIn,
+  EMPTY, REASON_FILTER, SOURCES, STATUSES, activeFilters, barsOf, counters, filterItems, insightTone, insightsOf, previewText, reasonBars, skillsIn,
 } from '../errors/errorLog.js'
 import { DiffChip, REASON_ICON, ReasonChip, SourceChip, StatusChip, useReasonWord } from '../errors/chips.jsx'
 import { PillDate, PillSelect } from '../errors/PillFilters.jsx'
@@ -154,7 +154,7 @@ export default function ErrorsTab({ onPractice, onOpenPractice, explainLang, ini
                 {items.map((i) => (
                   <tr key={i.id} tabIndex={0} className={open?.id === i.id ? 'is-open' : ''} onClick={() => setOpen(i)}
                     onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setOpen(i))}>
-                    <td className="st-el__q"><span>{i.preview || i.questionId}</span></td>
+                    <td className="st-el__q"><span>{previewText(i.preview) || i.questionId}</span></td>
                     <td>{SECTION_SHORT[i.section] || i.section} · {skillName(i.skillId, lang)}</td>
                     <td><DiffChip d={i.difficulty} /></td>
                     <td><ReasonChip item={i} /></td>
@@ -170,10 +170,10 @@ export default function ErrorsTab({ onPractice, onOpenPractice, explainLang, ini
         </>
       ) : (
         <>
-          {s?.insights?.length > 0 && (
+          {insightsOf(s).length > 0 && (
             <section className="st-elwork">
               <h3>{t('sat.el.work')}</h3>
-              {s.insights.map((x) => {
+              {insightsOf(s).map((x) => {
                 const tone = insightTone(x.key)
                 const Icon = REASON_ICON[tone]
                 return (

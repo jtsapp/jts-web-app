@@ -134,7 +134,7 @@ export default function ProgressTab({ onPractice, roadmap }) {
           {p.domains.filter((d) => d.section === sec).map((d) => (
             <div key={d.id} className={`st-acc__row is-${sec}`}>
               <b>{domainName(d.id, lang)}</b>
-              <span className="st-muted">{t('sat.prog.attempts', { n: String(d.attempts), h: String(d.helped) })}</span>
+              <span className="st-muted">{t('sat.prog.attempts', { n: String(d.attempts) })}</span>
               <strong>{d.accuracy == null ? '—' : `${Math.round(d.accuracy * 100)}%`}</strong>
               <span className="st-rep__bar"><i style={{ width: `${Math.round((d.accuracy || 0) * 100)}%` }} /></span>
             </div>

@@ -59,3 +59,18 @@ describe('журнал ошибок SAT', () => {
     expect(insightTone('что-то новое')).toBe('unanswered')
   })
 })
+
+describe('выводы над диаграммами и превью (ТЗ SAT, задача 9)', () => {
+  it('без вывода сервера про причину — первой строкой самая частая названная причина', async () => {
+    const { insightsOf } = await import('./errorLog.js')
+    expect(insightsOf({ byReason: { time: 2, careless: 1, none: 5 }, total: 8, insights: [] })).toEqual([{ key: 'time', skillId: null }])
+    expect(insightsOf({ byReason: { none: 3 }, total: 3, insights: [] })).toEqual([])
+    const server = [{ key: 'careless', skillId: null }]
+    expect(insightsOf({ byReason: { time: 5 }, total: 5, insights: server })).toBe(server)
+  })
+  it('превью журнала раскрывает сущности и теги', async () => {
+    const { previewText } = await import('./errorLog.js')
+    expect(previewText('If x = k&pi; and y &le; 3<sup>2</sup>')).toBe('If x = kπ and y ≤ 32')
+    expect(previewText('plain')).toBe('plain')
+  })
+})
