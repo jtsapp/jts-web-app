@@ -46,6 +46,7 @@ vi.mock('../api.js', () => ({
 import LessonsPage from './LessonsPage.jsx'
 import { getFeedbackReports, getFeedbackReport, markFeedbackReportSeen, getSelfStudyAccess } from '../api.js'
 import { SAMPLE_LIST, SAMPLE_REPORT } from '../feedback/sample.js'
+import { RULES } from './lessons/rules/rulesContent.js'
 
 // Роль читается из полезной нагрузки JWT (см. lib/jwt.js) — подписи никто не
 // проверяет, поэтому для теста достаточно собрать payload вручную.
@@ -210,6 +211,13 @@ describe('вкладка «Отчёты»', () => {
 
 // Правила обучения школы — ученическая вкладка: перенос, отмена, заморозка.
 describe('вкладка «Правила»', () => {
+  // Текст правил меняет школа (новый PDF — новые заголовки и строки). Здесь проверяем
+  // вкладку, а не формулировки: заголовок, разделы и строки берём из самих данных,
+  // их структуру по языкам сторожит rulesContent.test.js.
+  const ru = RULES.ru
+  const tableRows = ru.sections.flatMap((s) => s.blocks).filter((b) => b.type === 'table').flatMap((b) => b.rows).length
+  const freezeTitle = ru.sections.find((s) => s.id === 'freeze').title
+
   beforeEach(() => {
     vi.clearAllMocks()
     getSelfStudyAccess.mockResolvedValue(false)
@@ -218,15 +226,15 @@ describe('вкладка «Правила»', () => {
   it('по нажатию показывает правила целиком', async () => {
     const { container } = renderPage(tokenWithRole('STUDENT'))
     fireEvent.click(await screen.findByRole('button', { name: 'Правила' }))
-    expect(await screen.findByRole('heading', { name: 'Правила обучения' })).toBeTruthy()
-    expect(container.querySelectorAll('[data-rules-section]')).toHaveLength(11)
-    expect(container.querySelectorAll('.lr-table tbody tr')).toHaveLength(13)
+    expect(await screen.findByRole('heading', { name: ru.title })).toBeTruthy()
+    expect(container.querySelectorAll('[data-rules-section]')).toHaveLength(ru.sections.length)
+    expect(container.querySelectorAll('.lr-table tbody tr')).toHaveLength(tableRows)
   })
 
   it('initialTab «rules» (ссылка ?screen=lessons&tab=rules) открывает её сразу', async () => {
     const { container } = renderPage(tokenWithRole('STUDENT'), { initialTab: 'rules' })
     await waitFor(() => expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Правила'))
-    expect(screen.getByRole('heading', { name: 'Правила обучения' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: ru.title })).toBeTruthy()
   })
 
   it('преподавателю ссылка на правила их не открывает', async () => {
@@ -243,7 +251,7 @@ describe('вкладка «Правила»', () => {
     onTestFinished(() => { window.HTMLElement.prototype.scrollIntoView = original })
     const before = window.location.href
     const { container } = renderPage(tokenWithRole('STUDENT'), { initialTab: 'rules' })
-    fireEvent.click(await screen.findByRole('button', { name: 'Заморозка обучения' }))
+    fireEvent.click(await screen.findByRole('button', { name: freezeTitle }))
     expect(scroll).toHaveBeenCalledTimes(1)
     expect(scroll.mock.contexts[0]).toBe(container.querySelector('[data-rules-section="freeze"]'))
     expect(window.location.href).toBe(before)

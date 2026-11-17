@@ -395,7 +395,7 @@
   .lr-tariffs { gap: 8px; }
   .lr-tariff { padding: 12px 14px; }
   /* «ИНДИВИДУАЛЬНЫЙ» с разрядкой на 390 px встаёт ровно в карточку; на 380 и уже — тарифы в столбик (ниже). */
-  .lr-tariff__k { letter-spacing: .02em; overflow-wrap: anywhere; }
+  .lr-tariff__k { letter-spacing: .02em; overflow-wrap: break-word; }
   .lr-tariff__v { font-size: 21px; }
   .lr-table { font-size: 14px; }
   .lr-table th,
