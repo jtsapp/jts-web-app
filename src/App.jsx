@@ -386,6 +386,8 @@ export default function App() {
     const deepLink = legacyTeacher ? 'lessons' : searchParams.get('screen')
     if (legacyTeacher) setLessonsTarget({ tab: 'teacher', reportId: null, at: Date.now() })
     const embed = embedTarget(searchParams)
+    const registrationInvite = window.location.pathname === '/demo' ? 'demo' : null
+    setTrialInvite(registrationInvite)
     // Пришёл с лендинга после заявки: в адресе код с именем и номером
     // (src/landing/handoff.js). Из адреса убираем сразу — ему незачем
     // оставаться в истории, закладках и на скриншотах.
@@ -669,6 +671,7 @@ export default function App() {
         }
         // Ссылка из админки важнее сессии: студент должен задать пароль.
         else if (inviteToken) setScreen('complete-registration')
+        else if (registrationInvite && !session) setScreen('reg-lang')
         // Ученик без номера (Google-вход его не даёт) дальше не идёт, пока не укажет: восстановленная
         // сессия не должна обходить гейт, который он прошёл бы при входе.
         else if (session && session.role === 'STUDENT' && !session.phone && !session.boothAccount) {
@@ -724,6 +727,7 @@ export default function App() {
 
   const [name, setName] = useState('')
   const [inviteToken, setInviteToken] = useState('')
+  const [trialInvite, setTrialInvite] = useState(null)
   const [phone, setPhone] = useState('')
   // Почта студента при регистрации: имя и дата → почта и телефон → код (на
   // почту) → пароль; оба идентификатора собираются ДО запроса кода (см.
@@ -1080,6 +1084,14 @@ export default function App() {
     setErrorField(null)
   }
 
+  function clearTrialInvite() {
+    if (trialInvite == null) return
+    setTrialInvite(null)
+    const url = new URL(window.location.href)
+    url.pathname = '/'
+    window.history.replaceState(null, '', url)
+  }
+
   // Экран 'phone' — только вход по коду (фолбэк для аккаунтов без пароля,
   // ссылка «Войти по коду из сообщения» на экране входа). Регистрация через
   // него не идёт — там свой путь: 'reg-name' → 'reg-contacts' → 'otp'.
@@ -1116,7 +1128,7 @@ export default function App() {
     setPhone(phoneValue)
     setLoading(true)
     try {
-      const m = await sendRegistrationOtp(name, phoneValue, emailValue, birthDate)
+      const m = await sendRegistrationOtp(name, phoneValue, emailValue, birthDate, trialInvite)
       setMode(m)
       setScreen('otp')
     } catch (e) {
@@ -1140,9 +1152,10 @@ export default function App() {
       // угадыванием кода, как раньше, больше нельзя.
       const data =
         mode === 'register'
-          ? await verifyRegistrationOtp(name, phone, email, code, birthDate)
+          ? await verifyRegistrationOtp(name, phone, email, code, birthDate, trialInvite)
           : await verifyLoginOtp(phone, code)
       const tok = data?.accessToken || null
+      if (tok) clearTrialInvite()
       // Та же причина, что у входа по паролю: у входа по коду имя в стейте
       // пустое, и взять его неоткуда, кроме ответа. Регистрации ответ вернёт
       // ровно то имя, которое она и отправила, поэтому ветка одна на два режима
@@ -1265,6 +1278,7 @@ export default function App() {
       const data = await loginWithPassword(identifier, password)
       const tok = data?.accessToken || null
       if (!tok) throw new Error(t('login.failed'))
+      clearTrialInvite()
       // Имя приезжает только этим ответом: экран входа его перед собой чистит
       // (onLogin → setName('')), а сам сеанс восстановления не проходит. Без
       // этой строки сайдбар и профиль весь сеанс показывали «Без имени», и имя
@@ -1370,9 +1384,10 @@ export default function App() {
     clearError()
     setLoading(true)
     try {
-      const data = await loginWithGoogle(idToken)
+      const data = await loginWithGoogle(idToken, trialInvite)
       const tok = data?.accessToken || null
       if (!tok) throw new Error(t('err.otp'))
+      clearTrialInvite()
       setName(data?.name || name || '')
       setToken(tok)
       saveToken(tok, data?.refreshToken || null)
@@ -1669,7 +1684,7 @@ export default function App() {
     // Сначала экран входа и адрес без ?screen=: иначе кабинет остаётся открытым
     // (пустые «Уроки», SAT), а обновление страницы снова читает старый раздел.
     skipPushRef.current = true
-    setScreen(next)
+    setScreen(trialInvite && next === 'welcome' ? 'reg-lang' : next)
     try {
       const url = new URL(window.location.href)
       url.searchParams.delete('screen')
@@ -2246,7 +2261,7 @@ export default function App() {
     setError('')
     try {
       if (mode === 'register') {
-        await sendRegistrationOtp(name, phone, email, birthDate)
+        await sendRegistrationOtp(name, phone, email, birthDate, trialInvite)
       } else {
         const m = await requestLoginOtp(phone)
         setMode(m)

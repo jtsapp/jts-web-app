@@ -1077,6 +1077,7 @@ export function assignPracticeUnits(token, lessonId, { area, units, batchId, due
 // источника правды разъедутся при гонке).
 function trialRequestState(data) {
   return {
+    trialAlreadyAttended: !!data?.trialAlreadyAttended,
     requested: !!data?.requested,
     requestedAt: data?.requestedAt || null,
     teacherAssigned: !!data?.teacherAssigned,
@@ -1135,7 +1136,7 @@ export async function createLead(token, { source, comment, amount } = {}) {
     comment: comment || null,
     amount: Number.isFinite(amount) ? Math.round(amount) : null,
   })
-  return { accepted: data?.accepted !== false }
+  return { accepted: data?.accepted !== false, contactInviter: data?.contactInviter === true }
 }
 
 // Живой урок: загрузка одного урока и управление жизненным циклом (учитель/админ).
@@ -1440,13 +1441,14 @@ async function post(path, body) {
 // веб-формы: имя и дата → почта и номер → код на почту → пароль. Если телефон
 // или почта уже заняты — не уводим молча в вход, а помечаем ошибку кодом
 // USER_EXISTS.
-export async function sendRegistrationOtp(name, phone, email, birthDate) {
+export async function sendRegistrationOtp(name, phone, email, birthDate, trialInvite) {
   try {
     await post('/registration/initiate', {
       name: name || 'Гость',
       phone: normalizePhone(phone),
       email,
       birthDate,
+      trialInvite: trialInvite ?? undefined,
       // Откуда пришёл (лендинг, реклама) — для тега и меток сделки в amoCRM.
       // Бэкенд игнорирует незнакомые поля, так что веб можно катить раньше.
       ...registrationFields(readAttribution(safeStorage())),
@@ -1476,7 +1478,7 @@ export function identityConflictField(e) {
 // обоими идентификаторами и возвращает accessToken/refreshToken (см.
 // RegistrationVerifyResponse на бэкенде) — отдельного входа после регистрации
 // больше не требуется.
-export async function verifyRegistrationOtp(name, phone, email, code, birthDate) {
+export async function verifyRegistrationOtp(name, phone, email, code, birthDate, trialInvite) {
   try {
     const res = await post('/registration/verify', {
       name: name || 'Гость',
@@ -1484,6 +1486,7 @@ export async function verifyRegistrationOtp(name, phone, email, code, birthDate)
       email,
       birthDate,
       otp: code,
+      trialInvite: trialInvite ?? undefined,
       // Именно здесь бэкенд создаёт аккаунт и заявку менеджеру.
       ...registrationFields(readAttribution(safeStorage())),
     })
@@ -1545,8 +1548,8 @@ export async function verifyLoginOtp(identifier, code) {
 
 // Вход через Google: id_token из Google Identity Services → LoginResponse
 // с accessToken. Бэкенд сам создаёт пользователя при первом входе.
-export function loginWithGoogle(idToken) {
-  return post('/auth/google', { idToken })
+export function loginWithGoogle(idToken, trialInvite) {
+  return post('/auth/google', { idToken, trialInvite: trialInvite ?? undefined })
 }
 
 // ─────────────────────────────────────────────────────────────────────────

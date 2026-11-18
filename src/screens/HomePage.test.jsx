@@ -270,15 +270,10 @@ describe('Главная демо-аккаунта', () => {
     expect(container.querySelector('.dm-banner')).toBeFalsy()
   })
 
-  it('«Открыть полный доступ» и «Записаться» зовут свои обработчики', () => {
-    const { onOpenPricing, onOpenTrial } = renderHome()
+  it('«Открыть полный доступ» ведёт к тарифам', () => {
+    const { onOpenPricing } = renderHome()
     fireEvent.click(screen.getByText('Открыть полный доступ'))
     expect(onOpenPricing).toHaveBeenCalled()
-    // «Записаться» делает два дела: открывает разговор с менеджером (сам сговор
-    // о времени идёт там) и оставляет заявку, чтобы человек не потерялся в
-    // очереди, даже если до чата не дошёл.
-    fireEvent.click(screen.getByText('Записаться'))
-    expect(onOpenTrial).toHaveBeenCalled()
   })
 
   // Бессрочное демо (менеджер выдал доступ руками) — таймера нет вовсе, а не
@@ -346,13 +341,22 @@ describe('Карточка пробного урока', () => {
 
   it('после нажатия открывает разговор с менеджером и показывает, что заявка есть', async () => {
     const { onOpenTrial } = renderHome({ token: 'T' })
-    fireEvent.click(await screen.findByText('Записаться'))
+    const button = await screen.findByText('Записаться')
+    await waitFor(() => expect(button.disabled).toBe(false))
+    fireEvent.click(button)
 
     // Сговор о времени идёт в чате — слотов в приложении нет.
     expect(onOpenTrial).toHaveBeenCalled()
     // А карточка перестаёт звать записываться второй раз.
     expect(await screen.findByText('Заявка принята')).toBeTruthy()
     expect(screen.queryByText('Записаться')).toBeNull()
+  })
+
+  it('не предлагает повторный пробный урок ученику по приглашению', async () => {
+    trialState.value = { trialAlreadyAttended: true }
+    renderHome({ token: 'T' })
+
+    await waitFor(() => expect(screen.queryByText('Записаться')).toBeNull())
   })
 
   it('с оставленной заявкой кнопки нет вовсе', async () => {

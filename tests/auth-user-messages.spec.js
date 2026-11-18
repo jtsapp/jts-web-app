@@ -13,9 +13,9 @@ const json = (body, status = 200) => ({
 
 // Регистрация по макету «Регистрация» (21.10.2026): язык → имя и дата → почта и
 // телефон. Возвращает страницу на шаге «Как с вами связаться?» с заполненными полями.
-async function startRegistrationThroughContacts(page) {
-  await page.goto('/')
-  await page.locator('.btn--primary').click()
+async function startRegistrationThroughContacts(page, fromDemo = false) {
+  await page.goto(fromDemo ? '/demo' : '/')
+  if (!fromDemo) await page.locator('.btn--primary').click()
   await page.locator('.rg-lang').first().waitFor({ timeout: 20_000 })
   await page.locator('.rg-btn').click()
 
@@ -28,6 +28,28 @@ async function startRegistrationThroughContacts(page) {
   await page.locator('#rg-email').fill('litovandrew@gmail.com')
   await page.locator('#rg-phone').fill('7771234567')
 }
+
+test('/demo открывает регистрацию и передаёт источник на обоих шагах OTP', async ({ page }) => {
+  const payloads = []
+  await page.route(/\/registration\/(initiate|verify)/, (route) => {
+    payloads.push(route.request().postDataJSON())
+    return route.fulfill(json({ accessToken: 'test-token' }))
+  })
+  await page.route(/\/user\/language-level/, (route) => route.fulfill(json({})))
+
+  await startRegistrationThroughContacts(page, true)
+  await expect(page).toHaveURL('/demo')
+  await page.locator('.rg-btn').first().click()
+  const cells = page.locator('.rg-code__cell')
+  await expect(cells).toHaveCount(4)
+  for (const [i, digit] of ['1', '2', '3', '4'].entries()) await cells.nth(i).fill(digit)
+
+  await expect(page).toHaveURL('/')
+  expect(payloads).toEqual([
+    expect.objectContaining({ trialInvite: 'demo' }),
+    expect.objectContaining({ trialInvite: 'demo', otp: '1234' }),
+  ])
+})
 
 test('регистрация занятого телефона: ошибка под полем номера', async ({ page }) => {
   await page.route(/\/registration\/initiate/, (r) =>

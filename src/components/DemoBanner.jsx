@@ -15,7 +15,7 @@ import { demoTimeLeft, formatDemoLeft } from '../lib/demoAccess.js'
 //
 // Срок вышел — зовём на бесплатный пробный урок, а не к полному доступу (onTrial,
 // см. DemoSubscriptionModal); booked — заявка уже есть, звать больше не на что.
-export default function DemoBanner({ expiresAt, onOpenAccess, onTrial, booked = false }) {
+export default function DemoBanner({ expiresAt, onOpenAccess, onTrial, booked = false, trialAlreadyAttended = false }) {
   const { t } = useI18n()
   // Первый рендер обязан совпасть с серверным, иначе Next роняет гидратацию:
   // на сервере Date.now() другой. Поэтому остаток считаем эффектом, а до него
@@ -30,13 +30,14 @@ export default function DemoBanner({ expiresAt, onOpenAccess, onTrial, booked = 
   }, [expiresAt])
 
   const expired = left?.expired === true
+  const offerTrial = expired && !trialAlreadyAttended
   const timer = left && !left.endless ? formatDemoLeft(t, left) : ''
 
   return (
     <div className={`dm-banner${expired ? ' is-out' : ''}`}>
       <span className="dm-banner__badge">{t('demo.badge')}</span>
       <span className="dm-banner__text">
-        {t(!expired ? 'demo.banner' : booked ? 'demo.bannerBooked' : 'demo.bannerExpired')}
+        {t(!expired ? 'demo.banner' : trialAlreadyAttended ? 'demo.expired.title' : booked ? 'demo.bannerBooked' : 'demo.bannerExpired')}
       </span>
       {timer && (
         <span className="dm-banner__timer">
@@ -44,9 +45,9 @@ export default function DemoBanner({ expiresAt, onOpenAccess, onTrial, booked = 
           {timer}
         </span>
       )}
-      {!(expired && booked) && (
-        <button type="button" className="dm-banner__cta" onClick={expired ? onTrial : onOpenAccess}>
-          {t(expired ? 'demo.expired.trial' : 'demo.open')}
+      {!(offerTrial && booked) && (
+        <button type="button" className="dm-banner__cta" onClick={offerTrial ? onTrial : onOpenAccess}>
+          {t(offerTrial ? 'demo.expired.trial' : 'demo.open')}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="m9 5 7 7-7 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>

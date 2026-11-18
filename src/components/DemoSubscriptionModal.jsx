@@ -39,7 +39,8 @@ export default function DemoSubscriptionModal({ onClose, onBuy, onTrialBooked, o
   const [trial, setTrial] = useState(null)
   const [sending, setSending] = useState(false)
   const [failed, setFailed] = useState(false)
-  const booked = expired && !!trial?.requested
+  const alreadyAttended = expired && trial?.trialAlreadyAttended === true
+  const booked = expired && !alreadyAttended && !!trial?.requested
 
   // Заявку могли оставить раньше (карточка на «Главной», другое устройство) —
   // тогда звать ещё раз незачем. Не ответил сервер — покажем кнопку: повторная
@@ -53,7 +54,7 @@ export default function DemoSubscriptionModal({ onClose, onBuy, onTrialBooked, o
   }, [expired])
 
   const bookTrial = async () => {
-    if (sending) return
+    if (sending || alreadyAttended) return
     setSending(true)
     setFailed(false)
     try {
@@ -126,7 +127,7 @@ export default function DemoSubscriptionModal({ onClose, onBuy, onTrialBooked, o
         <p className="ds-body" id="ds-body" aria-live="polite">
           {t(booked
             ? (trial.managerAssigned ? 'trial.doneManager' : 'trial.doneText')
-            : expired ? 'demo.expired.body' : 'demo.paywall.body')}
+            : alreadyAttended ? 'pay.contactInviter' : expired ? 'demo.expired.body' : 'demo.paywall.body')}
         </p>
         {/* Тот же абзац ошибки, что у карточки пробного урока на «Главной». */}
         {failed && <p className="hm-trial__error" role="alert">{t('trial.failed')}</p>}
@@ -143,7 +144,7 @@ export default function DemoSubscriptionModal({ onClose, onBuy, onTrialBooked, o
               onBuy не передали (окно открыто с экрана, который не умеет
               навигировать) — остаётся прежний путь в WhatsApp поддержки: кнопка,
               которая молча ничего не делает, читается как сломанная оплата. */}
-          {booked ? (
+          {alreadyAttended ? null : booked ? (
             <a className="ds-buy" href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
               {t('demo.expired.manager')}
             </a>

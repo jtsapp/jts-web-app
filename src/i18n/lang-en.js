@@ -236,6 +236,7 @@ const dict = {
     'pay.callbackSub': 'A manager will contact you to arrange payment',
     'pay.sent': 'Request received',
     'pay.sentSub': 'A manager will call you on the number from your profile.',
+    'pay.contactInviter': 'To continue learning, reply in the chat where you received your registration link.',
     'pay.refused.unavailable': 'This plan can’t be paid online right now, so we removed it from the list. Choose another one or message a manager.',
     'pay.refused.level': 'To buy Self Study, your English level must be in your profile. Take the level test or message a manager.',
     'pay.refused.changed': 'The plan terms have changed and the list is updated. Check your cart and pay again.',

@@ -44,6 +44,7 @@ export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin })
   useEffect(() => clearPendingOffer(), [])
   const [payOpen, setPayOpen] = useState(false)
   const [sent, setSent] = useState(false)
+  const [contactInviter, setContactInviter] = useState(false)
   const [hidNote, setHidNote] = useState(false)
 
   const packs = useMemo(() => splitOffers(offers || []).minutes, [offers])
@@ -104,8 +105,11 @@ export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin })
     // Как и на витрине тарифов: заявка в CRM при любом способе, оплата — если
     // эквайринг подключён.
     let accepted = false
+    let invited = false
     try {
-      accepted = (await createLead(token, { source: 'MINUTES', comment: text, amount: picked.price })).accepted
+      const lead = await createLead(token, { source: 'MINUTES', comment: text, amount: picked.price })
+      accepted = lead.accepted
+      invited = lead.contactInviter
     } catch {
       /* заявка не единственный путь */
     }
@@ -140,6 +144,10 @@ export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin })
     }
 
     setPayOpen(false)
+    if (invited) {
+      setContactInviter(true)
+      return
+    }
     // Заявка дошла до менеджера — говорим об этом окном, а не только плашкой
     // в корзине: человек ждёт ответа на своё нажатие.
     if (accepted) setSent(true)
@@ -221,6 +229,7 @@ export default function MinutesTopUpPage({ token, onBack, onDone, onNeedLogin })
           <aside className="tu-order">
             <div className="tu-order__inner">
               <div className="tu-order__label">{t('topup.order')}</div>
+              {contactInviter && <p role="status">{t('pay.contactInviter')}</p>}
               <div className="tu-order__row">
                 <span>{t('topup.pack', { minutes: minutesLabel(picked.minutes) })}</span>
                 <b>{formatPrice(picked.price)} {CURRENCY}</b>

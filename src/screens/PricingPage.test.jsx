@@ -11,6 +11,7 @@ const backend = {
   offers: [],
   offersFail: false,
   leadAccepted: true,
+  contactInviter: false,
   order: { paymentUrl: null },
   orderError: null,
   offersCalls: 0,
@@ -26,7 +27,7 @@ vi.mock('../api.js', () => ({
   }),
   createLead: vi.fn(async (token, payload) => {
     backend.leadCalls.push(payload)
-    return { accepted: backend.leadAccepted }
+    return { accepted: backend.leadAccepted, contactInviter: backend.contactInviter }
   }),
   createOrder: vi.fn(async (token, payload) => {
     backend.orderCalls.push(payload)
@@ -88,6 +89,7 @@ beforeEach(() => {
   backend.offers = CATALOG
   backend.offersFail = false
   backend.leadAccepted = true
+  backend.contactInviter = false
   backend.order = { paymentUrl: null }
   backend.orderError = null
   backend.offersCalls = 0
@@ -166,6 +168,18 @@ describe('Витрина тарифов', () => {
   })
 
   /* ------------------------------- оплата ------------------------------- */
+
+  it('предлагает написать клоузеру в прежнем чате вместо заявки на продление', async () => {
+    backend.leadAccepted = false
+    backend.contactInviter = true
+    const { container } = await renderLoaded()
+    await addTile(container, '12 уроков')
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Связаться со мной'))
+
+    expect(await screen.findByText(/напишите в чат, где вам прислали ссылку/)).toBeTruthy()
+    expect(window.open).not.toHaveBeenCalled()
+  })
 
   // Kaspi напрямую не подключён; карта — через Freedom Pay.
   it('в окне оплаты — карта и два пути к менеджеру, Kaspi нет', async () => {
