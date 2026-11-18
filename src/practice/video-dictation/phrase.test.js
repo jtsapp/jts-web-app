@@ -9,12 +9,12 @@ describe('фраза с пропусками', () => {
     const p = parsePhrase('I [love] jumping in [muddy] puddles!')
     expect(p).toMatchObject({ ok: true, whole: false, target: 'lovemuddy', plain: 'I love jumping in muddy puddles!' })
     expect(p.tokens).toEqual([
-      { kind: 'text', text: 'I' },
-      { kind: 'cells', start: 0, size: 4 },
-      { kind: 'text', text: 'jumping' },
-      { kind: 'text', text: 'in' },
-      { kind: 'cells', start: 4, size: 5 },
-      { kind: 'text', text: 'puddles!' },
+      { kind: 'text', text: 'I', glue: false },
+      { kind: 'cells', start: 0, size: 4, glue: false },
+      { kind: 'text', text: 'jumping', glue: false },
+      { kind: 'text', text: 'in', glue: false },
+      { kind: 'cells', start: 4, size: 5, glue: false },
+      { kind: 'text', text: 'puddles!', glue: false },
     ])
   })
 
@@ -50,6 +50,79 @@ describe('фраза без скобок — пропуск вся фраза', 
     const p = parsePhrase('Wait — what?')
     expect(cells(p)).toEqual([4, 4])
     expect(p.target).toBe('waitwhat')
+  })
+})
+
+describe('glue — слово стоит вплотную к предыдущему, без пробела', () => {
+  const glues = (p) => p.tokens.map((t) => [t.kind === 'cells' ? `cells ${t.size}` : t.text, t.glue])
+
+  it('пропуск внутри слова: un[believ]able — и ячейки, и хвост приклеены', () => {
+    expect(glues(parsePhrase('un[believ]able'))).toEqual([
+      ['un', false],
+      ['cells 6', true],
+      ['able', true],
+    ])
+  })
+
+  it('знак после пропуска приклеен к ячейкам, слово после пробела — нет', () => {
+    expect(glues(parsePhrase('I love [puddles].'))).toEqual([
+      ['I', false],
+      ['love', false],
+      ['cells 7', false],
+      ['.', true],
+    ])
+  })
+
+  it('запятая после пропуска приклеена, следующее слово — нет', () => {
+    expect(glues(parsePhrase('[Peppa], hi'))).toEqual([
+      ['cells 5', false],
+      [',', true],
+      ['hi', false],
+    ])
+  })
+
+  it('пробелы внутри скобок не склеивают: [ love ] it', () => {
+    expect(glues(parsePhrase('I [ love ] it'))).toEqual([
+      ['I', false],
+      ['cells 4', false],
+      ['it', false],
+    ])
+  })
+
+  it('вся фраза: слова разделены пробелом — glue false; слово без латинских букв выпадает, а следующее после пробела не приклеено', () => {
+    expect(glues(parsePhrase('Hello, George!'))).toEqual([
+      ['cells 5', false],
+      ['cells 6', false],
+    ])
+    expect(glues(parsePhrase('Wait — what?'))).toEqual([
+      ['cells 4', false],
+      ['cells 4', false],
+    ])
+  })
+
+  it('вся фраза: glue считается по пробелу в тексте, а не по соседнему токену — знак перед словом без пробела клеит его к ячейкам', () => {
+    expect(glues(parsePhrase('Wait —what?'))).toEqual([
+      ['cells 4', false],
+      ['cells 4', false],
+    ])
+    expect(glues(parsePhrase('Wait… what'))).toEqual([
+      ['cells 4', false],
+      ['cells 4', false],
+    ])
+  })
+})
+
+describe('буквы ячеек берутся из letters — он приводит к нижнему регистру до фильтра', () => {
+  it('été: é не латиница, остаётся «t»', () => {
+    const p = parsePhrase('été')
+    expect(p.target).toBe('t')
+    expect(cells(p)).toEqual([1])
+  })
+
+  it('İa (turkish dotted I): lowercase даёт «i̇a» с комбинирующей точкой, ячеек 2 — текущее поведение', () => {
+    const p = parsePhrase('İa')
+    expect(p.target).toBe('ia')
+    expect(cells(p)).toEqual([2])
   })
 })
 

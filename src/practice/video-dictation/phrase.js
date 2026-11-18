@@ -23,8 +23,10 @@ const fail = (error) => ({ ok: false, error })
 
 /**
  * Текст фразы → { ok: true, whole, tokens, target, plain } | { ok: false, error }.
- * tokens — по порядку: { kind: 'text', text } — видимое слово, { kind: 'cells', start, size } — группа ячеек слова
- * пропуска (start — индекс первой буквы в target). target — буквы всех пропусков подряд, plain — фраза без скобок
+ * tokens — по порядку: { kind: 'text', text, glue } — видимое слово, { kind: 'cells', start, size, glue } — группа
+ * ячеек слова пропуска (start — индекс первой буквы в target). glue — слово стоит вплотную к предыдущему без пробела
+ * (`un[believ]able`, `[puddles].`), у первого false; во фразе без скобок слово без латинских букв выпадает, а glue
+ * следующего считается по пробелу в тексте, не по соседнему токену. target — буквы всех пропусков подряд, plain — фраза без скобок
  * с одним пробелом между словами.
  * error: empty | tooLong | pipe | digits | nested | unbalanced | emptyGap | gapChars | gapNoLetters | noLetters.
  */
@@ -66,20 +68,27 @@ export function parsePhrase(raw) {
   const whole = gaps.length === 0
   if (whole && !LATIN.test(text)) return fail('noLetters')
 
+  // glue смотрит на текст без скобок: слово приклеено, если прямо перед ним не пробел (и оно не первое).
+  const bare = parts.map((p) => p.text).join('')
   const tokens = []
   let target = ''
+  let offset = 0
   for (const p of parts) {
-    for (const word of p.text.split(/\s+/).filter(Boolean)) {
+    for (const m of p.text.matchAll(/\S+/g)) {
+      const word = m[0]
+      const at = offset + m.index
+      const glue = at > 0 && bare[at - 1] !== ' '
       if (!p.gap && !whole) {
-        tokens.push({ kind: 'text', text: word })
+        tokens.push({ kind: 'text', text: word, glue })
         continue
       }
       // Слово без латинских букв («—», «…») во фразе без скобок ячеек не получает — его покажет фраза после ответа.
       const w = letters(word)
       if (!w) continue
-      tokens.push({ kind: 'cells', start: target.length, size: w.length })
+      tokens.push({ kind: 'cells', start: target.length, size: w.length, glue })
       target += w
     }
+    offset += p.text.length
   }
   const plain = text.replace(/[[\]]/g, '').replace(/\s+/g, ' ').trim()
   return { ok: true, whole, tokens, target, plain }
