@@ -1519,9 +1519,17 @@ function isGenericDbError(e) {
   return msg.includes('базе данных') || msg.includes('database')
 }
 
+const currentUserRequests = new Map()
+
 export async function getCurrentUser(token) {
   if (!token) return null
-  return authGet('/user/me', token)
+  const pending = currentUserRequests.get(token)
+  if (pending) return pending
+
+  // Профиль и флаги кабинета делят один запрос, пока сервер не ответил.
+  const request = authGet('/user/me', token).finally(() => currentUserRequests.delete(token))
+  currentUserRequests.set(token, request)
+  return request
 }
 
 // Вход: запрашиваем код сразу, без /registration/initiate — иначе незнакомый
@@ -2689,7 +2697,7 @@ export async function getLanguageLevel(token) {
 export async function getSelfStudyAccess(token) {
   if (!token) return false
   try {
-    const data = await authGet('/user/me', token)
+    const data = await getCurrentUser(token)
     return data?.selfStudy === true
   } catch {
     return false
@@ -2720,7 +2728,7 @@ const _demoAccess = new Map()
 export async function getDemoAccess(token) {
   if (!token) return { isDemo: false, expiresAt: null, createdAt: null }
   if (_demoAccess.has(token)) return _demoAccess.get(token)
-  const p = authGet('/user/me', token)
+  const p = getCurrentUser(token)
     .then((data) => {
       const isDemo = !!data?.isDemoAccount
       const expiresAt = data?.demoExpiresAt || null
@@ -2910,7 +2918,7 @@ export function saveTrialLead(token, name, phone) {
 export async function getIsBoothAccount(token) {
   if (!token) return false
   try {
-    const data = await authGet('/user/me', token)
+    const data = await getCurrentUser(token)
     // `!!`, а не голое значение: у обычного ученика поля в ответе нет вовсе, и
     // без приведения дальше поехало бы undefined. Дальше признак разветвляется в
     // трёх местах (homeScreenFor, страж кабинета, renderScreen), и «нет поля»

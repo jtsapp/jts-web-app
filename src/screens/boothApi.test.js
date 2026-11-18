@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getIsBoothAccount, enterTrialBooth } from '../api.js'
+import { enterTrialBooth, getCurrentUser, getDemoAccess, getIsBoothAccount, getSelfStudyAccess } from '../api.js'
 
 // Обёртки класса преподавателя. Мокаем транспорт (fetch), а не модуль целиком:
 // проверять тут нечего, кроме пути, метода, Bearer и разбора ответа, — то есть
@@ -13,6 +13,25 @@ const ok = (body) => ({ ok: true, status: 200, json: async () => body })
 const fail = (status) => ({ ok: false, status, json: async () => ({}) })
 
 describe('getIsBoothAccount', () => {
+  it('профиль и флаги кабинета используют один одновременный GET /user/me', async () => {
+    const profile = { id: 7, boothAccount: true, selfStudy: true, isDemoAccount: false }
+    global.fetch.mockResolvedValueOnce(ok(profile))
+
+    const results = await Promise.all([
+      getCurrentUser('SHARED_TOKEN'),
+      getIsBoothAccount('SHARED_TOKEN'),
+      getSelfStudyAccess('SHARED_TOKEN'),
+      getDemoAccess('SHARED_TOKEN'),
+    ])
+
+    expect(results).toEqual([profile, true, true, { isDemo: false, expiresAt: null, createdAt: null }])
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+
+    global.fetch.mockResolvedValueOnce(ok({ ...profile, selfStudy: false }))
+    expect(await getSelfStudyAccess('SHARED_TOKEN')).toBe(false)
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+  })
+
   // Канонический контракт: boothAccount — ПЛОСКОЕ булево поле рядом с
   // isDemoAccount, а не объект с описанием класса. Имя класса, преподаватель и
   // состояние клиенту не нужны вовсе: он этим признаком решает ровно один
