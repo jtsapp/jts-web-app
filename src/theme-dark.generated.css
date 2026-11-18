@@ -917,7 +917,7 @@ html[data-theme="dark"] .pk-c--reading {
     --pk-ink: var(--dk-orange);
     --pk-mark: rgba(255, 255, 255, 0.22)
 }
-html[data-theme="dark"] .pk-c--games {
+html[data-theme="dark"] .pk-c--writing {
     --pk-from: var(--dk-red);
     --pk-to: var(--dk-red);
     --pk-acc: var(--dk-red);
@@ -933,13 +933,28 @@ html[data-theme="dark"] .pk-c--speaking {
     --pk-ink: var(--dk-green);
     --pk-mark: rgba(255, 255, 255, 0.22)
 }
-html[data-theme="dark"] .pk-c--grammarWriting {
+html[data-theme="dark"] .pk-c--grammar {
     --pk-from: var(--dk-yellow);
     --pk-to: var(--dk-yellow);
     --pk-acc: var(--dk-yellow);
     --pk-tint: var(--dk-yellow-tint);
     --pk-ink: var(--dk-yellow);
     --pk-mark: rgba(255, 255, 255, 0.4)
+}
+html[data-theme="dark"] .pk-c--games {
+    --pk-from: var(--dk-acc);
+    --pk-to: var(--dk-acc-strong);
+    --pk-acc: var(--dk-acc);
+    --pk-tint: var(--dk-acc-tint);
+    --pk-ink: var(--dk-acc-text);
+    --pk-mark: rgba(255, 255, 255, 0.22)
+}
+html[data-theme="dark"] .pk-games__sub {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .pk-card__tag {
+    background: var(--pk-tint);
+    color: var(--pk-ink)
 }
 html[data-theme="dark"] .pk-ico {
     background: currentColor
@@ -25890,6 +25905,10 @@ html[data-theme="dark"] .svc-tile--sat {
 html[data-theme="dark"] .svc-tile--vocab {
     --svc-bg: var(--dk-green-tint);
     --svc-ink: var(--dk-green)
+}
+html[data-theme="dark"] .svc-tile--games {
+    --svc-bg: var(--dk-red-tint);
+    --svc-ink: var(--dk-red)
 }
 html[data-theme="dark"] .svc-tile {
     border: 0;

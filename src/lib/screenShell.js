@@ -5,10 +5,12 @@
 // звонок), где сайдбар на миг появился бы и исчез. Поэтому список не обязан быть полным: забытый экран только теряет
 // сайдбар на время загрузки.
 const PRACTICE = [
-  'practice', 'listening', 'shadowing', 'writing', 'workbook', 'words', 'listen', 'numbers', 'prepositions',
-  'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'speakspin', 'verbs', 'situations',
-  'listenchoose', 'arcade', 'reading',
+  'practice', 'shadowing', 'writing', 'workbook', 'listen', 'prepositions',
+  'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'grammar-games', 'speed-reading', 'cartoons', 'speakspin', 'verbs', 'situations',
+  'listenchoose', 'reading',
 ]
+// Раздел «Игры» (с 18.11.2026 свой пункт меню): сам список и экраны шести игр.
+const GAMES = ['games', 'listening', 'words', 'numbers', 'wordhunt', 'arcade']
 const TUTOR = [
   'tutor-welcome', 'tutor-choose', 'tutor-dashboard', 'tutor-scenarios', 'tutor-manage', 'tutor-chat-history',
   'tutor-lesson-plan', 'tutor-error-analytics', 'tutor-call-report', 'tutor-practice-result',
@@ -17,6 +19,7 @@ const IELTS = ['ielts', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-ro
 
 const NAV_OF = {
   ...Object.fromEntries(PRACTICE.map((s) => [s, 'practice'])),
+  ...Object.fromEntries(GAMES.map((s) => [s, 'games'])),
   ...Object.fromEntries(TUTOR.map((s) => [s, 'tutor'])),
   ...Object.fromEntries(IELTS.map((s) => [s, 'ielts'])),
   home: 'home',

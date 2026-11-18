@@ -42,6 +42,9 @@
     "feedback": [
       "feedback"
     ],
+    "games": [
+      "games"
+    ],
     "ge-onboarding": [
       "home"
     ],
@@ -379,6 +382,9 @@
     "welcome": [
       "registration"
     ],
+    "whats-new": [
+      "whats-new"
+    ],
     "wordhunt": [
       "wordhunt"
     ],
@@ -407,6 +413,11 @@
       "key": "practice",
       "label": "Практика",
       "screen": "practice"
+    },
+    {
+      "key": "games",
+      "label": "Игры",
+      "screen": "games"
     },
     {
       "key": "tutor",
@@ -474,6 +485,11 @@
       "screen": "notifications"
     },
     {
+      "key": "whats-new",
+      "label": "What’s New",
+      "screen": "whats-new"
+    },
+    {
       "key": "contracts",
       "label": "Договоры",
       "screen": "contracts"
@@ -497,6 +513,40 @@
           "title": "Cartoon World"
         },
         {
+          "id": "memes",
+          "title": "Мемы и рилсы"
+        },
+        {
+          "id": "tales",
+          "title": "Сказки"
+        },
+        {
+          "id": "shadowing",
+          "title": "Шэдоуинг"
+        },
+        {
+          "id": "karaoke",
+          "title": "Караоке"
+        }
+      ]
+    },
+    {
+      "tab": "speaking",
+      "label": "Говорение",
+      "cards": [
+        {
+          "id": "situations",
+          "title": "Ситуации"
+        },
+        {
+          "id": "speakspin",
+          "title": "SpeakSpin: одна минута английского"
+        },
+        {
+          "id": "pronunciation",
+          "title": "Pronunciation World"
+        },
+        {
           "id": "shadowing",
           "title": "Шэдоуинг"
         },
@@ -505,12 +555,8 @@
           "title": "Караоке"
         },
         {
-          "id": "memes",
-          "title": "Мемы и рилсы"
-        },
-        {
-          "id": "tales",
-          "title": "Сказки"
+          "id": "speedReading",
+          "title": "Скорочтение"
         }
       ]
     },
@@ -549,61 +595,31 @@
       "label": "Письмо",
       "cards": [
         {
-          "id": "grammar",
-          "title": "Грамматика"
-        },
-        {
-          "id": "prepositions",
-          "title": "Prepositions World"
-        },
-        {
           "id": "writing",
           "title": "Учись писать по-английски по шагам"
         },
         {
-          "id": "verbs",
-          "title": "Три формы глагола — в ритме бита"
-        },
-        {
           "id": "workbooks",
           "title": "Воркбуки"
+        },
+        {
+          "id": "justListen",
+          "title": "Just to Listen"
+        },
+        {
+          "id": "cartoons",
+          "title": "Cartoon World"
         }
       ]
     },
     {
-      "tab": "speaking",
-      "label": "Говорение",
-      "cards": [
-        {
-          "id": "pronunciation",
-          "title": "Pronunciation World"
-        },
-        {
-          "id": "situations",
-          "title": "Ситуации"
-        },
-        {
-          "id": "speakspin",
-          "title": "SpeakSpin: одна минута английского"
-        },
-        {
-          "id": "shadowing",
-          "title": "Шэдоуинг"
-        },
-        {
-          "id": "karaoke",
-          "title": "Караоке"
-        },
-        {
-          "id": "tales",
-          "title": "Сказки"
-        }
-      ]
-    },
-    {
-      "tab": "grammarGames",
+      "tab": "grammar",
       "label": "Грамматика",
       "cards": [
+        {
+          "id": "grammar",
+          "title": "Грамматика"
+        },
         {
           "id": "topics",
           "title": "Темы по уровням"
@@ -611,6 +627,14 @@
         {
           "id": "tenses",
           "title": "Tenses World"
+        },
+        {
+          "id": "verbs",
+          "title": "Три формы глагола — в ритме бита"
+        },
+        {
+          "id": "prepositions",
+          "title": "Prepositions World"
         },
         {
           "id": "punctuation",
@@ -621,28 +645,8 @@
           "title": "Parts of Speech World"
         },
         {
-          "id": "listening",
-          "title": "Тренируй Listening в мини-игре"
-        },
-        {
-          "id": "words",
-          "title": "Слушай слово и находи его на картинке"
-        },
-        {
-          "id": "numbers",
-          "title": "Мир чисел Декстера"
-        },
-        {
-          "id": "wordhunt",
-          "title": "Word Hunt"
-        },
-        {
-          "id": "speak",
-          "title": "Speak or Die"
-        },
-        {
-          "id": "runner",
-          "title": "Word Rush"
+          "id": "workbooks",
+          "title": "Воркбуки"
         }
       ]
     }
@@ -666,6 +670,11 @@
       "tab": "listening"
     },
     {
+      "id": "practice-speaking",
+      "screen": "practice",
+      "tab": "speaking"
+    },
+    {
       "id": "practice-reading",
       "screen": "practice",
       "tab": "reading"
@@ -676,9 +685,13 @@
       "tab": "writing"
     },
     {
-      "id": "practice-speaking",
+      "id": "practice-grammar",
       "screen": "practice",
-      "tab": "speaking"
+      "tab": "grammar"
+    },
+    {
+      "id": "games",
+      "screen": "games"
     },
     {
       "id": "listening",
@@ -909,17 +922,25 @@
       "title": "Мой учитель, Выбрать группу, Уведомления, Договоры",
       "hash": "1vti8o"
     },
+    "whats-new": {
+      "title": "What’s New — объявления школы",
+      "hash": "1qoy0ur"
+    },
     "practice": {
       "title": "Практика: обзор и лимиты",
-      "hash": "17bjcf4"
+      "hash": "1afsgvk"
+    },
+    "games": {
+      "title": "Игры",
+      "hash": "1t0h33e"
     },
     "grammar": {
       "title": "Практика: Грамматика",
-      "hash": "1fjs30y"
+      "hash": "1hhtuwq"
     },
     "listening": {
       "title": "Практика: Аудирование",
-      "hash": "15fqgee"
+      "hash": "avwc8e"
     },
     "listen-choose": {
       "title": "Практика: Услышь детали (Слушай и выбирай)",
@@ -935,7 +956,7 @@
     },
     "wordhunt": {
       "title": "Практика: Word Hunt",
-      "hash": "ygv2rz"
+      "hash": "1uwtb4n"
     },
     "writing": {
       "title": "Практика: Письмо",
@@ -951,15 +972,15 @@
     },
     "workbooks": {
       "title": "Практика: Воркбуки",
-      "hash": "opiio6"
+      "hash": "ah121f"
     },
     "verbs": {
       "title": "Практика: Неправильные глаголы",
-      "hash": "6qko30"
+      "hash": "mhd5q5"
     },
     "words-pictures": {
       "title": "Практика: Слова в картинках",
-      "hash": "1kntqt9"
+      "hash": "e9xi79"
     },
     "just-listen": {
       "title": "Практика: Just to Listen",
@@ -967,7 +988,7 @@
     },
     "prepositions": {
       "title": "Практика: Prepositions World",
-      "hash": "1ehe129"
+      "hash": "1l2bm5u"
     },
     "pronunciation": {
       "title": "Практика: Pronunciation World",
@@ -975,11 +996,11 @@
     },
     "tenses": {
       "title": "Практика: Tenses World",
-      "hash": "1g3mjwo"
+      "hash": "3rpttx"
     },
     "partsofspeech": {
       "title": "Практика: Parts of Speech World",
-      "hash": "cbkx6c"
+      "hash": "ngppm9"
     },
     "literature": {
       "title": "Практика: Literature World",
@@ -987,19 +1008,19 @@
     },
     "punctuation": {
       "title": "Практика: Punctuation World",
-      "hash": "dg4gf3"
+      "hash": "1f9vw7"
     },
     "grammar-games": {
       "title": "Практика: Грамматика · игры",
-      "hash": "1yb17z4"
+      "hash": "zhe4xg"
     },
     "speed-reading": {
       "title": "Практика: Скорочтение",
-      "hash": "1m1nckj"
+      "hash": "1080tlj"
     },
     "library": {
       "title": "Практика: Книжки, сказки, комиксы, мемы, караоке",
-      "hash": "zccxu4"
+      "hash": "1meb28n"
     },
     "speakspin": {
       "title": "Практика: SpeakSpin",
@@ -1007,11 +1028,11 @@
     },
     "numbers": {
       "title": "Практика: Мир чисел Декстера",
-      "hash": "4rfrdh"
+      "hash": "hryc8t"
     },
     "arcade": {
       "title": "Практика: Аркада — Speak or Die и Word Rush",
-      "hash": "eynx3a"
+      "hash": "51a4ge"
     },
     "vocabulary": {
       "title": "Словарь",

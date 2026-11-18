@@ -2,12 +2,13 @@ import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { CARDS, cardOf } from './practiceCatalog.js'
-import { SKILL_KEYS, skillCards, EXPANDABLE } from './practiceTabs.js'
+import { SKILL_KEYS, skillCards, EXPANDABLE, GAMES } from './practiceTabs.js'
 
 const PUBLIC = path.resolve(__dirname, '../../../public')
 
 describe('practiceCatalog', () => {
-  const used = [...new Set(SKILL_KEYS.flatMap(skillCards))]
+  // Карточки вкладок Практики и раздела «Игры» (с 18.11.2026 игры — свой пункт меню, карточки те же).
+  const used = [...new Set([...SKILL_KEYS.flatMap(skillCards), ...GAMES.map((g) => g.id)])]
 
   it('у каждой карточки раскладки есть описание, лишних описаний нет', () => {
     for (const id of used) expect(cardOf(id), id).toBeTruthy()

@@ -155,6 +155,7 @@ export function backLabelKey(screen) {
   switch (screen) {
     case 'home': return 'nav.back.home'
     case 'practice': return 'nav.back.practice'
+    case 'games': return 'nav.back.games'
     case 'homework': return 'nav.back.homework'
     case 'lessons':
     case 'course-catalog': return 'nav.back.lessons'

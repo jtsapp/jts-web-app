@@ -85,16 +85,16 @@ async function answerPick(page) {
   }
 }
 
-test('Практика → вкладка «Грамматика и письмо» → «Темы по уровням» → тема → правило → «Выбери форму» до результата; звёзды переживают перезагрузку', async ({ page }) => {
+test('Практика → вкладка «Грамматика» → «Темы по уровням» → тема → правило → «Выбери форму» до результата; звёзды переживают перезагрузку', async ({ page }) => {
   test.setTimeout(120_000)
   const errors = watchErrors(page)
   const server = await mockBackend(page)
   await page.goto('/?screen=practice')
-  // С 17.11.2026 раздел — карточка вкладки «Грамматика и письмо». С редизайна 29.10.2026 хаб тем во вкладку не
+  // С 18.11.2026 раздел — карточка вкладки «Грамматика». С редизайна 29.10.2026 хаб тем во вкладку не
   // встроен: карточка «Темы по уровням» открывает его своим экраном (?screen=grammar-games).
-  const tab = page.locator('.pk-skill--grammarWriting')
+  const tab = page.locator('.pk-skill--grammar')
   await expect(tab).toBeVisible({ timeout: 60_000 })
-  await expect(tab).toContainText('9 тренажеров')
+  await expect(tab).toContainText('8 тренажеров')
   await tab.click()
   await expect(tab).toHaveAttribute('aria-selected', 'true')
   await page.locator('#sec-topics').click()
@@ -146,19 +146,20 @@ test('Практика → вкладка «Грамматика и письмо
   expect(errors).toEqual([])
 })
 
-test('в «Грамматике и письме» темы рядом с юнитами и письмом, переключатель уровня на месте', async ({ page }) => {
+test('в «Грамматике» темы рядом с юнитами, переключатель уровня на месте; игр в Практике нет', async ({ page }) => {
   await mockBackend(page)
   await page.goto('/?screen=practice')
-  await page.locator('.pk-skill--grammarWriting').click({ timeout: 60_000 })
-  await expect(page.locator('#sec-writing')).toBeVisible()
+  await page.locator('.pk-skill--grammar').click({ timeout: 60_000 })
   await expect(page.locator('#sec-topics')).toBeVisible()
   await expect(page.locator('#sec-grammar')).toBeVisible()
   await expect(page.locator('#sec-prepositions')).toBeVisible()
   await expect(page.locator('.pk-levels')).toBeVisible()
-  // Игр здесь нет — у них своя вкладка, и уровней там нет.
+  // «Письмо» — своя вкладка (18.11.2026), игр в Практике нет вовсе — у них пункт меню «Игры», уровней там нет.
+  await expect(page.locator('#sec-writing')).toHaveCount(0)
   await expect(page.locator('#sec-wordhunt')).toHaveCount(0)
-  await page.locator('.pk-skill--games').click()
-  await expect(page.locator('#sec-wordhunt')).toBeVisible()
+  await expect(page.locator('.pk-skill--games')).toHaveCount(0)
+  await page.goto('/?screen=games')
+  await expect(page.locator('.pk-games #sec-wordhunt')).toBeVisible({ timeout: 60_000 })
   await expect(page.locator('.pk-levels')).toHaveCount(0)
 })
 
@@ -167,7 +168,7 @@ test('«назад» с экрана темы (ссылка из админки)
   await page.goto('/?screen=grammar-games&topic=L1-01')
   await expect(host(page).locator('.thead h1')).toBeVisible({ timeout: 60_000 })
   await page.locator('.ggp-top .nmb-back').click()
-  await expect(page.locator('.pk-skill--grammarWriting')).toHaveAttribute('aria-selected', 'true', { timeout: 30_000 })
+  await expect(page.locator('.pk-skill--grammar')).toHaveAttribute('aria-selected', 'true', { timeout: 30_000 })
   // Хаб тем во вкладке больше не встроен — на месте карточка «Темы по уровням».
   await expect(page.locator('#sec-topics')).toBeVisible()
 })

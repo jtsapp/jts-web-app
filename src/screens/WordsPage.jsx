@@ -155,7 +155,8 @@ export default function WordsPage({ userName, userLevel, token, onNav, onProfile
   const goBack = useCallback(() => {
     if (view.name === 'catalog') {
       if (onBack) onBack()
-      else onNav?.('practice')
+      // без истории — в раздел «Игры», где карточка игры с 18.11.2026
+      else onNav?.('games')
       return
     }
     if (view.name === 'preview') {
@@ -244,7 +245,7 @@ export default function WordsPage({ userName, userLevel, token, onNav, onProfile
     <LearningLayout
       userName={userName}
       userLevel={userLevel}
-      active="practice"
+      active="games"
       token={token}
       onNav={onNav}
       onProfile={onProfile}

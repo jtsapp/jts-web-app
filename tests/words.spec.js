@@ -306,14 +306,13 @@ test.describe('звук', () => {
 })
 
 test.describe('вход из Практики', () => {
-  test('карточка раздела во вкладке «Игры» ведёт на его каталог', async ({ page }) => {
-    // Гостю кабинет с 23.10.2026 не рисуется (лендинг «Войти»), поэтому Практику открываем учеником.
+  test('карточка раздела в «Играх» ведёт на его каталог', async ({ page }) => {
+    // Гостю кабинет с 23.10.2026 не рисуется (лендинг «Войти»), поэтому раздел открываем учеником.
     await loginAsStudent(page)
-    await page.goto('/?screen=practice')
-    // С 17.11.2026 игра — в «Аудировании» и «Играх»; вся карточка — кнопка перехода.
-    await page.locator('.pk-skill--games').click({ timeout: 15000 })
+    // С 18.11.2026 игра — в разделе меню «Игры»; вся карточка — кнопка перехода.
+    await page.goto('/?screen=games')
     const card = page.locator('#sec-words')
-    await expect(card).toBeVisible()
+    await expect(card).toBeVisible({ timeout: 15000 })
     await card.click()
     await expect(page.locator('.wd-hero h1')).toHaveText('Слова в картинках')
   })

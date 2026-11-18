@@ -191,6 +191,11 @@
   --svc-bg: #cff0e5;
   --svc-ink: #1f9d55;
 }
+/* «Игры» — раздел, вынесенный из Практики 18.11.2026: розовый, своего кадра в макете приложения у него нет. */
+.svc-tile--games {
+  --svc-bg: #fde0f0;
+  --svc-ink: #d6409f;
+}
 .svc-tile {
   position: relative;
   overflow: hidden;

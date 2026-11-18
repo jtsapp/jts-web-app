@@ -52,7 +52,7 @@ describe('Сервисы', () => {
     const grid = container.querySelector('.svc-grid')
     await waitFor(() => expect(within(grid).getByText('Словарь')).toBeTruthy())
     expect([...grid.querySelectorAll('.svc-tile__name')].map((n) => n.textContent)).toEqual([
-      'Выбрать группу', 'Домашняя работа', 'Словарь', 'Повторение', 'Шахматы', 'Not Just English', 'Feedback', 'Уведомления', 'What’s New', 'Договоры',
+      'Выбрать группу', 'Игры', 'Домашняя работа', 'Словарь', 'Повторение', 'Шахматы', 'Not Just English', 'Feedback', 'Уведомления', 'What’s New', 'Договоры',
     ])
     fireEvent.click(within(grid).getByText('Словарь'))
     expect(onNav).toHaveBeenCalledWith('vocab')

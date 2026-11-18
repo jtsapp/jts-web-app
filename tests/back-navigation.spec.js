@@ -62,18 +62,17 @@ test('вкладка, открытая целью перехода, не тер�
   await expect(tabOn(page)).toContainText('Чтение')
 })
 
-test('«Мир чисел»: одна кнопка «назад», шагом — раунд → урок → карта → Практика', async ({ page }) => {
+test('«Мир чисел»: одна кнопка «назад», шагом — раунд → урок → карта → «Игры»', async ({ page }) => {
   await page.addInitScript(() => { window.__NUMBERS_FAST = true })
-  await page.goto('/?screen=practice')
-  // «Мир чисел» с 17.11.2026 — в «Аудировании» и «Играх»; заходим из «Игр», «назад» туда и вернёт.
-  const games = page.locator('.pk-skill--games')
-  await expect(games).toBeVisible({ timeout: 60_000 })
-  await games.click()
-  await page.locator('#sec-numbers').click()
+  // «Мир чисел» с 18.11.2026 — в разделе меню «Игры»; заходим оттуда, «назад» туда и вернёт.
+  await page.goto('/?screen=games')
+  const card = page.locator('.pk-games #sec-numbers')
+  await expect(card).toBeVisible({ timeout: 60_000 })
+  await card.click()
   await expect(page.locator('.nmb-host .card')).toHaveCount(16, { timeout: 30_000 })
 
   const back = page.locator('.nmb-back')
-  await expect(back).toContainText('В Практику')
+  await expect(back).toContainText('К играм')
   await page.locator('.nmb-host .card').first().click()
   // Своих кнопок «назад» у игры больше нет — только кнопка оболочки.
   await expect(page.locator('.nmb-host .ls-head h1')).toBeVisible()
@@ -88,10 +87,10 @@ test('«Мир чисел»: одна кнопка «назад», шагом �
   await expect(page.locator('.nmb-host .ls-head h1')).toBeVisible()
   await back.click()
   await expect(page.locator('.nmb-host .dash')).toBeVisible()
-  await expect(back).toContainText('В Практику')
+  await expect(back).toContainText('К играм')
   await back.click()
-  await expect(page).toHaveURL(/screen=practice/)
-  await expect(tabOn(page)).toContainText('Игры')
+  await expect(page).toHaveURL(/screen=games/)
+  await expect(page.locator('.pk-games')).toBeVisible()
 })
 
 test('ситуация, открытая с карточки, ведёт назад в Практику, а не в список уровня', async ({ page }) => {

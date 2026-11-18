@@ -53,7 +53,7 @@ export default function TensesPage({ userName, userLevel, token, onNav, onProfil
   const hostRef = useRef(null)
   const { status, bundle, retry } = useTensesData(token)
   const owner = ownerOf(token)
-  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammarWriting' }))
+  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammar' }))
   // Шрифт интерфейса меняется вместе с языком (kk — Inter): переносим его в тень заново, без пересоздания движка.
   useEffect(() => {
     const host = hostRef.current

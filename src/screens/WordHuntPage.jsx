@@ -37,8 +37,8 @@ export default function WordHuntPage({ userName, userLevel, token, onNav, onProf
   const { status, bundle, retry } = useWordHuntData(token)
   const owner = ownerOf(token)
   const langRef = useRef(lang)
-  // Без истории — во вкладку «Грамматика»: карточка Word Hunt там с редизайна 29.10.2026.
-  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'games' }))
+  // Без истории — в раздел «Игры» (свой пункт меню с 18.11.2026).
+  const goBack = () => (onBack ? onBack() : onNav?.('games'))
 
   // Смена языка приложения — перерисовка текущего вида движком, без пересоздания: кроссворд посреди партии
   // не сбрасывается. Эффект объявлен РАНЬШЕ монтирующего: на первом кадре движок видит актуальный язык.
@@ -93,7 +93,7 @@ export default function WordHuntPage({ userName, userLevel, token, onNav, onProf
             : null
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="games" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="whp-top">
         <button type="button" className="nmb-back" onClick={goBack}>
           ← {backLabel || t('wordhunt.toPractice')}

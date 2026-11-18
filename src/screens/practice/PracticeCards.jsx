@@ -85,13 +85,13 @@ export function LevelSwitch({ value, onChange }) {
   )
 }
 
-// «Игры» — значок Material Symbols sports_esports (Apache 2.0) в виде остальных: в макете такой вкладки не было.
+// С 18.11.2026 вкладки снова по навыкам (практика без игр): значки «Письма» и «Грамматики» — прежние, из макета.
 const SKILL_ICON = {
   listening: 'headphones',
   speaking: 'mic',
   reading: 'menu-book',
-  grammarWriting: 'text-fields',
-  games: 'sports-esports',
+  writing: 'edit-note',
+  grammar: 'text-fields',
 }
 
 // Вкладка раздела (макет «Практика · редизайн», 7393:14225): плитка значка в цвете своего раздела, название и
@@ -126,7 +126,8 @@ const ANCHOR = { justListen: 'listen', speedReading: 'speed-reading', speak: 'ar
 // переход. Вся карточка — кнопка. Обложка — картинка с содержимым раздела: `collage` поверх фона его цвета, `photo`
 // во всю обложку. Бейдж «Новое» / «Бета» — в правом верхнем углу обложки.
 // Чип — токены за прохождение (только если правило есть на сервере) или своя подпись карточки («125 тем»).
-export function PracticeTile({ card, tokens = 0, onOpen }) {
+// tags — мелкие подписи под описанием: у игр раздела «Игры» это «что тренирует» (файл методиста, 18.11.2026).
+export function PracticeTile({ card, tokens = 0, tags = null, onOpen }) {
   const { t, lang } = useI18n()
   const chip = card.chip ? t(card.chip) : null
   return (
@@ -145,6 +146,13 @@ export function PracticeTile({ card, tokens = 0, onOpen }) {
         <span className="pk-card__text">
           <span className="pk-card__title">{t(card.title)}</span>
           <span className="pk-card__desc">{t(card.desc)}</span>
+          {tags?.length > 0 && (
+            <span className="pk-card__tags">
+              {tags.map((tag) => (
+                <span key={tag} className="pk-card__tag">{tag}</span>
+              ))}
+            </span>
+          )}
         </span>
         <span className="pk-card__foot">
           {chip ? (

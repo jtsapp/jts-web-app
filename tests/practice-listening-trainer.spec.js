@@ -56,12 +56,11 @@ test.describe('Практика — тренажёр «Аудирование»'
     await expect.poll(async () => page.locator('.lt-audio audio').evaluate((el) => el.currentSrc)).toBe(url)
   })
 
-  test('карточка игры во вкладке «Игры» открывает интро тренажёра', async ({ page }) => {
+  test('карточка игры в разделе «Игры» открывает интро тренажёра', async ({ page }) => {
     await boot(page)
-    await page.goto('/?screen=practice')
-    // С 17.11.2026 мини-игра — в «Аудировании» и «Играх»; вся карточка — кнопка перехода.
-    await page.locator('.pk-skill--games').click({ timeout: 15000 })
-    await page.locator('#sec-listening').click()
+    // С 18.11.2026 мини-игра — только в разделе меню «Игры»; вся карточка — кнопка перехода.
+    await page.goto('/?screen=games')
+    await page.locator('#sec-listening').click({ timeout: 15000 })
     await expect(page.locator('.lt-intro')).toBeVisible({ timeout: 10000 })
   })
 
