@@ -55,6 +55,13 @@ describe('куда Луна умеет вести', () => {
     expect(destinationIdForScreen('cartoons')).toBe('cartoons')
   })
 
+  it('Видеодиктант открывается напрямую и есть в описании «Аудирования»', () => {
+    expect(validAction('open', 'video-dictation')).toEqual({ kind: 'open', target: 'video-dictation', now: false })
+    expect(destinationIdForScreen('video-dictation')).toBe('video-dictation')
+    expect(destinationName('video-dictation', 'kk')).toBe('Бейнедиктант')
+    expect(destinationOf('practice-listening').about).toContain('Видеодиктант')
+  })
+
   it('Word Hunt открывается напрямую', () => {
     expect(validAction('open', 'wordhunt')).toEqual({ kind: 'open', target: 'wordhunt', now: false })
     expect(destinationIdForScreen('wordhunt')).toBe('wordhunt')

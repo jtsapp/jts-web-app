@@ -147,6 +147,7 @@ const LiteraturePage = lazyScreen(() => import('./screens/LiteraturePage.jsx'))
 const GrammarGamesPage = lazyScreen(() => import('./screens/GrammarGamesPage.jsx'))
 const SpeedReadingPage = lazyScreen(() => import('./screens/SpeedReadingPage.jsx'))
 const CartoonsPage = lazyScreen(() => import('./screens/CartoonsPage.jsx'))
+const VideoDictationPage = lazyScreen(() => import('./screens/VideoDictationPage.jsx'))
 const WordHuntPage = lazyScreen(() => import('./screens/WordHuntPage.jsx'))
 const ListenPage = lazyScreen(() => import('./screens/ListenPage.jsx'))
 const SituationsPage = lazyScreen(() => import('./screens/SituationsPage.jsx'))
@@ -250,7 +251,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'games', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'games', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'grammar-games', 'speed-reading', 'cartoons', 'video-dictation', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана. «Мой учитель»
   // здесь не стоит: с 17.11.2026 это вкладка «Уроков», а прежний адрес ?screen=my-teacher App переводит на неё.
@@ -409,7 +410,8 @@ export default function App() {
     // ?lesson=<id> — id живого урока для lesson-workspace (диплинк
     // ?screen=lesson-workspace&lesson=<id>). Не завязано на deepLink, чтобы
     // работать и когда screen меняется навигацией уже после первого рендера.
-    const lessonParam = searchParams.get('lesson')
+    // У Видеодиктанта ?lesson= — адрес его урока (slug), а не урок lesson-workspace: его читает ветка video-dictation ниже.
+    const lessonParam = deepLink === 'video-dictation' ? null : searchParams.get('lesson')
     if (lessonParam) {
       setLiveWorkspaceId(lessonParam)
       setWorkspaceSource('live')
@@ -524,6 +526,12 @@ export default function App() {
     if (deepLink === 'listen') {
       const set = searchParams.get('set')
       if (set) setListenTarget({ set })
+    }
+    // ?screen=video-dictation&lesson=<slug> — сразу урок Видеодиктанта. Адрес пишет сам экран, пока урок открыт
+    // (screens/video-dictation/lessonParam.js), поэтому F5 посреди урока возвращает в него.
+    if (deepLink === 'video-dictation') {
+      const lesson = searchParams.get('lesson')
+      if (lesson) setVideoDictationTarget({ lesson, at: Date.now() })
     }
     // ?screen=lessons&tab=reports&report=<id> — вкладка «Уроков» и отчёт в ней
     // (ссылка из уведомления в браузере и проверка вида по адресу).
@@ -1019,6 +1027,7 @@ export default function App() {
   const [prepositionsTarget, setPrepositionsTarget] = useState(null)
   const [pronunciationTarget, setPronunciationTarget] = useState(null)
   const [cartoonsTarget, setCartoonsTarget] = useState(null)
+  const [videoDictationTarget, setVideoDictationTarget] = useState(null) // { lesson?, at } — урок Видеодиктанта по адресу; at — новая цель, экран открывается заново
   const [listenChooseTarget, setListenChooseTarget] = useState(null) // { difficulty? } — сложность «Слушай и выбирай»
   // Игра «Аркады» из диплинка или карточки Практики (+ вкладка, куда
   // вернуться): { game: 'speak'|'runner'|null, skill }.
@@ -2016,6 +2025,7 @@ export default function App() {
     else if (key === 'grammar-games') { setGrammarGamesTarget(payload || null); setScreen('grammar-games') }
     else if (key === 'speed-reading') { setSpeedReadingTarget(payload || null); setScreen('speed-reading') }
     else if (key === 'cartoons') { setCartoonsTarget(payload || null); setScreen('cartoons') }
+    else if (key === 'video-dictation') { setVideoDictationTarget({ ...payload, at: Date.now() }); setScreen('video-dictation') }
     else if (key === 'wordhunt') setScreen('wordhunt')
     // Уровень приносит карточка Практики — она же и списала квоту.
     // replace — Практика лишь переслала сюда цель из домашки: в стек её не кладём.
@@ -2990,6 +3000,20 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={cartoonsTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'video-dictation':
+      return (
+        <VideoDictationPage
+          // Новая цель (другой урок по ссылке или от Луны при открытом экране) пересоздаёт экран: урок и ?lesson= он читает при монтировании.
+          key={videoDictationTarget?.at ?? 'video-dictation'}
+          {...sectionBack('listening')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={videoDictationTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />

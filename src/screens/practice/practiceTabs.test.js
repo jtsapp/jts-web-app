@@ -10,7 +10,8 @@ describe('practiceTabs', () => {
   })
 
   it('карточки вкладок — в порядке файла методиста', () => {
-    expect(skillCards('listening')).toEqual(['listenchoose', 'justListen', 'cartoons', 'memes', 'tales', 'shadowing', 'karaoke'])
+    // Видеодиктант (18.11.2026, спека video-dictation) — сразу после Cartoon World, файла методиста он новее.
+    expect(skillCards('listening')).toEqual(['listenchoose', 'justListen', 'cartoons', 'videoDictation', 'memes', 'tales', 'shadowing', 'karaoke'])
     expect(skillCards('speaking')).toEqual(['situations', 'speakspin', 'pronunciation', 'shadowing', 'karaoke', 'speedReading'])
     // Literature World появился позже файла — стоит, где был: после комиксов, перед сказками.
     expect(skillCards('reading')).toEqual(['reading', 'speedReading', 'books', 'comics', 'literature', 'tales'])
@@ -39,8 +40,8 @@ describe('practiceTabs', () => {
     expect(tabsOf('workbooks')).toEqual(['writing', 'grammar'])
   })
 
-  it('«N тренажёров» под вкладками: 7, 6, 6, 4, 8', () => {
-    expect(SKILL_KEYS.map((k) => skillModules(k).length)).toEqual([7, 6, 6, 4, 8])
+  it('«N тренажёров» под вкладками: 8, 6, 6, 4, 8', () => {
+    expect(SKILL_KEYS.map((k) => skillModules(k).length)).toEqual([8, 6, 6, 4, 8])
   })
 
   it('в Практике нет ни одной игры — они в разделе «Игры»', () => {
@@ -65,6 +66,7 @@ describe('practiceTabs', () => {
     expect(skillOfModule('shadowing')).toBe('listening')
     expect(skillOfModule('listen')).toBe('listening')
     expect(skillOfModule('cartoons')).toBe('listening')
+    expect(skillOfModule('videoDictation')).toBe('listening')
     expect(skillOfModule('speedReading')).toBe('reading')
     expect(skillOfModule('writing')).toBe('writing')
     expect(skillOfModule('workbooks')).toBe('writing')
@@ -79,7 +81,7 @@ describe('practiceTabs', () => {
     const modules = [
       'grammar', 'writing', 'reading', 'words', 'verbs', 'listenchoose', 'listening', 'numbers', 'listen',
       'speedReading', 'cartoons', 'shadowing', 'situations', 'workbooks', 'tales', 'memes', 'books', 'comics',
-      'karaoke', 'wordhunt', 'arcade', 'prepositions', 'pronunciation', 'punctuation', 'speakspin', 'grammarGames', 'tenses', 'partsofspeech', 'literature',
+      'karaoke', 'wordhunt', 'arcade', 'prepositions', 'pronunciation', 'punctuation', 'speakspin', 'grammarGames', 'tenses', 'partsofspeech', 'literature', 'videoDictation',
     ]
     for (const m of modules) expect(Boolean(skillOfModule(m)) || GAME_MODULES.has(m), m).toBe(true)
   })

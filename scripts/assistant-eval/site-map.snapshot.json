@@ -376,6 +376,9 @@
     "verbs": [
       "verbs"
     ],
+    "video-dictation": [
+      "video-dictation"
+    ],
     "vocab": [
       "vocabulary"
     ],
@@ -511,6 +514,10 @@
         {
           "id": "cartoons",
           "title": "Cartoon World"
+        },
+        {
+          "id": "videoDictation",
+          "title": "Видеодиктант"
         },
         {
           "id": "memes",
@@ -704,6 +711,10 @@
     {
       "id": "cartoons",
       "screen": "cartoons"
+    },
+    {
+      "id": "video-dictation",
+      "screen": "video-dictation"
     },
     {
       "id": "words",
@@ -928,7 +939,7 @@
     },
     "practice": {
       "title": "Практика: обзор и лимиты",
-      "hash": "1afsgvk"
+      "hash": "12tt50q"
     },
     "games": {
       "title": "Игры",
@@ -949,6 +960,10 @@
     "cartoons": {
       "title": "Практика: Cartoon World",
       "hash": "1uiecor"
+    },
+    "video-dictation": {
+      "title": "Практика: Видеодиктант",
+      "hash": "1jfypxr"
     },
     "reading": {
       "title": "Практика: Чтение",

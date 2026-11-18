@@ -6,7 +6,7 @@
 // сайдбар на время загрузки.
 const PRACTICE = [
   'practice', 'shadowing', 'writing', 'workbook', 'listen', 'prepositions',
-  'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'grammar-games', 'speed-reading', 'cartoons', 'speakspin', 'verbs', 'situations',
+  'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'grammar-games', 'speed-reading', 'cartoons', 'video-dictation', 'speakspin', 'verbs', 'situations',
   'listenchoose', 'reading',
 ]
 // Раздел «Игры» (с 18.11.2026 свой пункт меню): сам список и экраны шести игр.

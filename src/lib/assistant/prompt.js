@@ -62,6 +62,7 @@ export const SCREEN_NAMES = {
   situations: 'Практика → Ситуации',
   listenchoose: 'Практика → Аудирование (выбор)',
   cartoons: 'Практика → Аудирование → Cartoon World (мультфильмы и миссии-переписки)',
+  'video-dictation': 'Практика → Аудирование → Видеодиктант (фразы из мультфильмов по буквам)',
   'speed-reading': 'Практика → Чтение → Скорочтение (чтение вслух за бегущей строкой)',
   arcade: 'Игры → Аркада (Speak or Die, Word Rush)',
   speakspin: 'Практика → Говорение → SpeakSpin',

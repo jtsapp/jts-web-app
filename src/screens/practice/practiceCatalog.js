@@ -20,6 +20,8 @@ export const CARDS = {
   listenchoose: { nav: 'listenchoose', tokens: 'listenchoose' },
   justListen: { nav: 'listen', module: 'listen' },
   cartoons: { nav: 'cartoons' },
+  // Видеодиктант — фразы мультфильмов по буквам; уроки с бэкенда, без квоты и токенов.
+  videoDictation: { nav: 'video-dictation', module: 'videoDictation' },
   shadowing: { list: true, tokens: 'shadowing' },
   karaoke: { list: true, tokens: 'karaoke' },
   memes: { list: true, tokens: 'memes' },

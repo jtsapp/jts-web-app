@@ -21,6 +21,9 @@ import Icon from '../listen/ListenIcons.jsx'
 import DictationLine from './DictationLine.jsx'
 import DictationResult from './DictationResult.jsx'
 
+// Для Луны: идёт фраза-диктант — непроверенное задание, ответ не называем (эталон — в Verdict, только после показа).
+const TASK_NOTE = 'Видеодиктант: впиши услышанную фразу по буквам'
+
 function Verdict({ item, t }) {
   const mark = item?.mark
   const kind = !mark ? null : mark === 'ok' ? 'ok' : mark === 'near' ? 'near' : 'bad'
@@ -119,7 +122,7 @@ export default function DictationStage({ lesson, only, ready, slow, autoStart, t
   const passed = done ? snap.index + 1 : snap.index
   const last = snap.index + 1 >= snap.total
   return (
-    <section className="jl-card vd-stage">
+    <section className="jl-card vd-stage" data-assistant-task={TASK_NOTE}>
       <div className="vd-stage__top">
         <span className="vd-count">{t('videoDictation.counter', { i: snap.index + 1, n: snap.total })}</span>
         <div

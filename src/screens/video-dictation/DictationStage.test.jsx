@@ -56,6 +56,14 @@ describe('прогон диктанта', () => {
     expect(screen.getByText('videoDictation.counter {"i":1,"n":2}')).toBeTruthy()
   })
 
+  it('для Луны: фраза — задание, а эталон появляется только после показа', () => {
+    mount()
+    expect(document.querySelector('[data-assistant-task]')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.start/ }))
+    expect(document.querySelector('.vd-stage').getAttribute('data-assistant-task')).toContain('Видеодиктант')
+    expect(document.querySelector('[data-assistant-expected]')).toBeNull()
+  })
+
   it('верно с первого раза: вердикт в aria-live, навык записан, «Дальше» играет следующую', () => {
     const { props } = mount()
     fireEvent.click(screen.getByRole('button', { name: /videoDictation.start/ }))

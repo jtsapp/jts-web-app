@@ -8,7 +8,7 @@
 // Экран держит навигацию раздела (список → урок) и адрес: ?lesson=<slug> пишет сам, пока урок открыт (F5 и ссылка
 // возвращают в урок), и снимает при уходе — общая синхронизация адреса в App знает только свои ключи.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { VIDEO_DICTATION_PROGRESS_EVENT } from '../practice/practiceKeys.js'
@@ -16,7 +16,7 @@ import { readBest } from '../practice/video-dictation/progress.js'
 import Icon from './listen/ListenIcons.jsx'
 import LessonList from './video-dictation/LessonList.jsx'
 import LessonRun from './video-dictation/LessonRun.jsx'
-import { writeLessonParam } from './video-dictation/lessonParam.js'
+import { clearLessonParam, writeLessonParam } from './video-dictation/lessonParam.js'
 import { useVideoDictationIndex, useVideoDictationLesson } from './video-dictation/useVideoDictationData.js'
 
 const NOTICE = {
@@ -99,11 +99,15 @@ export default function VideoDictationPage({ userName, userLevel, token, onNav, 
     return () => window.removeEventListener(VIDEO_DICTATION_PROGRESS_EVENT, sync)
   }, [])
 
+  // slug, который этот экран записал в адрес: снимаем только его (чужой ?lesson= — lesson-workspace — не трогаем).
+  const writtenRef = useRef(null)
   useEffect(() => {
-    writeLessonParam(slug)
+    clearLessonParam(writtenRef.current)
+    writtenRef.current = slug
+    if (slug) writeLessonParam(slug)
     window.scrollTo(0, 0)
   }, [slug])
-  useEffect(() => () => writeLessonParam(null), [])
+  useEffect(() => () => clearLessonParam(writtenRef.current), [])
 
   const toList = () => setSlug(null)
   const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'listening' }))

@@ -63,6 +63,13 @@ describe('выполнен ли совет — по данным сайта по
     expect(adviceDoneAt(note('practice'), { practice }).doneAt).toBe('2026-10-14T18:00:00.000Z')
   })
 
+  it('Видеодиктант: заход в раздел после совета — и сам раздел, и вкладка «Аудирование»', () => {
+    const practice = [{ area: 'videoDictation', updatedAt: '2026-10-14T18:00:00Z' }]
+    expect(adviceDoneAt(note('video-dictation'), { practice })).toEqual({ checkable: true, doneAt: '2026-10-14T18:00:00.000Z' })
+    expect(adviceDoneAt(note('practice-listening'), { practice }).doneAt).toBe('2026-10-14T18:00:00.000Z')
+    expect(practiceLine(practice, NOW)).toBe('Разделы Практики, где ученик уже бывал: недавно — Видеодиктант (вчера).')
+  })
+
   it('Speaking Buddy — звонок с подключившимся тьютором после совета', () => {
     const tutorSessions = ['2026-10-13T10:00:00Z', '2026-10-15T08:00:00Z']
     expect(adviceDoneAt(note('tutor'), { tutorSessions })).toEqual({ checkable: true, doneAt: '2026-10-15T08:00:00.000Z' })

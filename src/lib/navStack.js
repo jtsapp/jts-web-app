@@ -138,6 +138,7 @@ const PRACTICE_SECTIONS = {
   'speed-reading': 'nav.back.speedReading',
   listen: 'nav.back.listen',
   cartoons: 'nav.back.cartoons',
+  'video-dictation': 'nav.back.videoDictation',
   wordhunt: 'nav.back.wordhunt',
   speakspin: 'nav.back.speakspin',
   verbs: 'nav.back.verbs',

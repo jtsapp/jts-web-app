@@ -33,6 +33,7 @@ const AREA_NAMES = {
   verbs: 'Неправильные глаголы',
   listenchoose: 'Слушай и выбирай',
   cartoons: 'Cartoon World',
+  videoDictation: 'Видеодиктант',
   numbers: 'Мир чисел',
   listen: 'Just to Listen',
   prepositions: 'Prepositions World',
@@ -50,7 +51,7 @@ const TARGET_AREAS = {
   // Состав вкладок — раскладка 18.11.2026 (practiceTabs.js), «Игры» — свой пункт меню (`games`).
   // 'practice-grammar-writing' и 'practice-games' — вкладки 17.11.2026: совет, данный тогда, живёт в заметках трекера
   // 30 дней, и его исход по-прежнему проверяем.
-  'practice-listening': ['listenchoose', 'listen', 'cartoons'],
+  'practice-listening': ['listenchoose', 'listen', 'cartoons', 'videoDictation'],
   'practice-speaking': ['shadowing', 'situations', 'pronunciation'],
   'practice-reading': ['reading', 'literature'],
   'practice-writing': ['writing', 'workbooks', 'listen', 'cartoons'],
@@ -61,6 +62,7 @@ const TARGET_AREAS = {
   listening: ['listening'],
   listenchoose: ['listenchoose'],
   cartoons: ['cartoons'],
+  'video-dictation': ['videoDictation'],
   words: ['words'],
   numbers: ['numbers'],
   listen: ['listen'],

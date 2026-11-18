@@ -16,7 +16,7 @@
 import { cardOf } from './practiceCatalog.js'
 
 export const SKILLS = [
-  { key: 'listening', groups: [{ cards: ['listenchoose', 'justListen', 'cartoons', 'memes', 'tales', 'shadowing', 'karaoke'] }] },
+  { key: 'listening', groups: [{ cards: ['listenchoose', 'justListen', 'cartoons', 'videoDictation', 'memes', 'tales', 'shadowing', 'karaoke'] }] },
   { key: 'speaking', groups: [{ cards: ['situations', 'speakspin', 'pronunciation', 'shadowing', 'karaoke', 'speedReading'] }] },
   { key: 'reading', groups: [{ cards: ['reading', 'speedReading', 'books', 'comics', 'literature', 'tales'] }] },
   { key: 'writing', groups: [{ cards: ['writing', 'workbooks', 'justListen', 'cartoons'] }] },

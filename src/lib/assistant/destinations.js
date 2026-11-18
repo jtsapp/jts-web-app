@@ -42,7 +42,7 @@ export const DESTINATIONS = [
   {
     id: 'practice-listening', nav: 'practice', payload: { skill: 'listening' }, screen: 'practice',
     name: { ru: 'Практика → Аудирование', kk: 'Тәжірибе → Тыңдалым', en: 'Practice → Listening' },
-    about: '«Услышь детали» (картинка по описанию), Just to Listen, Cartoon World, мемы, сказки, шэдоуинг, караоке',
+    about: '«Услышь детали» (картинка по описанию), Just to Listen, Cartoon World, Видеодиктант, мемы, сказки, шэдоуинг, караоке',
   },
   {
     id: 'practice-speaking', nav: 'practice', payload: { skill: 'speaking' }, screen: 'practice',
@@ -84,6 +84,12 @@ export const DESTINATIONS = [
     id: 'cartoons', nav: 'cartoons', screen: 'cartoons',
     name: { ru: 'Cartoon World (мультфильмы)', kk: 'Cartoon World', en: 'Cartoon World' },
     about: 'мультфильмы на английском A0–C1 (вкладка «Аудирование») и переписка с героем серии после просмотра',
+  },
+  // Уроки Видеодиктанта приходят с бэкенда (спека 2026-11-18); без входа экран сам просит войти.
+  {
+    id: 'video-dictation', nav: 'video-dictation', screen: 'video-dictation',
+    name: { ru: 'Видеодиктант', kk: 'Бейнедиктант', en: 'Video dictation' },
+    about: 'фразы из мультфильмов на YouTube A0–C1 (вкладка «Аудирование»): звучит фраза — пишешь её по буквам, пропуски или всю фразу',
   },
   {
     id: 'words', nav: 'words', screen: 'words',
