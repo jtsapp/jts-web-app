@@ -956,6 +956,35 @@ cozy/library, Courier у detective) — из прототипа, намерен�
 ноутбуком), недописанный ответ — только на устройстве (`jts_cartoons_drafts`). Выполненная
 миссия пишет `recordSkill('writing')`; в домашнюю работу раздел не отчитывается.
 
+**Видеодиктант в «Практике» — фраза мультфильма по буквам (18.11.2026).** Спека (контракт трёх репозиториев) —
+`docs/superpowers/specs/2026-11-18-video-dictation-design.md`. Уроки ведёт методист в web-admin «Библиотека →
+Видеодиктант» (ролик YouTube с официального канала, фразы по таймкодам), бэкенд (модуль `videodictation`) отдаёт
+`GET /mobile/video-dictation` (список без фраз: только активные и с доступным роликом; 404 — «Раздел готовится») и
+`GET /mobile/video-dictation/{slug}` (с `segments`). Экран `?screen=video-dictation[&lesson=<slug>]`
+(`src/screens/VideoDictationPage.jsx` + `src/screens/video-dictation/`), карточка — вкладка «Аудирование» после
+Cartoon World. `?lesson=` пишет и снимает сам экран (`lessonParam.js`: `writeLessonParam`/`clearLessonParam`); App не
+читает его как урок `lesson-workspace`, а `clearLessonParam(slug)` снимает параметр, только если он всё ещё равен
+slug этого экрана, — id урока `lesson-workspace` не стирается. Разметка фразы (`[пропуск]` или вся фраза; без `|` и
+цифр; длина — после схлопывания пробелов) — одна грамматика с бэкендом и админкой: `src/practice/video-dictation/phrase.js`;
+токены `{kind:'text'|'cells', glue}`, `glue` — слово вплотную к предыдущему без пробела (`un[believ]able`, `[puddles].`),
+по пробелу в тексте без скобок. Сверка — `letters`/`judgeWord`/`TRIES` Just to Listen над склейкой букв пропусков
+(`session.js`, машина вне React). Плеер — встроенный YouTube через общий `src/lib/youtube.js` (его же зовёт Шэдоуинг):
+поверх плеера ничего не кладём, управляем только `seekTo`, `playVideo`, `pauseVideo`, `setPlaybackRate` (права). Конец
+фразы — опрос `getCurrentTime` на кадре (`player.js`, без DOM): конец взводится, только когда время вошло в саму фразу
+(иначе «Ещё раз» вставал бы сразу после `seekTo` по прежнему времени); ENDED ролика засчитывается как конец фразы, но не
+раньше `ENDED_GRACE_MS` (1 с) после `play` — до этого состояние может быть прежним; если время не вошло во фразу за
+`ARM_TIMEOUT_MS` (5 с небуферизующего времени) — `onError('timeout')`: плеер годен, под ним «Видео не загрузилось» и
+«Ещё раз». Это не «Видео недоступно»: его дают `onError` плеера YouTube (код ролика) или молчание YouTube 20 с
+(`READY_TIMEOUT_MS`, `LessonRun.jsx`) — урок не засчитывается. Прогресс — модуль синка `videoDictation`
+(`jts_video_dictation_v1`, `progress.js`, merge «лучший»): лучший `{clean, n}` пишется только за полный прогон —
+`onFinish({...summary, retry})`, `retry` истинен у «Пройти ошибки заново» (`only` задан), и тогда результат не
+перезаписывается; каждая закрытая фраза — `recordSkill('listening', с первого раза, уровень урока)`. Монет, квот и
+домашки нет. Для Луны (раздел, статья базы знаний, трекер в `src/lib/assistant/`) поле несёт вердикт классом, эталон —
+в `data-assistant-expected` только после двух неудач. Стили `.vd-*` (`src/video-dictation.css`) — только на токенах
+`--jl-*`/`--pk-*`. E2E — `tests/video-dictation.spec.js` (заглушка `YT.Player` вместо `iframe_api`, вход —
+`loginAsStudent` из `tests/helpers/login.js`); браузеры Playwright должны быть установлены (`npx playwright install`),
+на машине разработки их не было — спек прогнан системным Chrome.
+
 **Word Hunt в «Практике» — кроссворд и поиск слов над словарём курса, прототип из админки (25.10.2026).** Контракт
 трёх репозиториев — `docs/superpowers/specs/2026-10-25-word-hunt-design.md`. Источник правды — html-прототип
 методиста (~11,7 МБ, в репозитории его НЕТ): копия словаря курса A0–B2 и 16 станций (`var DB`, форма каталога
