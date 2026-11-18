@@ -46,7 +46,7 @@ beforeEach(() => {
 describe('ProfilePage — форма редактирования', () => {
   it('подставляет email и город из профиля', async () => {
     renderProfile()
-    fireEvent.click(screen.getByText('Редактировать профиль'))
+    fireEvent.click(screen.getByRole('button', { name: 'Редактировать' }))
     await waitFor(() => expect(screen.getByDisplayValue('saken@example.kz')).toBeTruthy())
     expect(screen.getByDisplayValue('Алматы')).toBeTruthy()
   })
@@ -55,7 +55,7 @@ describe('ProfilePage — форма редактирования', () => {
   it('пол выбирается и уходит в сохранение', async () => {
     me.value = { ...me.value, gender: null }
     renderProfile()
-    fireEvent.click(screen.getByText('Редактировать профиль'))
+    fireEvent.click(screen.getByRole('button', { name: 'Редактировать' }))
     await waitFor(() => expect(screen.getByDisplayValue('saken@example.kz')).toBeTruthy())
     const select = screen.getByDisplayValue('Не указан')
     fireEvent.change(select, { target: { value: 'FEMALE' } })
@@ -67,13 +67,13 @@ describe('ProfilePage — форма редактирования', () => {
   it('сохранённый пол подставляется', async () => {
     me.value = { ...me.value, gender: 'MALE' }
     renderProfile()
-    fireEvent.click(screen.getByText('Редактировать профиль'))
+    fireEvent.click(screen.getByRole('button', { name: 'Редактировать' }))
     await waitFor(() => expect(screen.getByDisplayValue('Мужской')).toBeTruthy())
   })
 
   it('сохраняет подставленные значения, а не пустые', async () => {
     renderProfile()
-    fireEvent.click(screen.getByText('Редактировать профиль'))
+    fireEvent.click(screen.getByRole('button', { name: 'Редактировать' }))
     await waitFor(() => expect(screen.getByDisplayValue('Алматы')).toBeTruthy())
     fireEvent.click(screen.getByText('Сохранить'))
     await waitFor(() => expect(updateUser).toHaveBeenCalled())

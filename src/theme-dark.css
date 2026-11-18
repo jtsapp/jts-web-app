@@ -593,3 +593,23 @@ html[data-theme="dark"] .pfm-mem__del:hover {
 html[data-theme="dark"] .sch-moved {
   color: var(--dk-yellow);
 }
+
+/* Профиль на компьютере и планшете (задача 214, profile.css): цвета — переменными на корне (.pf2) и на слое окон
+   (.pf2-layer); на графите их дают токены брендбука. Мягкая плитка цифр и значков — тинт фиолетового, предупреждение
+   — оранжевая семья, «Закреплён» — зелёная, «Выйти» — красная (красный только для опасного). */
+html[data-theme="dark"] .pf2,
+html[data-theme="dark"] .pf2-layer {
+  --pf2-bg: var(--dk-card);
+  --pf2-soft: var(--dk-acc-tint);
+  --pf2-line: var(--dk-line);
+  --pf2-ink: var(--dk-text);
+  --pf2-muted: var(--dk-text-2);
+  --pf2-acc: var(--dk-acc);
+  --pf2-acc-soft: var(--dk-acc-soft);
+  --pf2-on-acc: var(--dk-on-acc);
+  --pf2-ok: var(--dk-green);
+  --pf2-ok-soft: var(--dk-green-soft);
+  --pf2-warn: var(--dk-orange);
+  --pf2-warn-soft: var(--dk-orange-soft);
+  --pf2-danger: var(--dk-red);
+}

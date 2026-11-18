@@ -62,9 +62,13 @@ function rememberScreen(screen) {
   }
 }
 
+// Экраны, где облачка нет вовсе. Профиль (задача 214, ТЗ 18.11.2026, п. 9): на телефоне облачко ложилось на
+// настройки, а знакомиться с Луной ученик приходит не туда — профиль открывают, чтобы что-то поменять.
+const NO_HINT_SCREENS = new Set(['profile'])
+
 /** Показать ли облачко на этом экране: ученик ещё не открывал Луну и здесь его не видел. */
 export function hintDue(screen) {
-  return Boolean(screen) && !hasMet() && !seenScreens().includes(screen)
+  return Boolean(screen) && !NO_HINT_SCREENS.has(screen) && !hasMet() && !seenScreens().includes(screen)
 }
 
 /**

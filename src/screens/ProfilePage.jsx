@@ -1,9 +1,7 @@
-import LegalDocumentsPanel from '../components/LegalDocumentsPanel.jsx'
 import { isStudentSectionHidden } from '../config.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { UserIcon } from '../components/icons.jsx'
-import { CheckCircleIcon, RadioOffIcon } from '../ielts/icons.jsx'
 import { useI18n, LANGS } from '../i18n.jsx'
 import {
   computeKingdoms,
@@ -26,9 +24,9 @@ import { useMediaQuery, MOBILE_QUERY } from '../lib/useMediaQuery.js'
 import ProfileBlocks, { NotificationChannels } from '../matching/ProfileBlocks.jsx'
 import { AXIS_TUTOR_KEYS, temperFor } from '../tutor/tutors.js'
 import ProfilePhone from './profile/ProfilePhone.jsx'
-import { PROACTIVE_LEVELS, useProactiveLevel, writeProactiveLevel } from '../lib/assistant/proactiveSetting.js'
+import ProfileDesktop, { IcTest, IcCap } from './profile/ProfileDesktop.jsx'
+import { useProactiveLevel, writeProactiveLevel } from '../lib/assistant/proactiveSetting.js'
 import { useLunaMemory } from '../lib/assistant/lunaMemory.js'
-import LunaMemory from './profile/LunaMemory.jsx'
 import DeleteAccount from './profile/DeleteAccount.jsx'
 import { useAccountDeletion } from './profile/useAccountDeletion.js'
 
@@ -47,23 +45,6 @@ function formatPhone(raw) {
   return `+7 ${s.slice(1, 4)} ${s.slice(4, 7)} ${s.slice(7, 9)} ${s.slice(9, 11)}`
 }
 
-// Градиент hero-сцены по рангу — самодостаточный фон, не зависящий от
-// тяжёлых hero-картинок (они приезжают отдельным PR). Если PNG всё же есть,
-// он ложится верхним слоем поверх градиента.
-const HERO_GRADIENT = {
-  merchant: 'linear-gradient(135deg, #ffce9e 0%, #ff8f6b 100%)',
-  knight: 'linear-gradient(135deg, #a6e3a1 0%, #3f9d6b 100%)',
-  baron: 'linear-gradient(135deg, #9ed8ef 0%, #4f7fe0 100%)',
-  viscount: 'linear-gradient(135deg, #b7a6ff 0%, #6a5cff 100%)',
-  king: 'linear-gradient(135deg, #d8b6ff 0%, #9047ff 100%)',
-  emperor: 'linear-gradient(135deg, #ffd27a 0%, #c1440e 100%)',
-  lord: 'linear-gradient(135deg, #ffd27a 0%, #c1440e 100%)',
-}
-
-function heroGradientFor(level) {
-  return HERO_GRADIENT[roleForLevel(level).key] || HERO_GRADIENT.merchant
-}
-
 // Роль для следующего по порядку CEFR-уровня (для правой «монеты» прогресса).
 function nextRoleFor(level) {
   const idx = levelIndex(level)
@@ -72,15 +53,6 @@ function nextRoleFor(level) {
   const nxt = ROLE_BY_LEVEL[next]
   return nxt && nxt.key !== cur?.key ? nxt : null
 }
-
-// Языки разборов SAT: вопросы и варианты всегда на английском, как на экзамене
-// Язык разборов SAT («NEW 2», 17:10151): название и подпись — на самом этом языке, при любом языке интерфейса,
-// как список языков приложения: ученик ищет глазами свой язык, а не его перевод.
-const SAT_EXPLAIN = [
-  { code: 'ru', label: 'Русский', sub: 'Объяснения на русском' },
-  { code: 'kk', label: 'Қазақша', sub: 'Түсіндірмелер қазақ тілінде' },
-  { code: 'en', label: 'English', sub: 'Explanations in English' },
-]
 
 export default function ProfilePage({
   userName,
@@ -114,6 +86,13 @@ export default function ProfilePage({
   const phoneLayout = useMediaQuery(MOBILE_QUERY)
   const deletion = useAccountDeletion(token, onAccountDeleted)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  // Esc закрывает и окно удаления — кроме момента, когда удаление уже идёт.
+  useEffect(() => {
+    if (!deleteOpen) return undefined
+    const onKey = (e) => e.key === 'Escape' && !deletion.busy && setDeleteOpen(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [deleteOpen, deletion.busy])
 
   // Имя держим в локальном состоянии, чтобы правка в «Редактировать профиль»
   // сразу отражалась в шапке; наружу отдаём через onUpdateName.
@@ -157,7 +136,6 @@ export default function ProfilePage({
   // Модалки
   const [langOpen, setLangOpen] = useState(false)
   // «Подсказки Луны: часто / иногда / только по запросу» (ТЗ v2.0, 7.4) — настройка устройства (proactiveSetting.js).
-  const [lunaOpen, setLunaOpen] = useState(false)
   const lunaLevel = useProactiveLevel()
   // «Память Луны» (ТЗ v2.0, 8.1) — только у ученика: у преподавателя Луны нет.
   const lunaMemory = useLunaMemory(token, !isTeacher(token))
@@ -210,11 +188,17 @@ export default function ProfilePage({
     }
   }, [token])
 
+  // true — сервер сохранил: «Сохранено» показывается по ответу, а не до него (выбор оптимистичный и при отказе откатывается).
   const pickSatLang = (code) => {
-    if (code === satLang) return
+    if (code === satLang) return Promise.resolve(true)
     const prev = satLang
     setSatLang(code)
-    saveSatProfile(token, { explainLang: code }).catch(() => setSatLang(prev))
+    return saveSatProfile(token, { explainLang: code })
+      .then(() => true)
+      .catch(() => {
+        setSatLang(prev)
+        return false
+      })
   }
 
   // «Дней подряд» и «уроков пройдено» считает сервер: серия — по входам; уроки — занятия с
@@ -374,12 +358,6 @@ export default function ProfilePage({
   const p = levelProg
   const value = p && p.total > 0 ? p.done / p.total : 0
   const remaining = p ? p.total - p.done : null
-  const progressCaption =
-    remaining == null
-      ? t('profile.keepLearning')
-      : remaining <= 0
-      ? t('profile.levelComplete')
-      : t('profile.remaining', { n: remaining })
 
   const langLabel = LANGS.find((l) => l.code === lang)?.label || 'Русский'
 
@@ -418,52 +396,13 @@ export default function ProfilePage({
       ]
     : []
 
-  // Пункты Профиля сгруппированы по ТЗ v2.0, 5.8 (задача 190): Учёба · Аккаунт · Помощь · Документы. Новых действий
-  // нет — те же строки, что были, только по местам; добавились «Правила школы».
-  //
-  // «Учёба»: тест на уровень и правила школы. ТЗ просит PDF правил на языке интерфейса, но файла у школы нет — правила
-  // живут вкладкой «Правила» в «Уроках» (ru/kk/en), туда же ведёт кнопка на «Главной». Вкладка есть только у ученика.
   const showLevelTest = !!onLevelTest && !(ieltsAccount && levelUnknown)
-  const studyRows = [
-    ...(showLevelTest ? levelRows : []),
-    ...(isTeacher(token) ? [] : [{ key: 'rules', icon: <PfDocIcon />, title: t('profile.rules'), onClick: () => openRules(onNav) }]),
-  ]
-
-  // «Аккаунт»: профиль, язык, вид и настройки (подсказки Луны, звук уведомлений).
-  const account = [
-    { key: 'edit', icon: <PfEditIcon />, title: t('profile.editProfile'), onClick: openEdit },
-    { key: 'lang', icon: <PfGlobeIcon />, title: t('profile.language'), trailing: langLabel, onClick: () => setLangOpen(true) },
-    { key: 'custom', icon: <PfGiftIcon />, title: t('profile.customization'), onClick: () => setCustomOpen(true) },
-    // Луна — только у ученика: у преподавателя её окна нет (assistantAllowedOn).
-    ...(isTeacher(token) ? [] : [{ key: 'luna', icon: <PfLunaIcon />, title: t('profile.luna'), trailing: t(`profile.luna.${lunaLevel}`), onClick: () => setLunaOpen(true) }]),
-    ...(!isTeacher(token) && isStudentSectionHidden('notifications') ? [] : [{ key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: openNotif }]),
-  ]
 
   // «Служба поддержки» — страница «Контакты и реквизиты» (почта, телефон, WhatsApp школы). Раньше здесь было
   // письмо на support@justtostudy.kz, а такого адреса у школы нет (аудит ТЗ v2.0, 06.11.2026). Жалобы — в Feedback.
   // Адрес — как у infoUrl (landing/info.js), без импорта: модуль тянет тексты всех страниц покупателя (30 КБ).
   const openSupport = () => window.open(`/info/contacts${lang === 'kk' ? '?lang=kz' : ''}`, '_blank', 'noopener')
   const openDoc = (kind) => window.open(legalDocumentUrl(kind, lang), '_blank')
-
-  // «Помощь»: обратная связь, служба поддержки, поделиться. Документы — блок «Документы платформы» ниже
-  // (LegalDocumentsPanel: оферта, конфиденциальность, безопасность платежей); прежние строки «Политика
-  // конфиденциальности» и «Условия использования» открывали те же PDF и дублировали его.
-  const help = [
-    ...(!isTeacher(token) && isStudentSectionHidden('feedback') ? [] : [{ key: 'feedback', icon: <PfFeedbackIcon />, title: t('profile.feedback'), onClick: () => onNav?.('feedback') }]),
-    { key: 'support', icon: <PfSupportIcon />, title: t('profile.support'), onClick: openSupport },
-    { key: 'share', icon: <PfShareIcon />, title: t('profile.shareApp'), onClick: shareApp },
-  ]
-
-  // Плитки шапки (ТЗ 5.8): уровень, дней подряд, уроков пройдено, токенов. Уровня нет у учителя и у ученика IELTS без
-  // теста General English; токенов — у учителя и там, где раздел скрыт.
-  const statTiles = [
-    ...(isTeacher(token) || (ieltsAccount && levelUnknown)
-      ? []
-      : [{ key: 'level', icon: <span className="pf-stat__glyph"><PfLevelIcon /></span>, value: levelUnknown ? '—' : (userLevel || '').toUpperCase(), label: t('profile.statLevel') }]),
-    { key: 'streak', icon: <img className="pf-stat__ic" src="/assets/world/streak.svg" alt="" />, value: streak, label: t('profile.statStreak') },
-    { key: 'lessons', icon: <span className="pf-stat__glyph"><PfCapIcon /></span>, value: lessons, label: t('profile.statLessons') },
-    ...(tokenBalance == null ? [] : [{ key: 'tokens', icon: <img className="pf-stat__ic" src="/assets/world/coin.png" alt="" />, value: new Intl.NumberFormat().format(tokenBalance), label: t('profile.statTokens') }]),
-  ]
 
   // Окна «Кастомизация» и «Уведомления» — одно содержимое на обе раскладки: на компьютере окном, на телефоне шторкой.
   const customContent = (
@@ -564,171 +503,67 @@ export default function ProfilePage({
     )
   }
 
+  // Компьютер и планшет — раскладка задачи 214 (ProfileDesktop): шапка, «Обучение», «Настройки», «Аккаунт и помощь».
+  // Уровень в содержимом профиля — один раз, чипом звания в шапке (ТЗ: прежде он стоял четырежды).
+  const studentTeacher = isTeacher(token)
+  // Звание с уровнем — как плашка телефона: у ученика General English с измеренным уровнем.
+  const showRank = !levelUnknown && !studentTeacher && !ieltsAccount
+  const heroStats = [
+    { key: 'streak', value: streak, label: t('profile.statStreak') },
+    { key: 'lessons', value: lessons, label: t('profile.statLessons') },
+    ...(tokenBalance == null ? [] : [{ key: 'tokens', value: new Intl.NumberFormat().format(tokenBalance), label: t('profile.statTokens') }]),
+  ]
+  const goals = [
+    ...(showLevelTest
+      ? [{ key: 'level-test', icon: <IcTest />, title: t('profile.levelTest'), value: levelRows[0].trailing, warn: levelUnknown, onClick: levelRows[0].onClick }]
+      : []),
+    ...ieltsRows.map((it) => ({ key: it.key, icon: <IcCap />, title: it.title, value: it.trailing, onClick: it.onClick })),
+  ]
   return (
     <LearningLayout userName={name} userLevel={userLevel} active="" token={token} onNav={onNav} onProfile={() => {}}>
-      <div className="pf">
-        {onBack && (
-          <button type="button" className="pf-back" onClick={onBack}>
-            ← {backLabel || t('common.back')}
-          </button>
-        )}
-        {/* ── Hero ── */}
-        <section className="pf-hero">
-          <div
-            className="pf-hero__scene"
-            style={{
-              // Шапка (если есть) ложится поверх градиента; при её отсутствии
-              // виден только градиент — экран самодостаточен.
-              backgroundImage: `url(/assets/world/hero/${(userLevel || 'a1').toLowerCase()}.webp), ${heroGradientFor(userLevel)}`,
-            }}
-          />
-          <div className="pf-hero__sheet">
-            <div className="pf-avatar">
-              {avatar ? (
-                <img className="pf-avatar__img" src={avatar} alt="" />
-              ) : (
-                <span className="pf-avatar__initial" style={{ background: avatarBg }}>
-                  {initial || <UserIcon size={44} />}
-                </span>
-              )}
-              <button className="pf-avatar__cam" onClick={() => fileRef.current?.click()} aria-label="Сменить фото">
-                <PfCameraIcon />
-              </button>
-              <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickAvatar} />
-            </div>
-
-            <h1 className="pf-name">{trimmedName || t('profile.noName')}</h1>
-            {phone && (
-              <div className="pf-phone">
-                <PfPhoneIcon />
-                <span>{phone}</span>
-              </div>
-            )}
-
-            <div className="pf-rank">
-              <img className="pf-rank__coin" src={`/assets/world/roles/${role.key}.png`} alt="" />
-              <div className="pf-rank__text">
-                <span>{t('profile.rankPrefix')}</span>
-                <b>{t('role.' + role.key)}</b>
-              </div>
-              {/* Без уровня чип показывал бы стартовый «A1» из стейта, и строка
-                  «Тест на уровень — Не пройден» ниже спорила бы с ним. */}
-              {!levelUnknown && <span className="pf-rank__cefr">{(userLevel || 'A1').toUpperCase()}</span>}
-            </div>
-
-            <div className="pf-progress">
-              <div className="pf-progress__cap">{progressCaption}</div>
-              <div className="pf-progress__row">
-                <img className="pf-progress__coin" src={`/assets/world/roles/${role.key}.png`} alt="" />
-                <div className="pf-progress__bar">
-                  <div className="pf-progress__fill" style={{ width: `${Math.round(value * 100)}%` }} />
-                </div>
-                <img
-                  className={`pf-progress__coin ${nextRole ? 'pf-progress__coin--dim' : ''}`}
-                  src={`/assets/world/roles/${(nextRole || role).key}.png`}
-                  alt=""
-                />
-              </div>
-            </div>
-
-            <div className="pf-stats" style={{ '--pf-stats': statTiles.length }}>
-              {statTiles.map((tile) => (
-                <div key={tile.key} className="pf-stat" data-stat={tile.key}>
-                  {tile.icon}
-                  <b>{tile.value}</b>
-                  <span>{tile.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Подбор учителя (ТЗ 08 §2.10): «Мой учитель», «Мои интересы», «Настройки обучения» — сразу после плиток */}
-        {blocks}
-
-        {ieltsRows.length > 0 && (
-          <>
-            <div className="pf-label">IELTS</div>
-            <div className="pf-card" data-section="ielts">
-              {ieltsRows.map((it, i) => (
-                <SettingRow key={it.key} item={it} chip last={i === ieltsRows.length - 1} />
-              ))}
-            </div>
-          </>
-        )}
-
-        {studyRows.length > 0 && (
-          <>
-            <div className="pf-label">{t('profile.sectionStudy')}</div>
-            <div className="pf-card" data-section="study">
-              {studyRows.map((it, i) => (
-                <SettingRow key={it.key} item={it} chip last={i === studyRows.length - 1} />
-              ))}
-            </div>
-          </>
-        )}
-
-        <div className="pf-label">{t('profile.sectionAccount')}</div>
-        <div className="pf-card" data-section="account">
-          {account.map((it, i) => (
-            <SettingRow key={it.key} item={it} chip last={i === account.length - 1} />
-          ))}
-        </div>
-
-        {/* «Язык объяснений» SAT — карточкой с тремя вариантами прямо на странице (17:10151), а не строкой с окном:
-            выбор из трёх виден сразу, и подпись объясняет, что вопросы останутся английскими */}
-        {satLang && (
-          <section className="pf-card pf-satlang">
-            <h2 id="pf-satlang-title">{t('profile.satExplain')}</h2>
-            <p>{t('profile.satExplainSub')}</p>
-            <div className="pf-satlang__opts" role="radiogroup" aria-labelledby="pf-satlang-title">
-              {SAT_EXPLAIN.map((o) => (
-                <button key={o.code} type="button" role="radio" aria-checked={o.code === satLang} lang={o.code}
-                  className={`pf-satlang__opt ${o.code === satLang ? 'is-on' : ''}`} onClick={() => pickSatLang(o.code)}>
-                  <span><b>{o.label}</b><small>{o.sub}</small></span>
-                  {o.code === satLang ? <CheckCircleIcon size={22} /> : <RadioOffIcon size={22} />}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {lunaMemory.status === 'ready' && (
-          <>
-            <div className="pf-label">{t('profile.lunaMemory')}</div>
-            <div className="pf-card">
-              <LunaMemory memory={lunaMemory} />
-            </div>
-          </>
-        )}
-
-        {/* В кадре 4352:13735 значки лежат в сиреневых плитках у каждой строки списка, а не только у верхнего блока. */}
-        <div className="pf-label">{t('profile.sectionHelp')}</div>
-        <div className="pf-card" data-section="help">
-          {help.map((it, i) => (
-            <SettingRow key={it.key} item={it} chip last={i === help.length - 1} />
-          ))}
-        </div>
-
-        {/* «Документы» (ТЗ 5.8) — блок «Документы платформы»: оферта, конфиденциальность, безопасность платежей. */}
-        <LegalDocumentsPanel className="legal-profile" />
-        <button className="pf-logout" onClick={onLogout}>
-          <PfLogoutIcon />
-          <span>{t('profile.logout')}</span>
-        </button>
-        {/* Удаление аккаунта (App Store) — тихой ссылкой под выходом, как в кадре настроек телефона: действие
-            необратимое, и заметной кнопкой оно бы зазывало. */}
-        <button
-          type="button"
-          className="pf-delete-link"
-          onClick={() => {
+      <ProfileDesktop
+        token={token}
+        onNav={onNav}
+        teacher={studentTeacher}
+        matching={!studentTeacher && !isStudentSectionHidden('my-teacher')}
+        onBack={onBack}
+        backLabel={backLabel}
+        toast={showToast}
+        hero={{
+          avatar,
+          avatarBg,
+          initial,
+          name: trimmedName,
+          phone,
+          rank: showRank ? { roleKey: role.key, level: (userLevel || 'A1').toUpperCase() } : null,
+          ieltsBand: ielts && ieltsTab && ielts.overall != null ? Number(ielts.overall).toFixed(1) : null,
+          stats: heroStats,
+          // Полоса до звания — там же, где чип звания: иначе она называла бы звание, которого на экране нет.
+          progress: showRank ? { done: levelProg?.done ?? 0, total: levelProg?.total ?? 0, nextRoleKey: nextRole?.key || null, level: (userLevel || 'A1').toUpperCase() } : null,
+          onPickPhoto: () => fileRef.current?.click(),
+          onEdit: openEdit,
+        }}
+        goals={goals}
+        notif={{ visible: studentTeacher || !isStudentSectionHidden('notifications'), enabled: notifEnabled, open: openNotif }}
+        luna={{ visible: !studentTeacher, level: lunaLevel, choose: writeProactiveLevel }}
+        lunaMemory={lunaMemory.status === 'ready' ? lunaMemory : null}
+        explain={satLang ? { value: satLang, pick: pickSatLang } : null}
+        account={{
+          langLabel,
+          openLang: () => setLangOpen(true),
+          openCustom: () => setCustomOpen(true),
+          feedback: !studentTeacher && isStudentSectionHidden('feedback') ? null : () => onNav?.('feedback'),
+          support: openSupport,
+          rules: studentTeacher ? null : () => openRules(onNav),
+          share: shareApp,
+          onLogout,
+          onDelete: () => {
             deletion.reset()
             setDeleteOpen(true)
-          }}
-        >
-          {t('profile.delete.link')}
-        </button>
-      </div>
+          },
+        }}
+      />
+      <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickAvatar} />
 
       {/* ── Удаление аккаунта: своего кадра у десктопа нет — содержимое экрана телефона окном ── */}
       {deleteOpen && (
@@ -762,33 +597,6 @@ export default function ProfilePage({
               {l.code === lang && <PfCheckIcon />}
             </button>
           ))}
-        </Modal>
-      )}
-
-      {/* ── «Подсказки Луны» ── */}
-      {lunaOpen && (
-        <Modal onClose={() => setLunaOpen(false)} title={t('profile.luna')}>
-          {PROACTIVE_LEVELS.map((v) => (
-            <button
-              key={v}
-              type="button"
-              role="radio"
-              aria-checked={v === lunaLevel}
-              className={`pf-lang ${v === lunaLevel ? 'pf-lang--active' : ''}`}
-              data-luna={v}
-              onClick={() => {
-                writeProactiveLevel(v)
-                setLunaOpen(false)
-              }}
-            >
-              <span>
-                {t(`profile.luna.${v}`)}
-                <small className="pf-luna__note">{t(`profile.luna.note.${v}`)}</small>
-              </span>
-              {v === lunaLevel && <PfCheckIcon />}
-            </button>
-          ))}
-          <small className="pf-field__note">{t('profile.luna.device')}</small>
         </Modal>
       )}
 
@@ -875,10 +683,16 @@ export default function ProfilePage({
   )
 }
 
+// Окна профиля закрываются и клавишей Esc (ТЗ задачи 214: «закрытие по Esc/скриму»), как окна ProfileDesktop.
 function Modal({ title, children, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
   return (
     <div className="pf-modal" onClick={onClose}>
-      <div className="pf-modal__sheet" onClick={(e) => e.stopPropagation()}>
+      <div className="pf-modal__sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <div className="pf-modal__grab" />
         <div className="pf-modal__title">{title}</div>
         {children}
@@ -887,154 +701,15 @@ function Modal({ title, children, onClose }) {
   )
 }
 
-function SettingRow({ item, chip = false, last = false }) {
-  return (
-    <>
-      <button className={`pf-row ${chip ? 'pf-row--chip' : 'pf-row--flat'}`} data-key={item.key} onClick={item.onClick}>
-        <span className={`pf-row__ic ${chip ? 'pf-row__ic--chip' : ''}`}>{item.icon}</span>
-        <span className="pf-row__title">{item.title}</span>
-        {item.trailing && <span className="pf-row__trailing">{item.trailing}</span>}
-        <span className="pf-row__chev">
-          <PfChevronIcon />
-        </span>
-      </button>
-      {!last && <div className="pf-row__divider" />}
-    </>
-  )
-}
-
 /* ── Иконки профиля (инлайн SVG) ── */
 const S = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }
 
-function PfCameraIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" {...S}>
-      <path d="M4 8h3l1.5-2h7L17 8h3v11H4z" />
-      <circle cx="12" cy="13" r="3.2" />
-    </svg>
-  )
-}
-function PfPhoneIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" {...S}>
-      <path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" />
-    </svg>
-  )
-}
-function PfCapIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" {...S}>
-      <path d="M2 8.5 12 4l10 4.5-10 4.5z" />
-      <path d="M6 10.5V15c0 1.4 2.7 2.8 6 2.8s6-1.4 6-2.8v-4.5" />
-    </svg>
-  )
-}
-function PfEditIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" {...S}>
-      <path d="M4 20h4L18 10l-4-4L4 16z" />
-      <path d="M13 7l4 4" />
-    </svg>
-  )
-}
-function PfGlobeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" {...S}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" />
-    </svg>
-  )
-}
-function PfGiftIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" {...S}>
-      <rect x="3.5" y="9" width="17" height="11" rx="1.5" />
-      <path d="M3.5 13h17M12 9v11M12 9c-1.5-3.5-6-3-6 0zM12 9c1.5-3.5 6-3 6 0z" />
-    </svg>
-  )
-}
-function PfBellIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
-      <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" />
-      <path d="M10 20a2 2 0 0 0 4 0" />
-    </svg>
-  )
-}
-function PfShareIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
-      <circle cx="18" cy="5" r="2.5" />
-      <circle cx="6" cy="12" r="2.5" />
-      <circle cx="18" cy="19" r="2.5" />
-      <path d="M8.2 10.8 15.8 6.2M8.2 13.2l7.6 4.6" />
-    </svg>
-  )
-}
-// Облачко реплики — «Подсказки Луны».
-function PfLunaIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
-      <path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4 3v-3H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
-      <path d="M8 10h8M8 13h5" />
-    </svg>
-  )
-}
-function PfSupportIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M9.5 9.5a2.5 2.5 0 0 1 3.5 2.3c0 1.5-2 1.7-2 3M12 16.5h.01" />
-    </svg>
-  )
-}
-// Два облачка реплик — «Обратная связь» (одно облачко уже у «Подсказок Луны»).
-function PfFeedbackIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
-      <path d="M4 5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H9l-3 2.5V13H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
-      <path d="M16 9h4a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1v2.5L16 17h-4a1 1 0 0 1-1-1v-1" />
-    </svg>
-  )
-}
-// Столбики — плитка «уровень» шапки.
-function PfLevelIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" {...S}>
-      <path d="M5 19v-5M10 19V10M15 19V7M20 19V4" />
-    </svg>
-  )
-}
-// Лист с текстом — «Правила школы».
-function PfDocIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
-      <path d="M6 3h8l4 4v14H6z" />
-      <path d="M14 3v4h4M9 12h6M9 16h6" />
-    </svg>
-  )
-}
 function PfTestIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
       <path d="M9 4h6v3H9z" />
       <path d="M9 5.5H6V21h12V5.5h-3" />
       <path d="m9 14 2 2 4-4" />
-    </svg>
-  )
-}
-function PfLogoutIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
-      <path d="M15 4h4v16h-4" />
-      <path d="M10 8l-4 4 4 4M6 12h9" />
-    </svg>
-  )
-}
-function PfChevronIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" {...S} strokeWidth="2.2">
-      <path d="m9 6 6 6-6 6" />
     </svg>
   )
 }
