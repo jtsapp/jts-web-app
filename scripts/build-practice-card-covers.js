@@ -274,6 +274,44 @@ function justListen() {
   return fan(side('ask', 3), front, side('repeat', 2))
 }
 
+// Видеодиктант — своя иллюстрация, без кадров мультфильмов (права, спека 2026-11-18): тёмный экран плеера с «плей» и
+// строкой времени, под ним фраза, где пропуски — клетки по буквам. Уроки живут на бэкенде, поэтому фразы — из фикстуры
+// раздела (на ней же ходят vitest и e2e): [слово] — клетки, остальное — словами, фраза без скобок — клетки целиком.
+function videoDictation() {
+  const { lessons } = json('src/practice/video-dictation/__fixtures__/lessons.json')
+  const phrase = (slug, i) => must(lessons[slug]?.segments?.[i]?.[2], `video dictation: ${slug} #${i}`)
+  const cells = (word, typed) =>
+    `<span class="vdc">${[...word.replace(/[^a-z]/gi, '')]
+      .map((c, i) => `<b class="${i < typed ? 'on' : ''}">${i < typed ? c.toLowerCase() : ''}</b>`)
+      .join('')}</span>`
+  // typed — сколько букв фразы уже набрано (по порядку клеток)
+  const line = (text, typed) => {
+    let left = typed
+    const gap = (word) => {
+      const n = Math.min(left, word.replace(/[^a-z]/gi, '').length)
+      left -= n
+      return cells(word, n)
+    }
+    if (!text.includes('[')) return text.split(/\s+/).map(gap).join('')
+    return text
+      .split(/(\[[^\]]+\])/)
+      .filter((part) => part.trim())
+      .map((part) =>
+        part.startsWith('[')
+          ? part.slice(1, -1).split(/\s+/).map(gap).join('')
+          : part.trim().split(/\s+/).map((w) => `<i class="vdw">${w}</i>`).join(''),
+      )
+      .join('')
+  }
+  const card = (text, typed, played) =>
+    `<div class="f tx vd"><div class="vd__scr">${playBtn}<span class="vd__bar"><i style="width:${played}%"></i></span></div><div class="vd__ln">${line(text, typed)}</div></div>`
+  return fan(
+    card(phrase('lost-kite-m2x7d', 0), 2, 64),
+    card(phrase('rainy-day-k3f9q', 0), 6, 38),
+    card(phrase('rainy-day-k3f9q', 1), 0, 82),
+  )
+}
+
 function listening() {
   const tasks = json('public/practice/listening/content/a1.json')
   const task = must(tasks.find((t) => t.id === 'a1_001'), 'listening a1_001')
@@ -303,6 +341,7 @@ const COVERS = {
   listenchoose: ['listening', listenchoose],
   justListen: ['listening', justListen],
   cartoons: ['listening', cartoons],
+  videoDictation: ['listening', videoDictation],
   reading: ['reading', reading],
   grammar: ['writing', grammar],
   prepositions: ['writing', prepositions],
@@ -419,6 +458,24 @@ b{font-weight:800}
 .ls{gap:6px;padding:9px}
 .ls b{font-size:11px;line-height:14px}
 .ls .opts b{padding:2px 5px;font-size:9px;line-height:13px}
+/* Видеодиктант: экран плеера без кадра мультфильма и строка фразы с клетками пропусков */
+.vd{padding:0!important;gap:0!important;justify-content:flex-start}
+.vd__scr{position:relative;flex:none;height:44%;background:linear-gradient(160deg,#27355f,#10172f)}
+.vd__scr .play{width:22px;height:22px}
+.vd__scr .play::after{left:8px;top:6px;border-width:5px 0 5px 8px}
+.l .vd__scr .play,.r .vd__scr .play{width:16px;height:16px}
+.l .vd__scr .play::after,.r .vd__scr .play::after{left:6px;top:4px;border-width:4px 0 4px 6px}
+.vd__bar{position:absolute;left:7px;right:7px;bottom:5px;height:3px;border-radius:3px;background:rgba(255,255,255,.28)}
+.vd__bar i{display:block;height:100%;border-radius:inherit;background:var(--acc)}
+.vd__ln{display:flex;flex-wrap:wrap;align-items:center;gap:3px 4px;padding:7px 8px}
+.l .vd__ln{padding:5px 54px 0 7px}
+.r .vd__ln{padding:5px 5px 0 55px}
+.vdw{font-size:9.5px;line-height:13px;font-weight:800}
+.l .vdw,.r .vdw{font-size:7.5px;line-height:10px}
+.vdc{display:flex;gap:1.5px}
+.vdc b{display:grid;place-items:center;width:9px;height:13px;border-radius:3px;background:#f2f2f6;font-size:8px;line-height:1}
+.vdc b.on{background:var(--tint);color:var(--ink)}
+.l .vdc b,.r .vdc b{width:7px;height:10px;font-size:6px}
 .lt{justify-content:center}
 .sp{padding-top:22px}
 .mic{display:block;flex:none;width:20px;height:20px;border-radius:50%;background:var(--acc);box-shadow:inset 0 0 0 5px var(--acc),inset 0 0 0 7px rgba(255,255,255,.9)}
