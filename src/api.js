@@ -2559,6 +2559,20 @@ export function getWordHunt(token, onFresh) {
   return cachedAuthGet('/mobile/word-hunt', token, onFresh)
 }
 
+// Видеодиктант (спека docs/superpowers/specs/2026-11-18-video-dictation-design.md): уроки без фраз
+// { lessons: [{ slug, title, series, level, video, channel, phrases, orderIndex }] } — только активные и с доступным
+// роликом, по порядку методиста. Кэш — stale-while-revalidate, как у Cartoon World: список меняется редко. 404 — ручки
+// на бэкенде ещё нет («Раздел готовится»).
+export function getVideoDictationIndex(token, onFresh) {
+  return cachedAuthGet('/mobile/video-dictation', token, onFresh)
+}
+
+// Урок с фразами: те же поля плюс segments [[start, end, text], …]. Без кэша: правка фраз методистом должна доехать
+// при следующем открытии урока (как у Шэдоуинга). 404 — урок скрыли или удалили.
+export function getVideoDictationLesson(token, slug) {
+  return authGet(`/mobile/video-dictation/${encodeURIComponent(slug)}`, token)
+}
+
 export function listLessonVocab(token, onFresh) {
   return cachedAuthGet('/mobile/lesson-vocab', token, onFresh)
 }

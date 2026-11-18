@@ -1,0 +1,23 @@
+{
+  "index": {
+    "lessons": [
+      { "slug": "rainy-day-k3f9q", "title": "Rainy Day", "series": "Fixture Friends", "level": "A1", "video": "vdFixture01", "channel": "Fixture Channel", "phrases": 2, "orderIndex": 1 },
+      { "slug": "lost-kite-m2x7d", "title": "Lost Kite", "series": "Fixture Friends", "level": "A2", "video": "vdFixture02", "channel": "Fixture Channel", "phrases": 1, "orderIndex": 2 },
+      { "slug": "gone-video-p8w2z", "title": "Gone Video", "series": "Fixture Friends", "level": "B1", "video": "gone0000000", "channel": "Fixture Channel", "phrases": 1, "orderIndex": 3 }
+    ]
+  },
+  "lessons": {
+    "rainy-day-k3f9q": {
+      "slug": "rainy-day-k3f9q", "title": "Rainy Day", "series": "Fixture Friends", "level": "A1", "video": "vdFixture01", "channel": "Fixture Channel", "phrases": 2, "orderIndex": 1,
+      "segments": [[1.0, 3.0, "I [love] jumping in [muddy] puddles!"], [4.0, 6.0, "Where is my teddy?"]]
+    },
+    "lost-kite-m2x7d": {
+      "slug": "lost-kite-m2x7d", "title": "Lost Kite", "series": "Fixture Friends", "level": "A2", "video": "vdFixture02", "channel": "Fixture Channel", "phrases": 1, "orderIndex": 2,
+      "segments": [[2.0, 4.5, "Let's [fly] the [kite] together."]]
+    },
+    "gone-video-p8w2z": {
+      "slug": "gone-video-p8w2z", "title": "Gone Video", "series": "Fixture Friends", "level": "B1", "video": "gone0000000", "channel": "Fixture Channel", "phrases": 1, "orderIndex": 3,
+      "segments": [[1.0, 2.5, "[Hello] there."]]
+    }
+  }
+}
