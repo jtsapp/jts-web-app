@@ -65,3 +65,9 @@ html[data-ui-lang='kk'] .hr-site .hr-result .hr-big,
 html[data-ui-lang='kk'] .hr-site .hr-stat b {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* What’s New: карточка объявления и окно поверх экранов — свой Manrope */
+html[data-ui-lang='kk'] .student-news-card,
+html[data-ui-lang='kk'] .student-news-popup .news-overlay {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}

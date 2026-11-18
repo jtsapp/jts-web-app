@@ -88,7 +88,7 @@ export default function NewsCard({ post, mode = 'feed', busy = false, onAction, 
             }}>{copy.calendar}</button>}
           </div>
           {mode === 'feed' && <div className="news-reactions">{['👍', '❤️', '🎉'].map((reaction) => <button key={reaction} type="button"
-            className={post.myReaction === reaction ? 'selected' : ''} aria-pressed={post.myReaction === reaction} disabled={busy}
+            className={`news-reaction ${post.myReaction === reaction ? 'selected' : ''}`} aria-pressed={post.myReaction === reaction} disabled={busy}
             onClick={(event) => act(event, 'react', { reaction })}>{reaction} {post.reactions?.[reaction] || 0}</button>)}</div>}
         </div>
       </article>
