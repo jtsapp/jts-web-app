@@ -29,7 +29,11 @@ function fakeFrames() {
 function fakePlayer() {
   return {
     t: 0,
+    s: 1, // состояние YT: -1 не начато, 0 ENDED, 1 играет, 2 пауза, 3 буферизация
     calls: [],
+    getPlayerState() {
+      return this.s
+    },
     getCurrentTime() {
       return this.t
     },
@@ -166,41 +170,135 @@ describe('фраза', () => {
     expect(pp.state()).toBe('error')
   })
 
-  it('время так и не вошло во фразу — по дедлайну фраза считается оконченной, опроса нет', () => {
-    const { frames, player, onEnd, pp } = setup()
+  it('время так и не вошло во фразу — по сроку ошибка «timeout», а не конец фразы, опроса нет', () => {
+    const { frames, player, onEnd, onError, pp } = setup()
     player.t = 10
     pp.play(SEG)
     frames.clock.ms = ARM_TIMEOUT_MS - 1
     frames.step()
-    expect(onEnd).not.toHaveBeenCalled()
+    expect(onError).not.toHaveBeenCalled()
     expect(frames.pending()).toBe(1)
     frames.clock.ms = ARM_TIMEOUT_MS
     frames.step()
+    expect(onError.mock.calls).toEqual([['timeout']])
+    expect(onEnd).not.toHaveBeenCalled()
     expect(player.calls.at(-1)).toEqual(['pauseVideo'])
-    expect(onEnd).toHaveBeenCalledWith(SEG)
-    expect(pp.state()).toBe('paused')
     expect(frames.pending()).toBe(0)
+    expect(pp.state()).toBe('paused')
+    expect(pp.play(SEG)).toBe(true)
   })
 
-  it('дедлайн отсчитывается от последнего play', () => {
-    const { frames, player, onEnd, pp } = setup()
+  it('срок не идёт, пока плеер буферизует (3): 10 с буферизации не истекают, потом отсчёт продолжается', () => {
+    const { frames, player, onEnd, onError, pp } = setup()
+    player.t = 10
+    player.s = 3
+    pp.play(SEG)
+    frames.clock.ms = 10000
+    frames.step()
+    expect(onError).not.toHaveBeenCalled()
+    player.s = 1
+    frames.clock.ms = 10000 + ARM_TIMEOUT_MS - 1
+    frames.step()
+    expect(onError).not.toHaveBeenCalled()
+    player.s = -1
+    frames.clock.ms = 10000 + ARM_TIMEOUT_MS
+    frames.step()
+    expect(onError.mock.calls).toEqual([['timeout']])
+    expect(onEnd).not.toHaveBeenCalled()
+  })
+
+  it('срок отсчитывается заново с каждого play', () => {
+    const { frames, player, onError, pp } = setup()
     player.t = 10
     pp.play(SEG)
     frames.clock.ms = ARM_TIMEOUT_MS - 1
+    frames.step()
     pp.play(SEG)
     frames.clock.ms = ARM_TIMEOUT_MS + 1
+    frames.step()
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('фраза за концом ролика: ENDED в льготное окно, потом взвод — конец сразу, без зависания', () => {
+    const { frames, player, onEnd, onError, pp } = setup()
+    player.t = 0
+    pp.play({ start: 100, end: 102 })
+    frames.clock.ms = 200
+    player.s = 0
+    pp.onPlayerState(0)
+    expect(onEnd).not.toHaveBeenCalled()
+    player.t = 99.9 // seekTo прижат к концу ролика
+    frames.step()
+    expect(onEnd).toHaveBeenCalledWith({ start: 100, end: 102 })
+    expect(onError).not.toHaveBeenCalled()
+    expect(frames.pending()).toBe(0)
+  })
+
+  it('взведено, но время не дойдёт до конца, а состояние ENDED — конец на ближайшем кадре', () => {
+    const { frames, player, onEnd, pp } = setup()
+    pp.play(SEG)
+    player.t = 2.2
+    frames.step()
+    expect(onEnd).not.toHaveBeenCalled()
+    player.t = 3
+    player.s = 0
+    frames.step()
+    expect(onEnd).toHaveBeenCalledTimes(1)
+    expect(frames.pending()).toBe(0)
+  })
+
+  it('ENDED из льготного окна — прежний (ролик играет заново): взвод не завершает фразу', () => {
+    const { frames, player, onEnd, pp } = setup()
+    pp.play(SEG)
+    pp.onPlayerState(0)
+    player.s = 1
+    player.t = 2.1
     frames.step()
     expect(onEnd).not.toHaveBeenCalled()
   })
 
-  it('destroy снимает опрос и глушит дальнейшее', () => {
-    const { frames, onEnd, pp } = setup()
+  it('ENDED за миг до конца льготного окна, пока не взведено, игнорируется', () => {
+    const { frames, player, onEnd, pp } = setup()
+    player.t = 10
+    pp.play(SEG)
+    frames.clock.ms = ENDED_GRACE_MS - 1
+    pp.onPlayerState(0)
+    expect(onEnd).not.toHaveBeenCalled()
+    expect(pp.state()).toBe('playing')
+    expect(frames.pending()).toBe(1)
+  })
+
+  it('смена скорости посреди фразы не ломает проверку конца', () => {
+    const { frames, player, onEnd, pp } = setup()
+    pp.play(SEG)
+    player.t = 2.3
+    frames.step()
+    pp.setRate(SLOW_RATE)
+    expect(player.calls.at(-1)).toEqual(['setPlaybackRate', SLOW_RATE])
+    player.t = 3.5
+    frames.step()
+    expect(onEnd).not.toHaveBeenCalled()
+    player.t = SEG.end - END_EPSILON
+    frames.step()
+    expect(onEnd).toHaveBeenCalledWith(SEG)
+    expect(player.calls.at(-1)).toEqual(['pauseVideo'])
+  })
+
+  it('destroy снимает опрос, play после него — false и ничего не делает, события глушатся', () => {
+    const { frames, player, onEnd, onError, pp } = setup()
     pp.play(SEG)
     pp.destroy()
     expect(frames.pending()).toBe(0)
-    expect(pp.state()).toBe('idle')
+    expect(pp.state()).toBe('destroyed')
+    const before = player.calls.length
+    expect(pp.play(SEG)).toBe(false)
+    expect(player.calls).toHaveLength(before)
+    expect(frames.pending()).toBe(0)
     pp.onPlayerState(0)
+    pp.fail(150)
     expect(onEnd).not.toHaveBeenCalled()
+    expect(onError).not.toHaveBeenCalled()
+    expect(pp.state()).toBe('destroyed')
   })
 })
 
