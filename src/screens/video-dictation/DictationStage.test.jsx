@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const skills = vi.hoisted(() => [])
@@ -107,13 +107,83 @@ describe('прогон диктанта', () => {
     expect(props.onRedo).toHaveBeenCalledWith([1])
   })
 
-  it('повтор ошибок: только эти фразы, старт сам, в итоге — пометка про лучший результат', () => {
+  it('полный прогон: onFinish получает retry: false', () => {
+    const { props } = mount()
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.start/ }))
+    typeAndCheck('lovemuddy')
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.next/ }))
+    typeAndCheck('whereismyteddy')
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.finish/ }))
+    expect(props.onFinish).toHaveBeenCalledTimes(1)
+    expect(props.onFinish).toHaveBeenCalledWith(expect.objectContaining({ n: 2, clean: 2, retry: false }))
+  })
+
+  it('повтор ошибок: только эти фразы, старт сам, остаются ошибки — пометка и «Пройти заново», retry: true', () => {
     const { props } = mount({ only: [1], autoStart: true })
     expect(props.play).toHaveBeenCalledWith(LESSON.phrases[1])
     expect(screen.getByText('videoDictation.counter {"i":1,"n":1}')).toBeTruthy()
-    act(() => typeAndCheck('whereismyteddy'))
+    typeAndCheck('whereismyted')
+    typeAndCheck('whereismyted')
     fireEvent.click(screen.getByRole('button', { name: /videoDictation.finish/ }))
+    expect(props.onFinish).toHaveBeenCalledTimes(1)
+    expect(props.onFinish).toHaveBeenCalledWith(expect.objectContaining({ n: 1, clean: 0, mistakes: [1], retry: true }))
     expect(screen.getByText('videoDictation.result.redoNote')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'videoDictation.result.redo' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'videoDictation.result.redo' })).toBeTruthy()
+  })
+
+  it('перерисовка родителя с новым onFinish: вызывается последний', () => {
+    const { props, rerender } = mount()
+    const latest = vi.fn()
+    rerender(<DictationStage {...props} onFinish={latest} />)
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.start/ }))
+    typeAndCheck('lovemuddy')
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.next/ }))
+    typeAndCheck('whereismyteddy')
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.finish/ }))
+    expect(latest).toHaveBeenCalledTimes(1)
+    expect(props.onFinish).not.toHaveBeenCalled()
+  })
+})
+
+describe('фокус и ввод', () => {
+  it('«Медленнее» возвращает фокус в поле', () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.start/ }))
+    screen.getByRole('button', { name: 'videoDictation.slower' }).focus()
+    fireEvent.click(screen.getByRole('button', { name: 'videoDictation.slower' }))
+    expect(document.activeElement).toBe(input())
+  })
+
+  it('фокус: закрытая фраза — на «Дальше», после «Дальше» — в поле, итог — на заголовке', () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.start/ }))
+    expect(document.activeElement).toBe(input())
+    typeAndCheck('lovemuddy')
+    const nextBtn = screen.getByRole('button', { name: /videoDictation.next/ })
+    expect(document.activeElement).toBe(nextBtn)
+    fireEvent.click(nextBtn)
+    expect(document.activeElement).toBe(input())
+    typeAndCheck('whereismyteddy')
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.finish/ }))
+    expect(document.activeElement).toBe(screen.getByRole('heading'))
+  })
+
+  it('Enter на пустом поле ничего не делает: ни вердикта, ни записи навыка', () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.start/ }))
+    fireEvent.keyDown(input(), { key: 'Enter' })
+    expect(skills).toEqual([])
+    expect(document.querySelector('.vd-verdict').textContent).toBe('')
+    expect(document.querySelector('.jl-fb')).toBeNull()
+  })
+
+  it('«Подсказка» открывает следующую букву', () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.start/ }))
+    expect(document.querySelectorAll('.jl-cell.is-hint')).toHaveLength(0)
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.hint/ }))
+    expect(document.querySelectorAll('.jl-cell.is-hint')).toHaveLength(1)
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.hint/ }))
+    expect(document.querySelectorAll('.jl-cell.is-hint')).toHaveLength(2)
   })
 })

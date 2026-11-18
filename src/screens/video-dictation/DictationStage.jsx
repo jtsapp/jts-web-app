@@ -7,8 +7,13 @@
 //
 // Для Луны (screenSnapshot.js): вердикт поля и набранное до показа ставит DictationLine, а эталон — вся фраза — лежит в
 // data-assistant-expected только после показа (двух неудач): до этого сайт даёт перепробовать, и Луна лишь подсказывает.
+//
+// Контракт onFinish(summary): вызывается один раз, когда закрыта последняя фраза прогона; summary — итог сессии
+// ({ n, clean, items, mistakes, ... }) плюс retry: true, если это повтор ошибок (`only` задан), и false, если полный
+// прогон. Лучший результат урока пишет только вызывающий и только при retry === false. Берётся всегда последний
+// переданный onFinish (через ref), а не тот, что был при создании сессии.
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { PlayIcon } from '../../components/icons.jsx'
 import { DictationSession } from '../../practice/video-dictation/session.js'
 import { recordSkill } from '../../practice/skillStats.js'
@@ -45,13 +50,18 @@ function Verdict({ item, t }) {
 }
 
 export default function DictationStage({ lesson, only, ready, slow, autoStart, t, play, onToggleSlow, onFinish, onRedo, onExit }) {
-  // Сессия — одна на прогон (LessonRun пересоздаёт прогон по nonce), поэтому onFinish этого прогона ей и нужен.
+  const onFinishRef = useRef(onFinish)
+  useEffect(() => {
+    onFinishRef.current = onFinish
+  })
+  const finish = useCallback((summary) => onFinishRef.current(summary), [])
   const [session] = useState(
+    // eslint-disable-next-line react-hooks/refs -- finish читает ref только при закрытии фразы, не в рендере
     () =>
       new DictationSession({
         phrases: only ? lesson.phrases.filter((p) => only.includes(p.n)) : lesson.phrases,
         onPhrase: ({ outcome }) => recordSkill('listening', outcome === 'clean', lesson.level),
-        onDone: (summary) => onFinish(summary),
+        onDone: (summary) => finish({ ...summary, retry: Boolean(only) }),
       }),
   )
   const snap = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot)
@@ -143,7 +153,15 @@ export default function DictationStage({ lesson, only, ready, slow, autoStart, t
         >
           <Icon name="sound" /> {t('videoDictation.again')}
         </button>
-        <button type="button" className="jl-tool" aria-pressed={slow} onClick={() => onToggleSlow(item.phrase)}>
+        <button
+          type="button"
+          className="jl-tool"
+          aria-pressed={slow}
+          onClick={() => {
+            onToggleSlow(item.phrase)
+            inputRef.current?.focus({ preventScroll: true })
+          }}
+        >
           {t('videoDictation.slower')}
         </button>
         <button
