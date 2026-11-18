@@ -9,7 +9,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { pushModule, flushModule, PUSH_DELAY_MS, clearLocalPractice, hydratePractice } from './practiceSync.js'
 import { createProgressStore, doneListOptions } from './progressStore.js'
-import { READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY, NUMBERS_KEY, NUMBERS_LANG_KEY, LISTEN_KEY, LISTEN_OWN_KEY, PREPOSITIONS_KEY, PREPOSITIONS_LANG_KEY, PREPOSITIONS_PROGRESS_EVENT } from './practiceKeys.js'
+import { READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY, NUMBERS_KEY, NUMBERS_LANG_KEY, LISTEN_KEY, LISTEN_OWN_KEY, PREPOSITIONS_KEY, PREPOSITIONS_LANG_KEY, PREPOSITIONS_PROGRESS_EVENT, VIDEO_DICTATION_KEY, VIDEO_DICTATION_PROGRESS_EVENT } from './practiceKeys.js'
 import { applyHydratedState } from './practiceSyncCore.js'
 
 // Управляемый fetch: тест сам решает, когда сервер ответит.
@@ -176,6 +176,36 @@ describe('модуль prepositions', () => {
     expect(fired).toEqual([PREPOSITIONS_PROGRESS_EVENT])
   })
 })
+
+// Видеодиктант хранится объектом {best} (лучший результат урока). Забытый в списке модулей-объектов ушёл бы на
+// сервер как {done: [...]} и стёр бы лучшие результаты; забытый в clearLocalPractice достался бы следующему ученику.
+describe('модуль videoDictation', () => {
+  const state = { best: { 'muddy-puddles-k3f9q': { clean: 7, n: 10 } } }
+
+  it('уходит на сервер объектом как есть', async () => {
+    const fetchMock = deferredFetch()
+    vi.stubGlobal('fetch', fetchMock)
+    const flushed = (pushModule('videoDictation', state), flushModule('videoDictation'))
+    expect(fetchMock.calls[0].body).toEqual({ module: 'videoDictation', state })
+    fetchMock.calls[0].settle()
+    await flushed
+  })
+
+  it('серверный стейт ложится в ключ раздела и будит экран событием', () => {
+    const store = new Map()
+    const fired = []
+    applyHydratedState({ videoDictation: state }, { setItem: (k, v) => store.set(k, v), dispatch: (e) => fired.push(e) })
+    expect(JSON.parse(store.get(VIDEO_DICTATION_KEY))).toEqual(state)
+    expect(fired).toEqual([VIDEO_DICTATION_PROGRESS_EVENT])
+  })
+
+  it('выход чистит прогресс с устройства', () => {
+    localStorage.setItem(VIDEO_DICTATION_KEY, JSON.stringify(state))
+    clearLocalPractice()
+    expect(localStorage.getItem(VIDEO_DICTATION_KEY)).toBeNull()
+  })
+})
+
 
 // Ревью 08.10.2026 (#78): ответ сервера не проверялся — 500 или обрыв сети
 // терялись молча, и раздел-объект при следующей загрузке проигрывал серверному.

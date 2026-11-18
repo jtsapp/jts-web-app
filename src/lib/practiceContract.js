@@ -71,6 +71,9 @@ import { mergeReadingState } from './readingState.js'
 // серверным (literature/progress.js merge) в момент снимка: слово, сохранённое где угодно, остаётся; после снимка
 // запись уходит как есть. Свои предложения «Produce» и язык раздела сюда не идут — только устройство. Area
 // 'literature' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
+// 'videoDictation' — стейт-объект Видеодиктанта {best: {<slug урока>: {clean, n}}} (лучший результат «с первого раза»).
+// Replace; клиент сводит с серверным (video-dictation/progress.js merge): лучший результат не теряется. Area
+// 'videoDictation' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
 // 'vocabLearned' / 'vocabMisses' — «изучено» и «хуже запомненные» «Словаря»
 // ({scopes} и {words}, см. practiceKeys.js). Replace: снятая отметка и снятая
 // ошибка не должны воскресать от объединения.
@@ -98,6 +101,7 @@ export const PRACTICE_MODULES = [
   'punctuation',
   'partsofspeech',
   'literature',
+  'videoDictation',
   'vocabLearned',
   'vocabMisses',
 ]

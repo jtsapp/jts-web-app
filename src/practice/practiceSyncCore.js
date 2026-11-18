@@ -29,6 +29,7 @@ import {
   PUNCTUATION_KEY,
   PARTSOFSPEECH_KEY,
   LITERATURE_KEY,
+  VIDEO_DICTATION_KEY,
   GRAMMAR_PROGRESS_EVENT,
   LISTENING_PROGRESS_EVENT,
   SHADOWING_PROGRESS_EVENT,
@@ -51,12 +52,13 @@ import {
   PUNCTUATION_PROGRESS_EVENT,
   PARTSOFSPEECH_PROGRESS_EVENT,
   LITERATURE_PROGRESS_EVENT,
+  VIDEO_DICTATION_PROGRESS_EVENT,
 } from './practiceKeys.js'
 
 // Модули-объекты: их стейт уходит на сервер как есть (replace), а не как
 // множество done-id. Дублирует смысл DONE_MODULES из practiceContract.js «с
 // другой стороны» — при добавлении модуля сверяй оба списка.
-const OBJECT_MODULES = ['vocab', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'numbers', 'listen', 'prepositions', 'cartoons', 'wordhunt', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'vocabLearned', 'vocabMisses']
+const OBJECT_MODULES = ['vocab', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'numbers', 'listen', 'prepositions', 'cartoons', 'wordhunt', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'videoDictation', 'vocabLearned', 'vocabMisses']
 
 // raw: для vocab/writing — объект стейта; для grammar/listening — Set или массив id.
 export function serializeForPush(module, raw) {
@@ -173,5 +175,9 @@ export function applyHydratedState(serverState, { setItem, dispatch, getItem = (
   if (serverState.literature && typeof serverState.literature === 'object') {
     setItem(LITERATURE_KEY, JSON.stringify(serverState.literature))
     dispatch(LITERATURE_PROGRESS_EVENT)
+  }
+  if (serverState.videoDictation && typeof serverState.videoDictation === 'object') {
+    setItem(VIDEO_DICTATION_KEY, JSON.stringify(serverState.videoDictation))
+    dispatch(VIDEO_DICTATION_PROGRESS_EVENT)
   }
 }

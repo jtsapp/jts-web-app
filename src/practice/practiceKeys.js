@@ -139,6 +139,9 @@ export const LITERATURE_LANG_KEY = 'jts_literature_lang'
 // Свои предложения к словам «Produce» { <слово>: текст } — только устройство (как черновики Cartoon World): это текст
 // ученика, на общей машине он не должен достаться следующему аккаунту — чистится вместе с прогрессом.
 export const LITERATURE_DRAFTS_KEY = 'jts_literature_drafts'
+// Лучший результат Видеодиктанта по урокам: { best: { <slug урока>: { clean, n } } } — «С первого раза: clean из n».
+// Replace со сведением merge (video-dictation/progress.js): лучший результат с любого устройства не теряется.
+export const VIDEO_DICTATION_KEY = 'jts_video_dictation_v1'
 // «Грамматика · игры»: звук ответов вкл/выкл ('0' — выключен) — настройка устройства, как громкость; не синкается и
 // при выходе не чистится. Звёзды раздела живут на бэкенде (/mobile/grammar-games/progress), ключа в хранилище нет.
 export const GRAMMAR_GAMES_SOUND_KEY = 'jts_grammar_games_sound'
@@ -172,6 +175,7 @@ export const TENSES_PROGRESS_EVENT = 'tenses-progress'
 export const PUNCTUATION_PROGRESS_EVENT = 'punctuation-progress'
 export const PARTSOFSPEECH_PROGRESS_EVENT = 'partsofspeech-progress'
 export const LITERATURE_PROGRESS_EVENT = 'literature-progress'
+export const VIDEO_DICTATION_PROGRESS_EVENT = 'video-dictation-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }
