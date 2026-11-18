@@ -30,7 +30,7 @@ function LessonCard({ lesson, best, t, lang, onOpen }) {
           // eslint-disable-next-line @next/next/no-img-element -- превью YouTube с i.ytimg.com: next/image на чужой хост без настройки не пустит
           <img
             src={`https://i.ytimg.com/vi/${encodeURIComponent(lesson.video)}/mqdefault.jpg`}
-            alt={lesson.title}
+            alt=""
             loading="lazy"
             onError={() => setThumb(false)}
           />

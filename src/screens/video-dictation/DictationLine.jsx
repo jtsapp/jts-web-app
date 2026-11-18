@@ -60,9 +60,9 @@ export default function DictationLine({ item, number, inputRef, t, onType, onSub
   return (
     <div className="vd-line" ref={lineRef}>
       <div className={`jl-cells vd-cells${size}${mark}`} onClick={() => inputRef.current?.focus()}>
-        <span className="vd-cells__view" aria-hidden="true">
+        <span className="vd-cells__view">
           {groupTokens(tokens).map((group, g) => (
-            <span key={g} className="vd-wg">
+            <span key={g} className="vd-wg" aria-hidden="true">
               {group.map((tok, i) =>
                 tok.kind === 'text' ? (
                   <span key={i} className="vd-word" lang="en">

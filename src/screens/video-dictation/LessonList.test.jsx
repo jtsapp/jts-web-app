@@ -52,7 +52,7 @@ describe('список уроков', () => {
   it('карточка: превью YouTube, сериал, канал, число фраз и лучший результат', () => {
     mount({ userLevel: 'A1', best: { 'rainy-day-k3f9q': { clean: 1, n: 2 } } })
     const card = document.querySelector('.vd-card')
-    expect(card.querySelector('img').getAttribute('alt')).toBe('Rainy Day')
+    expect(card.querySelector('img').getAttribute('alt')).toBe('')
     expect(card.querySelector('img').getAttribute('loading')).toBe('lazy')
     expect(card.querySelector('img').getAttribute('src')).toBe('https://i.ytimg.com/vi/vdFixture01/mqdefault.jpg')
     expect(card.textContent).toContain('Rainy Day')

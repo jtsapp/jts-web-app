@@ -122,7 +122,11 @@ describe('размер ячеек и устойчивость к узкому э
 
   it('буквы ячеек скрыты от скринридера, поле подписано', () => {
     const { container, input } = mount(item())
-    expect(container.querySelector('.vd-cells__view').getAttribute('aria-hidden')).toBe('true')
+    // aria-hidden — на каждой группе: старый WebKit игнорирует ARIA на обёртке с display: contents
+    expect(container.querySelector('.vd-cells__view').hasAttribute('aria-hidden')).toBe(false)
+    const hidden = [...container.querySelectorAll('.vd-wg')]
+    expect(hidden.length).toBeGreaterThan(0)
+    expect(hidden.every((g) => g.getAttribute('aria-hidden') === 'true')).toBe(true)
     expect(input.closest('[aria-hidden="true"]')).toBeNull()
   })
 
