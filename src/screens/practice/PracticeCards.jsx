@@ -55,8 +55,9 @@ function Pic({ src, alt, className }) {
   )
 }
 
-// Переключатель уровня (LevelSegmented): шесть пилюль 56×36 в серой капсуле.
-export function LevelSwitch({ value, onChange }) {
+// Переключатель уровня (LevelSegmented): шесть пилюль 56×36 в серой капсуле. levels — свой набор раздела
+// (Видеодиктант: A0–C1); по умолчанию — уровни «Практики» A1–C2.
+export function LevelSwitch({ value, onChange, levels = PRACTICE_LEVELS }) {
   const { t } = useI18n()
   return (
     <div className="pk-levels" role="radiogroup" aria-label={t('practice.levels')}>
@@ -69,7 +70,7 @@ export function LevelSwitch({ value, onChange }) {
       >
         {t('practice.levelAll')}
       </button>
-      {PRACTICE_LEVELS.map((l) => (
+      {levels.map((l) => (
         <button
           key={l}
           type="button"
