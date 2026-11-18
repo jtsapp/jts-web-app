@@ -25,6 +25,12 @@ describe('облачко-знакомство с Луной', () => {
     expect(result.current).toBe(false)
   })
 
+  it('на профиле облачка нет вовсе (задача 214: на телефоне оно ложилось на настройки)', () => {
+    const { result } = hook({ screen: 'profile' })
+    act(() => vi.advanceTimersByTime(HINT_DELAY_MS + 100))
+    expect(result.current).toBe(false)
+  })
+
   it('на экране, где уже показывалось за визит, — нет; на новом — да', () => {
     const { result, rerender } = hook()
     act(() => vi.advanceTimersByTime(HINT_DELAY_MS))

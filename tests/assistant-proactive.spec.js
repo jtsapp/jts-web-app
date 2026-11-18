@@ -159,15 +159,13 @@ test('«Подсказки Луны: только по запросу» — пе
 })
 
 test('Профиль: выбор «Подсказки Луны» сохраняется на устройстве', async ({ page }, info) => {
-  test.skip(info.project.name !== 'desktop', 'окно Профиля на компьютере; на телефоне — свой экран')
+  test.skip(info.project.name !== 'desktop', 'переключатель Профиля на компьютере; на телефоне — свой экран')
   await setup(page, { level: 'manual' })
   await page.goto('/?screen=profile')
-  const row = page.locator('[data-key="luna"]')
-  await expect(row).toBeVisible({ timeout: 20_000 })
-  await expect(row).toContainText('Только по запросу')
-  await row.click()
+  // С задачи 214 подсказки — переключателем в карточке Луны, а не строкой с окном.
+  await expect(page.locator('[data-luna="manual"]')).toHaveAttribute('aria-pressed', 'true', { timeout: 20_000 })
   await page.locator('[data-luna="sometimes"]').click()
-  await expect(row).toContainText('Иногда')
+  await expect(page.locator('[data-luna="sometimes"]')).toHaveAttribute('aria-pressed', 'true')
   expect(await page.evaluate(() => localStorage.getItem('jts_luna_proactive'))).toBe('sometimes')
 })
 

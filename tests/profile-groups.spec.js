@@ -12,16 +12,18 @@ test.describe('профиль / группы и правила школы', () =
     await loginAsStudent(page, { level: 'B1' })
     await page.goto('/?screen=profile')
     const phone = (viewport?.width ?? 0) <= 560
-    await expect(page.locator(phone ? '.pfm' : '.pf')).toBeVisible({ timeout: 20_000 })
+    await expect(page.locator(phone ? '.pfm' : '.pf2')).toBeVisible({ timeout: 20_000 })
     await expect(page.locator('.pf-skills, .pfm-skill')).toHaveCount(0)
     if (!phone) {
-      // группы ТЗ: Учёба · Аккаунт · Помощь, документы — блоком «Документы платформы»
-      await expect(page.locator('.pf-label')).toContainText(['Учёба', 'Аккаунт', 'Помощь'])
-      await expect(page.locator('[data-section="study"] .pf-row')).toHaveText([/Тест на уровень/, /Правила школы/])
-      await expect(page.locator('.pf-stat[data-stat="level"] b')).toHaveText('B1')
+      // Раскладка задачи 214: Обучение · Настройки · Аккаунт и помощь; уровень — чипом звания в шапке.
+      await expect(page.locator('.pf2-sect')).toHaveText(['Обучение', 'Настройки', 'Аккаунт и помощь'])
+      await expect(page.locator('[data-section="goals"] .pf-row')).toHaveText([/Тест на уровень/])
+      await expect(page.locator('.pf2-chip[data-chip="rank"]')).toHaveText('Барон · B1')
+      // «Правила школы» — в окне строки «Правила школы и документы»
+      await page.locator('[data-section="account"] [data-key="docs"]').click()
     }
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/profile-${info.project.name}.png`, fullPage: true })
-    await page.getByText('Правила школы').click()
+    await page.getByText('Правила школы', { exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Правила обучения' })).toBeVisible({ timeout: 20_000 })
     await expect(page.locator('.ls-tab--active')).toHaveText('Правила')
   })

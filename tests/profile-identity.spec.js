@@ -59,7 +59,7 @@ test.describe('профиль / идентификация без имени —
 
   test('чип профиля в шапке — силуэт без буквы «П»', async ({ page }) => {
     await page.goto('/?screen=profile')
-    await expect(page.locator('.pf')).toBeVisible({ timeout: 20_000 })
+    await expect(page.locator('.pf2')).toBeVisible({ timeout: 20_000 })
     const topAvatar = page.locator('.mtop__avatar')
     await expect(topAvatar.locator('svg')).toHaveCount(1)
     await expect(topAvatar).not.toContainText('П')
@@ -71,7 +71,7 @@ test.describe('профиль / идентификация без имени —
 
   test('сайдбар-аватар — силуэт без буквы', async ({ page }) => {
     await page.goto('/?screen=profile')
-    await expect(page.locator('.pf')).toBeVisible({ timeout: 20_000 })
+    await expect(page.locator('.pf2')).toBeVisible({ timeout: 20_000 })
     const sbAvatar = page.locator('.sb__avatar')
     await expect(sbAvatar.locator('svg')).toHaveCount(1)
     await expect(sbAvatar).not.toContainText('J')

@@ -37,9 +37,12 @@ test.describe('Память Луны — компьютер', () => {
   test('факты видны, удаление убирает строку и зовёт DELETE со своим id', async ({ page }) => {
     const deleted = await setup(page)
     await page.goto('/?screen=profile')
+    // С задачи 214 память — строкой карточки Луны (число фактов справа), список — окном.
+    const row = page.locator('[data-section="luna"] [data-key="memory"]')
+    await expect(row).toContainText('2', { timeout: 20_000 })
+    await row.click()
     const block = page.locator('[data-luna-memory]')
-    await expect(block).toBeVisible({ timeout: 20_000 })
-    await expect(page.locator('.pf-label', { hasText: 'Память Луны' })).toBeVisible()
+    await expect(block).toBeVisible()
     await expect(block.locator('.pf-mem__item')).toHaveCount(2)
     await expect(block).toContainText('готовится к IELTS к маю')
     await expect(block.locator('.pf-mem__until').first()).toContainText('до 7 декабря')
@@ -53,8 +56,8 @@ test.describe('Память Луны — компьютер', () => {
   test('без базы на стенде блока нет вовсе', async ({ page }) => {
     await setup(page, { configured: false })
     await page.goto('/?screen=profile')
-    await expect(page.locator('.pf-label', { hasText: 'Персонализация' })).toBeVisible({ timeout: 20_000 })
-    await expect(page.locator('[data-luna-memory]')).toHaveCount(0)
+    await expect(page.locator('[data-section="luna"]')).toBeVisible({ timeout: 20_000 })
+    await expect(page.locator('[data-key="memory"], [data-luna-memory]')).toHaveCount(0)
   })
 })
 

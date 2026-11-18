@@ -49,7 +49,7 @@ describe('ProfilePage — фото профиля', () => {
   it('кладёт в хранилище уменьшенное фото, а не исходный файл', async () => {
     shrinkImage.mockResolvedValueOnce('data:image/webp;base64,SMALL')
     pick()
-    await waitFor(() => expect(document.querySelector('.pf-avatar__img')?.getAttribute('src')).toBe('data:image/webp;base64,SMALL'))
+    await waitFor(() => expect(document.querySelector('.pf2-ava__img')?.getAttribute('src')).toBe('data:image/webp;base64,SMALL'))
     expect(localStorage.getItem('jts_profile_avatar:41')).toBe('data:image/webp;base64,SMALL')
   })
 
@@ -57,7 +57,7 @@ describe('ProfilePage — фото профиля', () => {
     shrinkImage.mockRejectedValueOnce(new Error('not an image'))
     pick()
     expect(await screen.findByText(/не удалось сохранить фото/i)).toBeTruthy()
-    expect(document.querySelector('.pf-avatar__img')).toBeNull()
+    expect(document.querySelector('.pf2-ava__img')).toBeNull()
   })
 
   it('не влезло в хранилище — говорит об этом, а не показывает фото до перезагрузки', async () => {
@@ -67,7 +67,7 @@ describe('ProfilePage — фото профиля', () => {
     })
     pick()
     expect(await screen.findByText(/не удалось сохранить фото/i)).toBeTruthy()
-    expect(document.querySelector('.pf-avatar__img')).toBeNull()
+    expect(document.querySelector('.pf2-ava__img')).toBeNull()
     spy.mockRestore()
   })
 })
