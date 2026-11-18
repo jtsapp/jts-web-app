@@ -10,6 +10,7 @@ const h = vi.hoisted(() => ({
   best: [],
   destroyed: 0,
   raf: null,
+  created: [],
 }))
 vi.mock('../../lib/youtube.js', () => ({ loadYouTubeApi: () => h.load() }))
 vi.mock('../../practice/video-dictation/progress.js', () => ({
@@ -34,6 +35,7 @@ class FakePlayer {
     this.opts = opts
     this.calls = []
     h.player = this
+    h.created.push(opts.videoId)
   }
   getCurrentTime() {
     return 0
@@ -58,6 +60,17 @@ class FakePlayer {
   }
 }
 
+const notice = () => screen.queryByText('videoDictation.videoTimeout')?.closest('.jl-notice') ?? null
+
+function answerAndFinish(value) {
+  const input = () => document.querySelector('.jl-cells__input')
+  for (const v of [value, value]) {
+    fireEvent.change(input(), { target: { value: v } })
+    fireEvent.keyDown(input(), { key: 'Enter' })
+  }
+  fireEvent.click(screen.getByRole('button', { name: /videoDictation.finish/ }))
+}
+
 async function mount() {
   const view = render(<LessonRun lesson={LESSON} t={t} onExit={() => {}} />)
   await act(async () => {})
@@ -70,6 +83,7 @@ beforeEach(() => {
   h.best = []
   h.destroyed = 0
   h.raf = null
+  h.created = []
   window.requestAnimationFrame = (fn) => {
     h.raf = fn
     return 1
@@ -146,13 +160,13 @@ describe('урок под плеером', () => {
     await act(async () => {})
     act(() => h.player.opts.events.onReady())
     fireEvent.click(screen.getByRole('button', { name: /videoDictation.start/ }))
-    for (let i = 0; i < 40 && !screen.queryByRole('alert'); i++) {
+    for (let i = 0; i < 40 && !notice(); i++) {
       now += 250
       act(() => h.raf())
     }
-    expect(screen.getByRole('alert').textContent).toContain('videoDictation.videoTimeout')
+    expect(notice().getAttribute('role')).toBe('status')
     h.player.calls.length = 0
-    fireEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: 'videoDictation.again' }))
+    fireEvent.click(within(notice()).getByRole('button', { name: 'videoDictation.again' }))
     expect(h.player.calls).toEqual([['setPlaybackRate', 1], ['seekTo', 2], ['playVideo']])
     expect(screen.queryByText(/videoDictation.videoTimeout/)).toBeNull()
     vi.restoreAllMocks()
@@ -178,5 +192,74 @@ describe('урок под плеером', () => {
     fireEvent.click(screen.getByRole('button', { name: 'videoDictation.toList' }))
     expect(onExit).toHaveBeenCalled()
     expect(h.best).toEqual([])
+  })
+
+  it('новый урок после упавшего ролика — без плашки, лучший результат пишется', async () => {
+    const view = await mount()
+    act(() => h.player.opts.events.onError({ data: 150 }))
+    expect(screen.getByRole('alert')).toBeTruthy()
+    view.rerender(<LessonRun lesson={{ ...LESSON, slug: 'next', video: 'other' }} t={t} onExit={() => {}} />)
+    await act(async () => {})
+    expect(screen.queryByRole('alert')).toBeNull()
+    act(() => h.player.opts.events.onReady())
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.start/ }))
+    answerAndFinish('zzzzzzz')
+    expect(h.best).toEqual([['next', { clean: 0, n: 1 }]])
+  })
+
+  it('смена ролика после готового — «Начать» заблокирована до onReady нового', async () => {
+    const view = await mount()
+    act(() => h.player.opts.events.onReady())
+    expect(screen.getByRole('button', { name: /videoDictation.start/ }).disabled).toBe(false)
+    view.rerender(<LessonRun lesson={{ ...LESSON, video: 'other' }} t={t} onExit={() => {}} />)
+    await act(async () => {})
+    expect(screen.getByRole('button', { name: /videoDictation.loadingVideo/ }).disabled).toBe(true)
+    act(() => h.player.opts.events.onReady())
+    expect(screen.getByRole('button', { name: /videoDictation.start/ }).disabled).toBe(false)
+  })
+
+  it('timeout фразы, «Ещё раз», весь урок — лучший результат записан один раз', async () => {
+    vi.useFakeTimers()
+    let now = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    render(<LessonRun lesson={LESSON} t={t} onExit={() => {}} />)
+    await act(async () => {})
+    act(() => h.player.opts.events.onReady())
+    fireEvent.click(screen.getByRole('button', { name: /videoDictation.start/ }))
+    for (let i = 0; i < 40 && !notice(); i++) {
+      now += 250
+      act(() => h.raf())
+    }
+    fireEvent.click(within(notice()).getByRole('button', { name: 'videoDictation.again' }))
+    answerAndFinish('zzzzzzz')
+    expect(h.best).toEqual([['lost-kite-m2x7d', { clean: 0, n: 1 }]])
+    expect(notice()).toBeNull()
+    vi.restoreAllMocks()
+  })
+
+  it('недоступный ролик (150) — плашка, лучший результат не пишется', async () => {
+    await mount()
+    act(() => h.player.opts.events.onReady())
+    act(() => h.player.opts.events.onError({ data: 150 }))
+    expect(screen.getByRole('alert').textContent).toContain('videoDictation.unavailable.title')
+    expect(h.best).toEqual([])
+  })
+
+  it('20-секундный страж не показывает плашку после onReady', async () => {
+    vi.useFakeTimers()
+    render(<LessonRun lesson={LESSON} t={t} onExit={() => {}} />)
+    await act(async () => {})
+    act(() => h.player.opts.events.onReady())
+    act(() => vi.advanceTimersByTime(READY_TIMEOUT_MS))
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('смена урока при ожидании loadYouTubeApi — плеер только для нового ролика', async () => {
+    const pending = []
+    h.load = () => new Promise((resolve) => pending.push(resolve))
+    const view = render(<LessonRun lesson={LESSON} t={t} onExit={() => {}} />)
+    view.rerender(<LessonRun lesson={{ ...LESSON, video: 'other' }} t={t} onExit={() => {}} />)
+    await act(async () => pending.forEach((resolve) => resolve({ Player: FakePlayer })))
+    expect(h.created).toEqual(['other'])
   })
 })

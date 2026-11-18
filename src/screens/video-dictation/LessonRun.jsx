@@ -52,9 +52,23 @@ export default function LessonRun({ lesson, t, onExit }) {
   const [slow, setSlow] = useState(false)
   // only — номера фраз «Пройти ошибки заново», null — весь урок
   const [run, setRun] = useState({ nonce: 0, only: null })
+  // Другой ролик — другой урок: состояние прошлого сбрасываем в рендере (не в эффекте), чтобы не мигала старая плашка.
+  const [videoOf, setVideoOf] = useState(lesson.video)
+  if (videoOf !== lesson.video) {
+    setVideoOf(lesson.video)
+    setReady(false)
+    setFailed(false)
+    setStalled(false)
+    setSlow(false)
+    setRun({ nonce: 0, only: null })
+  }
 
   useEffect(() => {
     const host = hostRef.current
+    // Новый ролик — новый урок: ссылки прошлого не переносим (состояние сброшено при рендере выше).
+    failedRef.current = false
+    phraseRef.current = null
+    lastPhraseRef.current = null
     let cancelled = false
     let yt = null
     const markFailed = () => {
@@ -127,6 +141,7 @@ export default function LessonRun({ lesson, t, onExit }) {
 
   // Лучший результат — только у прогона всего урока и только если ролик не падал.
   const finish = (summary) => {
+    setStalled(false)
     if (run.only || failedRef.current) return
     recordBest(lesson.slug, { clean: summary.clean, n: summary.n })
   }
@@ -137,7 +152,7 @@ export default function LessonRun({ lesson, t, onExit }) {
         <div className="vd-player__host" ref={hostRef} />
       </div>
       {stalled && !failed && (
-        <div className="jl-notice jl-notice--err vd-gone" role="alert">
+        <div className="jl-notice jl-notice--err vd-gone" role="status">
           <p>{t('videoDictation.videoTimeout')}</p>
           <button type="button" className="jl-btn jl-btn--sm" onClick={() => play(lastPhraseRef.current)}>
             {t('videoDictation.again')}
@@ -148,7 +163,7 @@ export default function LessonRun({ lesson, t, onExit }) {
         <Unavailable lesson={lesson} t={t} onExit={onExit} />
       ) : (
         <DictationStage
-          key={run.nonce}
+          key={`${lesson.slug}:${run.nonce}`}
           lesson={lesson}
           only={run.only}
           ready={ready}
