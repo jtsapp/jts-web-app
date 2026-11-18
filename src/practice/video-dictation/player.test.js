@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ARM_TIMEOUT_MS, END_EPSILON, ENDED_GRACE_MS, SLOW_RATE, createPhrasePlayer } from './player.js'
+import { ARM_TIMEOUT_MS, END_EPSILON, ENDED_GRACE_MS, MAX_TICK_MS, SLOW_RATE, createPhrasePlayer } from './player.js'
 
 // Часы кадров: step() выполняет всё, что попросили на этот кадр.
 function fakeFrames() {
@@ -53,6 +53,14 @@ function fakePlayer() {
 }
 
 const SEG = { start: 2, end: 4 }
+
+// Кадры идут не реже MAX_TICK_MS: часы доходят до toMs кадрами, а не одним прыжком.
+function runTo(frames, toMs) {
+  while (frames.clock.ms < toMs) {
+    frames.clock.ms = Math.min(frames.clock.ms + MAX_TICK_MS, toMs)
+    frames.step()
+  }
+}
 
 function setup() {
   const frames = fakeFrames()
@@ -174,12 +182,10 @@ describe('фраза', () => {
     const { frames, player, onEnd, onError, pp } = setup()
     player.t = 10
     pp.play(SEG)
-    frames.clock.ms = ARM_TIMEOUT_MS - 1
-    frames.step()
+    runTo(frames, ARM_TIMEOUT_MS - 1)
     expect(onError).not.toHaveBeenCalled()
     expect(frames.pending()).toBe(1)
-    frames.clock.ms = ARM_TIMEOUT_MS
-    frames.step()
+    runTo(frames, ARM_TIMEOUT_MS)
     expect(onError.mock.calls).toEqual([['timeout']])
     expect(onEnd).not.toHaveBeenCalled()
     expect(player.calls.at(-1)).toEqual(['pauseVideo'])
@@ -193,16 +199,13 @@ describe('фраза', () => {
     player.t = 10
     player.s = 3
     pp.play(SEG)
-    frames.clock.ms = 10000
-    frames.step()
+    runTo(frames, 10000)
     expect(onError).not.toHaveBeenCalled()
     player.s = 1
-    frames.clock.ms = 10000 + ARM_TIMEOUT_MS - 1
-    frames.step()
+    runTo(frames, 10000 + ARM_TIMEOUT_MS - 1)
     expect(onError).not.toHaveBeenCalled()
     player.s = -1
-    frames.clock.ms = 10000 + ARM_TIMEOUT_MS
-    frames.step()
+    runTo(frames, 10000 + ARM_TIMEOUT_MS)
     expect(onError.mock.calls).toEqual([['timeout']])
     expect(onEnd).not.toHaveBeenCalled()
   })
@@ -211,11 +214,9 @@ describe('фраза', () => {
     const { frames, player, onError, pp } = setup()
     player.t = 10
     pp.play(SEG)
-    frames.clock.ms = ARM_TIMEOUT_MS - 1
-    frames.step()
+    runTo(frames, ARM_TIMEOUT_MS - 1)
     pp.play(SEG)
-    frames.clock.ms = ARM_TIMEOUT_MS + 1
-    frames.step()
+    runTo(frames, 2 * ARM_TIMEOUT_MS - 2)
     expect(onError).not.toHaveBeenCalled()
   })
 
@@ -228,7 +229,7 @@ describe('фраза', () => {
     pp.onPlayerState(0)
     expect(onEnd).not.toHaveBeenCalled()
     player.t = 99.9 // seekTo прижат к концу ролика
-    frames.step()
+    runTo(frames, ENDED_GRACE_MS)
     expect(onEnd).toHaveBeenCalledWith({ start: 100, end: 102 })
     expect(onError).not.toHaveBeenCalled()
     expect(frames.pending()).toBe(0)
@@ -242,9 +243,69 @@ describe('фраза', () => {
     expect(onEnd).not.toHaveBeenCalled()
     player.t = 3
     player.s = 0
-    frames.step()
+    runTo(frames, ENDED_GRACE_MS)
     expect(onEnd).toHaveBeenCalledTimes(1)
     expect(frames.pending()).toBe(0)
+  })
+
+  it('ENDED во взведённом состоянии не засчитывается на ENDED_GRACE_MS − 1, засчитывается ровно на ENDED_GRACE_MS', () => {
+    const { frames, player, onEnd, pp } = setup()
+    pp.play(SEG)
+    player.t = 2.2
+    frames.step()
+    player.t = 3
+    player.s = 0
+    runTo(frames, ENDED_GRACE_MS - 1)
+    expect(onEnd).not.toHaveBeenCalled()
+    runTo(frames, ENDED_GRACE_MS)
+    expect(onEnd).toHaveBeenCalledTimes(1)
+  })
+
+  it('повтор фразы за концом ролика сразу после его конца: прежние время D и ENDED на первом кадре не обрывают фразу', () => {
+    const { frames, player, onEnd, onError, pp } = setup()
+    const tail = { start: 98, end: 102 } // ролик 100 с, фраза выходит за конец
+    player.t = 100 // ролик доиграл сам: время D, состояние ENDED
+    player.s = 0
+    pp.play(tail)
+    frames.step() // кадр 0: прежнее время и прежний ENDED
+    expect(onEnd).not.toHaveBeenCalled()
+    expect(pp.state()).toBe('playing')
+    player.s = 1
+    player.t = 98.3
+    runTo(frames, 300)
+    player.t = 101.9
+    frames.step()
+    expect(onEnd).not.toHaveBeenCalled()
+    player.t = tail.end - END_EPSILON
+    frames.step()
+    expect(onEnd.mock.calls).toEqual([[tail]])
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('ролик действительно остался ENDED — фраза кончается, когда льготное окно прошло', () => {
+    const { frames, player, onEnd, pp } = setup()
+    const tail = { start: 98, end: 102 }
+    player.t = 100
+    player.s = 0
+    pp.play(tail)
+    runTo(frames, ENDED_GRACE_MS - 1)
+    expect(onEnd).not.toHaveBeenCalled()
+    runTo(frames, ENDED_GRACE_MS)
+    expect(onEnd.mock.calls).toEqual([[tail]])
+    expect(frames.pending()).toBe(0)
+  })
+
+  it('скрытая вкладка: один разрыв в 30 с между кадрами добавляет к сроку не больше MAX_TICK_MS', () => {
+    const { frames, player, onError, pp } = setup()
+    player.t = 10
+    pp.play(SEG)
+    frames.clock.ms = 30000
+    frames.step()
+    expect(onError).not.toHaveBeenCalled()
+    runTo(frames, 30000 + ARM_TIMEOUT_MS - MAX_TICK_MS - 1)
+    expect(onError).not.toHaveBeenCalled()
+    runTo(frames, 30000 + ARM_TIMEOUT_MS - MAX_TICK_MS)
+    expect(onError.mock.calls).toEqual([['timeout']])
   })
 
   it('ENDED из льготного окна — прежний (ролик играет заново): взвод не завершает фразу', () => {

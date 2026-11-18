@@ -5,7 +5,8 @@
 // ловим опросом getCurrentTime() на каждом кадре и встаём на паузу при t ≥ end − 0,05 с. Сразу после seekTo плеер
 // может ещё отдавать прежнее время (конец прошлой фразы или этой же — «Ещё раз»), и пауза случилась бы мгновенно,
 // поэтому конец «взводится», только когда время вошло в саму фразу.
-// Скрытая вкладка останавливает requestAnimationFrame — пауза там может прийти с опозданием (принято).
+// Скрытая вкладка останавливает requestAnimationFrame — пауза там может прийти с опозданием (принято); срок при этом
+// растёт не больше MAX_TICK_MS на кадр.
 //
 // Контракт колбэков:
 //   onEnd(segment) — фраза доиграла (время дошло до конца, либо ролик кончился — ENDED) и плеер на паузе.
@@ -22,9 +23,11 @@ export const SLOW_RATE = 0.75
 const ARM_LEAD = 1
 // Если время так и не вошло во фразу (ролик завис, не грузится), опрос не вечный. Срок — 5 с времени, когда плеер
 // НЕ буферизует (BUFFERING, 3, отсчёт стоит), иначе медленная сеть дала бы ложную ошибку. По сроку — onError('timeout').
-// До ENDED_GRACE_MS после play состояние ENDED может быть прежним (до seekTo) — само событие тогда не завершает фразу.
+// До ENDED_GRACE_MS после play состояние ENDED может быть прежним (до seekTo): ни событие, ни опрос тогда не завершают фразу.
 export const ARM_TIMEOUT_MS = 5000
 export const ENDED_GRACE_MS = 1000
+// Скрытая вкладка останавливает кадры; при возврате разрыв не должен съесть срок целиком — на кадр идёт не больше этого.
+export const MAX_TICK_MS = 250
 export const TIMEOUT_REASON = 'timeout'
 const YT_ENDED = 0
 const YT_PLAYING = 1
@@ -77,7 +80,7 @@ export function createPhrasePlayer({ player, frame, cancel, now = () => performa
       return fail(null) // плеер разрушен: опрос не оставляем крутиться
     }
     const tickAt = now()
-    if (!armed && playerState !== YT_BUFFERING) waited += tickAt - lastTickAt
+    if (!armed && playerState !== YT_BUFFERING) waited += Math.min(tickAt - lastTickAt, MAX_TICK_MS)
     lastTickAt = tickAt
     if (Number.isFinite(t)) {
       if (armed && t >= segment.end - END_EPSILON) return finish()
@@ -85,7 +88,9 @@ export function createPhrasePlayer({ player, frame, cancel, now = () => performa
     }
     // Время внутри фразы — состояние свежее. ENDED тогда значит «ролик кончился раньше конца фразы» (фраза у конца
     // ролика: время до end не дойдёт); ENDED из льготного окна без возврата к игре — то же.
-    if (armed && isEnded(playerState)) return finish()
+    // Сразу после play ENDED и время могут быть прежними (повтор фразы за концом ролика, что доиграл сам), поэтому
+    // ENDED во взведённом состоянии читаем только после льготного окна.
+    if (armed && isEnded(playerState) && tickAt - startedAt >= ENDED_GRACE_MS) return finish()
     if (!armed && waited >= ARM_TIMEOUT_MS) return timeout()
     raf = frame(tick)
   }
