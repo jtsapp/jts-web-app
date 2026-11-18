@@ -78,6 +78,10 @@ describe('домен лендинга', () => {
   it('на домене приложения /имя — не короткая ссылка', () => {
     expect(on('ai-tutor.justtostudy.kz', '/dana')).toEqual({ action: 'next' })
   })
+  it('ссылка на деморегистрацию ведёт в ученическое приложение', () => {
+    expect(on('justtostudy-english.kz', '/demo')).toEqual({ action: 'redirect', to: APP + '/demo' })
+    expect(on('dev-tutor.justtostudy.kz', '/demo')).toEqual({ action: 'next' })
+  })
   it('без адреса приложения — не уводим в никуда', () => {
     expect(on('justtostudy-english.kz', '/trial/abc', '', { appUrl: '' })).toEqual({ action: 'next' })
   })

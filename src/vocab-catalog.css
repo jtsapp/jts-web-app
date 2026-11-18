@@ -44,6 +44,7 @@
 .vp-state { color: var(--vp-muted); padding: 20px 0; }
 
 /* ── Home sections ── */
+.vp-home > .lw-dict { margin-bottom: 16px; }
 .vp-sec { margin-bottom: 36px; }
 .vp-sec-hd {
   display: flex; align-items: flex-start; justify-content: space-between;

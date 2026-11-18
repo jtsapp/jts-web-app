@@ -33,7 +33,7 @@ import GrammarCatalog from './GrammarCatalog.jsx'
 import AssignPracticeBar from './practice/AssignPracticeBar.jsx'
 import BooksAudioFilter from './practice/BooksAudioFilter.jsx'
 import { unitToPayload } from './practice/assignPractice.js'
-import { SKILLS, SKILL_KEYS, skillModules, skillOfModule, EXPANDABLE } from './practice/practiceTabs.js'
+import { SKILLS, SKILL_KEYS, skillModules, skillOfModule, skillKeyOf, EXPANDABLE } from './practice/practiceTabs.js'
 import { cardOf } from './practice/practiceCatalog.js'
 import {
   LevelSwitch,
@@ -258,12 +258,13 @@ export default function PracticePage({
   const resumed = resumeOf('practice')
   const [tab, setTab] = useState(() => {
     if (SKILL_KEYS.includes(resumed?.tab)) return resumed.tab
-    // `skill` — возврат из раздела, который помнит свою вкладку («Ситуации»).
+    // `skill` — возврат из раздела, который помнит свою вкладку («Ситуации»). Ключ прежней раскладки (ссылка Луны,
+    // сохранённая цель) переводится в нынешний — skillKeyOf.
     const fromTarget =
       skillOfModule(openTarget?.filter) ||
-      (SKILL_KEYS.includes(openTarget?.skill) ? openTarget.skill : null) ||
+      skillKeyOf(openTarget?.skill) ||
       (openTarget?.area === 'situations' ? 'speaking' : null) ||
-      (openTarget?.unitId != null ? 'grammarWriting' : null)
+      (openTarget?.unitId != null ? 'grammar' : null)
     if (fromTarget) return fromTarget
     const saved = readSession(TAB_KEY)
     return SKILL_KEYS.includes(saved) ? saved : 'listening'
@@ -644,15 +645,15 @@ export default function PracticePage({
   const tour = useScreenTour(teacher ? null : tourKey)
   // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
   // Шаги — по устройству страницы, а не по разделам (редизайн 29.10.2026): вкладки → уровни → карточка тренажёра →
-  // карточка-каталог → начисления → вкладка «Игры», где собраны все игры (с 17.11.2026). Аккордеона без правил токенов
-  // нет — его шаг тур пропустит сам.
+  // карточка-каталог → начисления → пункт меню «Игры», куда с 18.11.2026 вынесены все игры. Аккордеона без правил
+  // токенов нет — его шаг тур пропустит сам; на телефоне сайдбара нет (игры там в «Сервисах») — пропустит и последний.
   const tourSteps = [
     { selector: '.pk-skills', title: t('tour.practice.skills.title'), text: t('tour.practice.skills.text'), art: tourMascot('sport-wave'), ...TOUR_COACH_CARD },
     { selector: '.pk-levels', title: t('tour.practice.levels.title'), text: t('tour.practice.levels.text'), art: tourMascot('dexter-cool', 200), ...TOUR_COACH_CARD },
     { selector: '#sec-listenchoose', title: t('tour.practice.card.title'), text: t('tour.practice.card.text'), art: tourMascot('aizere-thumbs'), ...TOUR_COACH_CARD },
     { selector: '#sec-shadowing', title: t('tour.practice.catalog.title'), text: t('tour.practice.catalog.text'), art: tourMascot('artist-paint'), ...TOUR_COACH_CARD },
     { selector: '.pk-acc', title: t('tour.practice.tokens.title'), text: t('tour.practice.tokens.text'), art: tourMascot('sport-fly'), ...TOUR_COACH_CARD },
-    { selector: '.pk-skill--games', title: t('tour.practice.games.title'), text: t('tour.practice.games.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
+    { selector: '.sb [data-nav="games"]', title: t('tour.practice.games.title'), text: t('tour.practice.games.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
   ]
   const tourIntro = {
     title: t('tour.intro.title'),
@@ -1131,9 +1132,6 @@ export default function PracticePage({
   }
 
   const skill = SKILLS.find((s) => s.key === tab) || SKILLS[0]
-  // Игры уровней не знают: чипы на их вкладке ничего бы не меняли — их нет (как у прежней «Грамматики», макет
-  // 7402:7133). У «Грамматики и письма» строка уровней есть: по ней открываются воркбуки, «Письмо» и юниты.
-  const levelsOff = skill.key === 'games'
 
   // Карточка, которой сейчас на экране не место: каталоги караоке и комиксов, пока они пусты (материал заводит
   // методист — пустая витрина выглядела бы поломкой), как и прежние секции. Пока каталог грузится, карточка
@@ -1152,7 +1150,7 @@ export default function PracticePage({
       focusLater('.pk-sec .pk-all')
       return
     }
-    onNav?.(card.nav, card.nav === 'arcade' ? { ...card.payload, skill: tab } : card.payload || undefined)
+    onNav?.(card.nav, card.payload || undefined)
   }
 
   return (
@@ -1177,7 +1175,7 @@ export default function PracticePage({
 
         <div className="pk-cap">
           <PracticeTokenSub data={tokenData} />
-          {!levelsOff && <LevelSwitch value={pickedLevel} onChange={pickLevel} />}
+          <LevelSwitch value={pickedLevel} onChange={pickLevel} />
         </div>
 
         {state.error && <div className="pp-note pp-note--err">{state.error}</div>}

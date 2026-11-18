@@ -1,4 +1,6 @@
 import '../styles.css'
+// Профиль ученика на компьютере и планшете (задача 214) — после styles.css: окна профиля (.pf-modal) там же.
+import '../profile.css'
 import '../tutor.css'
 import '../ielts.css'
 import '../sat.css'

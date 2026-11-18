@@ -26,6 +26,9 @@ const GROUP_ITEM = { key: 'group', label: 'nav.group', ico: 'groups' }
 const NAV_FULL = [
   { key: 'learning', label: 'nav.learning', ico: 'map' },
   { key: 'practice', label: 'nav.practice', ico: 'auto_stories' },
+  // «Игры» — сразу после «Практики» (задача 226, файл методиста 18.11.2026): шесть игр, бывшая вкладка Практики.
+  // Доступ — тот же, что у Практики (studentSectionRules: games → practice); на телефоне пункт уходит в «Сервисы».
+  { key: 'games', label: 'nav.games', ico: 'sports_esports' },
   { key: 'tutor', label: 'nav.tutor', ico: 'auto_awesome' },
   { key: 'lessons', label: 'nav.lessons', ico: 'videocam' },
   // Значок — сколько работ ждут ученика: просроченные и заданные (ТЗ v2.0, 5.4; useHomeworkBadge в useMenuItems).
@@ -71,7 +74,7 @@ const TEACHER_SECTIONS = ['lessons', 'practice']
 
 // Аккаунт IELTS (дизайн «IELTS new», 08.10.2026): ровно эти разделы и в этом порядке, а внизу «Настройки». Игровых
 // счётчиков и плашки уровня в макете нет. Каждый экзамен ниже проверяется и по матрице, и по своему доступу.
-const IELTS_SECTIONS = ['practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'chess', 'ielts', 'sat', 'tokens', 'prizes', 'birge', 'feedback', 'notifications', 'whats-new', 'contracts']
+const IELTS_SECTIONS = ['practice', 'games', 'tutor', 'lessons', 'homework', 'vocab', 'learning', 'chess', 'ielts', 'sat', 'tokens', 'prizes', 'birge', 'feedback', 'notifications', 'whats-new', 'contracts']
 
 // «Повторение» стоит после «Словаря» у всех учеников, включая IELTS/SAT (владелец, 03.11.2026; до того у экзаменов было первым).
 function learningAfterVocab(items) {
@@ -153,6 +156,7 @@ const INNER_SCREENS = new Set([
   // разделы Практики — у каждого «← В Практику» или своя полоса с крестиком
   'reading', 'writing', 'workbook', 'listening', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen',
   'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'situations', 'shadowing',
+  // «Игры» (сам список) — не внутренний: корень раздела, как «Практика»; внутренние — экраны самих игр выше
   // план по дням и маршрут General English, каталог курса — экраны со своей «назад»
   'ge-plan', 'ge-route', 'course-catalog',
   // мастер подбора учителя: «← Назад» в шапке шага и своя закреплённая снизу панель (.mt-bar) — наша легла бы на неё

@@ -235,7 +235,7 @@ function TrialRow({ trial, lesson, sending, failed, onBook, onOpenLesson }) {
           {t('home.trial.open')}
         </button>
       ) : trial?.requested ? null : (
-        <button type="button" className="hm-blk__link" disabled={sending} onClick={onBook}>
+        <button type="button" className="hm-blk__link" disabled={sending || !trial} onClick={onBook}>
           {t(sending ? 'trial.sending' : 'home.trial.cta')}
         </button>
       )}
@@ -253,7 +253,7 @@ export function NearCard({ demo = false, occurrences, course, level, trial, send
   const lesson = useMemo(() => nextLesson(occurrences), [occurrences])
   const test = useMemo(() => (course ? nextCourseTest(course.trail, course.done) : null), [course])
   const rows = []
-  if (demo) {
+  if (demo && (!trial?.trialAlreadyAttended || lesson)) {
     rows.push(<TrialRow key="trial" trial={trial} lesson={lesson} sending={sending} failed={failed} onBook={onBook} onOpenLesson={onOpenLesson} />)
   } else if (lesson) {
     rows.push(

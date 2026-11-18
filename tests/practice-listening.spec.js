@@ -42,19 +42,16 @@ test.describe('Практика — карточка мини-игры «Listeni
     await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
     await page.goto('/?screen=practice')
 
-    // По умолчанию открыто «Аудирование» — игра там.
+    // С 18.11.2026 игр в Практике нет: «Аудирование» без мини-игры, она — в разделе меню «Игры».
     const card = page.locator('#sec-listening')
     await expect(page.locator('#sec-listenchoose')).toBeVisible({ timeout: 15000 })
-    await expect(card).toBeVisible()
-    await expect(card.locator('.pk-card__title')).toHaveText('Тренируй Listening в мини-игре')
+    await expect(card).toHaveCount(0)
 
-    await page.locator('.pk-skill--games').click()
-    await expect(card).toBeVisible()
+    await page.goto('/?screen=games')
+    await expect(card).toBeVisible({ timeout: 15000 })
+    await expect(card.locator('.pk-card__title')).toHaveText('Тренируй Listening в мини-игре')
     // У «Игр» уровня нет: игры его не знают.
     await expect(page.locator('.pk-levels')).toHaveCount(0)
-
-    await page.locator('.pk-skill--reading').click()
-    await expect(card).toHaveCount(0)
   })
 
   test('дефолт A1, если уровень пользователя не задан', async ({ page }) => {

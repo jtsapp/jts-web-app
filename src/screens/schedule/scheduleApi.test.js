@@ -36,6 +36,7 @@ describe('schedule api', () => {
 describe('trial request api', () => {
   const backendState = {
     requested: true, requestedAt: '2026-08-30T12:00:00', teacherAssigned: false, managerAssigned: true,
+    trialAlreadyAttended: false,
   }
 
   it('getTrialRequestState GETs /mobile/trial-request with a Bearer token', async () => {
@@ -60,7 +61,7 @@ describe('trial request api', () => {
     expect(data.requested).toBe(true)
   })
 
-  // Экран читает четыре поля и решает по ним, что показать. Ответ без них —
+  // Экран читает состояние и решает, что показать. Ответ без полей —
   // это «ничего не просил, преподавателя нет», а не undefined в разметке.
   it('пустой ответ бэкенда превращается в полное состояние, а не в дыры', async () => {
     global.fetch = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) }))
@@ -68,6 +69,7 @@ describe('trial request api', () => {
 
     expect(data).toEqual({
       requested: false, requestedAt: null, teacherAssigned: false, managerAssigned: false,
+      trialAlreadyAttended: false,
     })
   })
 })

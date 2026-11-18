@@ -32,14 +32,16 @@ const show = () => render(
 describe('ProfilePage — язык разборов SAT', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('у начавшего SAT — три варианта на странице, текущий отмечен, выбор сохраняется в профиль SAT (17:10151)', async () => {
+  // С задачи 214 (18.11.2026) язык объяснений — переключатель в карточке Луны: три варианта в строке, aria-pressed.
+  it('у начавшего SAT — три варианта на странице, текущий отмечен, выбор сохраняется в профиль SAT', async () => {
     api.getSatMeCached.mockResolvedValue({ onboarded: true })
     show()
     expect(await screen.findByText('Язык объяснений')).toBeTruthy()
-    expect(screen.getByRole('radio', { name: /Қазақша/ }).getAttribute('aria-checked')).toBe('true')
-    fireEvent.click(screen.getByRole('radio', { name: /English/ }))
+    const opt = (name) => document.querySelector(`[data-explain="${name}"]`)
+    expect(opt('kk').getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(opt('en'))
     await waitFor(() => expect(api.saveSatProfile).toHaveBeenCalledWith(TOKEN, { explainLang: 'en' }))
-    expect(screen.getByRole('radio', { name: /English/ }).getAttribute('aria-checked')).toBe('true')
+    expect(opt('en').getAttribute('aria-pressed')).toBe('true')
   })
 
   it('без SAT блока нет', async () => {

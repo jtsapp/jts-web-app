@@ -98,7 +98,7 @@ test('профиль без уровня: «Не пройден», тест от
   await page.goto('/?screen=profile')
   await expect(статусТеста(page)).toContainText('Не пройден', { timeout: 20_000 })
   // Чип с CEFR рядом с рангом показывал бы стартовое «A1» и спорил со строкой.
-  await expect(page.locator('.pf-rank__cefr, .pfm-level__chip')).toHaveCount(0)
+  await expect(page.locator('.pf2-chip[data-chip="rank"], .pfm-level__chip')).toHaveCount(0)
 
   await строкаТеста(page).click()
   await expect(page.locator('.pl-page__frame')).toBeVisible()

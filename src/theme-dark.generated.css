@@ -917,7 +917,7 @@ html[data-theme="dark"] .pk-c--reading {
     --pk-ink: var(--dk-orange);
     --pk-mark: rgba(255, 255, 255, 0.22)
 }
-html[data-theme="dark"] .pk-c--games {
+html[data-theme="dark"] .pk-c--writing {
     --pk-from: var(--dk-red);
     --pk-to: var(--dk-red);
     --pk-acc: var(--dk-red);
@@ -933,13 +933,28 @@ html[data-theme="dark"] .pk-c--speaking {
     --pk-ink: var(--dk-green);
     --pk-mark: rgba(255, 255, 255, 0.22)
 }
-html[data-theme="dark"] .pk-c--grammarWriting {
+html[data-theme="dark"] .pk-c--grammar {
     --pk-from: var(--dk-yellow);
     --pk-to: var(--dk-yellow);
     --pk-acc: var(--dk-yellow);
     --pk-tint: var(--dk-yellow-tint);
     --pk-ink: var(--dk-yellow);
     --pk-mark: rgba(255, 255, 255, 0.4)
+}
+html[data-theme="dark"] .pk-c--games {
+    --pk-from: var(--dk-acc);
+    --pk-to: var(--dk-acc-strong);
+    --pk-acc: var(--dk-acc);
+    --pk-tint: var(--dk-acc-tint);
+    --pk-ink: var(--dk-acc-text);
+    --pk-mark: rgba(255, 255, 255, 0.22)
+}
+html[data-theme="dark"] .pk-games__sub {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .pk-card__tag {
+    background: var(--pk-tint);
+    color: var(--pk-ink)
 }
 html[data-theme="dark"] .pk-ico {
     background: currentColor
@@ -3705,6 +3720,201 @@ html[data-theme="dark"] .hw-ielts__mark {
 }
 html[data-theme="dark"] .hw-ielts__mark:hover:enabled {
     background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .pf2, html[data-theme="dark"] .pf2-layer {
+    --pf2-bg: var(--dk-card);
+    --pf2-soft: var(--dk-page);
+    --pf2-line: var(--dk-line);
+    --pf2-ink: var(--dk-text);
+    --pf2-muted: var(--dk-acc-text);
+    --pf2-acc: var(--dk-acc);
+    --pf2-acc-soft: var(--dk-acc-tint);
+    --pf2-on-acc: var(--dk-card);
+    --pf2-ok: var(--dk-green);
+    --pf2-ok-soft: var(--dk-green-tint);
+    --pf2-warn: var(--dk-orange);
+    --pf2-warn-soft: var(--dk-yellow-tint);
+    --pf2-danger: var(--dk-red)
+}
+@container (min-width: 600px) {
+    html[data-theme="dark"] .pf2-list--two > .pf2-row:nth-child(2) {
+        border-top: 0
+    }
+}
+html[data-theme="dark"] .pf2-card {
+    background: var(--pf2-bg);
+    border: 1px solid var(--pf2-line)
+}
+html[data-theme="dark"] .pf2-card__h {
+    color: var(--pf2-muted)
+}
+html[data-theme="dark"] .pf2-sect {
+    color: var(--pf2-ink)
+}
+html[data-theme="dark"] .pf2-ava__img, html[data-theme="dark"] .pf2-ava__initial {
+    color: var(--pf2-acc)
+}
+html[data-theme="dark"] .pf2-ava__cam {
+    border: 1px solid var(--pf2-line);
+    background: var(--pf2-bg);
+    color: var(--pf2-acc)
+}
+html[data-theme="dark"] .pf2-name {
+    color: var(--pf2-ink)
+}
+html[data-theme="dark"] .pf2-phone {
+    color: var(--pf2-muted)
+}
+html[data-theme="dark"] .pf2-chip {
+    background: var(--pf2-acc-soft);
+    color: var(--pf2-acc)
+}
+html[data-theme="dark"] .pf2-chip--warm {
+    background: var(--pf2-warn-soft);
+    color: var(--pf2-warn)
+}
+html[data-theme="dark"] .pf2-stat {
+    background: var(--pf2-soft)
+}
+html[data-theme="dark"] .pf2-stat b {
+    color: var(--pf2-ink)
+}
+html[data-theme="dark"] .pf2-stat span {
+    color: var(--pf2-muted)
+}
+html[data-theme="dark"] .pf2-prog__row {
+    color: var(--pf2-muted)
+}
+html[data-theme="dark"] .pf2-prog__row b {
+    color: var(--pf2-ink)
+}
+html[data-theme="dark"] .pf2-prog__bar {
+    background: var(--pf2-soft)
+}
+html[data-theme="dark"] .pf2-prog__bar i {
+    background: var(--pf2-acc)
+}
+html[data-theme="dark"] .pf2-btn {
+    border: 1px solid var(--pf2-line);
+    background: var(--pf2-bg);
+    color: var(--pf2-ink)
+}
+html[data-theme="dark"] .pf2-btn--primary {
+    border-color: var(--pf2-acc);
+    background: var(--pf2-acc);
+    color: var(--pf2-on-acc)
+}
+html[data-theme="dark"] .pf2-btn:focus-visible, html[data-theme="dark"] .pf2-row:focus-visible, html[data-theme="dark"] .pf2-pill:focus-visible, html[data-theme="dark"] .pf2-seg__opts button:focus-visible, html[data-theme="dark"] .pf2-ava__cam:focus-visible {
+    outline: 2px solid var(--pf2-acc)
+}
+html[data-theme="dark"] .pf2 .pf2-teacher__ava {
+    background: var(--pf2-acc);
+    color: var(--pf2-on-acc)
+}
+html[data-theme="dark"] .pf2-teacher__text b {
+    color: var(--pf2-ink)
+}
+html[data-theme="dark"] .pf2-teacher__text span {
+    color: var(--pf2-muted)
+}
+html[data-theme="dark"] .pf2-badge {
+    background: var(--pf2-ok-soft);
+    color: var(--pf2-ok)
+}
+html[data-theme="dark"] .pf2-empty {
+    background: var(--pf2-soft);
+    color: var(--pf2-ink)
+}
+html[data-theme="dark"] .pf2-empty--warn {
+    background: var(--pf2-warn-soft)
+}
+html[data-theme="dark"] .pf2-pill {
+    border: 1px solid var(--pf2-line);
+    background: var(--pf2-bg);
+    color: var(--pf2-ink)
+}
+html[data-theme="dark"] .pf2-pill.is-on {
+    border-color: var(--pf2-acc);
+    background: var(--pf2-acc);
+    color: var(--pf2-on-acc)
+}
+html[data-theme="dark"] .pf2-row {
+    border: 0;
+    border-top: 1px solid var(--pf2-line);
+    background: transparent;
+    color: var(--pf2-ink)
+}
+html[data-theme="dark"] .pf2-list > .pf2-row:first-child, html[data-theme="dark"] .pf2-list--bordered > .pf2-row:first-child {
+    border-top: 0
+}
+html[data-theme="dark"] .pf2-list--bordered {
+    border-top: 1px solid var(--pf2-line)
+}
+html[data-theme="dark"] .pf2-row__ic {
+    background: var(--pf2-soft);
+    color: var(--pf2-acc)
+}
+html[data-theme="dark"] .pf2-row__t span {
+    color: var(--pf2-muted)
+}
+html[data-theme="dark"] .pf2-row__v {
+    color: var(--pf2-acc)
+}
+html[data-theme="dark"] .pf2-row__v.is-warn {
+    color: var(--pf2-warn)
+}
+html[data-theme="dark"] .pf2-row__v.is-muted {
+    color: var(--pf2-muted)
+}
+html[data-theme="dark"] .pf2-row__chev {
+    color: var(--pf2-muted)
+}
+html[data-theme="dark"] .pf2-row.is-danger .pf2-row__ic, html[data-theme="dark"] .pf2-row.is-danger .pf2-row__t b {
+    color: var(--pf2-danger)
+}
+@media (hover: hover) {
+    html[data-theme="dark"] button.pf2-row:hover .pf2-row__t b {
+        color: var(--pf2-acc)
+    }
+    html[data-theme="dark"] button.pf2-row.is-danger:hover .pf2-row__t b {
+        color: var(--pf2-danger)
+    }
+}
+html[data-theme="dark"] .pf2-seg {
+    border-top: 1px solid var(--pf2-line)
+}
+html[data-theme="dark"] .pf2-seg:first-of-type, html[data-theme="dark"] .pf2-seg--first {
+    border-top: 0
+}
+html[data-theme="dark"] .pf2-seg__lbl b {
+    color: var(--pf2-ink)
+}
+html[data-theme="dark"] .pf2-seg__lbl span {
+    color: var(--pf2-muted)
+}
+html[data-theme="dark"] .pf2-seg__opts {
+    border: 1px solid var(--pf2-line);
+    background: var(--pf2-bg)
+}
+html[data-theme="dark"] .pf2-seg__opts button {
+    border: 0;
+    background: transparent;
+    color: var(--pf2-muted)
+}
+html[data-theme="dark"] .pf2-seg__opts button.is-on {
+    background: var(--pf2-acc);
+    color: var(--pf2-on-acc)
+}
+html[data-theme="dark"] .pf2-sheet__x {
+    border: 0;
+    background: transparent;
+    color: var(--pf2-muted)
+}
+html[data-theme="dark"] .pf2-sheet__lead {
+    color: var(--pf2-muted)
+}
+html[data-theme="dark"] .pf2-group h4 {
+    color: var(--pf2-muted)
 }
 /*  tutor.css  */
 html[data-theme="dark"] .t-app {
@@ -25890,6 +26100,10 @@ html[data-theme="dark"] .svc-tile--sat {
 html[data-theme="dark"] .svc-tile--vocab {
     --svc-bg: var(--dk-green-tint);
     --svc-ink: var(--dk-green)
+}
+html[data-theme="dark"] .svc-tile--games {
+    --svc-bg: var(--dk-red-tint);
+    --svc-ink: var(--dk-red)
 }
 html[data-theme="dark"] .svc-tile {
     border: 0;

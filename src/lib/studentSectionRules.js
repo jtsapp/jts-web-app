@@ -3,6 +3,8 @@ const SECTION_OF = {
   'my-teacher': 'teacher', 'teacher-wizard': 'teacher', 'teacher-pick': 'teacher',
   group: 'group', lessons: 'lessons', 'course-catalog': 'lessons', homework: 'homework',
   tutor: 'speaking', 'speed-reading': 'speed', learning: 'review', practice: 'practice',
+  // «Игры» вынесены из Практики (18.11.2026), тариф у бэкенда прежний: раздел открыт тем, кому открыта Практика.
+  games: 'practice',
   'grammar-games': 'grammar', vocab: 'vocabulary', ielts: 'ielts', sat: 'sat',
 }
 

@@ -46,7 +46,7 @@ describe('Sidebar — разделы по тарифу и формату', () =>
     expect(labels()).not.toContain('Выбрать группу')
   })
 
-  it('Практика сразу перед Speaking Buddy, в меню нет меток «new»', async () => {
+  it('Практика, сразу за ней «Игры», потом Speaking Buddy; в меню нет меток «new»', async () => {
     getMySections.mockResolvedValue({ known: false, tariff: null, format: null, allowed: [] })
     render(
       <I18nProvider>
@@ -55,7 +55,8 @@ describe('Sidebar — разделы по тарифу и формату', () =>
     )
     await waitFor(() => expect(labels()).toContain('Speaking Buddy'))
     const all = labels()
-    expect(all.indexOf('Speaking Buddy')).toBe(all.indexOf('Практика') + 1)
+    expect(all.indexOf('Игры')).toBe(all.indexOf('Практика') + 1)
+    expect(all.indexOf('Speaking Buddy')).toBe(all.indexOf('Практика') + 2)
     expect(screen.queryByText('new')).toBeNull()
   })
 

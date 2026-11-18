@@ -379,7 +379,7 @@ export default function HomePage({
   }, [token, trialRev])
 
   const book = async () => {
-    if (sending) return
+    if (sending || !trial || trial.trialAlreadyAttended) return
     setSending(true)
     setFailed(false)
     // Разговор с менеджером открываем сразу и не ждём сети: сам сговор о
@@ -572,7 +572,13 @@ export default function HomePage({
           <h1 className="hm-top__title">{t('nav.home')}</h1>
         </header>
         {isDemoAccount && (
-          <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} onTrial={onOpenTrialOffer} booked={!!trial?.requested || !!nextLesson} />
+          <DemoBanner
+            expiresAt={demoExpiresAt}
+            onOpenAccess={onOpenPricing}
+            onTrial={onOpenTrialOffer}
+            booked={!!trial?.requested || !!nextLesson}
+            trialAlreadyAttended={trial?.trialAlreadyAttended}
+          />
         )}
 
         {/* Новый отчёт о прогрессе от преподавателя — выше всего остального:
@@ -1044,6 +1050,7 @@ function HomeworkCard({ t, lang, items, state = 'ready', onRetry, onNav }) {
  * озвучиваем смену тем, кто кнопку не видит.
  */
 function TrialCard({ t, lang, trial, nextLesson, sending, failed, onBook, onOpenLesson }) {
+  if (trial?.trialAlreadyAttended && !nextLesson) return null
   return (
     <section className="hm-card hm-trial">
       <Plate ico="videocam" />
@@ -1068,7 +1075,7 @@ function TrialCard({ t, lang, trial, nextLesson, sending, failed, onBook, onOpen
           <Arrow />
         </button>
       ) : trial?.requested ? null : (
-        <button type="button" className="hm-trial__cta" disabled={sending} onClick={onBook}>
+        <button type="button" className="hm-trial__cta" disabled={sending || !trial} onClick={onBook}>
           {t(sending ? 'trial.sending' : 'home.trial.cta')}
           <Arrow />
         </button>

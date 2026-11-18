@@ -58,10 +58,11 @@ test('сайдбар: только Практика, Тьютор и Слова�
   await openSidebar(page)
 
   const items = page.locator('.sb__nav .sb__item')
-  await expect(items).toHaveCount(3)
+  await expect(items).toHaveCount(4)
   await expect(items.nth(0)).toHaveText('Практика')
-  await expect(items.nth(1)).toHaveText('Тьютор')
-  await expect(items.nth(2)).toHaveText('Словарь')
+  await expect(items.nth(1)).toHaveText('Игры')
+  await expect(items.nth(2)).toHaveText('Тьютор')
+  await expect(items.nth(3)).toHaveText('Словарь')
 })
 
 test('Практика открывается из сайдбара, карточка ведёт в Аудирование', async ({ page }) => {
@@ -73,8 +74,9 @@ test('Практика открывается из сайдбара, карто�
   await expect(page.locator('#sec-listenchoose')).toBeVisible({ timeout: 10_000 })
   await expect(page.locator('#sec-tales')).toBeVisible()
 
-  // Мини-игра «Listening» с 17.11.2026 — прямо в «Аудировании» (и в «Играх»); карточка уводит на внутренний экран
-  // тренажёра (case 'listening' в App.jsx).
+  // Мини-игра «Listening» с 18.11.2026 — в разделе меню «Игры»; карточка уводит на внутренний экран тренажёра
+  // (case 'listening' в App.jsx).
+  await page.locator('.sb__nav .sb__item', { hasText: 'Игры' }).click()
   await page.locator('#sec-listening').click()
   await expect(page.locator('.lt-intro')).toBeVisible({ timeout: 10_000 })
 })

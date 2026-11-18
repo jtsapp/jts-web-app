@@ -47,14 +47,17 @@ const AREA_NAMES = {
 // Куда звала Луна (destinations.js) → разделы Практики, заход в которые и есть
 // «сделал». Вкладка навыка — любой её тренажёр, который пишет прогресс.
 const TARGET_AREAS = {
-  // Состав вкладок — раскладка 17.11.2026 (practiceTabs.js). 'practice-writing' — прежняя вкладка «Письмо»: совет,
-  // данный до раскладки, живёт в заметках трекера 30 дней, и его исход по-прежнему проверяем.
-  'practice-listening': ['listenchoose', 'listen', 'cartoons', 'listening', 'numbers', 'words'],
+  // Состав вкладок — раскладка 18.11.2026 (practiceTabs.js), «Игры» — свой пункт меню (`games`).
+  // 'practice-grammar-writing' и 'practice-games' — вкладки 17.11.2026: совет, данный тогда, живёт в заметках трекера
+  // 30 дней, и его исход по-прежнему проверяем.
+  'practice-listening': ['listenchoose', 'listen', 'cartoons'],
   'practice-speaking': ['shadowing', 'situations', 'pronunciation'],
   'practice-reading': ['reading', 'literature'],
+  'practice-writing': ['writing', 'workbooks', 'listen', 'cartoons'],
+  'practice-grammar': ['grammar', 'tenses', 'verbs', 'prepositions', 'punctuation', 'partsofspeech', 'workbooks'],
+  games: ['listening', 'words', 'numbers', 'wordhunt'],
   'practice-grammar-writing': ['grammar', 'tenses', 'verbs', 'prepositions', 'punctuation', 'partsofspeech', 'writing', 'workbooks'],
   'practice-games': ['listening', 'words', 'numbers', 'wordhunt', 'verbs'],
-  'practice-writing': ['writing', 'prepositions'],
   listening: ['listening'],
   listenchoose: ['listenchoose'],
   cartoons: ['cartoons'],

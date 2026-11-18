@@ -1,0 +1,508 @@
+/* ═══════════════ Профиль ученика — компьютер и планшет (задача 214, 18.11.2026) ═══════════════ */
+/* Разметка — src/screens/profile/ProfileDesktop.jsx; телефон (≤560) — свой экран по дизайну приложения
+   (src/mobile/profile.css). Прототип ТЗ: одна страница сверху вниз, карточки 20 / строки 10, фиолетовый бренда.
+   Раскладку решает ширина самой колонки (container queries), а не окна: сайдбар 280 съедает разную долю экрана.
+     < 600  — одна колонка;
+     600–1023 — пары карточек одной высоты, шапка в три строки (имя и «Редактировать» / цифры / полоса);
+     ≥ 1024 — шапка в одну строку (профиль | цифры | «Редактировать»), полоса под ней.
+   Цвета — переменными на корне: тёмная тема подменяет их токенами (theme-dark.css). */
+.pf2,
+.pf2-layer {
+  --pf2-bg: #ffffff;
+  --pf2-soft: #f5f2fe;
+  --pf2-line: #efeef4;
+  --pf2-ink: #171326;
+  --pf2-muted: #6f6888;
+  --pf2-acc: #9047ff;
+  --pf2-acc-soft: #efe7ff;
+  --pf2-on-acc: #ffffff;
+  --pf2-ok: #16a34a;
+  --pf2-ok-soft: #e3f6ea;
+  --pf2-warn: #c2650a;
+  --pf2-warn-soft: #fdf0dc;
+  --pf2-danger: #dc2626;
+}
+.pf2 {
+  container-type: inline-size;
+  max-width: 1100px;
+  margin: 0 auto;
+  /* Сверху 76: в правом углу кабинета висит группа «язык · колокольчик» (.learn__bell, абсолютом, выше содержимого) —
+     шапка профиля во всю ширину иначе легла бы под неё вместе с «Редактировать». */
+  padding: 76px 24px 56px;
+}
+.pf2-grid {
+  display: grid;
+  gap: 14px;
+}
+@container (min-width: 600px) {
+  .pf2-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .pf2-hero,
+  .pf2-span,
+  .pf2-sect {
+    grid-column: 1 / -1;
+  }
+  .pf2-list--two {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 24px;
+  }
+  /* во второй колонке у первой строки нет разделителя сверху — как у первой строки первой колонки */
+  .pf2-list--two > .pf2-row:nth-child(2) {
+    border-top: 0;
+  }
+}
+
+.pf2-card {
+  min-width: 0;
+  background: var(--pf2-bg);
+  border: 1px solid var(--pf2-line);
+  border-radius: 20px;
+  padding: 16px;
+}
+.pf2-card__h {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--pf2-muted);
+}
+.pf2-card__h small {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.pf2-sect {
+  margin: 10px 2px -4px;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 24px;
+  color: var(--pf2-ink);
+}
+
+/* ── Шапка ── */
+.pf2-hero {
+  display: grid;
+  gap: 14px;
+  grid-template-areas: 'who' 'stats' 'edit' 'prog';
+}
+.pf2-who { grid-area: who; }
+.pf2-stats { grid-area: stats; }
+.pf2-edit { grid-area: edit; }
+.pf2-prog { grid-area: prog; }
+@container (min-width: 600px) {
+  .pf2-hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'who edit' 'stats stats' 'prog prog';
+    align-items: center;
+  }
+}
+@container (min-width: 1024px) {
+  .pf2-hero {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'who stats edit' 'prog prog prog';
+    column-gap: 24px;
+  }
+}
+.pf2-who {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.pf2-who__text { min-width: 0; }
+.pf2-ava {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 64px;
+}
+.pf2-ava__img,
+.pf2-ava__initial {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  color: var(--pf2-acc);
+  font-size: 26px;
+  font-weight: 800;
+}
+.pf2-ava__cam {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--pf2-line);
+  border-radius: 50%;
+  background: var(--pf2-bg);
+  color: var(--pf2-acc);
+  cursor: pointer;
+}
+.pf2-name {
+  margin: 0;
+  overflow: hidden;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 26px;
+  color: var(--pf2-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pf2-phone {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--pf2-muted);
+}
+.pf2-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.pf2-chips--wrap { margin-top: 0; }
+.pf2-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--pf2-acc-soft);
+  color: var(--pf2-acc);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+}
+.pf2-chip--warm {
+  background: var(--pf2-warn-soft);
+  color: var(--pf2-warn);
+}
+.pf2-stats {
+  display: grid;
+  grid-template-columns: repeat(var(--pf2-stats, 3), minmax(0, 1fr));
+  gap: 8px;
+}
+.pf2-stat {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--pf2-soft);
+}
+.pf2-stat b {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 24px;
+  color: var(--pf2-ink);
+  font-variant-numeric: tabular-nums;
+}
+.pf2-stat span {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--pf2-muted);
+}
+.pf2-prog__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--pf2-muted);
+}
+.pf2-prog__row b { color: var(--pf2-ink); }
+.pf2-prog__bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--pf2-soft);
+}
+.pf2-prog__bar i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--pf2-acc);
+}
+
+/* ── Кнопки ── */
+.pf2-btn {
+  min-height: 36px;
+  padding: 7px 14px;
+  border: 1px solid var(--pf2-line);
+  border-radius: 10px;
+  background: var(--pf2-bg);
+  color: var(--pf2-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pf2-btn--primary {
+  border-color: var(--pf2-acc);
+  background: var(--pf2-acc);
+  color: var(--pf2-on-acc);
+}
+.pf2-btn:disabled { opacity: 0.6; cursor: default; }
+.pf2-btn:focus-visible,
+.pf2-row:focus-visible,
+.pf2-pill:focus-visible,
+.pf2-seg__opts button:focus-visible,
+.pf2-ava__cam:focus-visible {
+  outline: 2px solid var(--pf2-acc);
+  outline-offset: 2px;
+}
+
+/* ── Учитель и интересы ── */
+.pf2-teacher {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+/* .mt-ava берёт цвет у переменных корня подбора (.mt), а профиль — не внутри него: без своих цветов инициалы
+   учителя без фото рисовались белым по прозрачному. Двумя классами — matching.css подключён позже и с одним классом
+   перебивал бы фон. */
+.pf2 .pf2-teacher__ava {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  background: var(--pf2-acc);
+  color: var(--pf2-on-acc);
+  font-size: 15px;
+}
+/* Узкая карточка (пара на планшете) — бейдж и «Открыть» уходят на вторую строку, а не режут имя по буквам. */
+.pf2-teacher__text {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.pf2-teacher__text b {
+  display: block;
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--pf2-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pf2-teacher__text span {
+  font-size: 12.5px;
+  line-height: 17px;
+  color: var(--pf2-muted);
+}
+.pf2-badge {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--pf2-ok-soft);
+  color: var(--pf2-ok);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 16px;
+}
+.pf2-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--pf2-soft);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--pf2-ink);
+}
+/* Незаполненное — цветом предупреждения и с прямым действием (ТЗ, C). */
+.pf2-empty--warn { background: var(--pf2-warn-soft); }
+.pf2-pill {
+  padding: 6px 11px;
+  border: 1px solid var(--pf2-line);
+  border-radius: 999px;
+  background: var(--pf2-bg);
+  color: var(--pf2-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  cursor: pointer;
+}
+span.pf2-pill { cursor: default; }
+.pf2-pill.is-on {
+  border-color: var(--pf2-acc);
+  background: var(--pf2-acc);
+  color: var(--pf2-on-acc);
+}
+.pf2-pill:disabled { opacity: 0.4; cursor: default; }
+
+/* ── Списки ── */
+.pf2-list { display: grid; }
+.pf2-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  padding: 10px 4px;
+  border: 0;
+  border-top: 1px solid var(--pf2-line);
+  background: transparent;
+  color: var(--pf2-ink);
+  font: inherit;
+  text-align: left;
+}
+button.pf2-row { cursor: pointer; }
+.pf2-list > .pf2-row:first-child,
+.pf2-list--bordered > .pf2-row:first-child { border-top: 0; }
+.pf2-list--bordered { border-top: 1px solid var(--pf2-line); margin-top: 4px; }
+.pf2-row__ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--pf2-soft);
+  color: var(--pf2-acc);
+}
+.pf2-row__t {
+  flex: 1;
+  min-width: 0;
+}
+.pf2-row__t b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.pf2-row__t span {
+  display: block;
+  overflow: hidden;
+  font-size: 12.5px;
+  line-height: 17px;
+  color: var(--pf2-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pf2-row__v {
+  flex: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf2-acc);
+  white-space: nowrap;
+}
+.pf2-row__v.is-warn { color: var(--pf2-warn); }
+.pf2-row__v.is-muted { color: var(--pf2-muted); }
+.pf2-row__chev {
+  flex: none;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--pf2-muted);
+}
+.pf2-row.is-danger .pf2-row__ic,
+.pf2-row.is-danger .pf2-row__t b { color: var(--pf2-danger); }
+@media (hover: hover) {
+  button.pf2-row:hover .pf2-row__t b { color: var(--pf2-acc); }
+  button.pf2-row.is-danger:hover .pf2-row__t b { color: var(--pf2-danger); }
+}
+
+/* ── Переключатель в строке (язык объяснений, подсказки Луны) ── */
+.pf2-seg {
+  display: grid;
+  gap: 8px;
+  padding: 10px 4px;
+  border-top: 1px solid var(--pf2-line);
+}
+.pf2-seg:first-of-type,
+.pf2-seg--first { border-top: 0; padding-top: 2px; }
+.pf2-seg__lbl {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 8px;
+}
+.pf2-seg__lbl b { font-size: 14px; font-weight: 600; line-height: 20px; color: var(--pf2-ink); }
+.pf2-seg__lbl span { font-size: 12.5px; line-height: 20px; color: var(--pf2-muted); }
+.pf2-seg__opts {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--pf2-line);
+  border-radius: 999px;
+  background: var(--pf2-bg);
+}
+.pf2-seg__opts button {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px 10px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--pf2-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pf2-seg__opts button.is-on {
+  background: var(--pf2-acc);
+  color: var(--pf2-on-acc);
+}
+
+/* ── Удаление — тихой ссылкой под карточкой ── */
+.pf2-delete { text-align: center; }
+
+/* ── Окна ── */
+.pf2-sheet { width: 440px; }
+.pf2-sheet--wide { width: 560px; }
+.pf2-sheet__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pf2-sheet__head .pf-modal__title { text-align: left; }
+.pf2-sheet__x {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  margin: -6px -8px 0 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--pf2-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pf2-sheet__lead {
+  margin: -8px 0 4px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--pf2-muted);
+}
+.pf2-group { margin-top: 12px; }
+.pf2-group h4 {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--pf2-muted);
+}
+.pf2-sheet__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+.pf2-legal { margin-top: 12px; }

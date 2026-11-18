@@ -43,6 +43,7 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
   const [refused, setRefused] = useState(null)
   const [payOpen, setPayOpen] = useState(false)
   const [sent, setSent] = useState(false)
+  const [contactInviter, setContactInviter] = useState(false)
   // Окно закрыли — плашка в корзине остаётся, второй раз окно не всплывает.
   const [hidNote, setHidNote] = useState(false)
 
@@ -130,8 +131,11 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
     // Заявка в CRM уходит при любом способе: даже если человек сейчас уйдёт
     // платить или писать в чат, менеджер увидит, что именно тот выбрал.
     let accepted = false
+    let invited = false
     try {
-      accepted = (await createLead(token, { source: 'PRICING', comment: text, amount: total })).accepted
+      const lead = await createLead(token, { source: 'PRICING', comment: text, amount: total })
+      accepted = lead.accepted
+      invited = lead.contactInviter
     } catch {
       // Молча: заявка — не единственный путь, ниже есть и оплата, и чат.
     }
@@ -165,6 +169,10 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
     }
 
     setPayOpen(false)
+    if (invited) {
+      setContactInviter(true)
+      return
+    }
     // Заявка дошла до менеджера — говорим об этом окном, а не только плашкой в
     // корзине: человек ждёт ответа на своё нажатие.
     if (accepted) setSent(true)
@@ -251,6 +259,7 @@ export default function PricingPage({ token, onBack, onDone, onNeedLogin }) {
                 </div>
               )}
 
+              {contactInviter && <p className="pr-cart__note" role="status">{t('pay.contactInviter')}</p>}
               {sent ? (
                 <div className="pr-sent" role="status">
                   <b>{t('pay.sent')}</b>

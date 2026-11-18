@@ -83,7 +83,7 @@ test('Практика → Грамматика → Parts of Speech World → ю
   const grammar = page.locator('.pk-skill', { hasText: 'Грамматика' })
   await expect(grammar).toBeVisible({ timeout: 60_000 })
   await grammar.click()
-  // Вся карточка — кнопка перехода; Parts of Speech World — во вкладке «Грамматика и письмо», после Punctuation World.
+  // Вся карточка — кнопка перехода; Parts of Speech World — во вкладке «Грамматика», после Punctuation World.
   await expect(page.locator('#sec-partsofspeech .pk-card__title')).toHaveText('Parts of Speech World')
   await page.locator('#sec-partsofspeech').click()
   await expect(page).toHaveURL(/screen=partsofspeech/)
