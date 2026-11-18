@@ -8,6 +8,7 @@
 export const MAP_KEYS = [
   'learning',
   'practice',
+  'games',
   'tutor',
   'lessons',
   'homework',

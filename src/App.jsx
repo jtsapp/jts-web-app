@@ -91,6 +91,8 @@ import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, areRewardsEnabled, isRewardsScreen, is
 import { SUPPORT_WHATSAPP_URL } from './lib/support.js'
 import { trackDemoState, forgetDemoState } from './lib/purchaseCelebration.js'
 import { KINGDOMS } from './kingdoms.js'
+// Модули игр — крошечная таблица (без экранов): переход в Практику с игрой App уводит в раздел «Игры».
+import { GAME_MODULES } from './screens/practice/practiceTabs.js'
 import { lazyScreen } from './lib/lazyScreen.js'
 import { recoverFromStaleImport } from './lib/lazyModule.js'
 import ScreenBoundary, { OptionalPart, preloadScreenSkeleton } from './components/ScreenBoundary.jsx'
@@ -222,6 +224,7 @@ const AccountDeletedPage = lazyScreen(() => import('./screens/AccountDeletedPage
 const FeedbackCenter = lazyScreen(() => import('./feedback/FeedbackCenter.jsx'))
 const BirgePage = lazyScreen(() => import('./screens/BirgePage.jsx'))
 const ChessPage = lazyScreen(() => import('./screens/ChessPage.jsx'))
+const GamesPage = lazyScreen(() => import('./screens/GamesPage.jsx'))
 const LessonWorkspacePage = lazyScreen(() => import('./screens/LessonWorkspacePage.jsx'))
 const SelfStudyLessonPage = lazyScreen(() => import('./screens/lessons/SelfStudyLessonPage.jsx'))
 const CourseCatalogPage = lazyScreen(() => import('./screens/CourseCatalogPage.jsx'))
@@ -247,7 +250,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'games', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'tenses', 'punctuation', 'partsofspeech', 'literature', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана. «Мой учитель»
   // здесь не стоит: с 17.11.2026 это вкладка «Уроков», а прежний адрес ?screen=my-teacher App переводит на неё.
@@ -1970,7 +1973,11 @@ export default function App() {
     else if (key === 'placement-results') setScreen('placement-results')
     // Практика открывается и с домашней работы: payload несёт адрес юнита,
     // который задал преподаватель.
+    // Игра «вкладкой» или фильтром (старая ссылка Луны, сохранённая цель) — в раздел «Игры»: в Практике их больше нет.
+    else if (key === 'practice' && (payload?.skill === 'games' || GAME_MODULES.has(payload?.filter))) setScreen('games')
     else if (key === 'practice') { setPracticeTarget(payload || null); setScreen('practice') }
+    // «Игры» — свой пункт меню с 18.11.2026 (бывшая вкладка Практики): список шести игр, целей у него нет.
+    else if (key === 'games') setScreen('games')
     // Уровень аудирования приходит из домашней работы: сам экран уровня не
     // выбирает, он идёт от уровня ученика.
     else if (key === 'listening') { setListeningTarget(payload || null); setScreen('listening') }
@@ -2193,15 +2200,17 @@ export default function App() {
   // Практики, где лежит карточка раздела. canReturn — есть ли откуда пришли:
   // экран, открытый сразу на сценарии или игре, по нему решает, выйти ли
   // назад целиком (пришли с карточки) или в список раздела (диплинк).
-  // `skill` — вкладка Практики, куда «назад» уводит без истории (диплинк, переход Луны). Раскладка с 17.11.2026
-  // (practiceTabs.js): раздел в двух вкладках возвращается в первую — мини-игра Listening, «Слова в картинках» и
-  // «Числа» в «Аудирование», «Три формы глагола» в «Грамматику и письмо»; Word Hunt — в «Игры»; «Скорочтение» — в «Чтение».
+  // `skill` — вкладка Практики, куда «назад» уводит без истории (диплинк, переход Луны). Раскладка с 18.11.2026
+  // (practiceTabs.js): раздел в двух вкладках возвращается в первую — воркбуки в «Письмо», Just to Listen и Cartoon
+  // World в «Аудирование»; «Скорочтение» — в «Чтение». `games` — не вкладка, а свой раздел меню: шесть игр (мини-игра
+  // Listening, «Слова в картинках», «Числа», Word Hunt и обе игры «Аркады») возвращаются в «Игры».
   function sectionBack(skill) {
     // В рамке урока уходить некуда: у экрана карточки нет «назад» в кабинет.
     if (embedded) return {}
+    const home = skill === 'games' ? 'games' : 'practice'
     return {
-      onBack: () => goBack(() => handleNav('practice', skill ? { skill } : undefined)),
-      backLabel: backLabel('practice'),
+      onBack: () => goBack(() => (home === 'games' ? handleNav('games') : handleNav('practice', skill ? { skill } : undefined))),
+      backLabel: backLabel(home),
       canReturn: Boolean(popNav(navStack, screen)),
     }
   }
@@ -2758,6 +2767,8 @@ export default function App() {
       return <TeacherPickPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} />
     case 'feedback':
       return <FeedbackCenter initialCategory={feedbackDraft?.category} initialDraft={feedbackDraft?.draft} initialFeedbackId={feedbackDraft?.feedbackId} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} token={token} onBack={() => goBack(() => setScreen('profile'))} />
+    case 'games':
+      return <GamesPage userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'chess':
       return <ChessPage userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'birge':
@@ -2780,7 +2791,7 @@ export default function App() {
     case 'listening':
       return (
         <ListeningPage
-          {...sectionBack('listening')}
+          {...sectionBack('games')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2806,7 +2817,7 @@ export default function App() {
     case 'writing':
       return (
         <WritingPage
-          {...sectionBack('grammarWriting')}
+          {...sectionBack('writing')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2819,7 +2830,7 @@ export default function App() {
     case 'workbook':
       return (
         <WorkbookPage
-          {...sectionBack('grammarWriting')}
+          {...sectionBack('writing')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2832,7 +2843,7 @@ export default function App() {
     case 'words':
       return (
         <WordsPage
-          {...sectionBack('listening')}
+          {...sectionBack('games')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2856,7 +2867,7 @@ export default function App() {
     case 'numbers':
       return (
         <NumbersPage
-          {...sectionBack('listening')}
+          {...sectionBack('games')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2867,7 +2878,7 @@ export default function App() {
     case 'prepositions':
       return (
         <PrepositionsPage
-          {...sectionBack('grammarWriting')}
+          {...sectionBack('grammar')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2891,7 +2902,7 @@ export default function App() {
     case 'tenses':
       return (
         <TensesPage
-          {...sectionBack('grammarWriting')}
+          {...sectionBack('grammar')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2902,7 +2913,7 @@ export default function App() {
     case 'punctuation':
       return (
         <PunctuationPage
-          {...sectionBack('grammarWriting')}
+          {...sectionBack('grammar')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2913,7 +2924,7 @@ export default function App() {
     case 'partsofspeech':
       return (
         <PartsOfSpeechPage
-          {...sectionBack('grammarWriting')}
+          {...sectionBack('grammar')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2935,7 +2946,7 @@ export default function App() {
     case 'grammar-games':
       return (
         <GrammarGamesPage
-          {...sectionBack('grammarWriting')}
+          {...sectionBack('grammar')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2993,7 +3004,7 @@ export default function App() {
     case 'verbs':
       return (
         <VerbsPage
-          {...sectionBack('grammarWriting')}
+          {...sectionBack('grammar')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -3029,7 +3040,7 @@ export default function App() {
     case 'arcade':
       return (
         <ArcadePage
-          {...sectionBack(arcadeTarget?.skill || 'games')}
+          {...sectionBack('games')}
           initialTarget={arcadeTarget}
           userLevel={userLevel}
           userName={name}

@@ -40,7 +40,7 @@ export default function PartsOfSpeechPage({ userName, userLevel, token, onNav, o
   const hostRef = useRef(null)
   const { status, bundle, retry } = usePartsOfSpeechData(token)
   const owner = ownerOf(token)
-  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammarWriting' }))
+  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammar' }))
   // Шрифт интерфейса меняется вместе с языком (kk — Inter): переносим его в тень заново, без пересоздания движка.
   useEffect(() => {
     const host = hostRef.current

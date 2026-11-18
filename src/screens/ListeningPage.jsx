@@ -516,8 +516,8 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
   const progress = stepsTotal ? Math.round((stepsDone / stepsTotal) * 100) : 0
 
   // Туда, откуда открыли (App: стек «откуда пришли»), — с «Главной», из
-  // домашки, из Практики.
-  const back = () => (onBack ? onBack() : onNav?.('practice'))
+  // домашки, из «Игр». Без истории — в «Игры»: карточка мини-игры с 18.11.2026 стоит только там.
+  const back = () => (onBack ? onBack() : onNav?.('games'))
   // Словарь — тоже уход с экрана: открытый с полосы раздела, он получает
   // «Назад» сюда.
   const toVocab = () => onNav?.('vocab', { back: true })
@@ -543,14 +543,14 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
 
   if (blocked) {
     return (
-      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+      <LearningLayout userName={userName} userLevel={userLevel} active="games" token={token} onNav={onNav} onProfile={onProfile}>
         <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={entitlement.limit} onBack={backToIntro} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
       </LearningLayout>
     )
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="games" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="lt" data-source={source || undefined}>
         {/* Полоса раздела по кадру 4273:9630: круглый крестик, крошка
             «Аудирование / Практика», переключатель языка и словарь. На телефоне
@@ -565,7 +565,8 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
           </button>
           <div className="lt-crumb">
             <b>{t('practice.listening.title')}</b>
-            <span>{t('practice.title')}</span>
+            {/* раздел, где карточка игры, — «Игры» (с 18.11.2026), туда же ведёт «назад» */}
+            <span>{t('nav.games')}</span>
           </div>
           <LangSelector flagOnly />
           <button

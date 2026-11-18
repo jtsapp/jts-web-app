@@ -352,12 +352,12 @@ test.describe('практика: раскладка', () => {
 })
 
 test.describe('хаб Практики', () => {
-  test('карточка во вкладке «Грамматика и письмо» ведёт в раздел', async ({ page }) => {
+  test('карточка во вкладке «Грамматика» ведёт в раздел', async ({ page }) => {
     // Гостю кабинет с 23.10.2026 не рисуется (лендинг «Войти»), поэтому Практику открываем учеником.
     await loginAsStudent(page)
     await page.goto('/?screen=practice')
-    // С 17.11.2026 карточка — в «Грамматике и письме» и в «Играх».
-    await page.locator('.pk-skill--grammarWriting').click()
+    // С 18.11.2026 карточка — во вкладке «Грамматика».
+    await page.locator('.pk-skill--grammar').click()
     // С редизайна 29.10.2026 баннера с кнопкой нет: вся карточка — кнопка перехода.
     const card = page.locator('#sec-verbs')
     await expect(card).toBeVisible({ timeout: 15000 })

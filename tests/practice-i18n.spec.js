@@ -23,15 +23,15 @@ test.describe('Практика — локализация', () => {
   test('казахский: заголовок, навыки и карточки на казахском', async ({ page }) => {
     await openPractice(page, 'kk')
     await expect(page.locator('.pk-head__title')).toHaveText('Тәжірибе')
-    // Вкладки с 17.11.2026 (файл методиста): казахские названия — оттуда же.
-    for (const name of ['Тыңдалым', 'Айтылым', 'Оқылым', 'Грамматика және жазылым', 'Ойындар']) {
+    // Вкладки с 18.11.2026 (файл методиста): пять по навыкам, казахские названия — оттуда же.
+    for (const name of ['Тыңдалым', 'Айтылым', 'Оқылым', 'Жазылым', 'Грамматика']) {
       await expect(skill(page, name)).toBeVisible()
     }
-    // Своих подписей у вкладок нет — у всех «N тренажёров»; две карточки «Аркады» — один тренажёр.
-    await expect(skill(page, 'Ойындар').locator('.pk-skill__count')).toHaveText('6 жаттықтырғыш')
+    // Своих подписей у вкладок нет — у всех «N тренажёров».
+    await expect(skill(page, 'Жазылым').locator('.pk-skill__count')).toHaveText('4 жаттықтырғыш')
     await expect(page.locator('#sec-listenchoose .pk-card__title')).toHaveText('Егжей-тегжейін есті — өз суретіңді тап')
     await expect(page.locator('#sec-tales .pk-card__title')).toHaveText('Ертегілер')
-    await skill(page, 'Грамматика және жазылым').click()
+    await skill(page, 'Жазылым').click()
     await expect(page.locator('#sec-writing .pk-card__title')).toContainText('Ағылшынша жазуды')
   })
 
@@ -40,7 +40,7 @@ test.describe('Практика — локализация', () => {
     await expect(page.locator('.pk-head__title')).toHaveText('Practice')
     await expect(skill(page, 'Listening')).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('#sec-tales .pk-card__title')).toHaveText('Fairy tales')
-    await skill(page, 'Grammar & Writing').click()
+    await skill(page, 'Writing').click()
     await expect(page.locator('#sec-writing .pk-card__title')).toContainText('write in English')
   })
 
@@ -48,7 +48,7 @@ test.describe('Практика — локализация', () => {
     await openPractice(page)
     await expect(page.locator('.pk-head__title')).toHaveText('Практика')
     await expect(page.locator('#sec-listenchoose .pk-card__title')).toHaveText('Услышь детали — найди свою картинку')
-    await skill(page, 'Грамматика и письмо').click()
+    await skill(page, 'Письмо').click()
     await expect(page.locator('#sec-writing .pk-card__title')).toContainText('Учись писать по-английски')
   })
 
@@ -57,7 +57,7 @@ test.describe('Практика — локализация', () => {
     await page.addInitScript((l) => localStorage.setItem('lang', l), 'kk')
     await page.goto('/?screen=listening')
     await expect(page.locator('.lt-crumb b')).toHaveText('Тыңдалым')
-    await expect(page.locator('.lt-crumb span')).toHaveText('Тәжірибе')
+    await expect(page.locator('.lt-crumb span')).toHaveText('Ойындар')
     await expect(page.locator('.lt-back')).toContainText('Артқа')
     await expect(page.locator('.lt-intro__title')).toHaveText('Listening жаттығуы')
     await expect(page.locator('.lt-primary')).toHaveText('Жаттығуды бастау')

@@ -61,8 +61,8 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
   const goBack = () => {
     if (gameRef.current?.back()) return
     if (onBack) onBack()
-    // Без истории — в первую вкладку, где стоит карточка игры (с 17.11.2026 — «Аудирование», вторая — «Игры»).
-    else onNav?.('practice', { skill: 'listening' })
+    // Без истории — в раздел «Игры»: карточка игры с 18.11.2026 стоит только там.
+    else onNav?.('games')
   }
   const [data, setData] = useState(null)
   const [failed, setFailed] = useState(false)
@@ -116,7 +116,7 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
   }, [data, owner])
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="games" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="nmb-top">
         <button type="button" className="nmb-back" onClick={goBack}>
           ← {gameView === 'map' ? backLabel || t('numbers.toPractice') : t('numbers.toMap')}

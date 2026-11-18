@@ -20,7 +20,6 @@ import { usePhoneWidth } from '../lib/usePhoneWidth.js'
 import ArcadeGame from './arcade/ArcadeGame.jsx'
 import ArcadeHub, { ARCADE_GAMES } from './arcade/ArcadeHub.jsx'
 import RunnerGame from './arcade/runner/RunnerGame.jsx'
-import { SKILL_KEYS } from './practice/practiceTabs.js'
 
 const HEADS = {
   hub: { eyebrow: 'arcade.hub.eyebrow', title: 'arcade.hub.title', subtitle: 'arcade.hub.subtitle' },
@@ -32,7 +31,6 @@ const HEADS = {
 export default function ArcadePage({ userName, userLevel, token, onNav, onProfile, initialTarget = null, onBack, backLabel, canReturn = false }) {
   const { t } = useI18n()
   const [game, setGame] = useState(() => (ARCADE_GAMES.includes(initialTarget?.game) ? initialTarget.game : null))
-  const fromSkill = SKILL_KEYS.includes(initialTarget?.skill) ? initialTarget.skill : 'speaking'
   // Карточка «Аркады» стоит внизу длинной Практики, а прокрутка окна между
   // экранами не сбрасывается сама — без этого игра открывалась бы с середины.
   // То же при переходе зал ↔ игра: поле игры ниже шапки зала.
@@ -44,14 +42,15 @@ export default function ArcadePage({ userName, userLevel, token, onNav, onProfil
   // пришли, а не в зал, которого ученик не видел. По диплинку (&game=)
   // прийти неоткуда — тогда в зал, как раньше.
   const entryGame = canReturn && ARCADE_GAMES.includes(initialTarget?.game) ? initialTarget.game : null
-  const exit = () => (onBack ? onBack() : onNav?.('practice', { skill: fromSkill }))
+  // Без истории (диплинк) — в раздел «Игры»: обе игры с 18.11.2026 живут только там.
+  const exit = () => (onBack ? onBack() : onNav?.('games'))
   const inHub = !game || game === entryGame
   const back = () => (inHub ? exit() : setGame(null))
   // На телефоне строка над экраном — навбар приложения: в игре в нём её
   // название (Figma «Mobile», Speak or Die 6605:10888), в зале — «Аркада».
   const phone = usePhoneWidth()
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="games" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ar">
         <div className="ar-top">
           <button type="button" className="ar-back" onClick={back}>
