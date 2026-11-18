@@ -29,7 +29,7 @@ const NOTICE = {
 
 function Notice({ status, t, onRetry, onExit }) {
   return (
-    <div className={`jl-notice${status === 'error' ? ' jl-notice--err' : ''}`} role="status" data-status={status}>
+    <div className={`jl-notice${status === 'error' ? ' jl-notice--err' : ''}`} role={status === 'error' ? 'alert' : 'status'} data-status={status}>
       {t(NOTICE[status])}
       {status === 'error' && onRetry && (
         <button type="button" className="jl-btn jl-btn--ghost jl-btn--sm" onClick={onRetry}>
@@ -109,6 +109,14 @@ export default function VideoDictationPage({ userName, userLevel, token, onNav, 
   }, [slug])
   useEffect(() => () => clearLessonParam(writtenRef.current), [])
 
+  // Список ↔ урок: кликнутая карточка или «К списку» исчезают вместе со своим экраном — фокус уводим на «назад», а не в body.
+  const backRef = useRef(null)
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    if (mountedRef.current) backRef.current?.focus()
+    mountedRef.current = true
+  }, [slug])
+
   const toList = () => setSlug(null)
   const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'listening' }))
 
@@ -141,7 +149,7 @@ export default function VideoDictationPage({ userName, userLevel, token, onNav, 
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="jl vd pk-c--listening">
         <div className="jl-top">
-          <button type="button" className="jl-back" onClick={slug ? toList : goBack}>
+          <button type="button" className="jl-back" ref={backRef} onClick={slug ? toList : goBack}>
             <Icon name="back" /> {slug ? t('videoDictation.toList') : backLabel || t('videoDictation.toPractice')}
           </button>
           <span className="jl-crumb">

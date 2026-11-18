@@ -186,3 +186,26 @@ test('320px: длинное слово в пропуске — урок без �
   }))
   expect(scrollWidth).toBeLessThanOrEqual(innerWidth)
 })
+
+test.describe('возврат на экран', () => {
+  // Профиль открывает плашка сайдбара — ему нужна десктопная ширина (на телефоне «назад» ведёт через «Сервисы»).
+  test.use({ viewport: { width: 1280, height: 800 } })
+
+  test('«К видеодиктанту» после ухода с экрана открывает список, а не прежний урок', async ({ page }) => {
+    await mockBackend(page)
+    await page.goto('/?screen=video-dictation')
+    await openLesson(page, 'Rainy Day')
+    // F5 в уроке: экран открывается по ссылке — цель videoDictationTarget.lesson остаётся в App
+    await page.reload()
+    await expect(page.locator('.jl-crumb')).toHaveText('Rainy Day', { timeout: 30_000 })
+    await page.getByRole('button', { name: 'К списку' }).first().click()
+    await expect(page.locator('.vd-card').first()).toBeVisible()
+
+    await page.locator('.sb__profile').click()
+    await page.getByRole('button', { name: 'К видеодиктанту' }).click()
+
+    await expect(page.locator('.vd-card').first()).toBeVisible({ timeout: 30_000 })
+    await expect(page).not.toHaveURL(/lesson=/)
+    await expect(page.locator('.vd-run')).toHaveCount(0)
+  })
+})

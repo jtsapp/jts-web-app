@@ -54,8 +54,20 @@ describe('экран Видеодиктанта', () => {
   it('сеть упала — «Не удалось загрузить» и «Повторить»', () => {
     h.index = { status: 'error', lessons: [], retry: vi.fn() }
     mount()
+    expect(screen.getByRole('alert').getAttribute('data-status')).toBe('error')
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }))
     expect(h.index.retry).toHaveBeenCalled()
+  })
+
+  it('список ↔ урок: фокус уходит на кнопку «назад», а не в body', () => {
+    mount()
+    expect(document.activeElement).toBe(document.body)
+    fireEvent.click(screen.getByRole('radio', { name: 'Все' }))
+    fireEvent.click(document.querySelector('.vd-card[data-slug="lost-kite-m2x7d"]'))
+    expect(document.activeElement).toBe(document.querySelector('.jl-back'))
+    document.activeElement.blur()
+    fireEvent.click(screen.getByRole('button', { name: /К списку/ }))
+    expect(document.activeElement).toBe(document.querySelector('.jl-back'))
   })
 
   it('урок из списка: адрес получает ?lesson=, «К списку» его снимает и возвращает на выбранный уровень', () => {

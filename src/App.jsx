@@ -2180,6 +2180,7 @@ export default function App() {
     // вернувшись, Практика открывается на своём месте — вкладке и разделе,
     // где её оставили, — а не снова по цели.
     if (to === 'practice') setPracticeTarget(null)
+    else if (to === 'video-dictation') setVideoDictationTarget(null)
     else if (to === 'kingdom-interior' && place.level) {
       const k = KINGDOMS.find((x) => x.level === place.level)
       if (k) setKingdom(k)

@@ -142,13 +142,13 @@ export default function LessonRun({ lesson, t, onExit }) {
   // Лучший результат — только у прогона всего урока и только если ролик не падал.
   const finish = (summary) => {
     setStalled(false)
-    if (run.only || failedRef.current) return
+    if (summary.retry || failedRef.current) return
     recordBest(lesson.slug, { clean: summary.clean, n: summary.n })
   }
 
   return (
     <div className="vd-run">
-      <div className={`vd-player${ready ? ' is-ready' : ''}`}>
+      <div className={`vd-player${ready ? ' is-ready' : ''}${failed ? ' is-failed' : ''}`}>
         <div className="vd-player__host" ref={hostRef} />
       </div>
       {stalled && !failed && (

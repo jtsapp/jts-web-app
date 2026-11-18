@@ -53,7 +53,7 @@
 .vd-run { display: flex; flex-direction: column; gap: 16px; }
 /* Плеер 16:9 во всю ширину колонки. Пока API не ответил — тёмная плашка той же геометрии. */
 .vd-player { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: #0d0d14; /* фон под видео, от темы не зависит */ }
-.vd-player:not(.is-ready) { animation: vd-pulse 1.4s ease-in-out infinite; }
+.vd-player:not(.is-ready):not(.is-failed) { animation: vd-pulse 1.4s ease-in-out infinite; }
 .vd-player__host, .vd-player__host iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
 .vd-stage { display: flex; flex-direction: column; gap: 16px; }

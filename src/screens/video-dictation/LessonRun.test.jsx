@@ -126,6 +126,14 @@ describe('урок под плеером', () => {
     expect(screen.getByRole('link').getAttribute('href')).toBe('https://www.youtube.com/watch?v=vdFixture02&t=2s')
   })
 
+  it('пульс заглушки плеера останавливается, когда ролик не загрузился (is-failed)', async () => {
+    await mount()
+    const wrap = () => document.querySelector('.vd-player')
+    expect(wrap().classList.contains('is-failed')).toBe(false)
+    act(() => h.player.opts.events.onError({ data: 150 }))
+    expect(wrap().classList.contains('is-failed')).toBe(true)
+  })
+
   it('YouTube не ответил за READY_TIMEOUT_MS — та же плашка', async () => {
     vi.useFakeTimers()
     h.load = () => new Promise(() => {})
