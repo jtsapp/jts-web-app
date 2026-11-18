@@ -13,6 +13,7 @@ const SCOPE = {
 const late = { scope: null, mine: null }
 
 vi.mock('../api.js', () => ({
+  searchDictionary: vi.fn(async () => [{ id: 1, word: 'awkward', translatedWord: 'неловкий' }]),
   getVocabCatalog: vi.fn(async () => ({ levels: [{ id: 'A1', name: 'Starter' }], fields: [] })),
   getVocabScope: vi.fn(async (_t, _id, onFresh) => {
     late.scope = onFresh
@@ -41,8 +42,23 @@ vi.mock('../practice/usePracticeEntitlement.js', () => ({
 vi.mock('../tutor/OnboardingTour.jsx', () => ({ default: () => null, useScreenTour: () => ({ open: false }), tourMascot: () => null, tourIntroArt: () => null, TOUR_COACH_CARD: {} }))
 
 import VocabularyPage from './VocabularyPage.jsx'
+import { searchDictionary } from '../api.js'
 
 const TOKEN = 'x.eyJzdWIiOiIxIn0.y'
+
+it('открывает общий словарь школы с главной страницы «Словаря»', async () => {
+  render(<I18nProvider><VocabularyPage token={TOKEN} /></I18nProvider>)
+
+  expect(searchDictionary).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: 'Словарь школы' }))
+
+  expect(await screen.findByText('awkward')).toBeTruthy()
+  expect(screen.getByText('неловкий')).toBeTruthy()
+  expect(searchDictionary).toHaveBeenCalledWith(TOKEN, '')
+
+  fireEvent.change(screen.getByRole('textbox', { name: 'Слово или перевод…' }), { target: { value: 'awk' } })
+  await waitFor(() => expect(searchDictionary).toHaveBeenCalledWith(TOKEN, 'awk'))
+})
 
 describe('VocabularyPage — поздний ответ кэша', () => {
   it('открытый урок остаётся открытым', async () => {

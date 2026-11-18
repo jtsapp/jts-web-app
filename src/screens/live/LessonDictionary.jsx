@@ -39,10 +39,11 @@ function SpeakButton({ word, label }) {
  * (`defaultOpen`) — наоборот, раскрыт: там кроме словаря ничего нет, и лишний
  * клик по заголовку означал бы пустой экран в ответ на «Ваш словарь».
  */
-export default function LessonDictionary({ token, defaultOpen = false, incoming = null }) {
+export default function LessonDictionary({ token, defaultOpen = false, incoming = null, schoolOnly = false, onSaved }) {
   const { t, lang } = useI18n()
   const [open, setOpen] = useState(defaultOpen)
   const [tab, setTab] = useState('mine')
+  const showMine = !schoolOnly && tab === 'mine'
   const [query, setQuery] = useState('')
   const [items, setItems] = useState([])
   const [mine, setMine] = useState([])
@@ -63,11 +64,11 @@ export default function LessonDictionary({ token, defaultOpen = false, incoming 
   // Личный словарь: один запрос на раскрытие панели, без поиска по серверу —
   // своих слов у ученика десятки, а не тысячи, и фильтровать их можно на месте.
   useEffect(() => {
-    if (!open || !token) return
+    if (schoolOnly || !open || !token) return
     getSavedWords(token, (fresh) => setMine(Array.isArray(fresh) ? fresh : []))
       .then((rows) => setMine(Array.isArray(rows) ? rows : []))
       .catch(() => setMine([]))
-  }, [open, token])
+  }, [schoolOnly, open, token])
 
   useEffect(() => {
     const word = String(incoming?.word || '').trim()
@@ -81,6 +82,7 @@ export default function LessonDictionary({ token, defaultOpen = false, incoming 
   }, [incoming?.word, incoming?.translation, incoming?.n])
 
   useEffect(() => {
+    if (schoolOnly) return undefined
     function onVocab(event) {
       // Слово берём у любой непосредственной дочерней рамки этого окна. Законный отправитель тут —
       // страница урока, но от другой прямой рамки (простая рамка с чужой ссылкой) её по .parent не
@@ -102,7 +104,7 @@ export default function LessonDictionary({ token, defaultOpen = false, incoming 
     }
     window.addEventListener('message', onVocab)
     return () => window.removeEventListener('message', onVocab)
-  }, [])
+  }, [schoolOnly])
 
   const mineFiltered = (() => {
     const q = query.trim().toLowerCase()
@@ -143,7 +145,7 @@ export default function LessonDictionary({ token, defaultOpen = false, incoming 
         .catch(() => { /* переводчик недоступен — останется «ничего не найдено» */ })
     }
     const id = setTimeout(() => {
-      if (tab === 'mine') {
+      if (showMine) {
         setLoading(false)
         // Своё уже отфильтровано на месте (mineFiltered) — сюда попадаем только
         // тогда, когда в личном списке совпадений нет.
@@ -170,7 +172,7 @@ export default function LessonDictionary({ token, defaultOpen = false, incoming 
     // mineFiltered пересобирается на каждый рендер — в зависимостях его быть не
     // должно, иначе эффект уходит в цикл. Читается он в момент срабатывания.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, query, token, tab, lang, mine])
+  }, [open, query, token, showMine, lang, mine])
 
   /**
    * Забрать переведённое слово себе.
@@ -189,10 +191,11 @@ export default function LessonDictionary({ token, defaultOpen = false, incoming 
       // в поле «другие переводы» им не место.
       alternates: !fallback.reverse && fallback.alternates.length ? fallback.alternates.join(', ') : undefined,
       language: lang === 'kk' ? 'kk' : 'ru',
-      source: 'Словарь урока',
+      source: schoolOnly ? 'Словарь школы' : 'Словарь урока',
     })
       .then(() => {
         setSaved(true)
+        if (schoolOnly) return onSaved?.()
         // Свой список сразу подтягиваем: слово должно оказаться в «Моих словах»,
         // а не появиться там только после переоткрытия панели.
         return getSavedWords(token).then((rows) => setMine(Array.isArray(rows) ? rows : []))
@@ -209,24 +212,26 @@ export default function LessonDictionary({ token, defaultOpen = false, incoming 
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        <span className="lw-dict__title">{t('lesson.ws.dictionary')}</span>
+        <span className="lw-dict__title">{t(schoolOnly ? 'lesson.ws.dictionarySchool' : 'lesson.ws.dictionary')}</span>
         <span className={`lw-dict__chev ${open ? 'lw-dict__chev--open' : ''}`} aria-hidden="true">›</span>
       </button>
 
       {open && (
         <div className="lw-dict__body">
-          <div className="lw-dict__tabs" role="tablist">
-            <button type="button" role="tab" aria-selected={tab === 'mine'}
-                    className={`lw-dict__tab ${tab === 'mine' ? 'is-on' : ''}`}
-                    onClick={() => setTab('mine')}>
-              {t('lesson.ws.dictionaryMine')}
-            </button>
-            <button type="button" role="tab" aria-selected={tab === 'school'}
-                    className={`lw-dict__tab ${tab === 'school' ? 'is-on' : ''}`}
-                    onClick={() => setTab('school')}>
-              {t('lesson.ws.dictionarySchool')}
-            </button>
-          </div>
+          {!schoolOnly && (
+            <div className="lw-dict__tabs" role="tablist">
+              <button type="button" role="tab" aria-selected={tab === 'mine'}
+                      className={`lw-dict__tab ${tab === 'mine' ? 'is-on' : ''}`}
+                      onClick={() => setTab('mine')}>
+                {t('lesson.ws.dictionaryMine')}
+              </button>
+              <button type="button" role="tab" aria-selected={tab === 'school'}
+                      className={`lw-dict__tab ${tab === 'school' ? 'is-on' : ''}`}
+                      onClick={() => setTab('school')}>
+                {t('lesson.ws.dictionarySchool')}
+              </button>
+            </div>
+          )}
 
           <label className="lw-dict__search">
             <input
@@ -238,7 +243,7 @@ export default function LessonDictionary({ token, defaultOpen = false, incoming 
             />
           </label>
 
-          {tab === 'mine' ? (
+          {showMine ? (
             mineFiltered.length ? (
               <ul className="lw-dict__list">
                 {mineFiltered.map((w) => (
@@ -256,7 +261,7 @@ export default function LessonDictionary({ token, defaultOpen = false, incoming 
             )
           ) : (
             <>
-              {loading && <p className="lw-dict__state">{t('schedule.loading')}</p>}
+              {loading && <p className="lw-dict__state">{t('practice.loading')}</p>}
               {!loading && failed && <p className="lw-dict__state">{t('lesson.ws.dictionaryFailed')}</p>}
               {!loading && !failed && items.length > 0 && (
                 <ul className="lw-dict__list">

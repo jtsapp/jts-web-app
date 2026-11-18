@@ -20,6 +20,7 @@ import {
   saveVocabProgress,
 } from '../api.js'
 import { IeltsCatalog, IeltsSetScreen, IeltsShelf, isAwlSet } from './vocab/IeltsVocab.jsx'
+import LessonDictionary from './live/LessonDictionary.jsx'
 import PhoneBar, { lessonBarTitle } from './vocab/PhoneBar.jsx'
 import { usePhoneWidth } from '../lib/usePhoneWidth.js'
 import { ieltsScope, practiceCard, progressResults, sortIeltsSets } from './vocab/ieltsVocab.js'
@@ -123,6 +124,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   const [lesson, setLesson] = useState(null)
   const [mine, setMine] = useState(null)
   const [mineError, setMineError] = useState(false)
+  const [mineRevision, setMineRevision] = useState(0)
   const [practiceCards, setPracticeCards] = useState(null)
   const [practiceTitle, setPracticeTitle] = useState('')
   const [practiceBack, setPracticeBack] = useState('lesson')
@@ -280,7 +282,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     return () => {
       alive = false
     }
-  }, [token])
+  }, [token, mineRevision])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -563,6 +565,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       {onExit && <button type="button" className="vp-back" onClick={onExit}>← {backLabel || t('vocab.back')}</button>}
       <h1>{t('vocab.home.title')}</h1>
       <p className="vp-lead">{t('vocab.home.pickWay')}</p>
+      {token && <LessonDictionary token={token} schoolOnly onSaved={() => setMineRevision((n) => n + 1)} />}
       {indexLoading && <p className="vp-state">…</p>}
       {indexError && !levels.length && !ieltsSets.length && !indexLoading && <p className="vp-state">{t('vocab.home.empty')}</p>}
 
