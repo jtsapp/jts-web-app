@@ -275,11 +275,12 @@ function justListen() {
 }
 
 // Видеодиктант — своя иллюстрация, без кадров мультфильмов (права, спека 2026-11-18): тёмный экран плеера с «плей» и
-// строкой времени, под ним фраза, где пропуски — клетки по буквам. Уроки живут на бэкенде, поэтому фразы — из фикстуры
-// раздела (на ней же ходят vitest и e2e): [слово] — клетки, остальное — словами, фраза без скобок — клетки целиком.
+// строкой времени, под ним фраза, где пропуски — клетки по буквам. [слово] — клетки, остальное — словами, фраза без скобок — клетки целиком. Фразы — свои, нейтральные: из
+// мультфильмов не берём ни кадры, ни реплики.
+const VIDEO_DICTATION_PHRASES = ['I [like] playing in the [park]!', "Let's [fly] the kite", 'Where is my [teddy]?']
+
 function videoDictation() {
-  const { lessons } = json('src/practice/video-dictation/__fixtures__/lessons.json')
-  const phrase = (slug, i) => must(lessons[slug]?.segments?.[i]?.[2], `video dictation: ${slug} #${i}`)
+  const [first, second, third] = VIDEO_DICTATION_PHRASES
   const cells = (word, typed) =>
     `<span class="vdc">${[...word.replace(/[^a-z]/gi, '')]
       .map((c, i) => `<b class="${i < typed ? 'on' : ''}">${i < typed ? c.toLowerCase() : ''}</b>`)
@@ -306,9 +307,9 @@ function videoDictation() {
   const card = (text, typed, played) =>
     `<div class="f tx vd"><div class="vd__scr">${playBtn}<span class="vd__bar"><i style="width:${played}%"></i></span></div><div class="vd__ln">${line(text, typed)}</div></div>`
   return fan(
-    card(phrase('lost-kite-m2x7d', 0), 2, 64),
-    card(phrase('rainy-day-k3f9q', 0), 6, 38),
-    card(phrase('rainy-day-k3f9q', 1), 0, 82),
+    card(first, 2, 64),
+    card(second, 3, 38),
+    card(third, 0, 82),
   )
 }
 
