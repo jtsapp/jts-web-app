@@ -66,7 +66,9 @@ export class DictationSession {
   type(value) {
     const it = this.item
     if (!it || it.done) return
-    it.typed = letters(value).slice(0, it.phrase.target.length)
+    const typed = letters(value).slice(0, it.phrase.target.length)
+    if (typed === it.typed) return
+    it.typed = typed
     it.mark = null
     this.publish()
   }
@@ -107,8 +109,8 @@ export class DictationSession {
     Object.assign(it, { done: true, outcome, mark })
     const result = { n: it.phrase.n, text: it.phrase.plain, outcome, attempt: it.attempt }
     this.results.push(result)
-    this.onPhrase(result)
     this.publish()
+    this.onPhrase(result)
   }
 
   /** «Дальше»: следующая фраза, после последней — итог. */
