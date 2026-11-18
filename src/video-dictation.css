@@ -1,0 +1,107 @@
+/* ============================================================
+   Видеодиктант — фраза из мультфильма по буквам (спека 2026-11-18).
+   Корень — .jl .vd .pk-c--listening: палитра, кнопки, ячейки, отклики и
+   итог — классы Just to Listen (listen.css, тёмная тема — там же на
+   токенах --dk-*); цвет раздела — --pk-* вкладки «Аудирование» (styles.css,
+   тёмные — theme-dark.css). Здесь — только своё: список уроков, плеер и
+   строка фразы. Поверх плеера ничего не кладём (права, спека).
+   ============================================================ */
+.vd-sr {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.vd a.jl-btn { text-decoration: none; }
+
+/* ---------- список уроков ---------- */
+.vd .pk-cap { min-height: 0; }
+.vd-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;
+  margin: 0; padding: 0; list-style: none;
+}
+.vd-card {
+  display: flex; flex-direction: column; width: 100%; height: 100%; padding: 0; overflow: hidden; text-align: left;
+  border: 1px solid var(--jl-line); border-radius: 20px; background: var(--jl-surface); color: var(--jl-text);
+  font: inherit; cursor: pointer; transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.vd-card:hover { border-color: var(--pk-acc); box-shadow: var(--jl-shadow); }
+.vd-card:focus-visible { outline: 3px solid var(--pk-acc); outline-offset: 2px; }
+/* Превью — поверх рамки 16:9 абсолютом: картинка другой пропорции рамку не растягивает. */
+.vd-card__thumb { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: var(--jl-surface-2); }
+.vd-card__thumb img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+.vd-card__level {
+  position: absolute; left: 10px; top: 10px; padding: 2px 10px; border-radius: 999px;
+  background: var(--pk-tint); color: var(--pk-ink); font-size: 13px; font-weight: 800; line-height: 20px;
+}
+.vd-card__body { display: flex; flex-direction: column; gap: 4px; flex: 1; padding: 14px 16px 16px; }
+.vd-card__title { font-size: 17px; font-weight: 800; line-height: 1.3; overflow-wrap: break-word; }
+.vd-card__meta { color: var(--jl-muted); font-size: 14px; overflow-wrap: break-word; }
+.vd-card__foot {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px;
+  margin-top: auto; padding-top: 8px; color: var(--jl-muted); font-size: 13px; font-weight: 700;
+}
+.vd-card__best { color: var(--jl-ok); }
+
+/* Скелет списка и урока: серые плашки той же геометрии; мерцание гасит prefers-reduced-motion. */
+.vd-skel { background: var(--jl-surface-2); border-radius: 12px; animation: vd-pulse 1.4s ease-in-out infinite; }
+.vd-card--skel { cursor: default; }
+.vd-card--skel .vd-card__body { gap: 10px; }
+.vd-skel--line { height: 14px; }
+.vd-skel--short { width: 55%; }
+@keyframes vd-pulse { 50% { opacity: 0.55; } }
+
+/* ---------- урок ---------- */
+.vd-run { display: flex; flex-direction: column; gap: 16px; }
+/* Плеер 16:9 во всю ширину колонки. Пока API не ответил — тёмная плашка той же геометрии. */
+.vd-player { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: #0d0d14; }
+.vd-player:not(.is-ready) { animation: vd-pulse 1.4s ease-in-out infinite; }
+.vd-player__host, .vd-player__host iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+.vd-stage { display: flex; flex-direction: column; gap: 16px; }
+.vd-stage__top { display: flex; align-items: center; gap: 12px; }
+.vd-count { flex: none; color: var(--jl-muted); font-size: 14px; font-weight: 700; }
+.vd-intro { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
+.vd-intro p { margin: 0; color: var(--jl-muted); line-height: 1.5; flex: 1 1 260px; }
+
+.vd-line { display: flex; flex-direction: column; gap: 10px; }
+.vd-cells { gap: 10px 12px; align-items: center; }
+.vd-wg { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: 0; }
+.vd-word { font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--jl-text); }
+.vd-cells.jl-cells--sm .vd-word { font-size: 19px; }
+.vd-cells.jl-cells--xs .vd-word { font-size: 16px; }
+.vd-full { margin: 0; font-size: 18px; font-weight: 700; color: var(--jl-text); overflow-wrap: break-word; }
+.vd-layout { margin: 0; color: var(--jl-near); font-size: 14px; font-weight: 700; }
+/* Место под вердикт держим всегда: строка с кнопками не прыгает, а aria-live объявляет только новый текст. */
+.vd-verdict { min-height: 52px; }
+.vd .jl-tool[aria-pressed='true'] { border-color: var(--jl-violet); background: var(--jl-soft); color: var(--jl-violet); }
+.vd .jl-tool:focus-visible { outline: 3px solid var(--jl-violet); outline-offset: 2px; }
+
+.vd-gone { flex-direction: column; align-items: flex-start; }
+.vd-gone b { display: block; color: var(--jl-bad); font-size: 16px; }
+.vd-gone p { margin: 4px 0 0; }
+
+/* ---------- итог ---------- */
+.vd-result h2:focus { outline: none; }
+.vd-review { margin: 0; padding: 0; list-style: none; }
+.vd-rv {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 14px; background: var(--jl-surface-2);
+}
+.vd-rv__text { font-weight: 700; overflow-wrap: break-word; }
+.vd-rv__mark { color: var(--jl-muted); font-size: 13px; }
+.vd-mark--ok { background: var(--jl-near); }
+
+/* ---------- телефон ---------- */
+@media (max-width: 560px) {
+  .vd-grid { grid-template-columns: 1fr; gap: 12px; }
+  .vd-player { border-radius: 14px; }
+  .vd-word { font-size: 18px; }
+  .vd-cells.jl-cells--sm .vd-word { font-size: 16px; }
+  .vd-cells.jl-cells--xs .vd-word { font-size: 14px; }
+  .vd-rv { grid-template-columns: auto 1fr; }
+  .vd-rv__mark { grid-column: 2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vd-skel, .vd-player:not(.is-ready) { animation: none; }
+  .vd-card { transition: none; }
+}
