@@ -52,7 +52,7 @@
 /* ---------- урок ---------- */
 .vd-run { display: flex; flex-direction: column; gap: 16px; }
 /* Плеер 16:9 во всю ширину колонки. Пока API не ответил — тёмная плашка той же геометрии. */
-.vd-player { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: #0d0d14; }
+.vd-player { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: #0d0d14; /* фон под видео, от темы не зависит */ }
 .vd-player:not(.is-ready) { animation: vd-pulse 1.4s ease-in-out infinite; }
 .vd-player__host, .vd-player__host iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
@@ -64,7 +64,11 @@
 
 .vd-line { display: flex; flex-direction: column; gap: 10px; }
 .vd-cells { gap: 10px 12px; align-items: center; }
-.vd-wg { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: 0; }
+.vd-cells__view { display: contents; }
+/* Слово не шире строки: группа из ячеек, не влезшая в 288 px телефона, переносит ячейки, а не уезжает за край. */
+.vd-wg { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: 0; max-width: 100%; min-width: 0; }
+.vd-wg .jl-grp { flex-wrap: wrap; row-gap: 6px; max-width: 100%; }
+.vd-cells.jl-cells--sm .vd-wg .jl-grp, .vd-cells.jl-cells--xs .vd-wg .jl-grp { row-gap: 4px; }
 .vd-word { font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--jl-text); }
 .vd-cells.jl-cells--sm .vd-word { font-size: 19px; }
 .vd-cells.jl-cells--xs .vd-word { font-size: 16px; }

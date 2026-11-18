@@ -25,12 +25,24 @@ function groupTokens(tokens) {
   return groups
 }
 
+// Размер ячеек решает самая длинная группа ячеек, а не вся фраза: слово не переносится, пока влезает в строку,
+// а фраза из многих коротких пропусков переносится по словам, и крупные ячейки ей не мешают.
+export function cellSizeClass(tokens) {
+  const longest = Math.max(
+    0,
+    ...groupTokens(tokens).map((group) => group.reduce((sum, tok) => sum + (tok.kind === 'text' ? 0 : tok.size), 0)),
+  )
+  return longest > 16 ? ' jl-cells--xs' : longest > 9 ? ' jl-cells--sm' : ''
+}
+
 export default function DictationLine({ item, number, inputRef, t, onType, onSubmit }) {
-  const [wrongLayout, setWrongLayout] = useState(false)
+  // Подсказка про раскладку привязана к фразе, для которой набрано кириллицей: у следующей фразы она сама пропадает.
+  const [layoutFor, setLayoutFor] = useState(null)
   const lineRef = useRef(null)
   const { tokens, target, plain } = item.phrase
   const n = target.length
-  const size = n > 16 ? ' jl-cells--xs' : n > 9 ? ' jl-cells--sm' : ''
+  const size = cellSizeClass(tokens)
+  const wrongLayout = layoutFor === item.phrase
   const mark = item.mark ? ` is-${item.mark}` : ''
   const cur = Math.min(item.typed.length, n - 1)
 
@@ -48,29 +60,31 @@ export default function DictationLine({ item, number, inputRef, t, onType, onSub
   return (
     <div className="vd-line" ref={lineRef}>
       <div className={`jl-cells vd-cells${size}${mark}`} onClick={() => inputRef.current?.focus()}>
-        {groupTokens(tokens).map((group, g) => (
-          <span key={g} className="vd-wg">
-            {group.map((tok, i) =>
-              tok.kind === 'text' ? (
-                <span key={i} className="vd-word" lang="en">
-                  {tok.text}
-                </span>
-              ) : (
-                <span key={i} className="jl-grp">
-                  {Array.from({ length: tok.size }, (_, j) => {
-                    const k = tok.start + j
-                    const cls = `jl-cell${item.typed[k] ? ' is-filled' : ''}${!item.done && k === cur ? ' is-cur' : ''}${k < item.revealed ? ' is-hint' : ''}`
-                    return (
-                      <span key={k} className={cls}>
-                        {item.typed[k] || ''}
-                      </span>
-                    )
-                  })}
-                </span>
-              ),
-            )}
-          </span>
-        ))}
+        <span className="vd-cells__view" aria-hidden="true">
+          {groupTokens(tokens).map((group, g) => (
+            <span key={g} className="vd-wg">
+              {group.map((tok, i) =>
+                tok.kind === 'text' ? (
+                  <span key={i} className="vd-word" lang="en">
+                    {tok.text}
+                  </span>
+                ) : (
+                  <span key={i} className="jl-grp">
+                    {Array.from({ length: tok.size }, (_, j) => {
+                      const k = tok.start + j
+                      const cls = `jl-cell${item.typed[k] ? ' is-filled' : ''}${!item.done && k === cur ? ' is-cur' : ''}${k < item.revealed ? ' is-hint' : ''}`
+                      return (
+                        <span key={k} className={cls}>
+                          {item.typed[k] || ''}
+                        </span>
+                      )
+                    })}
+                  </span>
+                ),
+              )}
+            </span>
+          ))}
+        </span>
         <input
           ref={inputRef}
           className={`jl-cells__input${FIELD_MARK[item.mark] || ''}`}
@@ -85,7 +99,7 @@ export default function DictationLine({ item, number, inputRef, t, onType, onSub
           inputMode="text"
           enterKeyHint="done"
           onChange={(e) => {
-            setWrongLayout(CYRILLIC.test(e.target.value))
+            setLayoutFor(CYRILLIC.test(e.target.value) ? item.phrase : null)
             onType(e.target.value)
           }}
           onKeyDown={(e) => {
@@ -96,11 +110,9 @@ export default function DictationLine({ item, number, inputRef, t, onType, onSub
           }}
         />
       </div>
-      {wrongLayout && !item.done && (
-        <p className="vd-layout" role="status">
-          {t('videoDictation.layout')}
-        </p>
-      )}
+      <p className="vd-layout" role="status">
+        {wrongLayout && !item.done ? t('videoDictation.layout') : ''}
+      </p>
       {item.done && (
         <p className="vd-full" lang="en">
           {plain}

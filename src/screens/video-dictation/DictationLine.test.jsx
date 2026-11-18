@@ -3,7 +3,7 @@ import { fireEvent, render } from '@testing-library/react'
 import { createRef } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { parsePhrase } from '../../practice/video-dictation/phrase.js'
-import DictationLine from './DictationLine.jsx'
+import DictationLine, { cellSizeClass } from './DictationLine.jsx'
 
 const t = (key, vars) => (vars ? `${key} ${JSON.stringify(vars)}` : key)
 const MUDDY = { n: 0, start: 1, end: 3, ...parsePhrase('I [love] jumping in [muddy] puddles!') }
@@ -39,7 +39,6 @@ describe('строка фразы', () => {
     const { container } = mount(item({ phrase: TEDDY }))
     expect(container.querySelectorAll('.vd-word')).toHaveLength(0)
     expect([...container.querySelectorAll('.jl-grp')].map((g) => g.querySelectorAll('.jl-cell').length)).toEqual([5, 2, 2, 5])
-    expect(container.querySelector('.jl-cells--sm')).not.toBeNull()
   })
 
   it('буквы по ячейкам через пропуски, текущая и подсказанная подсвечены', () => {
@@ -108,5 +107,39 @@ describe('склейка без пробела (glue)', () => {
     const { container } = mount(phraseItem('I [love] jumping'))
     expect(groups(container)).toHaveLength(3)
     expect(groups(container).every((g) => g.children.length === 1)).toBe(true)
+  })
+})
+
+describe('размер ячеек и устойчивость к узкому экрану', () => {
+  const sizeOf = (text) => cellSizeClass(parsePhrase(text).tokens)
+
+  it('размер выбирает самая длинная группа, а не сумма букв фразы', () => {
+    expect(sizeOf('[love] [muddy] [puddles] [jumping] [rainbow]')).toBe('')
+    expect(sizeOf('[abcdefghij]')).toBe(' jl-cells--sm')
+    expect(sizeOf('[abcdefghijklmnopq]')).toBe(' jl-cells--xs')
+    expect(sizeOf('un[believ]able [no]')).toBe('')
+  })
+
+  it('буквы ячеек скрыты от скринридера, поле подписано', () => {
+    const { container, input } = mount(item())
+    expect(container.querySelector('.vd-cells__view').getAttribute('aria-hidden')).toBe('true')
+    expect(input.closest('[aria-hidden="true"]')).toBeNull()
+  })
+
+  it('область статуса раскладки есть всегда и очищается при смене фразы', () => {
+    const { input, getByRole, rerender } = mount(item())
+    expect(getByRole('status').textContent).toBe('')
+    fireEvent.change(input, { target: { value: 'дщму' } })
+    expect(getByRole('status').textContent).toBe('videoDictation.layout')
+    rerender(<DictationLine item={item({ phrase: TEDDY })} number={4} inputRef={createRef()} t={t} onType={vi.fn()} onSubmit={vi.fn()} />)
+    expect(getByRole('status').textContent).toBe('')
+  })
+
+  it('фраза целиком со знаками — только после ответа', () => {
+    const before = mount(item())
+    expect(before.container.querySelector('.vd-full')).toBeNull()
+    before.unmount()
+    const after = mount(item({ done: true, mark: 'ok', typed: 'lovemuddy' }))
+    expect(after.container.querySelector('.vd-full').textContent).toBe('I love jumping in muddy puddles!')
   })
 })
