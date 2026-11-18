@@ -26,60 +26,67 @@ function useLatest(value) {
 const lessonsOf = (data) =>
   Array.isArray(data?.lessons) ? data.lessons.filter((l) => l && typeof l.slug === 'string' && l.slug) : []
 
+// Состояние помнит, чьё оно (владелец / владелец+урок). Если ключ не совпал с нынешним — это данные прошлого
+// владельца или урока: на этом же рендере отдаём loading, не дожидаясь эффекта.
 export function useVideoDictationIndex(token) {
   const owner = ownerOf(token)
   const tokenRef = useLatest(token)
-  const [state, setState] = useState({ status: token ? 'loading' : 'guest', lessons: [] })
+  const [state, setState] = useState({ owner, status: token ? 'loading' : 'guest', lessons: [] })
   const [attempt, setAttempt] = useState(0)
   useEffect(() => {
     const tk = tokenRef.current
     if (!tk) {
-      setState({ status: 'guest', lessons: [] })
+      setState({ owner, status: 'guest', lessons: [] })
       return undefined
     }
     let alive = true
     const take = (data) => {
       if (!alive) return
       const lessons = lessonsOf(data)
-      setState({ status: lessons.length ? 'ready' : 'missing', lessons })
+      setState({ owner, status: lessons.length ? 'ready' : 'missing', lessons })
     }
-    setState((s) => (s.lessons.length ? s : { status: 'loading', lessons: [] }))
+    // Список прежнего показываем, пока «Повторить» или фон ищут свежий, — но только того же владельца.
+    setState((s) => (s.owner === owner && s.lessons.length ? s : { owner, status: 'loading', lessons: [] }))
     getVideoDictationIndex(tk, take)
       .then(take)
-      .catch((e) => alive && setState({ status: e?.status === 404 ? 'missing' : 'error', lessons: [] }))
+      .catch((e) => alive && setState({ owner, status: e?.status === 404 ? 'missing' : 'error', lessons: [] }))
     return () => {
       alive = false
     }
   }, [owner, attempt, tokenRef])
   const retry = useCallback(() => setAttempt((n) => n + 1), [])
-  return { ...state, retry }
+  const current = state.owner === owner ? state : { status: token ? 'loading' : 'guest', lessons: [] }
+  return { status: current.status, lessons: current.lessons, retry }
 }
 
 export function useVideoDictationLesson(token, slug) {
   const owner = ownerOf(token)
+  const key = `${owner}|${slug ?? ''}`
   const tokenRef = useLatest(token)
-  const [state, setState] = useState({ status: 'idle', lesson: null })
+  const [state, setState] = useState({ key, status: 'idle', lesson: null })
   const [attempt, setAttempt] = useState(0)
   useEffect(() => {
     const tk = tokenRef.current
     if (!tk || !slug) {
-      setState({ status: 'idle', lesson: null })
+      setState({ key, status: 'idle', lesson: null })
       return undefined
     }
     let alive = true
-    setState({ status: 'loading', lesson: null })
+    setState({ key, status: 'loading', lesson: null })
     getVideoDictationLesson(tk, slug)
       .then((data) => {
         if (!alive) return
         const phrases = phrasesOf(data?.segments)
         const usable = VIDEO_ID.test(String(data?.video ?? '')) && phrases.length > 0
-        setState(usable ? { status: 'ready', lesson: { ...data, phrases } } : { status: 'empty', lesson: null })
+        // phrases бэкенда — число фраз; в уроке поле теперь хранит разобранные фразы.
+        setState(usable ? { key, status: 'ready', lesson: { ...data, phrases } } : { key, status: 'empty', lesson: null })
       })
-      .catch((e) => alive && setState({ status: e?.status === 404 ? 'missing' : 'error', lesson: null }))
+      .catch((e) => alive && setState({ key, status: e?.status === 404 ? 'missing' : 'error', lesson: null }))
     return () => {
       alive = false
     }
-  }, [owner, slug, attempt, tokenRef])
+  }, [owner, slug, key, attempt, tokenRef])
   const retry = useCallback(() => setAttempt((n) => n + 1), [])
-  return { ...state, retry }
+  const current = state.key === key ? state : { status: token && slug ? 'loading' : 'idle', lesson: null }
+  return { status: current.status, lesson: current.lesson, retry }
 }
