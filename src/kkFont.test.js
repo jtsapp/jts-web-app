@@ -36,6 +36,9 @@ const COVERED = {
   'hiring/hiring.css | .hr-site .hr-display,.hr-site h1': "html[data-ui-lang='kk'] .hr-site .hr-display",
   'hiring/hiring.css | .hr-site .hr-result .hr-big': "html[data-ui-lang='kk'] .hr-site .hr-result .hr-big",
   'hiring/hiring.css | .hr-site .hr-stat b': "html[data-ui-lang='kk'] .hr-site .hr-stat b",
+  // What’s New (объявления ученику, 18.11.2026): карточка и окно поверх экранов
+  'news/news.css | .student-news-card': "html[data-ui-lang='kk'] .student-news-card",
+  'news/news.css | .student-news-popup .news-overlay': "html[data-ui-lang='kk'] .student-news-popup .news-overlay",
 }
 
 function cssFiles(dir) {

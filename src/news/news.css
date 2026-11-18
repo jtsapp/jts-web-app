@@ -32,7 +32,7 @@
 .student-news-card .news-button.secondary, .student-news-card .news-button.calendar { background: #fff; color: #4a4664; border-color: #e4def5; }
 .student-news-card .dark .news-button { background: #fff; color: #39205d; }
 .student-news-card .dark .news-button.secondary, .student-news-card .dark .news-button.calendar { background: #ffffff1f; color: #fff; border-color: #ffffff80; }
-.student-news-card button:disabled { opacity: .6; cursor: default; }
+.student-news-card .news-button:disabled, .student-news-card .news-option:disabled, .student-news-card .news-reaction:disabled { opacity: .6; cursor: default; }
 .student-news-card button:focus-visible, .student-news-card a:focus-visible { outline: 3px solid #b99aff; outline-offset: 3px; }
 .student-news-card .news-acked { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
 .student-news-card .news-poll { display: grid; gap: 8px; margin-bottom: 18px; }
@@ -74,7 +74,7 @@
 .student-news-popup .news-all { background: none; border: 0; color: #7432e0; }
 .student-news-popup .news-next { background: #f2ebff; border: 1px solid #e4def5; color: #5b22c2; }
 .student-news-popup .news-error { margin: 16px; padding: 12px; border-radius: 10px; background: #fdecec; color: #a5262a; font-size: 14px; }
-.student-news-popup button:disabled { cursor: wait; opacity: .5; }
+.student-news-popup .news-close:disabled, .student-news-popup .news-all:disabled, .student-news-popup .news-next:disabled { cursor: wait; opacity: .5; }
 .student-news-popup button:focus-visible { outline: 3px solid #b99aff; outline-offset: 2px; }
 @media (max-width: 480px) {
 .student-news-popup .news-overlay { padding: 8px; }
