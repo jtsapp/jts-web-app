@@ -33,29 +33,8 @@ import { recordSkill } from '../practice/skillStats.js'
 import PhraseScore from '../components/shadowing/PhraseScore.jsx'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
-
-// Загрузка YouTube IFrame API — один раз на модуль (как _coversIndexPromise в
-// PracticePage). SSR-гард: на сервере window нет, отдаём null и грузим плеер уже
-// в эффекте после гидратации, иначе первый рендер клиента разойдётся с сервером
-// (см. комментарий про hydration mismatch в App.jsx).
-let _ytApiPromise = null
-function loadYouTubeApi() {
-  if (typeof window === 'undefined') return Promise.resolve(null)
-  if (window.YT && window.YT.Player) return Promise.resolve(window.YT)
-  if (!_ytApiPromise) {
-    _ytApiPromise = new Promise((resolve) => {
-      const prev = window.onYouTubeIframeAPIReady
-      window.onYouTubeIframeAPIReady = () => {
-        if (typeof prev === 'function') prev()
-        resolve(window.YT)
-      }
-      const tag = document.createElement('script')
-      tag.src = 'https://www.youtube.com/iframe_api'
-      document.head.appendChild(tag)
-    })
-  }
-  return _ytApiPromise
-}
+// Загрузка YouTube IFrame API — общая с Видеодиктантом (lib/youtube.js).
+import { loadYouTubeApi } from '../lib/youtube.js'
 
 // Лучший поддерживаемый mime для записи — как в исходнике.
 function pickMime() {
