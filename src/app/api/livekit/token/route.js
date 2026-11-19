@@ -12,7 +12,9 @@
 // Secrets (LIVEKIT_*, DATABASE_URL) live in server env only — never
 // NEXT_PUBLIC_, so they never reach the browser bundle.
 
+import { randomUUID } from 'node:crypto'
 import { AccessToken } from 'livekit-server-sdk'
+import { dispatchTutor, tutorAgentName } from '@/lib/livekitTutorDispatch.js'
 import {
   isDbConfigured,
   isValidDeviceId,
@@ -317,7 +319,8 @@ async function issue(p, profileId, userName, limitOverride, isDemoAccount = fals
   }
 
   const identity = p.identity || `learner-${Math.random().toString(36).slice(2, 10)}`
-  const room = p.room || `jts-tutor-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`
+  const agentName = tutorAgentName()
+  const room = (!agentName && p.room) || `jts-tutor-${randomUUID()}`
   const tier = freeTier ? 'free' : 'paid'
 
   // Долговременная память ученика для агента: ошибки/темы/факты/словарь/навыки,
@@ -350,6 +353,7 @@ async function issue(p, profileId, userName, limitOverride, isDemoAccount = fals
 
   const at = new AccessToken(apiKey, apiSecret, { identity, ttl, metadata })
   at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true })
+  dispatchTutor(at, agentName)
   const token = await at.toJwt()
 
   if (isDbConfigured() && isValidDeviceId(profileId)) {

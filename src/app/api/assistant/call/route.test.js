@@ -53,10 +53,21 @@ describe('POST /api/assistant/call', () => {
   beforeEach(() => {
     authResult = { status: 'ok', user: { userId: 42, name: 'Айгерім' } }
     Object.assign(usage, { today: 0, db: true, opened: [], stale: [], open: false, failUsage: false, failOpen: false })
-    for (const k of ['LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET', 'LIVEKIT_URL']) saved[k] = process.env[k]
+    for (const k of ['LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET', 'LIVEKIT_URL', 'LIVEKIT_AGENT_NAME']) saved[k] = process.env[k]
+    delete process.env.LIVEKIT_AGENT_NAME
     process.env.LIVEKIT_API_KEY = '﻿key'
     process.env.LIVEKIT_API_SECRET = 'secret-secret-secret-secret-secret'
     process.env.LIVEKIT_URL = 'wss://example.livekit.cloud'
+  })
+
+  it('includes an explicit dispatch only when the named worker is configured', async () => {
+    const onCloud = await (await post()).json()
+    expect(claims(onCloud.token).roomConfig).toBeUndefined()
+
+    process.env.LIVEKIT_AGENT_NAME = ' jts-tutor '
+    const selfHosted = await (await post()).json()
+    expect(claims(selfHosted.token).roomConfig.agents.map(({ agentName }) => agentName)).toEqual(['jts-tutor'])
+    expect(claims(selfHosted.token).video.room).toBe(selfHosted.room)
   })
   afterEach(() => {
     for (const [k, v] of Object.entries(saved)) {

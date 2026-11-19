@@ -115,6 +115,20 @@ deploy:
     - develop
     - main
 
+tutor-agent-dev:
+  stage: deploy
+  tags:
+    - $GITLAB_RUNNER_TAG
+  resource_group: tutor-agent-development
+  environment:
+    name: development
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      when: manual
+      allow_failure: true
+  script:
+    - bash scripts/deploy-tutor-agent.sh
+
 # Кнопка «показать замеры мозга». Раннер и так крутится на этом хосте, поэтому
 # логи контейнера он достаёт без SSH — а доступа к серверу есть не у всех, кому
 # нужны цифры.

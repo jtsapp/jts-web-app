@@ -16,6 +16,7 @@
 // больше лимита.
 
 import { AccessToken } from 'livekit-server-sdk'
+import { dispatchTutor, tutorAgentName } from '@/lib/livekitTutorDispatch.js'
 import { bearerFromRequest, verifyTokenStatus } from '@/lib/auth-server.js'
 import { closeStaleSessions, getUsage, isDbConfigured, openSession } from '@/lib/usage.js'
 import { ASSISTANT_CALL_DAILY_SEC, assistantCallProfileId, hasOpenAssistantCall } from '@/lib/assistant/callUsage.js'
@@ -114,6 +115,7 @@ export async function POST(request) {
 
   const at = new AccessToken(apiKey, apiSecret, { identity, ttl, metadata })
   at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true })
+  dispatchTutor(at, tutorAgentName())
   const token = await at.toJwt()
 
   // Пока браузер входит в комнату и агент просыпается (секунды), профиль ученика
