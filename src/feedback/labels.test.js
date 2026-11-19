@@ -55,6 +55,25 @@ describe('badgeView', () => {
     expect(badgeView({ type: 'homework_hero' }, 'en')).toEqual({ icon: '📚', text: 'Homework hero' })
   })
 
+  it('число в бейдже склоняет слово: «1 цель достигнута», а не «1 цели достигнуто»', () => {
+    const text = (type, n, lang) => badgeView({ type, n }, lang).text
+    expect(text('goals_achieved', 1, 'ru')).toBe('1 цель достигнута')
+    expect(text('goals_achieved', 2, 'ru')).toBe('2 цели достигнуты')
+    expect(text('goals_achieved', 5, 'ru')).toBe('5 целей достигнуто')
+    expect(text('goals_achieved', 11, 'ru')).toBe('11 целей достигнуто')
+    expect(text('goals_achieved', 21, 'ru')).toBe('21 цель достигнута')
+    expect(text('skills_growth', 1, 'ru')).toBe('Рост в 1 навыке')
+    expect(text('skills_growth', 4, 'ru')).toBe('Рост в 4 навыках')
+    expect(text('goals_achieved', 1, 'en')).toBe('1 goal achieved')
+    expect(text('goals_achieved', 3, 'en')).toBe('3 goals achieved')
+    expect(text('skills_growth', 1, 'en')).toBe('Grew in 1 skill')
+    expect(text('months_with_jts', 1, 'en')).toBe('1 month with JTS')
+    expect(text('months_with_jts', 2, 'en')).toBe('2 months with JTS')
+    // По-казахски существительное после числа не меняется.
+    expect(text('goals_achieved', 1, 'kk')).toBe('1 мақсат орындалды')
+    expect(text('goals_achieved', 3, 'kk')).toBe('3 мақсат орындалды')
+  })
+
   it('незнакомый бейдж и бейдж без числа пропускаются', () => {
     expect(badgeView({ type: 'mystery' }, 'ru')).toBeNull()
     expect(badgeView({ type: 'goals_achieved' }, 'ru')).toBeNull()
