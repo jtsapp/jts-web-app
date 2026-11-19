@@ -2704,7 +2704,10 @@ button.hm-level__goal:focus-visible {
    Секция — рамка r16 с шапкой-кнопкой: значок, имя направления, счётчик и шеврон; внутри — строки IELTS и SAT или «Сегодня»
    общего курса без своей рамки (.ge-today--embedded). Цвета — только токенами --hm-*: их переопределяет тёмная тема
    (theme-dark.css), поэтому своей тёмной правки у блока нет. На телефоне блок скрыт вместе с «Сегодня» общего курса
-   (src/mobile/home.css, решение владельца 26.10.2026: там только блоки макета приложения). */
+   (src/mobile/home.css, решение владельца 26.10.2026: там только блоки макета приложения).
+   Палитра — фиолетовая платформы, а не серая образца из задачи (комментарий Улданы 18.11.2026: «серый был просто
+   пример»): значки, счётчики и «+ ещё» — акцентом, раскрытая секция и строки — сиреневыми тинтами. Серого фона в блоке
+   нет — и в тёмной теме он не становится графитовым пятном. */
 .hm-trk__head {
   display: flex;
   align-items: center;
@@ -2718,12 +2721,12 @@ button.hm-level__goal:focus-visible {
 .hm-trk__total {
   padding: 4px 12px;
   border-radius: 999px;
-  background: var(--hm-tile);
+  background: var(--hm-lav);
   font-size: 13px;
   font-weight: 700;
   line-height: 20px;
   white-space: nowrap;
-  color: var(--hm-ink);
+  color: var(--hm-ac);
 }
 .hm-trk__list {
   display: flex;
@@ -2734,6 +2737,9 @@ button.hm-level__goal:focus-visible {
   border: 1px solid var(--hm-line);
   border-radius: 16px;
   background: var(--hm-card);
+}
+.hm-trk__sec.is-open {
+  border-color: var(--hm-lav);
 }
 .hm-trk__h {
   margin: 0;
@@ -2766,11 +2772,13 @@ button.hm-level__goal:focus-visible {
 .hm-trk__toggle.is-static {
   cursor: default;
 }
-.hm-trk__toggle.is-static:hover {
-  background: none;
-}
+/* раскрытая секция — сиреневой шапкой: видно, чьи строки ниже; наведение на неё темнее на ступень */
 .hm-trk__sec.is-open .hm-trk__toggle {
   border-radius: 15px 15px 0 0;
+  background: var(--hm-lav2);
+}
+.hm-trk__sec.is-open .hm-trk__toggle:not(.is-static):hover {
+  background: var(--hm-lav);
 }
 .hm-trk__ico,
 .hm-trk__chev {
@@ -2778,6 +2786,7 @@ button.hm-level__goal:focus-visible {
   width: 20px;
   height: 20px;
   background: currentColor;
+  color: var(--hm-ac);
   -webkit-mask: var(--hm-ico) center / contain no-repeat;
   mask: var(--hm-ico) center / contain no-repeat;
 }
@@ -2801,12 +2810,12 @@ button.hm-level__goal:focus-visible {
   height: 26px;
   padding: 0 8px;
   border-radius: 999px;
-  background: var(--hm-tile);
+  background: var(--hm-lav);
   font-size: 13px;
   font-weight: 700;
   line-height: 26px;
   text-align: center;
-  color: var(--hm-ink);
+  color: var(--hm-ac);
 }
 .hm-trk__count.is-zero {
   background: var(--hm-up-bg);
@@ -2814,7 +2823,7 @@ button.hm-level__goal:focus-visible {
 }
 .hm-trk__body {
   padding: 16px;
-  border-top: 1px solid var(--hm-line);
+  border-top: 1px solid var(--hm-lav);
 }
 .hm-trk__rows {
   display: flex;
@@ -2830,13 +2839,13 @@ button.hm-level__goal:focus-visible {
   gap: 12px;
   padding: 10px 12px;
   border-radius: 14px;
-  background: var(--hm-tile);
+  background: var(--hm-lav2);
 }
 .hm-trk__dot {
   flex: none;
   width: 12px;
   height: 12px;
-  border: 2px solid var(--hm-mut);
+  border: 2px solid var(--hm-ac);
   border-radius: 50%;
 }
 .hm-trk__row.is-started .hm-trk__dot {
@@ -2884,7 +2893,7 @@ button.hm-level__goal:focus-visible {
   cursor: pointer;
 }
 .hm-trk__go:hover {
-  background: var(--hm-lav2);
+  background: var(--hm-lav);
 }
 .hm-trk__done {
   flex: none;
@@ -2910,11 +2919,11 @@ button.hm-level__goal:focus-visible {
   font: inherit;
   font-size: 13px;
   font-weight: 700;
-  color: var(--hm-sec);
+  color: var(--hm-ac);
   cursor: pointer;
 }
 .hm-trk__more:hover {
-  color: var(--hm-ac);
+  text-decoration: underline;
 }
 /* узкий планшет: кнопка строки уходит под текст, а не сжимает его до слова в строке */
 @media (max-width: 760px) {
